@@ -545,7 +545,7 @@ double DOCISolver::compute_energy() {
 
         double ci_energy = DiagonalizeHamiltonian(ci_wfn,ci_iter);
         //printf("wtf ci energy %20.12lf\n",ci_energy+enuc_);
-        BuildRDMs(ci_wfn);
+        BuildRDMs(ci_wfn,false);
 
         double oo_energy;
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
@@ -587,7 +587,7 @@ double DOCISolver::compute_energy() {
     outfile->Printf("\n");
 
     std::shared_ptr<Vector> NOs (new Vector("Natural Orbital Occupation Numbers (spin free)",nmo_));
-    BuildRDMs(ci_wfn);
+    BuildRDMs(ci_wfn,true);
     for (size_t i = 0; i < nmo_; i++) {
         NOs->pointer()[i] = d1_[INDEX(i,i)];
     }
@@ -1014,7 +1014,7 @@ double DOCISolver::DiagonalizeHamiltonian(double * ci_wfn, size_t & ci_iter) {
 
 }
 
-void DOCISolver::BuildRDMs(double * ci_wfn){
+void DOCISolver::BuildRDMs(double * ci_wfn, bool print){
 
     memset((void*)d1_,'\0', oei_dim_ *  sizeof(double));
     memset((void*)d2ab_,'\0',nmo_*nmo_*nmo_*nmo_*sizeof(double));
@@ -1098,14 +1098,14 @@ void DOCISolver::BuildRDMs(double * ci_wfn){
         }
     }
 
+    if ( print ) {
+        outfile->Printf("\n");
+        outfile->Printf("        DOCI one-electron energy = %20.12lf\n",e1);
+        outfile->Printf("        DOCI two-electron energy = %20.12lf\n",e2);
+        outfile->Printf("        * DOCI total energy      = %20.12lf\n",e1 + e2 + enuc_);
+        outfile->Printf("\n");
+    }
 
-    outfile->Printf("\n");
-    outfile->Printf("        DOCI one-electron energy = %20.12lf\n",e1);
-    outfile->Printf("        DOCI two-electron energy = %20.12lf\n",e2);
-    outfile->Printf("        * DOCI total energy      = %20.12lf\n",e1 + e2 + enuc_);
-    outfile->Printf("\n");
-
-    //printf("wtf energy %20.12lf\n",energy+enuc_);
 }
 
 }} //end namespaces

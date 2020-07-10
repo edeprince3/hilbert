@@ -23,9 +23,9 @@
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Thursday, 09 July 2020 09:47PM
+    Psi4 started on: Thursday, 09 July 2020 09:50PM
 
-    Process ID: 65202
+    Process ID: 65611
     Host:       illegally-used-at.fsu
     PSIDATADIR: /Users/deprince/edeprince3/psi4/install/master/share/psi4
     Memory:     500.0 MiB
@@ -79,7 +79,7 @@ compare_values(ref_doci, variable("CURRENT ENERGY"), 5, "DOCI total energy") # T
 Scratch directory: /tmp/
 
 *** tstart() called on illegally-used-at.fsu
-*** at Thu Jul  9 21:47:59 2020
+*** at Thu Jul  9 21:50:54 2020
 
    => Loading Basis Set <=
 
@@ -259,15 +259,15 @@ Properties computed using the SCF density matrix
      X:    -0.0000      Y:     0.0000      Z:     2.6444     Total:     2.6444
 
 
-*** tstop() called on illegally-used-at.fsu at Thu Jul  9 21:47:59 2020
+*** tstop() called on illegally-used-at.fsu at Thu Jul  9 21:50:55 2020
 Module time:
-	user time   =       0.32 seconds =       0.01 minutes
+	user time   =       0.31 seconds =       0.01 minutes
 	system time =       0.01 seconds =       0.00 minutes
-	total time  =          0 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
 Total time:
-	user time   =       0.32 seconds =       0.01 minutes
+	user time   =       0.31 seconds =       0.01 minutes
 	system time =       0.01 seconds =       0.00 minutes
-	total time  =          0 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
  MINTS: Wrapper to libmints.
    by Justin Turney
 
@@ -419,355 +419,90 @@ Calling plugin hilbert.so.
 
 
        iter   iter(CI)   iter(oo)                E(CI)                E(oo)                 |dE|
-
-        DOCI one-electron energy =    -122.225771218634
-        DOCI two-electron energy =      37.416233758667
-        * DOCI total energy      =     -76.008071895400
-
-          0         7           1     -76.008071895400     -76.014464529902      76.014464529902
-
-        DOCI one-electron energy =    -122.119650142008
-        DOCI two-electron energy =      37.300819245713
-        * DOCI total energy      =     -76.017365331728
-
-          1         7           2     -76.017365331728     -76.021584358760       0.007119828857
-
-        DOCI one-electron energy =    -122.053989121224
-        DOCI two-electron energy =      37.226559603844
-        * DOCI total energy      =     -76.025963952813
-
-          2         7           3     -76.025963952813     -76.033723801717       0.012139442957
-
-        DOCI one-electron energy =    -122.186461122822
-        DOCI two-electron energy =      37.338140722804
-        * DOCI total energy      =     -76.046854835451
-
-          3         7           4     -76.046854835451     -76.047835490339       0.014111688622
-
-        DOCI one-electron energy =    -122.178408866012
-        DOCI two-electron energy =      37.328927962221
-        * DOCI total energy      =     -76.048015339224
-
-          4         7           5     -76.048015339224     -76.048851769336       0.001016278997
-
-        DOCI one-electron energy =    -122.168735979129
-        DOCI two-electron energy =      37.317876989412
-        * DOCI total energy      =     -76.049393425150
-
-          5         7           6     -76.049393425150     -76.049561697085       0.000709927749
-
-        DOCI one-electron energy =    -122.166629062132
-        DOCI two-electron energy =      37.315595986612
-        * DOCI total energy      =     -76.049567510953
-
-          6         7           7     -76.049567510953     -76.049659583339       0.000097886254
-
-        DOCI one-electron energy =    -122.165713775746
-        DOCI two-electron energy =      37.314587538089
-        * DOCI total energy      =     -76.049660673089
-
-          7         7           8     -76.049660673090     -76.049733107860       0.000073524520
-
-        DOCI one-electron energy =    -122.165428716976
-        DOCI two-electron energy =      37.314228747578
-        * DOCI total energy      =     -76.049734404830
-
-          8         7           9     -76.049734404830     -76.049790736772       0.000057628913
-
-        DOCI one-electron energy =    -122.165504593267
-        DOCI two-electron energy =      37.314245958751
-        * DOCI total energy      =     -76.049793069949
-
-          9         7          10     -76.049793069948     -76.049838973761       0.000048236988
-
-        DOCI one-electron energy =    -122.165160905840
-        DOCI two-electron energy =      37.313852186060
-        * DOCI total energy      =     -76.049843155213
-
-         10         7          11     -76.049843155212     -76.049885092663       0.000046118903
-
-        DOCI one-electron energy =    -122.164767612251
-        DOCI two-electron energy =      37.313411556016
-        * DOCI total energy      =     -76.049890491668
-
-         11         7          12     -76.049890491668     -76.049936408145       0.000051315481
-
-        DOCI one-electron energy =    -122.164472465695
-        DOCI two-electron energy =      37.313066680978
-        * DOCI total energy      =     -76.049940220149
-
-         12         7          13     -76.049940220149     -76.050050768850       0.000114360705
-
-        DOCI one-electron energy =    -122.164389511220
-        DOCI two-electron energy =      37.312871214618
-        * DOCI total energy      =     -76.050052732035
-
-         13         7          14     -76.050052732035     -76.050822409836       0.000771640987
-
-        DOCI one-electron energy =    -122.162270678059
-        DOCI two-electron energy =      37.309942070487
-        * DOCI total energy      =     -76.050863043005
-
-         14         7          15     -76.050863043005     -76.051489741661       0.000667331825
-
-        DOCI one-electron energy =    -122.159786619222
-        DOCI two-electron energy =      37.306797612293
-        * DOCI total energy      =     -76.051523442361
-
-         15         7          16     -76.051523442361     -76.051849990081       0.000360248420
-
-        DOCI one-electron energy =    -122.158736364680
-        DOCI two-electron energy =      37.305408660258
-        * DOCI total energy      =     -76.051862139854
-
-         16         7          17     -76.051862139855     -76.052091666403       0.000241676322
-
-        DOCI one-electron energy =    -122.159370516338
-        DOCI two-electron energy =      37.305805572084
-        * DOCI total energy      =     -76.052099379687
-
-         17         7          18     -76.052099379687     -76.052269268799       0.000177602395
-
-        DOCI one-electron energy =    -122.159829934658
-        DOCI two-electron energy =      37.306089610695
-        * DOCI total energy      =     -76.052274759395
-
-         18         7          19     -76.052274759395     -76.052403475010       0.000134206211
-
-        DOCI one-electron energy =    -122.153407156581
-        DOCI two-electron energy =      37.299534029257
-        * DOCI total energy      =     -76.052407562756
-
-         19         7          20     -76.052407562756     -76.052504089559       0.000100614549
-
-        DOCI one-electron energy =    -122.146994246084
-        DOCI two-electron energy =      37.293021490413
-        * DOCI total energy      =     -76.052507191104
-
-         20         7          21     -76.052507191104     -76.052561031042       0.000056941484
-
-        DOCI one-electron energy =    -122.184315084713
-        DOCI two-electron energy =      37.330286129786
-        * DOCI total energy      =     -76.052563390360
-
-         21         7          22     -76.052563390360     -76.052650434312       0.000089403270
-
-        DOCI one-electron energy =    -122.158618902849
-        DOCI two-electron energy =      37.304501119334
-        * DOCI total energy      =     -76.052652218948
-
-         22         7          23     -76.052652218948     -76.052698713941       0.000048279628
-
-        DOCI one-electron energy =    -122.151407860594
-        DOCI two-electron energy =      37.297242149487
-        * DOCI total energy      =     -76.052700146539
-
-         23         7          24     -76.052700146539     -76.052726833726       0.000028119785
-
-        DOCI one-electron energy =    -122.139477130424
-        DOCI two-electron energy =      37.285283611183
-        * DOCI total energy      =     -76.052727954674
-
-         24         7          25     -76.052727954674     -76.052766771229       0.000039937503
-
-        DOCI one-electron energy =    -122.157890814500
-        DOCI two-electron energy =      37.303657646832
-        * DOCI total energy      =     -76.052767603100
-
-         25         7          26     -76.052767603100     -76.052788388022       0.000021616792
-
-        DOCI one-electron energy =    -122.161303638344
-        DOCI two-electron energy =      37.307049019945
-        * DOCI total energy      =     -76.052789053831
-
-         26         7          27     -76.052789053831     -76.052805945303       0.000017557282
-
-        DOCI one-electron energy =    -122.156014308629
-        DOCI two-electron energy =      37.301742299165
-        * DOCI total energy      =     -76.052806444897
-
-         27         7          28     -76.052806444897     -76.052818535302       0.000012589998
-
-        DOCI one-electron energy =    -122.154652340327
-        DOCI two-electron energy =      37.300367845795
-        * DOCI total energy      =     -76.052818929964
-
-         28         7          29     -76.052818929965     -76.052825898919       0.000007363617
-
-        DOCI one-electron energy =    -122.163919335204
-        DOCI two-electron energy =      37.309627572191
-        * DOCI total energy      =     -76.052826198446
-
-         29         7          30     -76.052826198446     -76.052834792418       0.000008893499
-
-        DOCI one-electron energy =    -122.157180960162
-        DOCI two-electron energy =      37.302880383506
-        * DOCI total energy      =     -76.052835012089
-
-         30         7          31     -76.052835012089     -76.052839248652       0.000004456234
-
-        DOCI one-electron energy =    -122.152590422055
-        DOCI two-electron energy =      37.298285440547
-        * DOCI total energy      =     -76.052839416941
-
-         31         7          32     -76.052839416940     -76.052843301244       0.000004052592
-
-        DOCI one-electron energy =    -122.155937014720
-        DOCI two-electron energy =      37.301628028931
-        * DOCI total energy      =     -76.052843421221
-
-         32         7          33     -76.052843421220     -76.052845639731       0.000002338487
-
-        DOCI one-electron energy =    -122.158581193093
-        DOCI two-electron energy =      37.304269899120
-        * DOCI total energy      =     -76.052845729406
-
-         33         7          34     -76.052845729406     -76.052847565757       0.000001926026
-
-        DOCI one-electron energy =    -122.156650549222
-        DOCI two-electron energy =      37.302337355952
-        * DOCI total energy      =     -76.052847628703
-
-         34         7          35     -76.052847628703     -76.052848673689       0.000001107933
-
-        DOCI one-electron energy =    -122.154617247176
-        DOCI two-electron energy =      37.300302962980
-        * DOCI total energy      =     -76.052848719629
-
-         35         7          36     -76.052848719629     -76.052849609197       0.000000935508
-
-        DOCI one-electron energy =    -122.156105878079
-        DOCI two-electron energy =      37.301790672896
-        * DOCI total energy      =     -76.052849640616
-
-         36         7          37     -76.052849640616     -76.052850083298       0.000000474101
-
-        DOCI one-electron energy =    -122.157889590458
-        DOCI two-electron energy =      37.303573920246
-        * DOCI total energy      =     -76.052850105644
-
-         37         7          38     -76.052850105644     -76.052850543640       0.000000460342
-
-        DOCI one-electron energy =    -122.156577034305
-        DOCI two-electron energy =      37.302260911133
-        * DOCI total energy      =     -76.052850558605
-
-         38         7          39     -76.052850558605     -76.052850791502       0.000000247862
-
-        DOCI one-electron energy =    -122.156304373469
-        DOCI two-electron energy =      37.301988007272
-        * DOCI total energy      =     -76.052850801629
-
-         39         7          40     -76.052850801629     -76.052850950548       0.000000159046
-
-        DOCI one-electron energy =    -122.156050384390
-        DOCI two-electron energy =      37.301733862349
-        * DOCI total energy      =     -76.052850957474
-
-         40         7          41     -76.052850957474     -76.052851057445       0.000000106897
-
-        DOCI one-electron energy =    -122.156394324125
-        DOCI two-electron energy =      37.302077697630
-        * DOCI total energy      =     -76.052851061928
-
-         41         7          42     -76.052851061928     -76.052851117715       0.000000060270
-
-        DOCI one-electron energy =    -122.156760185723
-        DOCI two-electron energy =      37.302443500453
-        * DOCI total energy      =     -76.052851120703
-
-         42         7          43     -76.052851120703     -76.052851165839       0.000000048124
-
-        DOCI one-electron energy =    -122.156264511299
-        DOCI two-electron energy =      37.301947779000
-        * DOCI total energy      =     -76.052851167732
-
-         43         7          44     -76.052851167732     -76.052851192148       0.000000026309
-
-        DOCI one-electron energy =    -122.156326825819
-        DOCI two-electron energy =      37.302010067898
-        * DOCI total energy      =     -76.052851193354
-
-         44         7          45     -76.052851193354     -76.052851207475       0.000000015327
-
-        DOCI one-electron energy =    -122.156499263163
-        DOCI two-electron energy =      37.302182490346
-        * DOCI total energy      =     -76.052851208250
-
-         45         7          46     -76.052851208250     -76.052851218175       0.000000010700
-
-        DOCI one-electron energy =    -122.156381542716
-        DOCI two-electron energy =      37.302064759500
-        * DOCI total energy      =     -76.052851218649
-
-         46         7          47     -76.052851218649     -76.052851224164       0.000000005990
-
-        DOCI one-electron energy =    -122.156333729508
-        DOCI two-electron energy =      37.302016940484
-        * DOCI total energy      =     -76.052851224457
-
-         47         7          48     -76.052851224457     -76.052851227331       0.000000003167
-
-        DOCI one-electron energy =    -122.156239238866
-        DOCI two-electron energy =      37.301922446786
-        * DOCI total energy      =     -76.052851227512
-
-         48         7          49     -76.052851227512     -76.052851229807       0.000000002476
-
-        DOCI one-electron energy =    -122.156370528749
-        DOCI two-electron energy =      37.302053734267
-        * DOCI total energy      =     -76.052851229915
-
-         49         7          50     -76.052851229915     -76.052851231058       0.000000001250
-
-        DOCI one-electron energy =    -122.156350715346
-        DOCI two-electron energy =      37.302033919657
-        * DOCI total energy      =     -76.052851231121
-
-         50         7          23     -76.052851231121     -76.052851232282       0.000000001224
-
-        DOCI one-electron energy =    -122.156342263511
-        DOCI two-electron energy =      37.302025466404
-        * DOCI total energy      =     -76.052851232539
-
-         51         7          22     -76.052851232539     -76.052851232637       0.000000000355
-
-        DOCI one-electron energy =    -122.156342586116
-        DOCI two-electron energy =      37.302025788876
-        * DOCI total energy      =     -76.052851232673
-
-         52         7          15     -76.052851232672     -76.052851232682       0.000000000045
+          0         7           1     -76.009648067424     -76.014845730679      76.014845730679
+          1         7           2     -76.017898102613     -76.023678303348       0.008832572668
+          2         7           3     -76.028216927103     -76.036687367621       0.013009064273
+          3         7           4     -76.047305056947     -76.048003107296       0.011315739675
+          4         7           5     -76.048341532741     -76.049177155385       0.001174048089
+          5         7           6     -76.049428598239     -76.049571901340       0.000394745955
+          6         7           7     -76.049577649161     -76.049670623883       0.000098722543
+          7         7           8     -76.049671518805     -76.049751892425       0.000081268542
+          8         7           9     -76.049752564473     -76.049844284882       0.000092392457
+          9         7          10     -76.049845347070     -76.050060056714       0.000215771831
+         10         7          11     -76.050063986212     -76.051711651683       0.001651594969
+         11         7          12     -76.052017626722     -76.052214070371       0.000502418688
+         12         7          13     -76.052227908571     -76.052362080762       0.000148010391
+         13         7          14     -76.052367621988     -76.052461293219       0.000099212457
+         14         7          15     -76.052463591794     -76.052534971992       0.000073678772
+         15         7          16     -76.052536672926     -76.052591852628       0.000056880636
+         16         7          17     -76.052593277406     -76.052623287833       0.000031435205
+         17         7          18     -76.052624509788     -76.052686856193       0.000063568359
+         18         7          19     -76.052687829863     -76.052720717166       0.000033860973
+         19         7          20     -76.052721565326     -76.052746028100       0.000025310934
+         20         7          21     -76.052746734865     -76.052771596132       0.000025568032
+         21         7          22     -76.052772152987     -76.052789895396       0.000018299264
+         22         7          23     -76.052790372219     -76.052803550234       0.000013654838
+         23         7          24     -76.052803941077     -76.052815983770       0.000012433536
+         24         7          25     -76.052816285637     -76.052824905101       0.000008921331
+         25         7          26     -76.052825155797     -76.052830851704       0.000005946603
+         26         7          27     -76.052831050128     -76.052837061115       0.000006209411
+         27         7          28     -76.052837212707     -76.052840895317       0.000003834202
+         28         7          29     -76.052841016115     -76.052843916973       0.000003021656
+         29         7          30     -76.052844006657     -76.052846047726       0.000002130753
+         30         7          31     -76.052846117667     -76.052847617506       0.000001569780
+         31         7          32     -76.052847668409     -76.052848731664       0.000001114158
+         32         7          33     -76.052848770308     -76.052849523215       0.000000791552
+         33         7          34     -76.052849550662     -76.052850076127       0.000000552912
+         34         7          35     -76.052850096417     -76.052850459094       0.000000382967
+         35         7          36     -76.052850473180     -76.052850720146       0.000000261052
+         36         7          37     -76.052850730285     -76.052850897614       0.000000177467
+         37         7          38     -76.052850904487     -76.052851014485       0.000000116871
+         38         7          39     -76.052851019304     -76.052851093722       0.000000079237
+         39         7          40     -76.052851096915     -76.052851142405       0.000000048683
+         40         7          41     -76.052851144586     -76.052851177445       0.000000035040
+         41         7          42     -76.052851178858     -76.052851198394       0.000000020950
+         42         7          43     -76.052851199317     -76.052851211461       0.000000013066
+         43         7          44     -76.052851212069     -76.052851219913       0.000000008452
+         44         7          45     -76.052851220293     -76.052851225003       0.000000005091
+         45         7          46     -76.052851225243     -76.052851228076       0.000000003072
+         46         7          47     -76.052851228228     -76.052851230002       0.000000001926
+         47         7          48     -76.052851230094     -76.052851231124       0.000000001122
+         48         7          49     -76.052851231180     -76.052851231762       0.000000000638
+         49         7          50     -76.052851231796     -76.052851232175       0.000000000413
+         50         7          24     -76.052851232195     -76.052851232562       0.000000000387
+         51         7          16     -76.052851232648     -76.052851232674       0.000000000112
+         52         7           1     -76.052851232684     -76.052851232684       0.000000000009
 
       oo-DOCI iterations converged!
 
-    * DOCI total energy:                  -76.052851232682
+    * DOCI total energy:                  -76.052851232684
 
 
-        DOCI one-electron energy =    -122.156342295324
-        DOCI two-electron energy =      37.302025498074
-        * DOCI total energy      =     -76.052851232682
+        DOCI one-electron energy =    -122.156343420147
+        DOCI two-electron energy =      37.302026622896
+        * DOCI total energy      =     -76.052851232684
 
 
  # Natural Orbital Occupation Numbers (spin free) #
  Irrep: 1
       1:  1.9999919
-      2:  1.9928667
+      2:  1.9928666
       3:  1.9755362
       4:  1.9755362
-      5:  1.9928662
+      5:  1.9928663
       6:  0.0238325
       7:  0.0238325
       8:  0.0011226
       9:  0.0011226
-     10:  0.0064940
-     11:  0.0064936
+     10:  0.0064939
+     11:  0.0064937
      12:  0.0001525
      13:  0.0001525
 
     SCF total energy..................................................PASSED
     DOCI total energy.................................................PASSED
 
-    Psi4 stopped on: Thursday, 09 July 2020 09:48PM
-    Psi4 wall time for execution: 0:00:07.94
+    Psi4 stopped on: Thursday, 09 July 2020 09:51PM
+    Psi4 wall time for execution: 0:00:07.74
 
 *** Psi4 exiting successfully. Buy a developer a beer!

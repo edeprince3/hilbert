@@ -108,7 +108,7 @@ class DOCISolver: public Wavefunction{
     std::shared_ptr<Vector> Hdiag_;
 
     /// construct 1- and 2-RDM
-    void BuildRDMs(double * ci_wfn);
+    void BuildRDMs(double * ci_wfn,bool print);
 
     /// optimize orbitals
     double RotateOrbitals();
