@@ -38,6 +38,7 @@ add_psi4_plugin(hilbert
 
     src/plugin.cc
 
+    src/python_api/python_helpers.cc
 
     src/doci/david.cc
     src/doci/doci_solver.cc
