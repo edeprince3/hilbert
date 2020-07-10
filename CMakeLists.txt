@@ -38,6 +38,7 @@ add_psi4_plugin(hilbert
 
     src/plugin.cc
 
+
     src/doci/david.cc
     src/doci/doci_solver.cc
     src/doci/write_tpdm.cc
@@ -48,7 +49,8 @@ add_psi4_plugin(hilbert
     src/pp2rdm/write_tpdm.cc
 
     src/misc/threeindexintegrals.cc
-    src/misc/update_transformation_matrix.cc
+
+    src/focas/update_transformation_matrix.cc
 
     src/focas/focas_data.F90
     src/focas/focas_exponential.F90
