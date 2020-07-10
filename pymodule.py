@@ -113,6 +113,21 @@ def run_pp2rdm(name, **kwargs):
 
     psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'PP2RDM')
 
+    if lowername == 'pp2rdm':
+        psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'K')
+    elif lowername == 'pccd':
+        psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'CCD')
+    elif lowername == 'pcid':
+        psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'CID')
+    elif lowername == 'pcepa(1)':
+        psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'CEPA(1)')
+    elif lowername == 'pcepa(0)':
+        psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'CEPA(0)')
+    elif lowername == 'pacpf':
+        psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'ACPF')
+    elif lowername == 'paqcc':
+        psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'AQCC')
+
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
     # Fock matrices, and more
     #print('Attention! This SCF may be density-fitted.')
@@ -133,8 +148,18 @@ def run_pp2rdm(name, **kwargs):
 
 
 # Integration with driver routines
-psi4.driver.procedures['energy']['pp2rdm'] = run_pp2rdm
+
+# pair methods:
+psi4.driver.procedures['energy']['pp2rdm']   = run_pp2rdm
+psi4.driver.procedures['energy']['pcid']     = run_pp2rdm
+psi4.driver.procedures['energy']['pccd']     = run_pp2rdm
+psi4.driver.procedures['energy']['pcepa(0)'] = run_pp2rdm
+psi4.driver.procedures['energy']['pacpf']    = run_pp2rdm
+psi4.driver.procedures['energy']['paqcc']    = run_pp2rdm
+
+# doci
 psi4.driver.procedures['energy']['doci'] = run_doci
+
 psi4.driver.procedures['energy']['hilbert'] = run_hilbert
 
 

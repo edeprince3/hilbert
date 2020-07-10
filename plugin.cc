@@ -133,7 +133,7 @@ int read_options(std::string name, Options& options)
         /*- algorithm type -*/
         options.add_str("P2RDM_ALGORITHM","PROJECTION","PROJECTION LBFGS NEWTON_RAPHSON");
 
-        /*- Which parametric 2-RDM method is called? -*/
+        /*- Which parametric 2-RDM method is called? Set by driver. !expert -*/
         options.add_str("P2RDM_TYPE","K","K CEPA(0) CEPA(1) CID ACPF AQCC CCD");
 
         /*- Do print 1- and 2-electron to the output file? Only J-, K-, and L-type integrals will be printed. -*/

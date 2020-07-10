@@ -29,14 +29,12 @@ set {
   orbopt_maxiter 1
   maxiter 10000
 
-  p2rdm_type "ccd"
-
 }
 
-en = energy('pp2rdm')
+en = energy('pccd')
 
-ref_scf    = -75.98014193580194 # TEST
-ref_pp2rdm = -76.052839394329   # TEST
+ref_scf  = -75.98014193580194 # TEST
+ref_pccd = -76.052839394329   # TEST
 
 compare_values(ref_scf, variable("SCF TOTAL ENERGY"), 8, "SCF total energy") # TEST
-compare_values(ref_pp2rdm, variable("CURRENT ENERGY"), 5, "pp2RDM total energy") # TEST
+compare_values(ref_pccd, variable("CURRENT ENERGY"), 5, "pCCD total energy") # TEST

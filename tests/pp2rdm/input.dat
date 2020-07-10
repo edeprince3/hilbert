@@ -14,6 +14,7 @@ symmetry c1
 }
 
 set {
+
   reference rhf
   basis 6-31g
   scf_type df
@@ -28,8 +29,6 @@ set {
   optimize_orbitals true
   orbopt_maxiter 1
   maxiter 10000
-
-  p2rdm_type "k"
 
 }
 
