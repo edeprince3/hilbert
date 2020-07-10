@@ -1,0 +1,773 @@
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.4a2.dev397 
+
+                         Git: Rev {master} b3df9b2 dirty
+
+
+    R. M. Parrish, L. A. Burns, D. G. A. Smith, A. C. Simmonett,
+    A. E. DePrince III, E. G. Hohenstein, U. Bozkaya, A. Yu. Sokolov,
+    R. Di Remigio, R. M. Richard, J. F. Gonthier, A. M. James,
+    H. R. McAlexander, A. Kumar, M. Saitow, X. Wang, B. P. Pritchard,
+    P. Verma, H. F. Schaefer III, K. Patkowski, R. A. King, E. F. Valeev,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, and C. D. Sherrill,
+    J. Chem. Theory Comput. 13(7) pp 3185--3197 (2017).
+    (doi: 10.1021/acs.jctc.7b00174)
+
+
+                         Additional Contributions by
+    P. Kraus, H. Kruse, M. H. Lechner, M. C. Schieber, R. A. Shaw,
+    A. Alenaizan, R. Galvelis, Z. L. Glick, S. Lehtola, and J. P. Misiewicz
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Thursday, 09 July 2020 09:47PM
+
+    Process ID: 65202
+    Host:       illegally-used-at.fsu
+    PSIDATADIR: /Users/deprince/edeprince3/psi4/install/master/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input File <==
+
+--------------------------------------------------------------------------
+
+# job description:
+print('        H2O / 6-31g / DOCI, scf_type = DF, rOH = 1.0 A, aHOH = 104.5')
+
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule h2o {
+0 1
+O
+H 1 1.0
+H 1 1.0 2 104.5
+symmetry c1
+}
+
+set {
+  reference rhf
+  basis 6-31g
+  scf_type df
+
+  e_convergence 1e-10
+  r_convergence 1e-8
+  orbopt_gradient_convergence 1e-6
+  orbopt_energy_convergence 1e-8
+
+  localize_orbitals true
+  noisy_orbitals true
+  optimize_orbitals true
+  orbopt_maxiter 1
+  maxiter 10000
+
+}
+
+en,wfn = energy('doci',return_wfn = True)
+
+ref_scf  = -75.98014193580194 # TEST
+ref_doci = -76.052851232676   # TEST
+
+compare_values(ref_scf, variable("SCF TOTAL ENERGY"), 8, "SCF total energy") # TEST
+compare_values(ref_doci, variable("CURRENT ENERGY"), 5, "DOCI total energy") # TEST
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+*** tstart() called on illegally-used-at.fsu
+*** at Thu Jul  9 21:47:59 2020
+
+   => Loading Basis Set <=
+
+    Name: 6-31G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line   117 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/6-31g.gbs 
+    atoms 2-3 entry H          line    26 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/6-31g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              RHF Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.12555  B =     13.37733  C =      8.72955 [cm^-1]
+  Rotational constants: A = 753245.07149  B = 401042.16706  C = 261705.25473 [MHz]
+  Nuclear repulsion =    8.801465564567374
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-08
+  Integral threshold = 0.00e+00
+
+  ==> Primary Basis <==
+
+  Basis Set: 6-31G
+    Blend: 6-31G
+    Number of shells: 9
+    Number of basis function: 13
+    Number of Cartesian functions: 13
+    Spherical Harmonics?: false
+    Max angular momentum: 1
+
+   => Loading Basis Set <=
+
+    Name: (6-31G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   221 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 2-3 entry H          line    51 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
+
+  ==> Pre-Iterations <==
+
+   -------------------------------------------------------
+    Irrep   Nso     Nmo     Nalpha   Nbeta   Ndocc  Nsocc
+   -------------------------------------------------------
+     A         13      13       0       0       0       0
+   -------------------------------------------------------
+    Total      13      13       5       5       5       0
+   -------------------------------------------------------
+
+  ==> Integral Setup <==
+
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                  Yes
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:              375
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (6-31G AUX)
+    Blend: CC-PVDZ-JKFIT
+    Number of shells: 42
+    Number of basis function: 131
+    Number of Cartesian functions: 131
+    Spherical Harmonics?: false
+    Max angular momentum: 3
+
+  Minimum eigenvalue in the overlap matrix is 7.3923788795E-02.
+  Reciprocal condition number of the overlap matrix is 2.1980826342E-02.
+    Using symmetric orthogonalization.
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF.
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-RHF iter SAD:   -75.45941871343828   -7.54594e+01   0.00000e+00 
+   @DF-RHF iter   1:   -75.90434666105367   -4.44928e-01   3.09953e-02 DIIS
+   @DF-RHF iter   2:   -75.95857164768282   -5.42250e-02   1.90214e-02 DIIS
+   @DF-RHF iter   3:   -75.97973621451969   -2.11646e-02   1.56674e-03 DIIS
+   @DF-RHF iter   4:   -75.98012651826689   -3.90304e-04   3.11867e-04 DIIS
+   @DF-RHF iter   5:   -75.98014154101817   -1.50228e-05   4.14320e-05 DIIS
+   @DF-RHF iter   6:   -75.98014191790431   -3.76886e-07   8.27072e-06 DIIS
+   @DF-RHF iter   7:   -75.98014193491713   -1.70128e-08   1.79874e-06 DIIS
+   @DF-RHF iter   8:   -75.98014193578133   -8.64205e-10   3.33255e-07 DIIS
+   @DF-RHF iter   9:   -75.98014193580164   -2.03073e-11   3.10076e-08 DIIS
+   @DF-RHF iter  10:   -75.98014193580194   -2.98428e-13   2.58167e-09 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Doubly Occupied:                                                      
+
+       1A    -20.568888     2A     -1.334712     3A     -0.686875  
+       4A     -0.554298     5A     -0.499284  
+
+    Virtual:                                                              
+
+       6A      0.193417     7A      0.287599     8A      1.041506  
+       9A      1.130380    10A      1.164432    11A      1.220999  
+      12A      1.368964    13A      1.693510  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+
+  @DF-RHF Final Energy:   -75.98014193580194
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.8014655645673745
+    One-Electron Energy =                -122.2751012239349109
+    Two-Electron Energy =                  37.4934937235655994
+    Total Energy =                        -75.9801419358019245
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+  Nuclear Dipole Moment: [e a0]
+     X:     0.0000      Y:     0.0000      Z:     1.0191
+
+  Electronic Dipole Moment: [e a0]
+     X:    -0.0000      Y:     0.0000      Z:     0.0213
+
+  Dipole Moment: [e a0]
+     X:    -0.0000      Y:     0.0000      Z:     1.0404     Total:     1.0404
+
+  Dipole Moment: [D]
+     X:    -0.0000      Y:     0.0000      Z:     2.6444     Total:     2.6444
+
+
+*** tstop() called on illegally-used-at.fsu at Thu Jul  9 21:47:59 2020
+Module time:
+	user time   =       0.32 seconds =       0.01 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+Total time:
+	user time   =       0.32 seconds =       0.01 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+ MINTS: Wrapper to libmints.
+   by Justin Turney
+
+   Calculation information:
+      Number of threads:                 1
+      Number of atoms:                   3
+      Number of AO shells:               9
+      Number of SO shells:               9
+      Number of primitives:             22
+      Number of atomic orbitals:        13
+      Number of basis functions:        13
+
+      Number of irreps:                  1
+      Integral cutoff                 0.00e+00
+      Number of functions per irrep: [  13 ]
+
+ OEINTS: Overlap, kinetic, potential, dipole, and quadrupole integrals
+         stored in file 35.
+
+      Computing two-electron integrals...done
+      Computed 2263 non-zero two-electron integrals.
+        Stored in file 33.
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+  ==> Pipek-Mezey Localizer <==
+
+    Convergence =   1.000E-08
+    Maxiter     =          50
+
+    Iteration                   Metric       Residual
+    @PM    0   4.0403577598919860E+00              -
+    @PM    1   4.2293811168321778E+00   4.678382E-02
+    @PM    2   4.2298843280346654E+00   1.189799E-04
+    @PM    3   4.2298866055815463E+00   5.384419E-07
+    @PM    4   4.2298866262938315E+00   4.896653E-09
+
+    PM Localizer converged.
+
+
+
+        ***************************************************
+        *                                                 *
+        *    DOCI                                         *
+        *                                                 *
+        *    doubly occupied configuration interaction    *
+        *                                                 *
+        ***************************************************
+
+    ==> Convergence parameters <==
+
+        r_convergence:                  1.000e-08
+        e_convergence:                  1.000e-10
+        maximum iterations:                 10000
+
+    ==> Orbital optimization parameters <==
+
+        localize orbitals?                    yes
+        optimize orbitals?                    yes
+        g_convergence:                  1.000e-06
+        e_convergence:                  1.000e-08
+        maximum iterations:                     1
+        exact diagonal Hessian:              true
+        number of DIIS vectors:                 0
+        print iteration info:               false
+
+    ==> Transform three-electron integrals <==
+
+        Time for integral transformation:     0.01 s
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = 6-31G
+    Blend                  = 6-31G
+    Total number of shells = 9
+    Number of primitives   = 22
+    Number of AO           = 13
+    Number of SO           = 13
+    Maximum AM             = 1
+    Spherical Harmonics    = FALSE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     10s 4p // 3s 2p 
+       2     H     4s // 2s 
+       3     H     4s // 2s 
+
+  ==> AO Basis Functions <==
+
+    [ 6-31G ]
+    cartesian
+    ****
+    O   1
+    S   6 1.00
+                      5484.67170000           0.00183110
+                       825.23495000           0.01395010
+                       188.04696000           0.06844510
+                        52.96450000           0.23271430
+                        16.89757000           0.47019300
+                         5.79963530           0.35852090
+    S   3 1.00
+                        15.53961600          -0.11077750
+                         3.59993360          -0.14802630
+                         1.01376180           1.13076700
+    P   3 1.00
+                        15.53961600           0.07087430
+                         3.59993360           0.33975280
+                         1.01376180           0.72715860
+    S   1 1.00
+                         0.27000580           1.00000000
+    P   1 1.00
+                         0.27000580           1.00000000
+    ****
+    H   2
+    S   3 1.00
+                        18.73113700           0.03349460
+                         2.82539370           0.23472695
+                         0.64012170           0.81375733
+    S   1 1.00
+                         0.16127780           1.00000000
+    ****
+    H   3
+    S   3 1.00
+                        18.73113700           0.03349460
+                         2.82539370           0.23472695
+                         0.64012170           0.81375733
+    S   1 1.00
+                         0.16127780           1.00000000
+    ****
+
+
+    Number of DOCI configurations:       1287
+
+    ==> Begin oo-DOCI iterations <==
+
+
+       iter   iter(CI)   iter(oo)                E(CI)                E(oo)                 |dE|
+
+        DOCI one-electron energy =    -122.225771218634
+        DOCI two-electron energy =      37.416233758667
+        * DOCI total energy      =     -76.008071895400
+
+          0         7           1     -76.008071895400     -76.014464529902      76.014464529902
+
+        DOCI one-electron energy =    -122.119650142008
+        DOCI two-electron energy =      37.300819245713
+        * DOCI total energy      =     -76.017365331728
+
+          1         7           2     -76.017365331728     -76.021584358760       0.007119828857
+
+        DOCI one-electron energy =    -122.053989121224
+        DOCI two-electron energy =      37.226559603844
+        * DOCI total energy      =     -76.025963952813
+
+          2         7           3     -76.025963952813     -76.033723801717       0.012139442957
+
+        DOCI one-electron energy =    -122.186461122822
+        DOCI two-electron energy =      37.338140722804
+        * DOCI total energy      =     -76.046854835451
+
+          3         7           4     -76.046854835451     -76.047835490339       0.014111688622
+
+        DOCI one-electron energy =    -122.178408866012
+        DOCI two-electron energy =      37.328927962221
+        * DOCI total energy      =     -76.048015339224
+
+          4         7           5     -76.048015339224     -76.048851769336       0.001016278997
+
+        DOCI one-electron energy =    -122.168735979129
+        DOCI two-electron energy =      37.317876989412
+        * DOCI total energy      =     -76.049393425150
+
+          5         7           6     -76.049393425150     -76.049561697085       0.000709927749
+
+        DOCI one-electron energy =    -122.166629062132
+        DOCI two-electron energy =      37.315595986612
+        * DOCI total energy      =     -76.049567510953
+
+          6         7           7     -76.049567510953     -76.049659583339       0.000097886254
+
+        DOCI one-electron energy =    -122.165713775746
+        DOCI two-electron energy =      37.314587538089
+        * DOCI total energy      =     -76.049660673089
+
+          7         7           8     -76.049660673090     -76.049733107860       0.000073524520
+
+        DOCI one-electron energy =    -122.165428716976
+        DOCI two-electron energy =      37.314228747578
+        * DOCI total energy      =     -76.049734404830
+
+          8         7           9     -76.049734404830     -76.049790736772       0.000057628913
+
+        DOCI one-electron energy =    -122.165504593267
+        DOCI two-electron energy =      37.314245958751
+        * DOCI total energy      =     -76.049793069949
+
+          9         7          10     -76.049793069948     -76.049838973761       0.000048236988
+
+        DOCI one-electron energy =    -122.165160905840
+        DOCI two-electron energy =      37.313852186060
+        * DOCI total energy      =     -76.049843155213
+
+         10         7          11     -76.049843155212     -76.049885092663       0.000046118903
+
+        DOCI one-electron energy =    -122.164767612251
+        DOCI two-electron energy =      37.313411556016
+        * DOCI total energy      =     -76.049890491668
+
+         11         7          12     -76.049890491668     -76.049936408145       0.000051315481
+
+        DOCI one-electron energy =    -122.164472465695
+        DOCI two-electron energy =      37.313066680978
+        * DOCI total energy      =     -76.049940220149
+
+         12         7          13     -76.049940220149     -76.050050768850       0.000114360705
+
+        DOCI one-electron energy =    -122.164389511220
+        DOCI two-electron energy =      37.312871214618
+        * DOCI total energy      =     -76.050052732035
+
+         13         7          14     -76.050052732035     -76.050822409836       0.000771640987
+
+        DOCI one-electron energy =    -122.162270678059
+        DOCI two-electron energy =      37.309942070487
+        * DOCI total energy      =     -76.050863043005
+
+         14         7          15     -76.050863043005     -76.051489741661       0.000667331825
+
+        DOCI one-electron energy =    -122.159786619222
+        DOCI two-electron energy =      37.306797612293
+        * DOCI total energy      =     -76.051523442361
+
+         15         7          16     -76.051523442361     -76.051849990081       0.000360248420
+
+        DOCI one-electron energy =    -122.158736364680
+        DOCI two-electron energy =      37.305408660258
+        * DOCI total energy      =     -76.051862139854
+
+         16         7          17     -76.051862139855     -76.052091666403       0.000241676322
+
+        DOCI one-electron energy =    -122.159370516338
+        DOCI two-electron energy =      37.305805572084
+        * DOCI total energy      =     -76.052099379687
+
+         17         7          18     -76.052099379687     -76.052269268799       0.000177602395
+
+        DOCI one-electron energy =    -122.159829934658
+        DOCI two-electron energy =      37.306089610695
+        * DOCI total energy      =     -76.052274759395
+
+         18         7          19     -76.052274759395     -76.052403475010       0.000134206211
+
+        DOCI one-electron energy =    -122.153407156581
+        DOCI two-electron energy =      37.299534029257
+        * DOCI total energy      =     -76.052407562756
+
+         19         7          20     -76.052407562756     -76.052504089559       0.000100614549
+
+        DOCI one-electron energy =    -122.146994246084
+        DOCI two-electron energy =      37.293021490413
+        * DOCI total energy      =     -76.052507191104
+
+         20         7          21     -76.052507191104     -76.052561031042       0.000056941484
+
+        DOCI one-electron energy =    -122.184315084713
+        DOCI two-electron energy =      37.330286129786
+        * DOCI total energy      =     -76.052563390360
+
+         21         7          22     -76.052563390360     -76.052650434312       0.000089403270
+
+        DOCI one-electron energy =    -122.158618902849
+        DOCI two-electron energy =      37.304501119334
+        * DOCI total energy      =     -76.052652218948
+
+         22         7          23     -76.052652218948     -76.052698713941       0.000048279628
+
+        DOCI one-electron energy =    -122.151407860594
+        DOCI two-electron energy =      37.297242149487
+        * DOCI total energy      =     -76.052700146539
+
+         23         7          24     -76.052700146539     -76.052726833726       0.000028119785
+
+        DOCI one-electron energy =    -122.139477130424
+        DOCI two-electron energy =      37.285283611183
+        * DOCI total energy      =     -76.052727954674
+
+         24         7          25     -76.052727954674     -76.052766771229       0.000039937503
+
+        DOCI one-electron energy =    -122.157890814500
+        DOCI two-electron energy =      37.303657646832
+        * DOCI total energy      =     -76.052767603100
+
+         25         7          26     -76.052767603100     -76.052788388022       0.000021616792
+
+        DOCI one-electron energy =    -122.161303638344
+        DOCI two-electron energy =      37.307049019945
+        * DOCI total energy      =     -76.052789053831
+
+         26         7          27     -76.052789053831     -76.052805945303       0.000017557282
+
+        DOCI one-electron energy =    -122.156014308629
+        DOCI two-electron energy =      37.301742299165
+        * DOCI total energy      =     -76.052806444897
+
+         27         7          28     -76.052806444897     -76.052818535302       0.000012589998
+
+        DOCI one-electron energy =    -122.154652340327
+        DOCI two-electron energy =      37.300367845795
+        * DOCI total energy      =     -76.052818929964
+
+         28         7          29     -76.052818929965     -76.052825898919       0.000007363617
+
+        DOCI one-electron energy =    -122.163919335204
+        DOCI two-electron energy =      37.309627572191
+        * DOCI total energy      =     -76.052826198446
+
+         29         7          30     -76.052826198446     -76.052834792418       0.000008893499
+
+        DOCI one-electron energy =    -122.157180960162
+        DOCI two-electron energy =      37.302880383506
+        * DOCI total energy      =     -76.052835012089
+
+         30         7          31     -76.052835012089     -76.052839248652       0.000004456234
+
+        DOCI one-electron energy =    -122.152590422055
+        DOCI two-electron energy =      37.298285440547
+        * DOCI total energy      =     -76.052839416941
+
+         31         7          32     -76.052839416940     -76.052843301244       0.000004052592
+
+        DOCI one-electron energy =    -122.155937014720
+        DOCI two-electron energy =      37.301628028931
+        * DOCI total energy      =     -76.052843421221
+
+         32         7          33     -76.052843421220     -76.052845639731       0.000002338487
+
+        DOCI one-electron energy =    -122.158581193093
+        DOCI two-electron energy =      37.304269899120
+        * DOCI total energy      =     -76.052845729406
+
+         33         7          34     -76.052845729406     -76.052847565757       0.000001926026
+
+        DOCI one-electron energy =    -122.156650549222
+        DOCI two-electron energy =      37.302337355952
+        * DOCI total energy      =     -76.052847628703
+
+         34         7          35     -76.052847628703     -76.052848673689       0.000001107933
+
+        DOCI one-electron energy =    -122.154617247176
+        DOCI two-electron energy =      37.300302962980
+        * DOCI total energy      =     -76.052848719629
+
+         35         7          36     -76.052848719629     -76.052849609197       0.000000935508
+
+        DOCI one-electron energy =    -122.156105878079
+        DOCI two-electron energy =      37.301790672896
+        * DOCI total energy      =     -76.052849640616
+
+         36         7          37     -76.052849640616     -76.052850083298       0.000000474101
+
+        DOCI one-electron energy =    -122.157889590458
+        DOCI two-electron energy =      37.303573920246
+        * DOCI total energy      =     -76.052850105644
+
+         37         7          38     -76.052850105644     -76.052850543640       0.000000460342
+
+        DOCI one-electron energy =    -122.156577034305
+        DOCI two-electron energy =      37.302260911133
+        * DOCI total energy      =     -76.052850558605
+
+         38         7          39     -76.052850558605     -76.052850791502       0.000000247862
+
+        DOCI one-electron energy =    -122.156304373469
+        DOCI two-electron energy =      37.301988007272
+        * DOCI total energy      =     -76.052850801629
+
+         39         7          40     -76.052850801629     -76.052850950548       0.000000159046
+
+        DOCI one-electron energy =    -122.156050384390
+        DOCI two-electron energy =      37.301733862349
+        * DOCI total energy      =     -76.052850957474
+
+         40         7          41     -76.052850957474     -76.052851057445       0.000000106897
+
+        DOCI one-electron energy =    -122.156394324125
+        DOCI two-electron energy =      37.302077697630
+        * DOCI total energy      =     -76.052851061928
+
+         41         7          42     -76.052851061928     -76.052851117715       0.000000060270
+
+        DOCI one-electron energy =    -122.156760185723
+        DOCI two-electron energy =      37.302443500453
+        * DOCI total energy      =     -76.052851120703
+
+         42         7          43     -76.052851120703     -76.052851165839       0.000000048124
+
+        DOCI one-electron energy =    -122.156264511299
+        DOCI two-electron energy =      37.301947779000
+        * DOCI total energy      =     -76.052851167732
+
+         43         7          44     -76.052851167732     -76.052851192148       0.000000026309
+
+        DOCI one-electron energy =    -122.156326825819
+        DOCI two-electron energy =      37.302010067898
+        * DOCI total energy      =     -76.052851193354
+
+         44         7          45     -76.052851193354     -76.052851207475       0.000000015327
+
+        DOCI one-electron energy =    -122.156499263163
+        DOCI two-electron energy =      37.302182490346
+        * DOCI total energy      =     -76.052851208250
+
+         45         7          46     -76.052851208250     -76.052851218175       0.000000010700
+
+        DOCI one-electron energy =    -122.156381542716
+        DOCI two-electron energy =      37.302064759500
+        * DOCI total energy      =     -76.052851218649
+
+         46         7          47     -76.052851218649     -76.052851224164       0.000000005990
+
+        DOCI one-electron energy =    -122.156333729508
+        DOCI two-electron energy =      37.302016940484
+        * DOCI total energy      =     -76.052851224457
+
+         47         7          48     -76.052851224457     -76.052851227331       0.000000003167
+
+        DOCI one-electron energy =    -122.156239238866
+        DOCI two-electron energy =      37.301922446786
+        * DOCI total energy      =     -76.052851227512
+
+         48         7          49     -76.052851227512     -76.052851229807       0.000000002476
+
+        DOCI one-electron energy =    -122.156370528749
+        DOCI two-electron energy =      37.302053734267
+        * DOCI total energy      =     -76.052851229915
+
+         49         7          50     -76.052851229915     -76.052851231058       0.000000001250
+
+        DOCI one-electron energy =    -122.156350715346
+        DOCI two-electron energy =      37.302033919657
+        * DOCI total energy      =     -76.052851231121
+
+         50         7          23     -76.052851231121     -76.052851232282       0.000000001224
+
+        DOCI one-electron energy =    -122.156342263511
+        DOCI two-electron energy =      37.302025466404
+        * DOCI total energy      =     -76.052851232539
+
+         51         7          22     -76.052851232539     -76.052851232637       0.000000000355
+
+        DOCI one-electron energy =    -122.156342586116
+        DOCI two-electron energy =      37.302025788876
+        * DOCI total energy      =     -76.052851232673
+
+         52         7          15     -76.052851232672     -76.052851232682       0.000000000045
+
+      oo-DOCI iterations converged!
+
+    * DOCI total energy:                  -76.052851232682
+
+
+        DOCI one-electron energy =    -122.156342295324
+        DOCI two-electron energy =      37.302025498074
+        * DOCI total energy      =     -76.052851232682
+
+
+ # Natural Orbital Occupation Numbers (spin free) #
+ Irrep: 1
+      1:  1.9999919
+      2:  1.9928667
+      3:  1.9755362
+      4:  1.9755362
+      5:  1.9928662
+      6:  0.0238325
+      7:  0.0238325
+      8:  0.0011226
+      9:  0.0011226
+     10:  0.0064940
+     11:  0.0064936
+     12:  0.0001525
+     13:  0.0001525
+
+    SCF total energy..................................................PASSED
+    DOCI total energy.................................................PASSED
+
+    Psi4 stopped on: Thursday, 09 July 2020 09:48PM
+    Psi4 wall time for execution: 0:00:07.94
+
+*** Psi4 exiting successfully. Buy a developer a beer!
