@@ -44,6 +44,14 @@ add_psi4_plugin(hilbert
     doci/update_transformation_matrix.cc
     doci/write_tpdm.cc
 
+    pp2rdm/blas.cc
+    pp2rdm/diis.cc
+    pp2rdm/minimization_routines.cc
+    pp2rdm/pp2rdm_solver.cc
+    pp2rdm/threeindexintegrals.cc
+    pp2rdm/update_transformation_matrix.cc
+    pp2rdm/write_tpdm.cc
+
     focas/focas_data.F90
     focas/focas_exponential.F90
     focas/focas_hessian.F90

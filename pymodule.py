@@ -76,6 +76,8 @@ def run_doci(name, **kwargs):
 
     psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
 
+    psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'DOCI')
+
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
     # Fock matrices, and more
     #print('Attention! This SCF may be density-fitted.')
@@ -94,8 +96,44 @@ def run_doci(name, **kwargs):
 
     return doci_wfn
 
+def run_pp2rdm(name, **kwargs):
+    r"""Function encoding sequence of PSI module and plugin calls so that
+    pp2rdm can be called via :py:func:`~driver.energy`. For post-scf plugins.
+
+    >>> energy('pp2rdm')
+
+    """
+    lowername = name.lower()
+    kwargs = p4util.kwargs_lower(kwargs)
+
+    optstash = p4util.OptionsState(
+        ['SCF', 'DF_INTS_IO'])
+
+    psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
+
+    psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'PP2RDM')
+
+    # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
+    # Fock matrices, and more
+    #print('Attention! This SCF may be density-fitted.')
+    ref_wfn = kwargs.get('ref_wfn', None)
+    if ref_wfn is None:
+        ref_wfn = psi4.driver.scf_helper(name, **kwargs)
+
+    # Ensure IWL files have been written when not using DF/CD
+    proc_util.check_iwl_file_from_scf_type(psi4.core.get_option('SCF', 'SCF_TYPE'), ref_wfn)
+
+    # Call the Psi4 plugin
+    # Please note that setting the reference wavefunction in this way is ONLY for plugins
+    pp2rdm_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
+
+    optstash.restore()
+
+    return pp2rdm_wfn
+
 
 # Integration with driver routines
+psi4.driver.procedures['energy']['pp2rdm'] = run_pp2rdm
 psi4.driver.procedures['energy']['doci'] = run_doci
 psi4.driver.procedures['energy']['hilbert'] = run_hilbert
 

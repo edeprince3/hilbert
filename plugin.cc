@@ -36,9 +36,9 @@
 #include "psi4/libpsio/psio.hpp"
 
 #include "doci/doci_solver.h"
+#include "pp2rdm/pp2rdm_solver.h"
 
 using namespace psi;
-using namespace doci;
 
 namespace psi{ namespace hilbert {
 
@@ -49,6 +49,9 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION General -*/
 
+        /*- qc solver -*/
+        options.add_str("HILBERT_METHOD", "", "DOCI PP2RDM");
+
         /*- The amount of information printed to the output file -*/
         options.add_int("PRINT", 1);
 
@@ -57,11 +60,6 @@ int read_options(std::string name, Options& options)
 
         /*- convergence in the CI coefficients -*/
         options.add_double("R_CONVERGENCE", 1e-5);
-
-        /*- SUBSECTION DOCI -*/
-
-       /*- maximum size of the subspace in Davidson procedure -*/
-        options.add_double("DAVIDSON_MAXDIM", 20);
 
         /*- maximum number of macroiterations -*/
         options.add_int("MAXITER", 50);
@@ -80,6 +78,11 @@ int read_options(std::string name, Options& options)
         Convergence & Algorithm <table:conv_scf>` for default algorithm for
         different calculation types. -*/
         options.add_str("SCF_TYPE", "DF", "DF CD");
+
+        /*- SUBSECTION DOCI -*/
+
+       /*- maximum size of the subspace in Davidson procedure -*/
+        options.add_double("DAVIDSON_MAXDIM", 20);
 
         /*- Tolerance for Cholesky decomposition of the ERI tensor -*/
         options.add_double("CHOLESKY_TOLERANCE",1e-4);
@@ -115,6 +118,27 @@ int read_options(std::string name, Options& options)
         (if set), or else by the name of the output file plus the name of
         the current molecule. -*/
         options.add_bool("ORBOPT_WRITE", false);
+
+        /*- SUBSECTION pp2RDM -*/
+
+        /*- do check analytic gradient for accuracy? -*/
+        options.add_bool("CHECK_GRADIENT",false);
+
+        /*- do check analytic hessian for accuracy? -*/
+        options.add_bool("CHECK_HESSIAN",false);
+
+        /*- restart from checkpoint file? -*/
+        options.add_bool("RESTART_FROM_CHECKPOINT_FILE",false);
+
+        /*- algorithm type -*/
+        options.add_str("P2RDM_ALGORITHM","PROJECTION","PROJECTION LBFGS NEWTON_RAPHSON");
+
+        /*- Which parametric 2-RDM method is called? -*/
+        options.add_str("P2RDM_TYPE","K","K CEPA(0) CEPA(1) CID ACPF AQCC CCD");
+
+        /*- Do print 1- and 2-electron to the output file? Only J-, K-, and L-type integrals will be printed. -*/
+        options.add_bool("PRINT_INTEGRALS",false);
+
     }
 
     return true;
@@ -124,11 +148,19 @@ extern "C" PSI_API
 SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 {
 
-    std::shared_ptr<DOCISolver> doci (new DOCISolver(ref_wfn,options));
-    double energy = doci->compute_energy();
+    if ( options.get_str("HILBERT_METHOD") == "DOCI") {
 
-    // Typically you would build a new wavefunction and populate it with data
-    return (std::shared_ptr<Wavefunction>)doci;
+        std::shared_ptr<doci::DOCISolver> doci (new doci::DOCISolver(ref_wfn,options));
+        double energy = doci->compute_energy();
+        return (std::shared_ptr<Wavefunction>)doci;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "PP2RDM") {
+
+        std::shared_ptr<pp2rdm::pp2RDMSolver> pp2rdm (new pp2rdm::pp2RDMSolver(ref_wfn,options));
+        double energy = pp2rdm->compute_energy();
+        return (std::shared_ptr<Wavefunction>)pp2rdm;
+
+    }
 }
 
 }} // End namespaces
