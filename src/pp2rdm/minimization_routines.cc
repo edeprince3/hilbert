@@ -33,18 +33,21 @@
 #include <psi4/libtrans/integraltransform.h>
 
 
+/*
 //#include <lbfgs.h>
 #include "/opt/local/include/lbfgs.h"
 //#include "/usr/local/include/lbfgs.h"
+*/
 
 #include "pp2rdm_solver.h"
 
 using namespace psi;
 using namespace pp2rdm;
 
+/*
 void lbfgs_error_check(int value) {
 
-    /** L-BFGS reaches convergence. */
+    //L-BFGS reaches convergence.
     //LBFGS_SUCCESS = 0,
     //LBFGS_CONVERGENCE = 0,
     //LBFGS_STOP,
@@ -172,6 +175,7 @@ static int progress(
     sdp->set_number_of_lbfgs_iterations(k);
     return 0;
 }
+*/
 
 namespace psi { namespace pp2rdm {
 
@@ -183,6 +187,7 @@ void pp2RDMSolver::set_number_of_lbfgs_iterations(int iter) {
 
 double pp2RDMSolver::pp2rdm_lbfgs_iterations(int & ci_iter) {
 
+/*
     int o = nalpha_;
     int v = nmo_ - nalpha_;
 
@@ -261,6 +266,8 @@ double pp2RDMSolver::pp2rdm_lbfgs_iterations(int & ci_iter) {
     restart_from_checkpoint_file_ = true;
 
     return en;
+*/
+    return 0.0;
 }
 
 // evaluate gradient of the energy
