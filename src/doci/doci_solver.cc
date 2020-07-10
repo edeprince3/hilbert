@@ -54,10 +54,6 @@
 
 #include "blas.h"
 
-#include "david.h"
-
-
-// JWM: Added to avoid error messages
 #include <psi4/libmints/molecule.h>
 #include <psi4/libmints/factory.h>
 #include <psi4/libmints/basisset.h>
@@ -65,11 +61,12 @@
 // boys localization
 #include "psi4/libmints/local.h"
 
-
-#include "doci_solver.h"
-
 // greg
 #include "fortran.h"
+#include "david.h"
+#include "doci_solver.h"
+
+#include "../misc/misc.h"
 
 
 #ifdef _OPENMP
@@ -293,7 +290,17 @@ void  DOCISolver::common_init(){
         outfile->Printf("\n");
 
         double start = omp_get_wtime();
-        ThreeIndexIntegrals();
+
+        ::ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
+
+        Qmo_ = (double*)malloc(nmo_*(nmo_+1)/2*nQ_*sizeof(double));
+        memset((void*)Qmo_,'\0',nmo_*(nmo_+1)/2*nQ_*sizeof(double));
+
+        std::shared_ptr<PSIO> psio(new PSIO());
+        psio->open(PSIF_DCC_QMO,PSIO_OPEN_OLD);
+        psio->read_entry(PSIF_DCC_QMO,"(Q|mn) Integrals",(char*)Qmo_,sizeof(double)*nQ_ * nmo_*(nmo_+1)/2);
+        psio->close(PSIF_DCC_QMO,1);
+
         double end = omp_get_wtime();
 
         outfile->Printf("        Time for integral transformation:  %7.2lf s\n",end-start);

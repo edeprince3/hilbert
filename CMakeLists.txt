@@ -40,17 +40,16 @@ add_psi4_plugin(hilbert
 
     src/doci/david.cc
     src/doci/doci_solver.cc
-    src/doci/threeindexintegrals.cc
     src/doci/update_transformation_matrix.cc
     src/doci/write_tpdm.cc
 
-    #src/pp2rdm/blas.cc
     src/pp2rdm/diis.cc
     src/pp2rdm/minimization_routines.cc
     src/pp2rdm/pp2rdm_solver.cc
-    src/pp2rdm/threeindexintegrals.cc
     src/pp2rdm/update_transformation_matrix.cc
     src/pp2rdm/write_tpdm.cc
+
+    src/misc/threeindexintegrals.cc
 
     src/focas/focas_data.F90
     src/focas/focas_exponential.F90

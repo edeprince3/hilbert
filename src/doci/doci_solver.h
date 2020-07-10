@@ -132,10 +132,7 @@ class DOCISolver: public Wavefunction{
     double * Qmo_;
 
     /// number of auxiliary basis functions
-    size_t nQ_;
-
-    /// construct three-index integrals
-    void ThreeIndexIntegrals();
+    long int nQ_;
 
     /// SCF energy
     double escf_;

@@ -174,9 +174,6 @@ class pp2RDMSolver: public Wavefunction{
     /// number of auxiliary basis functions
     long int nQ_;
 
-    /// construct three-index integrals
-    void ThreeIndexIntegrals();
-
     /// SCF energy
     double escf_;
 
