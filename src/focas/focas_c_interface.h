@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef FORTRAN_H
-#define FORTRAN_H
+#ifndef FOCAS_C_INTERFACE_H
+#define FOCAS_C_INTERFACE_H
 
 /**
  * wrappers to Greg's Fortran functions

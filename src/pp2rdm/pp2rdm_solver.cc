@@ -61,18 +61,11 @@
 #include "pp2rdm_solver.h"
 
 // greg
-#include "fortran.h"
-#include "blas.h"
+#include "../focas/focas_c_interface.h"
 
-// three index integrals
 #include "../misc/misc.h"
-
-#ifdef _OPENMP
-    #include<omp.h>
-#else
-    #define omp_get_wtime() ( (double)clock() / CLOCKS_PER_SEC )
-    #define omp_get_max_threads() 1
-#endif
+#include "../misc/omp.h"
+#include "../misc/blas.h"
 
 using namespace psi;
 using namespace fnocc;

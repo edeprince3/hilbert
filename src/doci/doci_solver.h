@@ -28,11 +28,11 @@
 #ifndef DOCI_SOLVER_H
 #define DOCI_SOLVER_H
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <bitset>
 
-#include<bitset>
 #include <psi4/libiwl/iwl.h>
 #include <psi4/libplugin/plugin.h>
 #include <psi4/psi4-dec.h>
@@ -43,9 +43,6 @@
 #include <psi4/libmints/wavefunction.h>
 #include <psi4/libmints/matrix.h>
 #include <psi4/libmints/vector.h>
-
-// greg
-#include"fortran.h"
 
 // TODO: move to psifiles.h
 #define PSIF_DCC_QMO          268

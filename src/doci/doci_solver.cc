@@ -31,15 +31,12 @@
 
 #include <psi4/libmints/writer.h>
 #include <psi4/libmints/writer_file_prefix.h>
-
 #include <psi4/libtrans/integraltransform.h>
 #include <psi4/libtrans/mospace.h>
-
 #include <psi4/libplugin/plugin.h>
 #include <psi4/psi4-dec.h>
 #include <psi4/liboptions/liboptions.h>
 #include <psi4/libqt/qt.h>
-
 #include <psi4/libpsi4util/process.h>
 #include <psi4/libpsi4util/PsiOutStream.h>
 #include <psi4/libpsio/psio.hpp>
@@ -49,32 +46,19 @@
 #include <psi4/libmints/vector.h>
 #include <psi4/libmints/matrix.h>
 #include <psi4/libiwl/iwl.h>
-
-#include<psi4/libmints/mintshelper.h>
-
-#include "blas.h"
-
+#include <psi4/libmints/mintshelper.h>
 #include <psi4/libmints/molecule.h>
 #include <psi4/libmints/factory.h>
 #include <psi4/libmints/basisset.h>
-
-// boys localization
 #include "psi4/libmints/local.h"
 
-// greg
-#include "fortran.h"
 #include "david.h"
 #include "doci_solver.h"
 
+#include "../focas/focas_c_interface.h"
 #include "../misc/misc.h"
-
-
-#ifdef _OPENMP
-    #include<omp.h>
-#else
-    #define omp_get_wtime() ( (double)clock() / CLOCKS_PER_SEC )
-    #define omp_get_max_threads() 1
-#endif
+#include "../misc/blas.h"
+#include "../misc/omp.h"
 
 using namespace psi;
 using namespace fnocc;

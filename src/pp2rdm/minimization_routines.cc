@@ -29,22 +29,15 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "pp2rdm_solver.h"
-
 #include <psi4/libpsi4util/PsiOutStream.h>
-
 #include <psi4/libtrans/integraltransform.h>
+
 
 //#include <lbfgs.h>
 #include "/opt/local/include/lbfgs.h"
 //#include "/usr/local/include/lbfgs.h"
 
-#ifdef _OPENMP
-    #include<omp.h>
-#else
-    #define omp_get_wtime() ( (double)clock() / CLOCKS_PER_SEC )
-    #define omp_get_max_threads() 1
-#endif
+#include "pp2rdm_solver.h"
 
 using namespace psi;
 using namespace pp2rdm;
@@ -630,7 +623,6 @@ void pp2RDMSolver::evaluate_numerical_hessian(std::shared_ptr<Matrix> hessian) {
     free(tmp_m2);
 
 }
-
 
 void pp2RDMSolver::check_gradient() {
 

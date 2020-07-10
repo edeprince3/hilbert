@@ -44,9 +44,6 @@
 #include <psi4/libmints/matrix.h>
 #include <psi4/libmints/vector.h>
 
-// greg
-#include"fortran.h"
-
 // TODO: move to psifiles.h
 #define PSIF_DCC_QMO          268
 #define PSIF_V2RDM_CHECKPOINT 269
