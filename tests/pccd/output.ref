@@ -1,0 +1,1271 @@
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.4a2.dev397 
+
+                         Git: Rev {master} b3df9b2 dirty
+
+
+    R. M. Parrish, L. A. Burns, D. G. A. Smith, A. C. Simmonett,
+    A. E. DePrince III, E. G. Hohenstein, U. Bozkaya, A. Yu. Sokolov,
+    R. Di Remigio, R. M. Richard, J. F. Gonthier, A. M. James,
+    H. R. McAlexander, A. Kumar, M. Saitow, X. Wang, B. P. Pritchard,
+    P. Verma, H. F. Schaefer III, K. Patkowski, R. A. King, E. F. Valeev,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, and C. D. Sherrill,
+    J. Chem. Theory Comput. 13(7) pp 3185--3197 (2017).
+    (doi: 10.1021/acs.jctc.7b00174)
+
+
+                         Additional Contributions by
+    P. Kraus, H. Kruse, M. H. Lechner, M. C. Schieber, R. A. Shaw,
+    A. Alenaizan, R. Galvelis, Z. L. Glick, S. Lehtola, and J. P. Misiewicz
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Thursday, 09 July 2020 10:19PM
+
+    Process ID: 66191
+    Host:       illegally-used-at.fsu
+    PSIDATADIR: /Users/deprince/edeprince3/psi4/install/master/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input File <==
+
+--------------------------------------------------------------------------
+
+# job description:
+print('        H2O / 6-31g / pCCD, scf_type = DF, rOH = 1.0 A, aHOH = 104.5')
+
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule h2o {
+0 1
+O
+H 1 1.0
+H 1 1.0 2 104.5
+symmetry c1
+}
+
+set {
+  reference rhf
+  basis 6-31g
+  scf_type df
+
+  e_convergence 1e-10
+  r_convergence 1e-8
+  orbopt_gradient_convergence 1e-6
+  orbopt_energy_convergence 1e-8
+
+  localize_orbitals true
+  noisy_orbitals true
+  optimize_orbitals true
+  orbopt_maxiter 1
+  maxiter 10000
+
+  p2rdm_type "ccd"
+
+}
+
+en = energy('pp2rdm')
+
+ref_scf    = -75.98014193580194 # TEST
+ref_pp2rdm = -76.052839394329   # TEST
+
+compare_values(ref_scf, variable("SCF TOTAL ENERGY"), 8, "SCF total energy") # TEST
+compare_values(ref_pp2rdm, variable("CURRENT ENERGY"), 5, "pp2RDM total energy") # TEST
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+*** tstart() called on illegally-used-at.fsu
+*** at Thu Jul  9 22:19:38 2020
+
+   => Loading Basis Set <=
+
+    Name: 6-31G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line   117 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/6-31g.gbs 
+    atoms 2-3 entry H          line    26 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/6-31g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              RHF Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.12555  B =     13.37733  C =      8.72955 [cm^-1]
+  Rotational constants: A = 753245.07149  B = 401042.16706  C = 261705.25473 [MHz]
+  Nuclear repulsion =    8.801465564567374
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-08
+  Integral threshold = 0.00e+00
+
+  ==> Primary Basis <==
+
+  Basis Set: 6-31G
+    Blend: 6-31G
+    Number of shells: 9
+    Number of basis function: 13
+    Number of Cartesian functions: 13
+    Spherical Harmonics?: false
+    Max angular momentum: 1
+
+   => Loading Basis Set <=
+
+    Name: (6-31G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   221 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 2-3 entry H          line    51 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
+
+  ==> Pre-Iterations <==
+
+   -------------------------------------------------------
+    Irrep   Nso     Nmo     Nalpha   Nbeta   Ndocc  Nsocc
+   -------------------------------------------------------
+     A         13      13       0       0       0       0
+   -------------------------------------------------------
+    Total      13      13       5       5       5       0
+   -------------------------------------------------------
+
+  ==> Integral Setup <==
+
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                  Yes
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:              375
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (6-31G AUX)
+    Blend: CC-PVDZ-JKFIT
+    Number of shells: 42
+    Number of basis function: 131
+    Number of Cartesian functions: 131
+    Spherical Harmonics?: false
+    Max angular momentum: 3
+
+  Minimum eigenvalue in the overlap matrix is 7.3923788795E-02.
+  Reciprocal condition number of the overlap matrix is 2.1980826342E-02.
+    Using symmetric orthogonalization.
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF.
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-RHF iter SAD:   -75.45941871343828   -7.54594e+01   0.00000e+00 
+   @DF-RHF iter   1:   -75.90434666105367   -4.44928e-01   3.09953e-02 DIIS
+   @DF-RHF iter   2:   -75.95857164768282   -5.42250e-02   1.90214e-02 DIIS
+   @DF-RHF iter   3:   -75.97973621451969   -2.11646e-02   1.56674e-03 DIIS
+   @DF-RHF iter   4:   -75.98012651826689   -3.90304e-04   3.11867e-04 DIIS
+   @DF-RHF iter   5:   -75.98014154101817   -1.50228e-05   4.14320e-05 DIIS
+   @DF-RHF iter   6:   -75.98014191790431   -3.76886e-07   8.27072e-06 DIIS
+   @DF-RHF iter   7:   -75.98014193491713   -1.70128e-08   1.79874e-06 DIIS
+   @DF-RHF iter   8:   -75.98014193578133   -8.64205e-10   3.33255e-07 DIIS
+   @DF-RHF iter   9:   -75.98014193580164   -2.03073e-11   3.10076e-08 DIIS
+   @DF-RHF iter  10:   -75.98014193580194   -2.98428e-13   2.58167e-09 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Doubly Occupied:                                                      
+
+       1A    -20.568888     2A     -1.334712     3A     -0.686875  
+       4A     -0.554298     5A     -0.499284  
+
+    Virtual:                                                              
+
+       6A      0.193417     7A      0.287599     8A      1.041506  
+       9A      1.130380    10A      1.164432    11A      1.220999  
+      12A      1.368964    13A      1.693510  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+
+  @DF-RHF Final Energy:   -75.98014193580194
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.8014655645673745
+    One-Electron Energy =                -122.2751012239349109
+    Two-Electron Energy =                  37.4934937235655994
+    Total Energy =                        -75.9801419358019245
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+  Nuclear Dipole Moment: [e a0]
+     X:     0.0000      Y:     0.0000      Z:     1.0191
+
+  Electronic Dipole Moment: [e a0]
+     X:    -0.0000      Y:     0.0000      Z:     0.0213
+
+  Dipole Moment: [e a0]
+     X:    -0.0000      Y:     0.0000      Z:     1.0404     Total:     1.0404
+
+  Dipole Moment: [D]
+     X:    -0.0000      Y:     0.0000      Z:     2.6444     Total:     2.6444
+
+
+*** tstop() called on illegally-used-at.fsu at Thu Jul  9 22:19:39 2020
+Module time:
+	user time   =       0.31 seconds =       0.01 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
+Total time:
+	user time   =       0.31 seconds =       0.01 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
+ MINTS: Wrapper to libmints.
+   by Justin Turney
+
+   Calculation information:
+      Number of threads:                 1
+      Number of atoms:                   3
+      Number of AO shells:               9
+      Number of SO shells:               9
+      Number of primitives:             22
+      Number of atomic orbitals:        13
+      Number of basis functions:        13
+
+      Number of irreps:                  1
+      Integral cutoff                 0.00e+00
+      Number of functions per irrep: [  13 ]
+
+ OEINTS: Overlap, kinetic, potential, dipole, and quadrupole integrals
+         stored in file 35.
+
+      Computing two-electron integrals...done
+      Computed 2263 non-zero two-electron integrals.
+        Stored in file 33.
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+  ==> Pipek-Mezey Localizer <==
+
+    Convergence =   1.000E-08
+    Maxiter     =          50
+
+    Iteration                   Metric       Residual
+    @PM    0   4.0403577598919860E+00              -
+    @PM    1   4.2293811168321778E+00   4.678382E-02
+    @PM    2   4.2298843280346654E+00   1.189799E-04
+    @PM    3   4.2298866055815463E+00   5.384419E-07
+    @PM    4   4.2298866262938315E+00   4.896653E-09
+
+    PM Localizer converged.
+
+
+
+        ***************************************************
+        *                                                 *
+        *    pp2RDM                                       *
+        *                                                 *
+        *    pair parametric 2RDM                         *
+        *                                                 *
+        ***************************************************
+
+    ==> Convergence parameters <==
+
+        r_convergence:                  1.000e-08
+        e_convergence:                  1.000e-10
+        maximum iterations:                 10000
+
+    ==> Orbital optimization parameters <==
+
+        localize orbitals?                    yes
+        optimize orbitals?                    yes
+        g_convergence:                  1.000e-06
+        e_convergence:                  1.000e-08
+        maximum iterations:                     1
+        exact diagonal Hessian:              true
+        number of DIIS vectors:                 0
+        print iteration info:               false
+
+    ==> Transform three-electron integrals <==
+
+        Time for integral transformation:     0.01 s
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = 6-31G
+    Blend                  = 6-31G
+    Total number of shells = 9
+    Number of primitives   = 22
+    Number of AO           = 13
+    Number of SO           = 13
+    Maximum AM             = 1
+    Spherical Harmonics    = FALSE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     10s 4p // 3s 2p 
+       2     H     4s // 2s 
+       3     H     4s // 2s 
+
+  ==> AO Basis Functions <==
+
+    [ 6-31G ]
+    cartesian
+    ****
+    O   1
+    S   6 1.00
+                      5484.67170000           0.00183110
+                       825.23495000           0.01395010
+                       188.04696000           0.06844510
+                        52.96450000           0.23271430
+                        16.89757000           0.47019300
+                         5.79963530           0.35852090
+    S   3 1.00
+                        15.53961600          -0.11077750
+                         3.59993360          -0.14802630
+                         1.01376180           1.13076700
+    P   3 1.00
+                        15.53961600           0.07087430
+                         3.59993360           0.33975280
+                         1.01376180           0.72715860
+    S   1 1.00
+                         0.27000580           1.00000000
+    P   1 1.00
+                         0.27000580           1.00000000
+    ****
+    H   2
+    S   3 1.00
+                        18.73113700           0.03349460
+                         2.82539370           0.23472695
+                         0.64012170           0.81375733
+    S   1 1.00
+                         0.16127780           1.00000000
+    ****
+    H   3
+    S   3 1.00
+                        18.73113700           0.03349460
+                         2.82539370           0.23472695
+                         0.64012170           0.81375733
+    S   1 1.00
+                         0.16127780           1.00000000
+    ****
+
+    ==> Begin oo-pCCD iterations <==
+
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0272680494    0.0272680494    0.0898427048
+           1   -0.0307890495    0.0035210001    0.0147972045
+           2   -0.0317548108    0.0009657613    0.0037360868
+           3   -0.0317703329    0.0000155221    0.0002869668
+           4   -0.0317704263    0.0000000934    0.0000192883
+           5   -0.0317704038   -0.0000000225    0.0000015060
+           6   -0.0317704067    0.0000000029    0.0000002432
+           7   -0.0317704067    0.0000000000    0.0000000320
+           8   -0.0317704068    0.0000000000    0.0000000050
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0272680494    0.0272680494    0.0898427048
+           1   -0.0306871235    0.0034190741    0.0143158264
+           2   -0.0315929712    0.0009058477    0.0035223106
+           3   -0.0316075892    0.0000146180    0.0002697638
+           4   -0.0316075554   -0.0000000338    0.0000178277
+           5   -0.0316075478   -0.0000000076    0.0000013316
+           6   -0.0316075512    0.0000000034    0.0000001948
+           7   -0.0316075511   -0.0000000001    0.0000000257
+           8   -0.0316075512    0.0000000000    0.0000000045
+
+        pCCD one-electron energy =    -122.237396678456
+        pCCD two-electron energy =      37.426908266751
+        * pCCD total energy      =     -76.009022847138
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.125100700656
+        p2RDM two-electron energy =      37.308987125830
+        * p2RDM total energy      =     -76.014648010259
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          0         9           1  -76.0090228471  -76.0146480103   76.0146480103
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0373836858    0.0373836858    0.0283665468
+           1   -0.0382401017    0.0008564159    0.0061323949
+           2   -0.0384848612    0.0002447595    0.0014729317
+           3   -0.0384844565   -0.0000004047    0.0001105849
+           4   -0.0384843695   -0.0000000870    0.0000198029
+           5   -0.0384844402    0.0000000706    0.0000035741
+           6   -0.0384844509    0.0000000108    0.0000003585
+           7   -0.0384844507   -0.0000000002    0.0000000464
+           8   -0.0384844508    0.0000000001    0.0000000028
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0371741764    0.0371741764    0.0281618136
+           1   -0.0380062952    0.0008321188    0.0059846573
+           2   -0.0382402628    0.0002339677    0.0014202069
+           3   -0.0382399311   -0.0000003317    0.0001076047
+           4   -0.0382398065   -0.0000001246    0.0000196056
+           5   -0.0382398851    0.0000000785    0.0000034434
+           6   -0.0382398941    0.0000000091    0.0000003382
+           7   -0.0382398937   -0.0000000004    0.0000000437
+           8   -0.0382398937   -0.0000000001    0.0000000025
+
+        pCCD one-electron energy =    -122.112983385901
+        pCCD two-electron energy =      37.293747169015
+        * pCCD total energy      =     -76.017770652319
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.092289225517
+        p2RDM two-electron energy =      37.266654674221
+        * p2RDM total energy      =     -76.024168986729
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          1         9           2  -76.0177706523  -76.0241689867    0.0095209765
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0566783074    0.0566783074    0.0647227673
+           1   -0.0615209151    0.0048426077    0.0181329388
+           2   -0.0637364516    0.0022155365    0.0055321185
+           3   -0.0637831707    0.0000467190    0.0002016931
+           4   -0.0637837376    0.0000005669    0.0000151980
+           5   -0.0637836430   -0.0000000945    0.0000023692
+           6   -0.0637836507    0.0000000077    0.0000001928
+           7   -0.0637836528    0.0000000021    0.0000000201
+           8   -0.0637836528   -0.0000000001    0.0000000037
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0560082100    0.0560082100    0.0639136708
+           1   -0.0605080299    0.0044998199    0.0169951455
+           2   -0.0624388347    0.0019308048    0.0049608087
+           3   -0.0624788660    0.0000400313    0.0001716507
+           4   -0.0624787930   -0.0000000730    0.0000134999
+           5   -0.0624787762   -0.0000000168    0.0000020143
+           6   -0.0624787771    0.0000000009    0.0000001586
+           7   -0.0624787775    0.0000000004    0.0000000129
+           8   -0.0624787776    0.0000000001    0.0000000023
+           9   -0.0624787776    0.0000000000    0.0000000007
+
+        pCCD one-electron energy =    -122.084186465315
+        pCCD two-electron energy =      37.239448025252
+        * pCCD total energy      =     -76.043272875496
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.192898564137
+        p2RDM two-electron energy =      37.343901781220
+        * p2RDM total energy      =     -76.047531218350
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          2         9           3  -76.0432728755  -76.0475312183    0.0233622316
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0674845689    0.0674845689    0.0152514125
+           1   -0.0684465479    0.0009619789    0.0032542071
+           2   -0.0688081165    0.0003615686    0.0008948714
+           3   -0.0688328856    0.0000247691    0.0000896171
+           4   -0.0688331561    0.0000002705    0.0000038493
+           5   -0.0688331303   -0.0000000258    0.0000007724
+           6   -0.0688331280   -0.0000000023    0.0000000515
+           7   -0.0688331280   -0.0000000000    0.0000000032
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0659762467    0.0659762467    0.0147823519
+           1   -0.0668360428    0.0008597961    0.0029705533
+           2   -0.0671346679    0.0002986251    0.0007652929
+           3   -0.0671544460    0.0000197781    0.0000754844
+           4   -0.0671546200    0.0000001740    0.0000036934
+           5   -0.0671545794   -0.0000000406    0.0000007382
+           6   -0.0671545749   -0.0000000045    0.0000000469
+           7   -0.0671545748   -0.0000000001    0.0000000033
+
+        pCCD one-electron energy =    -122.184099907228
+        pCCD two-electron energy =      37.334078140608
+        * pCCD total energy      =     -76.048556202052
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.165340016737
+        p2RDM two-electron energy =      37.314564730145
+        * p2RDM total energy      =     -76.049309722025
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          3         8           4  -76.0485562021  -76.0493097220    0.0017785037
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0695464883    0.0695464883    0.0043055305
+           1   -0.0697175393    0.0001710510    0.0007419642
+           2   -0.0697722018    0.0000546625    0.0001605721
+           3   -0.0697782565    0.0000060548    0.0000181322
+           4   -0.0697784658    0.0000002093    0.0000011556
+           5   -0.0697784648   -0.0000000010    0.0000001230
+           6   -0.0697784635   -0.0000000013    0.0000000270
+           7   -0.0697784634   -0.0000000001    0.0000000030
+           8   -0.0697784634    0.0000000000    0.0000000002
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0678323044    0.0678323044    0.0042302209
+           1   -0.0679850816    0.0001527773    0.0007035510
+           2   -0.0680303572    0.0000452755    0.0001425675
+           3   -0.0680346346    0.0000042775    0.0000136932
+           4   -0.0680348255    0.0000001909    0.0000010480
+           5   -0.0680348245   -0.0000000010    0.0000001117
+           6   -0.0680348230   -0.0000000015    0.0000000242
+           7   -0.0680348228   -0.0000000002    0.0000000027
+           8   -0.0680348228    0.0000000000    0.0000000002
+
+        pCCD one-electron energy =    -122.163213423503
+        pCCD two-electron energy =      37.312346754182
+        * pCCD total energy      =     -76.049401104754
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.171069737437
+        p2RDM two-electron energy =      37.319901235557
+        * p2RDM total energy      =     -76.049702937313
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          4         9           5  -76.0494011048  -76.0497029373    0.0003932153
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0699235517    0.0699235517    0.0015531218
+           1   -0.0700133776    0.0000898259    0.0003590801
+           2   -0.0700542434    0.0000408657    0.0001126314
+           3   -0.0700562913    0.0000020480    0.0000080790
+           4   -0.0700562957    0.0000000044    0.0000005098
+           5   -0.0700562912   -0.0000000045    0.0000000990
+           6   -0.0700562905   -0.0000000007    0.0000000114
+           7   -0.0700562905   -0.0000000001    0.0000000010
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0681585117    0.0681585117    0.0015011352
+           1   -0.0682366644    0.0000781527    0.0003237913
+           2   -0.0682696162    0.0000329518    0.0000961865
+           3   -0.0682713306    0.0000017144    0.0000073380
+           4   -0.0682713254   -0.0000000052    0.0000005286
+           5   -0.0682713191   -0.0000000063    0.0000000973
+           6   -0.0682713183   -0.0000000008    0.0000000099
+           7   -0.0682713183   -0.0000000001    0.0000000008
+
+        pCCD one-electron energy =    -122.170409593642
+        pCCD two-electron energy =      37.319221432397
+        * pCCD total energy      =     -76.049722596678
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.168110114359
+        p2RDM two-electron energy =      37.316836636981
+        * p2RDM total energy      =     -76.049807912811
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          5         8           6  -76.0497225967  -76.0498079128    0.0001049755
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0701572893    0.0701572893    0.0010482470
+           1   -0.0702001507    0.0000428614    0.0001724515
+           2   -0.0702149494    0.0000147987    0.0000409552
+           3   -0.0702170178    0.0000020684    0.0000057845
+           4   -0.0702170355    0.0000000177    0.0000002001
+           5   -0.0702170341   -0.0000000014    0.0000000381
+           6   -0.0702170339   -0.0000000002    0.0000000072
+           7   -0.0702170339    0.0000000000    0.0000000008
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0683629226    0.0683629226    0.0010290625
+           1   -0.0684006968    0.0000377741    0.0001607787
+           2   -0.0684126695    0.0000119727    0.0000349044
+           3   -0.0684142597    0.0000015902    0.0000046275
+           4   -0.0684142775    0.0000000178    0.0000001784
+           5   -0.0684142761   -0.0000000014    0.0000000340
+           6   -0.0684142757   -0.0000000003    0.0000000066
+           7   -0.0684142758    0.0000000000    0.0000000007
+
+        pCCD one-electron energy =    -122.167628875426
+        pCCD two-electron energy =      37.316346749841
+        * pCCD total energy      =     -76.049816561017
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.165898170528
+        p2RDM two-electron energy =      37.314534123928
+        * p2RDM total energy      =     -76.049898482032
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          6         8           7  -76.0498165610  -76.0498984820    0.0000905692
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0703260040    0.0703260040    0.0031814721
+           1   -0.0703448838    0.0000188798    0.0004332019
+           2   -0.0703485561    0.0000036724    0.0000654487
+           3   -0.0703488613    0.0000003052    0.0000035338
+           4   -0.0703489648    0.0000001035    0.0000006129
+           5   -0.0703489713    0.0000000065    0.0000000506
+           6   -0.0703489705   -0.0000000008    0.0000000056
+           7   -0.0703489703   -0.0000000002    0.0000000007
+           8   -0.0703489702   -0.0000000000    0.0000000001
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0685160543    0.0685160543    0.0031637083
+           1   -0.0685323633    0.0000163090    0.0004301885
+           2   -0.0685349669    0.0000026036    0.0000648404
+           3   -0.0685350151    0.0000000482    0.0000033697
+           4   -0.0685350597    0.0000000446    0.0000005792
+           5   -0.0685350640    0.0000000043    0.0000000505
+           6   -0.0685350633   -0.0000000006    0.0000000053
+           7   -0.0685350632   -0.0000000001    0.0000000006
+           8   -0.0685350632   -0.0000000000    0.0000000001
+
+        pCCD one-electron energy =    -122.165710341555
+        pCCD two-electron energy =      37.314301215897
+        * pCCD total energy      =     -76.049943561091
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.159579049855
+        p2RDM two-electron energy =      37.306483640185
+        * p2RDM total energy      =     -76.051629845102
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          7         9           8  -76.0499435611  -76.0516298451    0.0017313631
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0724490525    0.0724490525    0.0104175242
+           1   -0.0726136490    0.0001645965    0.0024116274
+           2   -0.0726670764    0.0000534274    0.0005951519
+           3   -0.0726658886   -0.0000011878    0.0000165001
+           4   -0.0726652419   -0.0000006466    0.0000018223
+           5   -0.0726651476   -0.0000000943    0.0000002287
+           6   -0.0726651447   -0.0000000029    0.0000000163
+           7   -0.0726651446   -0.0000000000    0.0000000021
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0706226652    0.0706226652    0.0102916732
+           1   -0.0707897400    0.0001670748    0.0023426609
+           2   -0.0708444307    0.0000546908    0.0005686240
+           3   -0.0708439924   -0.0000004383    0.0000151007
+           4   -0.0708435713   -0.0000004211    0.0000013954
+           5   -0.0708435023   -0.0000000690    0.0000001761
+           6   -0.0708434989   -0.0000000034    0.0000000139
+           7   -0.0708434987   -0.0000000002    0.0000000017
+           8   -0.0708434987    0.0000000000    0.0000000002
+
+        pCCD one-electron energy =    -122.157497520765
+        pCCD two-electron energy =      37.303836214440
+        * pCCD total energy      =     -76.052195741758
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.168163511184
+        p2RDM two-electron energy =      37.314169314878
+        * p2RDM total energy      =     -76.052528631738
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          8         8           9  -76.0521957418  -76.0525286317    0.0008987866
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0728731970    0.0728731970    0.0034205739
+           1   -0.0729797567    0.0001065597    0.0005990719
+           2   -0.0730154930    0.0000357363    0.0001413784
+           3   -0.0730195761    0.0000040831    0.0000151657
+           4   -0.0730199825    0.0000004063    0.0000014063
+           5   -0.0730200128    0.0000000303    0.0000001129
+           6   -0.0730200137    0.0000000009    0.0000000053
+           7   -0.0730200138    0.0000000001    0.0000000008
+           8   -0.0730200138    0.0000000000    0.0000000001
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0710352580    0.0710352580    0.0033639130
+           1   -0.0711289065    0.0000936485    0.0005679685
+           2   -0.0711576913    0.0000287848    0.0001265844
+           3   -0.0711605418    0.0000028505    0.0000122815
+           4   -0.0711608276    0.0000002858    0.0000010352
+           5   -0.0711608545    0.0000000269    0.0000000971
+           6   -0.0711608552    0.0000000007    0.0000000046
+           7   -0.0711608553    0.0000000001    0.0000000007
+
+        pCCD one-electron energy =    -122.167074177369
+        pCCD two-electron energy =      37.313019409149
+        * pCCD total energy      =     -76.052589203652
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.157214657216
+        p2RDM two-electron energy =      37.303000733851
+        * p2RDM total energy      =     -76.052748358797
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          9         9          10  -76.0525892037  -76.0527483588    0.0002197271
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0731760416    0.0731760416    0.0022095224
+           1   -0.0732011274    0.0000250857    0.0005581094
+           2   -0.0732118049    0.0000106775    0.0001455686
+           3   -0.0732127253    0.0000009204    0.0000040101
+           4   -0.0732129219    0.0000001966    0.0000005982
+           5   -0.0732129349    0.0000000130    0.0000000389
+           6   -0.0732129355    0.0000000006    0.0000000023
+           7   -0.0732129356    0.0000000001    0.0000000003
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0713099725    0.0713099725    0.0021590434
+           1   -0.0713316427    0.0000216702    0.0005347331
+           2   -0.0713402735    0.0000086309    0.0001366169
+           3   -0.0713408530    0.0000005794    0.0000031184
+           4   -0.0713409848    0.0000001318    0.0000004460
+           5   -0.0713409964    0.0000000116    0.0000000358
+           6   -0.0713409969    0.0000000005    0.0000000019
+           7   -0.0713409969    0.0000000000    0.0000000002
+
+        pCCD one-electron energy =    -122.157099127344
+        pCCD two-electron energy =      37.302857226303
+        * pCCD total energy      =     -76.052776336474
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.155307255026
+        p2RDM two-electron energy =      37.301022934905
+        * p2RDM total energy      =     -76.052818755554
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+         10         8          11  -76.0527763365  -76.0528187556    0.0000703968
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0732625595    0.0732625595    0.0009549097
+           1   -0.0732678654    0.0000053060    0.0002423339
+           2   -0.0732686415    0.0000007760    0.0000633982
+           3   -0.0732681563   -0.0000004852    0.0000018825
+           4   -0.0732680752   -0.0000000811    0.0000002630
+           5   -0.0732680732   -0.0000000021    0.0000000126
+           6   -0.0732680732    0.0000000000    0.0000000008
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0713921798    0.0713921798    0.0009336343
+           1   -0.0713983117    0.0000061319    0.0002324154
+           2   -0.0713996210    0.0000013093    0.0000595498
+           3   -0.0713992951   -0.0000003259    0.0000014124
+           4   -0.0713992325   -0.0000000626    0.0000002109
+           5   -0.0713992303   -0.0000000022    0.0000000115
+           6   -0.0713992303    0.0000000000    0.0000000006
+
+        pCCD one-electron energy =    -122.155126369412
+        pCCD two-electron energy =      37.300838113729
+        * pCCD total energy      =     -76.052822691116
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.159684493482
+        p2RDM two-electron energy =      37.305387126604
+        * p2RDM total energy      =     -76.052831802311
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+         11         7          12  -76.0528226911  -76.0528318023    0.0000130468
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0732741356    0.0732741356    0.0004645801
+           1   -0.0732813550    0.0000072194    0.0001192840
+           2   -0.0732849175    0.0000035625    0.0000325661
+           3   -0.0732854109    0.0000004934    0.0000016992
+           4   -0.0732854728    0.0000000619    0.0000001701
+           5   -0.0732854749    0.0000000021    0.0000000081
+           6   -0.0732854750    0.0000000001    0.0000000005
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0714024941    0.0714024941    0.0004508339
+           1   -0.0714081407    0.0000056466    0.0001125224
+           2   -0.0714107408    0.0000026001    0.0000297126
+           3   -0.0714110627    0.0000003218    0.0000012728
+           4   -0.0714111122    0.0000000495    0.0000001426
+           5   -0.0714111142    0.0000000020    0.0000000073
+           6   -0.0714111142    0.0000000001    0.0000000004
+
+        pCCD one-electron energy =    -122.159686674486
+        pCCD two-electron energy =      37.305386925082
+        * pCCD total energy      =     -76.052834184837
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.157067286183
+        p2RDM two-electron energy =      37.302764258585
+        * p2RDM total energy      =     -76.052837463031
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+         12         7          13  -76.0528341848  -76.0528374630    0.0000056607
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0732889691    0.0732889691    0.0002837684
+           1   -0.0732900299    0.0000010608    0.0000715554
+           2   -0.0732902734    0.0000002435    0.0000186324
+           3   -0.0732902217   -0.0000000516    0.0000004328
+           4   -0.0732902108   -0.0000000109    0.0000000738
+           5   -0.0732902104   -0.0000000004    0.0000000043
+           6   -0.0732902104    0.0000000000    0.0000000002
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0714148231    0.0714148231    0.0002775061
+           1   -0.0714159465    0.0000011234    0.0000686723
+           2   -0.0714162346    0.0000002881    0.0000175388
+           3   -0.0714161990   -0.0000000356    0.0000003352
+           4   -0.0714161912   -0.0000000078    0.0000000553
+           5   -0.0714161908   -0.0000000004    0.0000000040
+           6   -0.0714161908   -0.0000000000    0.0000000002
+
+        pCCD one-electron energy =    -122.157038535852
+        pCCD two-electron energy =      37.302735153086
+        * pCCD total energy      =     -76.052837818198
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.157855192481
+        p2RDM two-electron energy =      37.303550895867
+        * p2RDM total energy      =     -76.052838732047
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+         13         7          14  -76.0528378182  -76.0528387320    0.0000012690
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0732911472    0.0732911472    0.0001511639
+           1   -0.0732908687   -0.0000002785    0.0000381159
+           2   -0.0732907845   -0.0000000842    0.0000099138
+           3   -0.0732907957    0.0000000112    0.0000002138
+           4   -0.0732907993    0.0000000036    0.0000000373
+           5   -0.0732907996    0.0000000003    0.0000000024
+           6   -0.0732907996    0.0000000000    0.0000000001
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0714170004    0.0714170004    0.0001478247
+           1   -0.0714166850   -0.0000003155    0.0000365896
+           2   -0.0714165788   -0.0000001062    0.0000093377
+           3   -0.0714165842    0.0000000054    0.0000001644
+           4   -0.0714165864    0.0000000022    0.0000000274
+           5   -0.0714165866    0.0000000002    0.0000000022
+           6   -0.0714165866    0.0000000000    0.0000000001
+
+        pCCD one-electron energy =    -122.157863496858
+        pCCD two-electron energy =      37.303559054374
+        * pCCD total energy      =     -76.052838877917
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.158138866495
+        p2RDM two-electron energy =      37.303834082947
+        * p2RDM total energy      =     -76.052839218981
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+         14         7          15  -76.0528388779  -76.0528392190    0.0000004869
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0732911884    0.0732911884    0.0000872907
+           1   -0.0732916844    0.0000004960    0.0000218168
+           2   -0.0732918503    0.0000001658    0.0000056621
+           3   -0.0732918509    0.0000000006    0.0000001053
+           4   -0.0732918515    0.0000000007    0.0000000197
+           5   -0.0732918516    0.0000000001    0.0000000016
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0714169261    0.0714169261    0.0000854044
+           1   -0.0714173910    0.0000004649    0.0000209479
+           2   -0.0714175405    0.0000001495    0.0000053374
+           3   -0.0714175403   -0.0000000002    0.0000000856
+           4   -0.0714175407    0.0000000004    0.0000000143
+           5   -0.0714175408    0.0000000001    0.0000000014
+
+        pCCD one-electron energy =    -122.158130693190
+        pCCD two-electron energy =      37.303825845738
+        * pCCD total energy      =     -76.052839282885
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.158280422997
+        p2RDM two-electron energy =      37.303975516203
+        * p2RDM total energy      =     -76.052839342227
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+         15         6          16  -76.0528392829  -76.0528393422    0.0000001232
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0732918021    0.0732918021    0.0000443171
+           1   -0.0732919139    0.0000001118    0.0000112608
+           2   -0.0732919619    0.0000000481    0.0000029255
+           3   -0.0732919671    0.0000000052    0.0000000508
+           4   -0.0732919686    0.0000000015    0.0000000089
+           5   -0.0732919687    0.0000000001    0.0000000006
+           6   -0.0732919687    0.0000000000    0.0000000000
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0714174638    0.0714174638    0.0000433485
+           1   -0.0714175535    0.0000000897    0.0000108192
+           2   -0.0714175888    0.0000000353    0.0000027604
+           3   -0.0714175919    0.0000000031    0.0000000403
+           4   -0.0714175929    0.0000000010    0.0000000065
+           5   -0.0714175930    0.0000000001    0.0000000006
+
+        pCCD one-electron energy =    -122.158280094275
+        pCCD two-electron energy =      37.303975159396
+        * pCCD total energy      =     -76.052839370311
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.158177396733
+        p2RDM two-electron energy =      37.303872450682
+        * p2RDM total energy      =     -76.052839381483
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+         16         7          17  -76.0528393703  -76.0528393815    0.0000000393
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0732921683    0.0732921683    0.0000196332
+           1   -0.0732922294    0.0000000610    0.0000049681
+           2   -0.0732922531    0.0000000237    0.0000012853
+           3   -0.0732922544    0.0000000013    0.0000000135
+           4   -0.0732922549    0.0000000004    0.0000000017
+           5   -0.0732922550    0.0000000001    0.0000000003
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0714177749    0.0714177749    0.0000192107
+           1   -0.0714178279    0.0000000530    0.0000047775
+           2   -0.0714178471    0.0000000192    0.0000012152
+           3   -0.0714178479    0.0000000008    0.0000000126
+           4   -0.0714178482    0.0000000003    0.0000000012
+           5   -0.0714178482    0.0000000001    0.0000000002
+
+        pCCD one-electron energy =    -122.158176823290
+        pCCD two-electron energy =      37.303871868878
+        * pCCD total energy      =     -76.052839389845
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.158208787871
+        p2RDM two-electron energy =      37.303903831741
+        * p2RDM total energy      =     -76.052839391562
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+         17         6          18  -76.0528393898  -76.0528393916    0.0000000101
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0732921787    0.0732921787    0.0000071112
+           1   -0.0732921818    0.0000000031    0.0000017964
+           2   -0.0732921839    0.0000000022    0.0000004652
+           3   -0.0732921844    0.0000000004    0.0000000061
+           4   -0.0732921845    0.0000000001    0.0000000010
+           5   -0.0732921845    0.0000000000    0.0000000001
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0714177732    0.0714177732    0.0000069578
+           1   -0.0714177754    0.0000000023    0.0000017268
+           2   -0.0714177771    0.0000000016    0.0000004394
+           3   -0.0714177774    0.0000000003    0.0000000053
+           4   -0.0714177774    0.0000000001    0.0000000007
+
+        pCCD one-electron energy =    -122.158208831250
+        pCCD two-electron energy =      37.303903874133
+        * pCCD total energy      =     -76.052839392550
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.158230789905
+        p2RDM two-electron energy =      37.303925832500
+        * p2RDM total energy      =     -76.052839392837
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+         18         6          19  -76.0528393926  -76.0528393928    0.0000000013
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0732922027    0.0732922027    0.0000032007
+           1   -0.0732922118    0.0000000091    0.0000008116
+           2   -0.0732922154    0.0000000036    0.0000002102
+           3   -0.0732922156    0.0000000003    0.0000000026
+           4   -0.0732922157    0.0000000001    0.0000000004
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0714177929    0.0714177929    0.0000031318
+           1   -0.0714178006    0.0000000077    0.0000007804
+           2   -0.0714178035    0.0000000028    0.0000001987
+           3   -0.0714178036    0.0000000002    0.0000000023
+           4   -0.0714178037    0.0000000001    0.0000000003
+
+        pCCD one-electron energy =    -122.158230723592
+        pCCD two-electron energy =      37.303925765028
+        * pCCD total energy      =     -76.052839393997
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.158225765200
+        p2RDM two-electron energy =      37.303920806595
+        * p2RDM total energy      =     -76.052839394038
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+         19         5          19  -76.0528393940  -76.0528393940    0.0000000012
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0732922132    0.0732922132    0.0000011633
+           1   -0.0732922158    0.0000000025    0.0000002955
+           2   -0.0732922169    0.0000000011    0.0000000767
+           3   -0.0732922170    0.0000000001    0.0000000013
+           4   -0.0732922170    0.0000000000    0.0000000002
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0714178008    0.0714178008    0.0000011380
+           1   -0.0714178029    0.0000000021    0.0000002840
+           2   -0.0714178038    0.0000000009    0.0000000724
+           3   -0.0714178038    0.0000000001    0.0000000011
+
+        pCCD one-electron energy =    -122.158225749702
+        pCCD two-electron energy =      37.303920790748
+        * pCCD total energy      =     -76.052839394387
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.158225277025
+        p2RDM two-electron energy =      37.303920318070
+        * p2RDM total energy      =     -76.052839394387
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+         20         5           1  -76.0528393944  -76.0528393944    0.0000000003
+
+    ==> Begin pCCD iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.0732922168    0.0732922168    0.0000000416
+           1   -0.0732922170    0.0000000002    0.0000000099
+           2   -0.0732922170    0.0000000001    0.0000000025
+
+    ==> Begin z iterations <==
+
+        iter          energy       d(Energy)          |d(Z)|
+           0   -0.0714178036    0.0714178036    0.0000000407
+           1   -0.0714178038    0.0000000001    0.0000000095
+           2   -0.0714178038    0.0000000000    0.0000000024
+
+        pCCD one-electron energy =    -122.158225274999
+        pCCD two-electron energy =      37.303920316032
+        * pCCD total energy      =     -76.052839394400
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.158225458108
+        p2RDM two-electron energy =      37.303920499141
+        * p2RDM total energy      =     -76.052839394400
+
+    ==> oo-pCCD summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+         21         3           1  -76.0528393944  -76.0528393944    0.0000000000
+
+      oo-pCCD iterations converged!
+
+    * oo-pCCD total energy:                  -76.052839394400
+
+
+ # Natural Orbital Occupation Numbers (spin free) #
+ Irrep: 1
+      1:  1.9999919
+      2:  1.9928259
+      3:  1.9753432
+      4:  1.9753431
+      5:  1.9928256
+      6:  0.0240202
+      7:  0.0240202
+      8:  0.0011328
+      9:  0.0011328
+     10:  0.0065303
+     11:  0.0065300
+     12:  0.0001520
+     13:  0.0001520
+
+    SCF total energy..................................................PASSED
+    pp2RDM total energy...............................................PASSED
+
+    Psi4 stopped on: Thursday, 09 July 2020 10:19PM
+    Psi4 wall time for execution: 0:00:02.38
+
+*** Psi4 exiting successfully. Buy a developer a beer!
