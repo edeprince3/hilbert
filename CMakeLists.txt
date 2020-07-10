@@ -1,7 +1,7 @@
 #
 # @BEGIN LICENSE
 #
-# hilbert by Psi4 Developer, a plugin to:
+# hilbert by DePrince Group, a plugin to:
 #
 # Psi4: an open-source quantum chemistry software package
 #
@@ -36,36 +36,48 @@ find_package(psi4 1.1 REQUIRED)
 
 add_psi4_plugin(hilbert 
 
-    plugin.cc
+    src/plugin.cc
 
-    doci/david.cc
-    doci/doci_solver.cc
-    doci/threeindexintegrals.cc
-    doci/update_transformation_matrix.cc
-    doci/write_tpdm.cc
+    src/doci/david.cc
+    src/doci/doci_solver.cc
+    src/doci/threeindexintegrals.cc
+    src/doci/update_transformation_matrix.cc
+    src/doci/write_tpdm.cc
 
-    #pp2rdm/blas.cc
-    pp2rdm/diis.cc
-    pp2rdm/minimization_routines.cc
-    pp2rdm/pp2rdm_solver.cc
-    pp2rdm/threeindexintegrals.cc
-    pp2rdm/update_transformation_matrix.cc
-    pp2rdm/write_tpdm.cc
+    #src/pp2rdm/blas.cc
+    src/pp2rdm/diis.cc
+    src/pp2rdm/minimization_routines.cc
+    src/pp2rdm/pp2rdm_solver.cc
+    src/pp2rdm/threeindexintegrals.cc
+    src/pp2rdm/update_transformation_matrix.cc
+    src/pp2rdm/write_tpdm.cc
 
-    focas/focas_data.F90
-    focas/focas_exponential.F90
-    focas/focas_hessian.F90
-    focas/focas_transform_driver.F90
-    focas/focas_diis.F90
-    focas/focas_genfock.F90
-    focas/focas_interface.F90
-    focas/focas_transform_oeints.F90
-    focas/focas_driver.F90
-    focas/focas_gradient.F90
-    focas/focas_redundant.F90
-    focas/focas_transform_teints.F90
-    focas/focas_energy.F90
-    focas/focas_gradient_hessian.F90
-    focas/focas_semicanonical.F90
-    focas/focas_full_hessian.F90
+    src/focas/focas_data.F90
+    src/focas/focas_exponential.F90
+    src/focas/focas_hessian.F90
+    src/focas/focas_transform_driver.F90
+    src/focas/focas_diis.F90
+    src/focas/focas_genfock.F90
+    src/focas/focas_interface.F90
+    src/focas/focas_transform_oeints.F90
+    src/focas/focas_driver.F90
+    src/focas/focas_gradient.F90
+    src/focas/focas_redundant.F90
+    src/focas/focas_transform_teints.F90
+    src/focas/focas_energy.F90
+    src/focas/focas_gradient_hessian.F90
+    src/focas/focas_semicanonical.F90
+    src/focas/focas_full_hessian.F90
+)
+
+
+install(DIRECTORY ${hilbert_BINARY_DIR}/
+        DESTINATION ${CMAKE_INSTALL_PREFIX}
+        USE_SOURCE_PERMISSIONS
+        PATTERN "*.pyc" EXCLUDE
+        PATTERN "*.mod" EXCLUDE
+        PATTERN "CMakeCache.txt" EXCLUDE
+        PATTERN "CMakeFiles" EXCLUDE
+        PATTERN "cmake_install.cmake" EXCLUDE
+        PATTERN "Makefile" EXCLUDE
 )
