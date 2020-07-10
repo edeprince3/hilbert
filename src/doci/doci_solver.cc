@@ -600,7 +600,7 @@ double DOCISolver::compute_energy() {
 
     // push final transformation matrix onto Ca_ and Cb_
     if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
-        UpdateTransformationMatrix();
+        ::UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
     }
 
     // write tpdm to disk?

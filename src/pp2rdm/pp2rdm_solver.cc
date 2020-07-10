@@ -558,7 +558,9 @@ double pp2RDMSolver::compute_energy() {
     Process::environment.globals["pp2RDM TOTAL ENERGY"] = energy + enuc_;
 
     // push final transformation matrix onto Ca_ and Cb_
-    UpdateTransformationMatrix();
+    if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
+        ::UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
+    }
 
     // write tpdm to disk?
     if ( options_.get_bool("TPDM_WRITE_FULL") ) {

@@ -35,28 +35,29 @@
 #include <psi4/libmints/matrix.h>
 #include <time.h>
 
-#include "doci_solver.h"
-
 using namespace psi;
-//using namespace fnocc;
 
-namespace psi{ namespace doci{
+namespace psi{
 
 // update Ca/Cb matrices and repack energy-order transformation matrix as pitzer order
-void DOCISolver::UpdateTransformationMatrix() {
+void UpdateTransformationMatrix(std::shared_ptr<Wavefunction> ref, std::shared_ptr<Matrix> newMO, 
+        std::shared_ptr<Matrix> Ca, std::shared_ptr<Matrix> Cb, double * orbopt_transformation_matrix) {
 
-    SharedMatrix temp ( new Matrix(newMO_) );
+    int nmo    = ref->nmo();
+    int nirrep = ref->nirrep();
+
+    SharedMatrix temp ( new Matrix(newMO) );
     // repack energy-order transformation matrix in pitzer order
-    for (int ieo = 0; ieo < nmo_; ieo++) {
+    for (int ieo = 0; ieo < nmo; ieo++) {
 
         int ifull = ieo;
         int hi    = 0;
         int i     = ifull;
 
         double ** tp = temp->pointer(hi);
-        double ** np = newMO_->pointer(hi);
+        double ** np = newMO->pointer(hi);
             
-        for (int jeo = 0; jeo < nmo_; jeo++) {
+        for (int jeo = 0; jeo < nmo; jeo++) {
 
             int jfull = jeo;
             int hj    = 0;
@@ -66,7 +67,7 @@ void DOCISolver::UpdateTransformationMatrix() {
 
             double dum = 0.0;
 
-            for (int keo = 0; keo < nmo_; keo++) {
+            for (int keo = 0; keo < nmo; keo++) {
 
                 int kfull = keo;
                 int hk    = 0;
@@ -74,52 +75,52 @@ void DOCISolver::UpdateTransformationMatrix() {
 
                 if ( hi != hk ) continue;
 
-                dum += np[k][j] * orbopt_transformation_matrix_[ieo * nmo_ + keo];
+                dum += np[k][j] * orbopt_transformation_matrix[ieo * nmo + keo];
             }
             
             //tp[i][j] = dum;
-            tp[i][j] = orbopt_transformation_matrix_[ieo * nmo_ + jeo];
+            tp[i][j] = orbopt_transformation_matrix[ieo * nmo + jeo];
             
         }
     }
 
     // reset energy-order transformation matrix:
-    memset((void*)orbopt_transformation_matrix_,'\0',nmo_*nmo_*sizeof(double));
-    for (int i = 0; i < nmo_; i++) {
-        orbopt_transformation_matrix_[i*nmo_+i] = 1.0;
+    memset((void*)orbopt_transformation_matrix,'\0',nmo*nmo*sizeof(double));
+    for (int i = 0; i < nmo; i++) {
+        orbopt_transformation_matrix[i*nmo+i] = 1.0;
     }
 
-    // update so/mo coefficient matrix (only need Ca_):
-    for (int h = 0; h < nirrep_; h++) {
+    // update so/mo coefficient matrix (only need Ca):
+    for (int h = 0; h < nirrep; h++) {
 
         double ** tp = temp->pointer(h);
-        double **cap = Ca_->pointer(h);
-        double **cbp = Cb_->pointer(h);
+        double **cap = Ca->pointer(h);
+        double **cbp = Cb->pointer(h);
 
-        for (int mu = 0; mu < nsopi_[h]; mu++) {
+        for (int mu = 0; mu < ref->nsopi()[h]; mu++) {
 
-            double * temp3 = (double*)malloc(nmopi_[h] * sizeof(double));
+            double * temp3 = (double*)malloc(ref->nmopi()[h] * sizeof(double));
 
-            for (int i = 0; i < nmopi_[h]; i++) {
+            for (int i = 0; i < ref->nmopi()[h]; i++) {
                 double dum = 0.0;
-                for (int j = 0; j < nmopi_[h]; j++) {
+                for (int j = 0; j < ref->nmopi()[h]; j++) {
                     dum += cap[mu][j] * tp[i][j];
                 }
                 temp3[i] = dum;
             }
-            for (int i = 0; i < nmopi_[h]; i++) {
+            for (int i = 0; i < ref->nmopi()[h]; i++) {
                 cap[mu][i] = temp3[i];
                 cbp[mu][i] = temp3[i];
             }
             free(temp3);
         }
     }
-    //newMO_->print();
+    //newMO->print();
 
     SharedMatrix temp2 (new Matrix(temp));
-    temp2->gemm(false,false,1.0,newMO_,temp,0.0);
-    newMO_->copy(temp2);
+    temp2->gemm(false,false,1.0,newMO,temp,0.0);
+    newMO->copy(temp2);
 
 }
 
-}}
+}

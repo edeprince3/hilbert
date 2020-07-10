@@ -238,9 +238,6 @@ class pp2RDMSolver: public Wavefunction{
     /// write full 2RDM to disk
     void WriteTPDM();
 
-    /// update ao/mo transformation matrix after orbital optimization
-    void UpdateTransformationMatrix();
-
     /// mo-mo transformation matrix
     SharedMatrix newMO_;
 
