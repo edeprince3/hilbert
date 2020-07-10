@@ -98,6 +98,18 @@ DOCISolver::DOCISolver(SharedWavefunction reference_wavefunction,Options & optio
 
 DOCISolver::~DOCISolver()
 {
+
+    //free memory allocated by constructure and common_init()
+
+    free(orbopt_outfile_);
+    free(orbopt_data_);
+    free(orbopt_transformation_matrix_);
+    free(eint1_);
+    free(eint2_);
+    free(Qmo_);
+    free(d2_);
+    free(oei_);
+
 }
 
 void  DOCISolver::common_init(){
@@ -479,7 +491,6 @@ double DOCISolver::compute_energy() {
 
     // the rest
     GenerateConfigurations( configurations_[0].to_ulong() );
-
     
 
     double * ci_wfn = (double*)malloc(n_*sizeof(double));
@@ -609,6 +620,22 @@ double DOCISolver::compute_energy() {
     if ( options_.get_bool("PRINT_RDMS") ) {
         print_rdms();
     }
+
+    // free memory allocated in compute_energy()
+    free(configurations_);
+    free(ci_wfn);
+    for (size_t i = 0; i < n_; i++) {
+        free(configuration_map_[i]);
+        for (size_t j = 0; j < (nmo_-nalpha_)*nalpha_; j++) {
+            free(configuration_map_indices_[i][j]);
+        }
+        free(configuration_map_indices_[i]);
+    }
+    free(configuration_map_);
+    free(configuration_map_indices_);
+    free(d1_);
+    free(d2ab_);
+    free(d2aa_);
 
     return energy + enuc_;
 

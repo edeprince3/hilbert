@@ -24,14 +24,14 @@ set {
   orbopt_energy_convergence 1e-8
 
   localize_orbitals true
-  noisy_orbitals true
+  noisy_orbitals    true
   optimize_orbitals true
   orbopt_maxiter 1
   maxiter 10000
 
 }
 
-en,wfn = energy('doci',return_wfn = True)
+en = energy('doci')
 
 ref_scf  = -75.98014193580194 # TEST
 ref_doci = -76.052851232676   # TEST
