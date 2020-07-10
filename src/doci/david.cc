@@ -285,7 +285,7 @@ size_t david_direct(double *Adiag, size_t N, size_t M, double *eps, double **v, 
             }
             //printf("hey is this thing normalized? %5i %20.12lf\n",i,norm);fflush(stdout);
         }
-        if(print) outfile->Printf("Davidson algorithm converged in %d iterations.\n", iter);
+        if(print) outfile->Printf("Davidson algorithm converged in %zu iterations.\n", iter);
     }
 
     free(conv);
@@ -799,7 +799,7 @@ int david_direct_redo(double *Adiag, int N, int M, double *eps, double **v, doub
                 throw PsiException("davidson CI vector is not normalized. try increasing maxdim?",__FILE__,__LINE__);
             }
         }
-        if (print) printf("Davidson algorithm converged in %d iterations.\n", iter);
+        if (print) printf("Davidson algorithm converged in %zu iterations.\n", iter);
     }
 
     free(conv);

@@ -161,6 +161,8 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         return (std::shared_ptr<Wavefunction>)pp2rdm;
 
     }
+
+    return ref_wfn;
 }
 
 }} // End namespaces

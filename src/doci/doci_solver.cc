@@ -126,7 +126,7 @@ void  DOCISolver::common_init(){
 
     shallow_copy(reference_wavefunction_);
 
-    escf_     = reference_wavefunction_->reference_energy();
+    escf_     = reference_wavefunction_->energy();
     nalpha_   = reference_wavefunction_->nalpha();
     nbeta_    = reference_wavefunction_->nbeta();
     nalphapi_ = reference_wavefunction_->nalphapi();
