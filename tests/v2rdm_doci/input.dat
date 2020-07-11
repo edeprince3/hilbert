@@ -1,0 +1,43 @@
+
+# job description:
+print('        H2O / 6-31g / DOCI, scf_type = DF, rOH = 1.0 A, aHOH = 104.5')
+
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule h2o {
+0 1
+O
+H 1 1.0
+H 1 1.0 2 104.5
+symmetry c1
+}
+
+set {
+  reference rhf
+  basis 6-31g
+  scf_type df
+
+  e_convergence 1e-4
+  r_convergence 1e-6
+  orbopt_gradient_convergence 1e-6
+  orbopt_energy_convergence 1e-8
+
+  localize_orbitals true
+  noisy_orbitals    true
+  optimize_orbitals true
+  orbopt_maxiter 20
+  orbopt_frequency 1000
+  maxiter 100000
+
+  positivity dqg
+
+}
+
+en = energy('v2rdm-doci')
+
+ref_scf        = -75.98014193580194 # TEST
+ref_v2rdm_doci = -76.053681341564   # TEST
+
+compare_values(ref_scf, variable("SCF TOTAL ENERGY"), 8, "SCF total energy") # TEST
+compare_values(ref_v2rdm_doci, variable("CURRENT ENERGY"), 5, "v2RDM-DOCI total energy") # TEST

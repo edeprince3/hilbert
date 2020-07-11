@@ -35,6 +35,7 @@
 #include "psi4/libpsio/psio.hpp"
 #include "psi4/libpsio/psio.hpp"
 
+#include "v2rdm_doci/v2rdm_solver.h"
 #include "doci/doci_solver.h"
 #include "pp2rdm/pp2rdm_solver.h"
 
@@ -50,7 +51,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI PP2RDM");
+        options.add_str("HILBERT_METHOD", "", "DOCI PP2RDM V2RDM_DOCI");
 
         /*- The amount of information printed to the output file -*/
         options.add_int("PRINT", 1);
@@ -101,18 +102,28 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION ORBITAL OPTIMIZATION -*/
 
-        /*- algorithm for orbital optimization -*/
-        //options.add_str("ORBOPT_ALGORITHM", "HAGER_ZHANG", "STEEPEST_DESCENT HESTENES_STIEFEL DAI_YUAN HAGER_ZHANG KOU_DAI");
+        /*- algorithm for orbital optimization. only valid for v2rdm-doci -*/
+        options.add_str("ORBOPT_ALGORITHM", "HAGER_ZHANG", "STEEPEST_DESCENT HESTENES_STIEFEL DAI_YUAN HAGER_ZHANG KOU_DAI");
+
+        /*- frequency of orbital optimization.  optimization occurs every 
+        orbopt_frequency iterations. only valid for v2rdm-doci -*/
+        options.add_int("ORBOPT_FREQUENCY",500);
+
         /*- convergence in gradient norm -*/
         options.add_double("ORBOPT_GRADIENT_CONVERGENCE",1.0e-4);
+
         /*- convergence in energy for rotations -*/
         options.add_double("ORBOPT_ENERGY_CONVERGENCE",1.0e-8);
+
         /*- flag for using exact expresions for diagonal Hessian element -*/
         options.add_bool("ORBOPT_EXACT_DIAGONAL_HESSIAN",true);
+
         /*- number of DIIS vectors to keep in orbital optimization -*/
         options.add_int("ORBOPT_NUM_DIIS_VECTORS",0);
+
         /*- maximum number of iterations for orbital optimization -*/
         options.add_int("ORBOPT_MAXITER",1);
+
         /*- Do write a ORBOPT output file?  If so, the filename will end in
         .molden, and the prefix is determined by |globals__writer_file_label|
         (if set), or else by the name of the output file plus the name of
@@ -139,6 +150,41 @@ int read_options(std::string name, Options& options)
         /*- Do print 1- and 2-electron to the output file? Only J-, K-, and L-type integrals will be printed. -*/
         options.add_bool("PRINT_INTEGRALS",false);
 
+        /*- SUBSECTION v2RDM-DOCI -*/
+
+        /* Do v2RDM-DOCI gradient? !expert */
+        options.add_str("DERTYPE", "NONE", "NONE FIRST");
+
+        /*- Do semicanonicalize orbitals? -*/
+        options.add_bool("SEMICANONICALIZE_ORBITALS",false);
+
+        /*- Type of guess -*/
+        options.add_str("TPDM_GUESS","RANDOM", "RANDOM HF");
+
+        /*- Do save progress in a checkpoint file? -*/
+        options.add_bool("WRITE_CHECKPOINT_FILE",false);
+
+        /*- Frequency of checkpoint file generation.  The checkpoint file is 
+        updated every CHECKPOINT_FREQUENCY iterations.  The default frequency
+        will be ORBOPT_FREQUENCY. -*/
+        options.add_int("CHECKPOINT_FREQUENCY",500);
+
+        /*- Frequency with which the pentalty-parameter, mu, is updated. mu is
+        updated every MU_UPDATE_FREQUENCY iterations.   -*/
+        options.add_int("MU_UPDATE_FREQUENCY",1000);
+
+        /*- The type of 2-positivity computation -*/
+        options.add_str("POSITIVITY", "DQG", "DQG D DQ DG DQGT2 DQGT1 DQGT1T2 DQGT2");
+
+        /*- Do constrain D3/D2 mapping? -*/
+        options.add_bool("CONSTRAIN_D3",false);
+
+        /*- convergence for conjugate gradient solver. currently not used. -*/
+        options.add_double("CG_CONVERGENCE", 1e-9);
+
+        /*- maximum number of conjugate gradient iterations -*/
+        options.add_int("CG_MAXITER", 10000);
+
     }
 
     return true;
@@ -159,6 +205,12 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         std::shared_ptr<pp2rdm::pp2RDMSolver> pp2rdm (new pp2rdm::pp2RDMSolver(ref_wfn,options));
         double energy = pp2rdm->compute_energy();
         return (std::shared_ptr<Wavefunction>)pp2rdm;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "V2RDM_DOCI") {
+
+        std::shared_ptr<v2rdm_doci::v2RDMSolver> v2rdm_doci (new v2rdm_doci::v2RDMSolver(ref_wfn,options));
+        double energy = v2rdm_doci->compute_energy();
+        return (std::shared_ptr<Wavefunction>)v2rdm_doci;
 
     }
 

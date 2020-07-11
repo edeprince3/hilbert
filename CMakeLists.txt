@@ -69,6 +69,28 @@ add_psi4_plugin(hilbert
     src/focas/focas_gradient_hessian.F90
     src/focas/focas_semicanonical.F90
     src/focas/focas_full_hessian.F90
+
+    src/v2rdm_doci/backtransform_tpdm.cc
+    src/v2rdm_doci/basis.cc
+    src/v2rdm_doci/cg_solver.cc
+    src/v2rdm_doci/checkpoint.cc
+    src/v2rdm_doci/d2.cc
+    src/v2rdm_doci/d3.cc
+    src/v2rdm_doci/g2.cc
+    src/v2rdm_doci/gpu_transform_3index_teint.cc
+    src/v2rdm_doci/integraltransform_sort_so_tpdm.cc
+    src/v2rdm_doci/integraltransform_tpdm_unrestricted.cc
+    src/v2rdm_doci/oei.cc
+    src/v2rdm_doci/orbital_lagrangian.cc
+    src/v2rdm_doci/q2.cc
+    src/v2rdm_doci/sortintegrals.cc
+    src/v2rdm_doci/t1.cc
+    src/v2rdm_doci/t2.cc
+    src/v2rdm_doci/tei.cc
+    src/v2rdm_doci/update_primal.cc
+    src/v2rdm_doci/v2rdm_solver.cc
+    src/v2rdm_doci/write_tpdm.cc
+    src/v2rdm_doci/write_tpdm_iwl.cc
 )
 
 

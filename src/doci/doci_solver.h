@@ -44,16 +44,7 @@
 #include <psi4/libmints/matrix.h>
 #include <psi4/libmints/vector.h>
 
-// TODO: move to psifiles.h
-#define PSIF_DCC_QMO          268
-#define PSIF_V2RDM_CHECKPOINT 269
-#define PSIF_V2RDM_D2AA       270
-#define PSIF_V2RDM_D2AB       271
-#define PSIF_V2RDM_D2BB       272
-#define PSIF_V2RDM_D3AAA      273
-#define PSIF_V2RDM_D3AAB      274
-#define PSIF_V2RDM_D3BBA      275
-#define PSIF_V2RDM_D3BBB      276
+#include "../misc/hilbert_psifiles.h"
 
 namespace psi{ namespace doci{
 

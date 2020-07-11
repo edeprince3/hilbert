@@ -3,7 +3,7 @@
 SHELL := /bin/bash
 
 # add new tests here
-subdirs := doci pp2rdm pccd
+subdirs := doci pp2rdm pccd v2rdm_doci
 
 all-tests := $(addsuffix .test, $(subdirs))
 

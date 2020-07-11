@@ -32,32 +32,6 @@ import psi4
 import psi4.driver.p4util as p4util
 from psi4.driver.procrouting import proc_util
 
-def run_hilbert(name, **kwargs):
-    r"""Function encoding sequence of PSI module and plugin calls so that
-    hilbert can be called via :py:func:`~driver.energy`. For post-scf plugins.
-
-    >>> energy('hilbert')
-
-    """
-    lowername = name.lower()
-    kwargs = p4util.kwargs_lower(kwargs)
-
-    # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
-    # Fock matrices, and more
-    print('Attention! This SCF may be density-fitted.')
-    ref_wfn = kwargs.get('ref_wfn', None)
-    if ref_wfn is None:
-        ref_wfn = psi4.driver.scf_helper(name, **kwargs)
-
-    # Ensure IWL files have been written when not using DF/CD
-    proc_util.check_iwl_file_from_scf_type(psi4.core.get_option('SCF', 'SCF_TYPE'), ref_wfn)
-
-    # Call the Psi4 plugin
-    # Please note that setting the reference wavefunction in this way is ONLY for plugins
-    hilbert_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
-
-    return hilbert_wfn
-
 def run_doci(name, **kwargs):
     r"""Function encoding sequence of PSI module and plugin calls so that
     doci can be called via :py:func:`~driver.energy`. For post-scf plugins.
@@ -143,6 +117,49 @@ def run_pp2rdm(name, **kwargs):
 
     return pp2rdm_wfn
 
+def run_v2rdm_doci(name, **kwargs):
+    r"""Function encoding sequence of PSI module and plugin calls so that
+    v2rdm_doci can be called via :py:func:`~driver.energy`. For post-scf plugins.
+
+    >>> energy('v2rdm_doci')
+
+    """
+
+    lowername = name.lower()
+    kwargs = p4util.kwargs_lower(kwargs)
+
+    optstash = p4util.OptionsState(
+        ['SCF', 'DF_INTS_IO'])
+
+    psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'V2RDM_DOCI')
+
+    psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
+
+    # Your plugin's psi4 run sequence goes here
+    ref_wfn = kwargs.get('ref_wfn', None)
+    if ref_wfn is None:
+        ref_wfn = psi4.driver.scf_helper(name, **kwargs)
+
+    # if restarting from a checkpoint file, this file
+    # needs to be in scratch with the correct name
+    filename = psi4.core.get_option("HILBERT","RESTART_FROM_CHECKPOINT_FILE")
+
+    # todo PSIF_V2RDM_CHECKPOINT should be definied in psifiles.h
+    #if ( filename != "" and psi4.core.get_global_option('DERTYPE') != 'FIRST' ):
+    #    molname = psi4.wavefunction().molecule().name()
+    #    p4util.copy_file_to_scratch(filename,'psi',molname,269,False)
+
+    # Ensure IWL files have been written when not using DF/CD
+    scf_type = psi4.core.get_option('SCF', 'SCF_TYPE')
+    if ( scf_type == 'PK' or scf_type == 'DIRECT' ):
+        proc_util.check_iwl_file_from_scf_type(psi4.core.get_option('SCF', 'SCF_TYPE'), ref_wfn)
+
+    v2rdm_doci_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
+
+    optstash.restore()
+
+    return v2rdm_doci_wfn
+
 
 # Integration with driver routines
 
@@ -157,8 +174,8 @@ psi4.driver.procedures['energy']['paqcc']    = run_pp2rdm
 # doci
 psi4.driver.procedures['energy']['doci'] = run_doci
 
-psi4.driver.procedures['energy']['hilbert'] = run_hilbert
-
+# v2rdm-doci
+psi4.driver.procedures['energy']['v2rdm-doci'] = run_v2rdm_doci
 
 def exampleFN():
     # Your Python code goes here
