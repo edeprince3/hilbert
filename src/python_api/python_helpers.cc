@@ -3,6 +3,7 @@
 #include <pybind11/stl.h>
 
 #include "python_helpers.h"
+#include "../v2rdm_doci/v2rdm_solver.h"
 #include "../doci/doci_solver.h"
 #include "../pp2rdm/pp2rdm_solver.h"
 
@@ -21,6 +22,10 @@ void export_HilbertHelper(py::module& m) {
     py::class_<pp2RDMHelper, std::shared_ptr<pp2RDMHelper> >(m, "pp2RDMHelper")
         .def(py::init<std::shared_ptr<Wavefunction>,Options &>())
         .def("compute_energy", &pp2RDMHelper::compute_energy);
+
+    py::class_<v2RDMHelper, std::shared_ptr<v2RDMHelper> >(m, "v2RDMHelper")
+        .def(py::init<std::shared_ptr<Wavefunction>,Options &>())
+        .def("compute_energy", &v2RDMHelper::compute_energy);
 }
 
 PYBIND11_MODULE(hilbert, m) {
@@ -55,6 +60,18 @@ double pp2RDMHelper::compute_energy() {
     return pp2rdm->compute_energy();
 }
 
+v2RDMHelper::v2RDMHelper(SharedWavefunction reference_wavefunction,Options & options)
+{
+    v2rdm = (std::shared_ptr<v2rdm_doci::v2RDMSolver>)(new v2rdm_doci::v2RDMSolver(reference_wavefunction,options));
+}
+
+v2RDMHelper::~v2RDMHelper()
+{
+}
+
+double v2RDMHelper::compute_energy() {
+    return v2rdm->compute_energy();
+}
 
 }
 

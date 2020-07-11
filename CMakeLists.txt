@@ -103,4 +103,5 @@ install(DIRECTORY ${hilbert_BINARY_DIR}/
         PATTERN "CMakeFiles" EXCLUDE
         PATTERN "cmake_install.cmake" EXCLUDE
         PATTERN "Makefile" EXCLUDE
+        PATTERN "install_manifest.txt" EXCLUDE
 )
