@@ -40,4 +40,4 @@ ref_scf        = -75.98014193580194 # TEST
 ref_v2rdm_doci = -76.053681341564   # TEST
 
 compare_values(ref_scf, variable("SCF TOTAL ENERGY"), 8, "SCF total energy") # TEST
-compare_values(ref_v2rdm_doci, variable("CURRENT ENERGY"), 5, "v2RDM-DOCI total energy") # TEST
+compare_values(ref_v2rdm_doci, variable("CURRENT ENERGY"), 4, "v2RDM-DOCI total energy") # TEST

@@ -30,6 +30,8 @@ set {
   orbopt_maxiter 1
   maxiter 10000
 
+  p2rdm_algorithm lbfgs
+
 }
 
 en = energy('pp2rdm')

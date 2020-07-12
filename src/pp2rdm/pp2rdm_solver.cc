@@ -471,8 +471,8 @@ double pp2RDMSolver::compute_energy() {
 
         }else if ( options_.get_str("P2RDM_ALGORITHM") == "LBFGS" ) {
 
-            throw PsiException("P2RDM_ALGORITHM LBFGS is currently disabled.",__FILE__,__LINE__);
-            //ci_energy = pp2rdm_lbfgs_iterations(ci_iter_);
+            //throw PsiException("P2RDM_ALGORITHM LBFGS is currently disabled.",__FILE__,__LINE__);
+            ci_energy = pp2rdm_lbfgs_iterations(ci_iter_);
 
         }else if ( options_.get_str("P2RDM_ALGORITHM") == "NEWTON_RAPHSON" ) {
 

@@ -23,10 +23,10 @@
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Friday, 10 July 2020 11:35AM
+    Psi4 started on: Saturday, 11 July 2020 08:53PM
 
-    Process ID: 68071
-    Host:       illegally-used-at.fsu
+    Process ID: 44327
+    Host:       Eugenes-MacBook-Air.local
     PSIDATADIR: /Users/deprince/edeprince3/psi4/install/master/share/psi4
     Memory:     500.0 MiB
     Threads:    1
@@ -66,6 +66,8 @@ set {
   orbopt_maxiter 1
   maxiter 10000
 
+  p2rdm_algorithm lbfgs
+
 }
 
 en = energy('pp2rdm')
@@ -79,8 +81,8 @@ compare_values(ref_pp2rdm, variable("CURRENT ENERGY"), 5, "pp2RDM total energy")
 
 Scratch directory: /tmp/
 
-*** tstart() called on illegally-used-at.fsu
-*** at Fri Jul 10 11:35:10 2020
+*** tstart() called on Eugenes-MacBook-Air.local
+*** at Sat Jul 11 20:53:13 2020
 
    => Loading Basis Set <=
 
@@ -260,14 +262,14 @@ Properties computed using the SCF density matrix
      X:    -0.0000      Y:     0.0000      Z:     2.6444     Total:     2.6444
 
 
-*** tstop() called on illegally-used-at.fsu at Fri Jul 10 11:35:11 2020
+*** tstop() called on Eugenes-MacBook-Air.local at Sat Jul 11 20:53:14 2020
 Module time:
-	user time   =       0.35 seconds =       0.01 minutes
-	system time =       0.02 seconds =       0.00 minutes
+	user time   =       0.32 seconds =       0.01 minutes
+	system time =       0.01 seconds =       0.00 minutes
 	total time  =          1 seconds =       0.02 minutes
 Total time:
-	user time   =       0.35 seconds =       0.01 minutes
-	system time =       0.02 seconds =       0.00 minutes
+	user time   =       0.32 seconds =       0.01 minutes
+	system time =       0.01 seconds =       0.00 minutes
 	total time  =          1 seconds =       0.02 minutes
  MINTS: Wrapper to libmints.
    by Justin Turney
@@ -416,592 +418,346 @@ Calling plugin hilbert.so.
     ==> Begin oo-pp2RDM iterations <==
 
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0271036923    0.0271036923    0.0892439304
-           1   -0.0305326792    0.0034289869    0.0146368508
-           2   -0.0314743209    0.0009416417    0.0036865347
-           3   -0.0314899041    0.0000155833    0.0002807729
-           4   -0.0314900610    0.0000001569    0.0000207170
-           5   -0.0314900366   -0.0000000244    0.0000017356
-           6   -0.0314900393    0.0000000027    0.0000002679
-           7   -0.0314900395    0.0000000002    0.0000000328
-           8   -0.0314900394   -0.0000000000    0.0000000048
-
-        p2RDM one-electron energy =    -122.241407503743
-        p2RDM two-electron energy =      37.432322511252
-        * p2RDM total energy      =     -76.007619427924
+        p2RDM one-electron energy =    -122.158148249768
+        p2RDM two-electron energy =      37.348043010174
+        * p2RDM total energy      =     -76.008639675027
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.152519569562
-        p2RDM two-electron energy =      37.337079870481
-        * p2RDM total energy      =     -76.013974134514
+        p2RDM one-electron energy =    -122.167950112398
+        p2RDM two-electron energy =      37.352089362218
+        * p2RDM total energy      =     -76.014395185612
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-          0         9           1  -76.0076194279  -76.0139741345   76.0139741345
+          0        36           1  -76.0086396750  -76.0143951856   76.0143951856
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0365256695    0.0365256695    0.0256660829
-           1   -0.0371979694    0.0006722999    0.0051094934
-           2   -0.0373716509    0.0001736815    0.0011573763
-           3   -0.0373718516    0.0000002007    0.0001026725
-           4   -0.0373718707    0.0000000191    0.0000195376
-           5   -0.0373719125    0.0000000418    0.0000026914
-           6   -0.0373719192    0.0000000067    0.0000002761
-           7   -0.0373719186   -0.0000000006    0.0000000405
-           8   -0.0373719183   -0.0000000003    0.0000000046
-           9   -0.0373719183    0.0000000000    0.0000000011
-
-        p2RDM one-electron energy =    -122.140303055579
-        p2RDM two-electron energy =      37.322347571425
-        * p2RDM total energy      =     -76.016489919586
+        p2RDM one-electron energy =    -122.155810472405
+        p2RDM two-electron energy =      37.337019632934
+        * p2RDM total energy      =     -76.017325274903
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.121425457251
-        p2RDM two-electron energy =      37.296940256478
-        * p2RDM total energy      =     -76.023019636205
+        p2RDM one-electron energy =    -122.106904814075
+        p2RDM two-electron energy =      37.282345695368
+        * p2RDM total energy      =     -76.023093554140
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-          1        10           2  -76.0164899196  -76.0230196362    0.0090455017
+          1        25           2  -76.0173252749  -76.0230935541    0.0086983685
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0527017951    0.0527017951    0.0582577211
-           1   -0.0568873286    0.0041855334    0.0177113229
-           2   -0.0588834334    0.0019961049    0.0056488489
-           3   -0.0588990305    0.0000155971    0.0001463395
-           4   -0.0589003161    0.0000012856    0.0000227915
-           5   -0.0589001608   -0.0000001553    0.0000035076
-           6   -0.0589001409   -0.0000000199    0.0000003933
-           7   -0.0589001428    0.0000000019    0.0000000698
-           8   -0.0589001427   -0.0000000001    0.0000000115
-           9   -0.0589001424   -0.0000000003    0.0000000115
-          10   -0.0589001423   -0.0000000001    0.0000000026
-
-        p2RDM one-electron energy =    -122.115723040740
-        p2RDM two-electron energy =      37.275567454784
-        * p2RDM total energy      =     -76.038690021389
+        p2RDM one-electron energy =    -122.101323181216
+        p2RDM two-electron energy =      37.260753430455
+        * p2RDM total energy      =     -76.039104186194
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.224590141278
-        p2RDM two-electron energy =      37.377052634720
-        * p2RDM total energy      =     -76.046071941991
+        p2RDM one-electron energy =    -122.219630334006
+        p2RDM two-electron energy =      37.371507616529
+        * p2RDM total energy      =     -76.046657152910
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-          2        11           3  -76.0386900214  -76.0460719420    0.0230523058
+          2        26           3  -76.0391041862  -76.0466571529    0.0235635988
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0658322273    0.0658322273    0.0177657397
-           1   -0.0671351796    0.0013029523    0.0049429608
-           2   -0.0677200285    0.0005848489    0.0015088807
-           3   -0.0677370774    0.0000170489    0.0000804874
-           4   -0.0677370509   -0.0000000264    0.0000061831
-           5   -0.0677369958   -0.0000000551    0.0000005119
-           6   -0.0677369993    0.0000000035    0.0000000335
-           7   -0.0677369992   -0.0000000001    0.0000000051
-           8   -0.0677369991   -0.0000000000    0.0000000010
-
-        p2RDM one-electron energy =    -122.215854515954
-        p2RDM two-electron energy =      37.366941065878
-        * p2RDM total energy      =     -76.047447885509
+        p2RDM one-electron energy =    -122.209129551448
+        p2RDM two-electron energy =      37.359340493297
+        * p2RDM total energy      =     -76.048323493583
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.173096275179
-        p2RDM two-electron energy =      37.323086530833
-        * p2RDM total energy      =     -76.048544179779
+        p2RDM one-electron energy =    -122.161082166343
+        p2RDM two-electron energy =      37.310368601716
+        * p2RDM total energy      =     -76.049248000060
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-          3         9           4  -76.0474478855  -76.0485441798    0.0024722378
+          3        20           4  -76.0483234936  -76.0492480001    0.0025908472
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0692932696    0.0692932696    0.0134004922
-           1   -0.0695947511    0.0003014815    0.0020854121
-           2   -0.0696536685    0.0000589174    0.0003784216
-           3   -0.0696516639   -0.0000020046    0.0000131579
-           4   -0.0696510086   -0.0000006553    0.0000026275
-           5   -0.0696509800   -0.0000000286    0.0000002030
-           6   -0.0696509816    0.0000000016    0.0000000265
-           7   -0.0696509821    0.0000000005    0.0000000036
-           8   -0.0696509822    0.0000000001    0.0000000004
-
-        p2RDM one-electron energy =    -122.168238902587
-        p2RDM two-electron energy =      37.317472594986
-        * p2RDM total energy      =     -76.049300743033
+        p2RDM one-electron energy =    -122.158305310580
+        p2RDM two-electron energy =      37.307481753354
+        * p2RDM total energy      =     -76.049357992659
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.164872992424
-        p2RDM two-electron energy =      37.313841878900
-        * p2RDM total energy      =     -76.049565548957
+        p2RDM one-electron energy =    -122.172441953921
+        p2RDM two-electron energy =      37.321337220617
+        * p2RDM total energy      =     -76.049639168736
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-          4         9           5  -76.0493007430  -76.0495655490    0.0010213692
+          4        15           5  -76.0493579927  -76.0496391687    0.0003911687
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0698546449    0.0698546449    0.0025079504
-           1   -0.0699294078    0.0000747629    0.0003836932
-           2   -0.0699586943    0.0000292865    0.0000940640
-           3   -0.0699632054    0.0000045111    0.0000132732
-           4   -0.0699632364    0.0000000310    0.0000005776
-           5   -0.0699632282   -0.0000000082    0.0000001220
-           6   -0.0699632267   -0.0000000014    0.0000000180
-           7   -0.0699632267   -0.0000000001    0.0000000015
-
-        p2RDM one-electron energy =    -122.164300976096
-        p2RDM two-electron energy =      37.313245131767
-        * p2RDM total energy      =     -76.049590279762
+        p2RDM one-electron energy =    -122.171802173186
+        p2RDM two-electron energy =      37.320684818634
+        * p2RDM total energy      =     -76.049651789984
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.166016082435
-        p2RDM two-electron energy =      37.314688086841
-        * p2RDM total energy      =     -76.049862431027
+        p2RDM one-electron energy =    -122.164030097468
+        p2RDM two-electron energy =      37.312807436809
+        * p2RDM total energy      =     -76.049757096092
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-          5         8           6  -76.0495902798  -76.0498624310    0.0002968821
+          5        15           6  -76.0496517900  -76.0497570961    0.0001179274
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0701214868    0.0701214868    0.0017621752
-           1   -0.0702150361    0.0000935493    0.0003414727
-           2   -0.0702534088    0.0000383727    0.0000996888
-           3   -0.0702560557    0.0000026469    0.0000087717
-           4   -0.0702560915    0.0000000358    0.0000005266
-           5   -0.0702560880   -0.0000000035    0.0000000918
-           6   -0.0702560871   -0.0000000009    0.0000000155
-           7   -0.0702560871   -0.0000000000    0.0000000012
-
-        p2RDM one-electron energy =    -122.165118016288
-        p2RDM two-electron energy =      37.313777510999
-        * p2RDM total energy      =     -76.049874940721
+        p2RDM one-electron energy =    -122.163504429153
+        p2RDM two-electron energy =      37.312277680570
+        * p2RDM total energy      =     -76.049761184016
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.163442133169
-        p2RDM two-electron energy =      37.310361419882
-        * p2RDM total energy      =     -76.051615148720
+        p2RDM one-electron energy =    -122.165250464114
+        p2RDM two-electron energy =      37.313977530648
+        * p2RDM total energy      =     -76.049807368898
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-          6         8           7  -76.0498749407  -76.0516151487    0.0017527177
+          6        15           7  -76.0497611840  -76.0498073689    0.0000502728
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0722549449    0.0722549449    0.0094731636
-           1   -0.0724516732    0.0001967283    0.0021640738
-           2   -0.0725193538    0.0000676805    0.0005298236
-           3   -0.0725204009    0.0000010471    0.0000131368
-           4   -0.0725203718   -0.0000000291    0.0000009400
-           5   -0.0725203600   -0.0000000118    0.0000001029
-           6   -0.0725203583   -0.0000000017    0.0000000107
-           7   -0.0725203581   -0.0000000002    0.0000000013
-           8   -0.0725203581    0.0000000000    0.0000000001
-
-        p2RDM one-electron energy =    -122.161242906098
-        p2RDM two-electron energy =      37.307686977866
-        * p2RDM total energy      =     -76.052090363664
+        p2RDM one-electron energy =    -122.165007478796
+        p2RDM two-electron energy =      37.313728430221
+        * p2RDM total energy      =     -76.049813484007
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.159236985914
-        p2RDM two-electron energy =      37.305367537202
-        * p2RDM total energy      =     -76.052403884145
+        p2RDM one-electron energy =    -122.157443696974
+        p2RDM two-electron energy =      37.306055252398
+        * p2RDM total energy      =     -76.049922880009
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-          7         9           8  -76.0520903637  -76.0524038841    0.0007887354
+          7        11           8  -76.0498134840  -76.0499228800    0.0001155111
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0728250385    0.0728250385    0.0031938986
-           1   -0.0728961638    0.0000711253    0.0005250002
-           2   -0.0729150850    0.0000189211    0.0001086173
-           3   -0.0729164717    0.0000013867    0.0000092731
-           4   -0.0729166387    0.0000001671    0.0000006739
-           5   -0.0729166695    0.0000000308    0.0000001016
-           6   -0.0729166725    0.0000000029    0.0000000097
-           7   -0.0729166727    0.0000000002    0.0000000010
-           8   -0.0729166727    0.0000000000    0.0000000001
-
-        p2RDM one-electron energy =    -122.158248125445
-        p2RDM two-electron energy =      37.304333459847
-        * p2RDM total energy      =     -76.052449101031
+        p2RDM one-electron energy =    -122.157219266536
+        p2RDM two-electron energy =      37.305751891839
+        * p2RDM total energy      =     -76.050001810130
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.159626824131
-        p2RDM two-electron energy =      37.305550112686
-        * p2RDM total energy      =     -76.052611146877
+        p2RDM one-electron energy =    -122.163200311428
+        p2RDM two-electron energy =      37.309819605015
+        * p2RDM total energy      =     -76.051915141845
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-          8         9           9  -76.0524491010  -76.0526111469    0.0002072627
+          8        17           9  -76.0500018101  -76.0519151418    0.0019922618
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0730338799    0.0730338799    0.0017789732
-           1   -0.0730679450    0.0000340652    0.0003751926
-           2   -0.0730802055    0.0000122605    0.0000940585
-           3   -0.0730810671    0.0000008616    0.0000048225
-           4   -0.0730812658    0.0000001988    0.0000006536
-           5   -0.0730812829    0.0000000171    0.0000000504
-           6   -0.0730812837    0.0000000008    0.0000000032
-           7   -0.0730812837    0.0000000001    0.0000000004
-
-        p2RDM one-electron energy =    -122.159297518186
-        p2RDM two-electron energy =      37.305205562615
-        * p2RDM total energy      =     -76.052626391004
+        p2RDM one-electron energy =    -122.160207764603
+        p2RDM two-electron energy =      37.306191515320
+        * p2RDM total energy      =     -76.052550684716
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.151420992310
-        p2RDM two-electron energy =      37.297242208051
-        * p2RDM total energy      =     -76.052713219691
+        p2RDM one-electron energy =    -122.157946065155
+        p2RDM two-electron energy =      37.303789284791
+        * p2RDM total energy      =     -76.052691215797
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-          9         8          10  -76.0526263910  -76.0527132197    0.0001020728
+          9        14          10  -76.0525506847  -76.0526912158    0.0007760740
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0731879430    0.0731879430    0.0014046255
-           1   -0.0731909675    0.0000030246    0.0003217117
-           2   -0.0731917512    0.0000007837    0.0000812512
-           3   -0.0731916623   -0.0000000889    0.0000019131
-           4   -0.0731916409   -0.0000000214    0.0000001146
-           5   -0.0731916370   -0.0000000039    0.0000000128
-           6   -0.0731916365   -0.0000000005    0.0000000016
-           7   -0.0731916364   -0.0000000001    0.0000000003
-
-        p2RDM one-electron energy =    -122.151388194074
-        p2RDM two-electron energy =      37.297199451485
-        * p2RDM total energy      =     -76.052723178022
+        p2RDM one-electron energy =    -122.157852326520
+        p2RDM two-electron energy =      37.303671198687
+        * p2RDM total energy      =     -76.052715563265
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.155657454622
-        p2RDM two-electron energy =      37.301427635462
-        * p2RDM total energy      =     -76.052764254593
+        p2RDM one-electron energy =    -122.157376286800
+        p2RDM two-electron energy =      37.303148275088
+        * p2RDM total energy      =     -76.052762447145
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-         10         8          11  -76.0527231780  -76.0527642546    0.0000510349
+         10        15          11  -76.0527155633  -76.0527624471    0.0000712313
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0732187789    0.0732187789    0.0008450272
-           1   -0.0732244327    0.0000056538    0.0001868236
-           2   -0.0732261041    0.0000016714    0.0000468080
-           3   -0.0732261038   -0.0000000003    0.0000013170
-           4   -0.0732261101    0.0000000063    0.0000000853
-           5   -0.0732261124    0.0000000023    0.0000000138
-           6   -0.0732261127    0.0000000003    0.0000000013
-           7   -0.0732261127    0.0000000000    0.0000000002
-
-        p2RDM one-electron energy =    -122.155579508552
-        p2RDM two-electron energy =      37.301346159869
-        * p2RDM total energy      =     -76.052767784115
+        p2RDM one-electron energy =    -122.157264069651
+        p2RDM two-electron energy =      37.303031709141
+        * p2RDM total energy      =     -76.052766795942
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.154319848874
-        p2RDM two-electron energy =      37.300065529644
-        * p2RDM total energy      =     -76.052788754663
+        p2RDM one-electron energy =    -122.157398089948
+        p2RDM two-electron energy =      37.303144430652
+        * p2RDM total energy      =     -76.052788094729
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-         11         8          12  -76.0527677841  -76.0527887547    0.0000245001
+         11        13          12  -76.0527667959  -76.0527880947    0.0000256476
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0732546306    0.0732546306    0.0006483465
-           1   -0.0732564688    0.0000018382    0.0001525463
-           2   -0.0732568159    0.0000003471    0.0000388060
-           3   -0.0732567471   -0.0000000689    0.0000007553
-           4   -0.0732567357   -0.0000000114    0.0000000466
-           5   -0.0732567334   -0.0000000023    0.0000000069
-           6   -0.0732567331   -0.0000000003    0.0000000010
-           7   -0.0732567331   -0.0000000000    0.0000000001
-
-        p2RDM one-electron energy =    -122.154281783432
-        p2RDM two-electron energy =      37.300025324593
-        * p2RDM total energy      =     -76.052790894272
+        p2RDM one-electron energy =    -122.157408296781
+        p2RDM two-electron energy =      37.303152289294
+        * p2RDM total energy      =     -76.052790442920
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.158135889406
-        p2RDM two-electron energy =      37.303871132744
-        * p2RDM total energy      =     -76.052799192095
+        p2RDM one-electron energy =    -122.156609358136
+        p2RDM two-electron energy =      37.302344849636
+        * p2RDM total energy      =     -76.052798943932
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-         12         8          13  -76.0527908943  -76.0527991921    0.0000104374
+         12         7          13  -76.0527904429  -76.0527989439    0.0000108492
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0732670401    0.0732670401    0.0004740468
-           1   -0.0732697373    0.0000026972    0.0001126943
-           2   -0.0732705422    0.0000008049    0.0000287251
-           3   -0.0732705407   -0.0000000015    0.0000005330
-           4   -0.0732705457    0.0000000050    0.0000000383
-           5   -0.0732705474    0.0000000017    0.0000000071
-           6   -0.0732705477    0.0000000003    0.0000000009
-           7   -0.0732705477    0.0000000000    0.0000000001
-
-        p2RDM one-electron energy =    -122.158097066128
-        p2RDM two-electron energy =      37.303831163605
-        * p2RDM total energy      =     -76.052800337956
+        p2RDM one-electron energy =    -122.156546450010
+        p2RDM two-electron energy =      37.302281209825
+        * p2RDM total energy      =     -76.052799675617
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.155696682908
-        p2RDM two-electron energy =      37.301428002347
-        * p2RDM total energy      =     -76.052803115994
+        p2RDM one-electron energy =    -122.156651071742
+        p2RDM two-electron energy =      37.302382828713
+        * p2RDM total energy      =     -76.052802678462
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-         13         8          14  -76.0528003380  -76.0528031160    0.0000039239
+         13        10          14  -76.0527996756  -76.0528026785    0.0000037345
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0732726201    0.0732726201    0.0002371484
-           1   -0.0732734425    0.0000008224    0.0000555142
-           2   -0.0732736307    0.0000001882    0.0000141101
-           3   -0.0732736164   -0.0000000143    0.0000002793
-           4   -0.0732736158   -0.0000000007    0.0000000174
-           5   -0.0732736158    0.0000000000    0.0000000027
-
-        p2RDM one-electron energy =    -122.155680717590
-        p2RDM two-electron energy =      37.301411752159
-        * p2RDM total energy      =     -76.052803400864
+        p2RDM one-electron energy =    -122.156654916200
+        p2RDM two-electron energy =      37.302386296273
+        * p2RDM total energy      =     -76.052803055360
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.156372099800
-        p2RDM two-electron energy =      37.302102343001
-        * p2RDM total energy      =     -76.052804192232
+        p2RDM one-electron energy =    -122.156683880851
+        p2RDM two-electron energy =      37.302414293295
+        * p2RDM total energy      =     -76.052804022990
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-         14         6          15  -76.0528034009  -76.0528041922    0.0000010762
+         14        11          15  -76.0528030554  -76.0528040230    0.0000013445
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0732739303    0.0732739303    0.0001512045
-           1   -0.0732739198   -0.0000000105    0.0000376327
-           2   -0.0732739044   -0.0000000154    0.0000096714
-           3   -0.0732739000   -0.0000000044    0.0000001196
-           4   -0.0732738988   -0.0000000011    0.0000000085
-           5   -0.0732738985   -0.0000000003    0.0000000014
-           6   -0.0732738985   -0.0000000000    0.0000000001
-
-        p2RDM one-electron energy =    -122.156371242277
-        p2RDM two-electron energy =      37.302101365984
-        * p2RDM total energy      =     -76.052804311725
+        p2RDM one-electron energy =    -122.156669208152
+        p2RDM two-electron energy =      37.302399487183
+        * p2RDM total energy      =     -76.052804156401
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.156656046946
-        p2RDM two-electron energy =      37.302386002085
-        * p2RDM total energy      =     -76.052804480294
+        p2RDM one-electron energy =    -122.156635162874
+        p2RDM two-electron energy =      37.302365179930
+        * p2RDM total energy      =     -76.052804418376
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-         15         7          16  -76.0528043117  -76.0528044803    0.0000002881
+         15         9          16  -76.0528041564  -76.0528044184    0.0000003954
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0732743565    0.0732743565    0.0000750211
-           1   -0.0732743986    0.0000000421    0.0000187886
-           2   -0.0732744205    0.0000000219    0.0000048488
-           3   -0.0732744236    0.0000000031    0.0000000800
-           4   -0.0732744244    0.0000000008    0.0000000131
-           5   -0.0732744245    0.0000000001    0.0000000012
-
-        p2RDM one-electron energy =    -122.156656300677
-        p2RDM two-electron energy =      37.302386226251
-        * p2RDM total energy      =     -76.052804509859
+        p2RDM one-electron energy =    -122.156639519306
+        p2RDM two-electron energy =      37.302369500785
+        * p2RDM total energy      =     -76.052804453953
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.156586845924
-        p2RDM two-electron energy =      37.302316748711
-        * p2RDM total energy      =     -76.052804532646
+        p2RDM one-electron energy =    -122.156633997920
+        p2RDM two-electron energy =      37.302363915668
+        * p2RDM total energy      =     -76.052804517684
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-         16         6          17  -76.0528045099  -76.0528045326    0.0000000524
+         16         4          17  -76.0528044540  -76.0528045177    0.0000000993
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0732743680    0.0732743680    0.0000302019
-           1   -0.0732743601   -0.0000000078    0.0000076399
-           2   -0.0732743542   -0.0000000059    0.0000019895
-           3   -0.0732743528   -0.0000000014    0.0000000499
-           4   -0.0732743525   -0.0000000003    0.0000000075
-           5   -0.0732743525   -0.0000000000    0.0000000004
-
-        p2RDM one-electron energy =    -122.156586610210
-        p2RDM two-electron energy =      37.302316508201
-        * p2RDM total energy      =     -76.052804537441
+        p2RDM one-electron energy =    -122.156632011384
+        p2RDM two-electron energy =      37.302361917260
+        * p2RDM total energy      =     -76.052804529557
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.156622671535
-        p2RDM two-electron energy =      37.302352566127
-        * p2RDM total energy      =     -76.052804540840
+        p2RDM one-electron energy =    -122.156631960451
+        p2RDM two-electron energy =      37.302361857188
+        * p2RDM total energy      =     -76.052804538696
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-         17         6          18  -76.0528045374  -76.0528045408    0.0000000082
+         17         5          18  -76.0528045296  -76.0528045387    0.0000000210
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0732743939    0.0732743939    0.0000126801
-           1   -0.0732743997    0.0000000058    0.0000032007
-           2   -0.0732744028    0.0000000030    0.0000008304
-           3   -0.0732744033    0.0000000005    0.0000000181
-           4   -0.0732744034    0.0000000001    0.0000000029
-           5   -0.0732744034    0.0000000000    0.0000000002
-
-        p2RDM one-electron energy =    -122.156622718925
-        p2RDM two-electron energy =      37.302352612669
-        * p2RDM total energy      =     -76.052804541688
+        p2RDM one-electron energy =    -122.156632297474
+        p2RDM two-electron energy =      37.302362192313
+        * p2RDM total energy      =     -76.052804540594
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.156628819939
-        p2RDM two-electron energy =      37.302358713187
-        * p2RDM total energy      =     -76.052804542185
+        p2RDM one-electron energy =    -122.156632487376
+        p2RDM two-electron energy =      37.302362380962
+        * p2RDM total energy      =     -76.052804541847
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-         18         6          19  -76.0528045417  -76.0528045422    0.0000000013
+         18         3          19  -76.0528045406  -76.0528045418    0.0000000032
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0732744102    0.0732744102    0.0000045006
-           1   -0.0732744070   -0.0000000032    0.0000011422
-           2   -0.0732744057   -0.0000000013    0.0000002991
-           3   -0.0732744055   -0.0000000001    0.0000000090
-           4   -0.0732744055   -0.0000000000    0.0000000012
-
-        p2RDM one-electron energy =    -122.156628840377
-        p2RDM two-electron energy =      37.302358733520
-        * p2RDM total energy      =     -76.052804542290
+        p2RDM one-electron energy =    -122.156632324420
+        p2RDM two-electron energy =      37.302362217721
+        * p2RDM total energy      =     -76.052804542132
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.156633661196
-        p2RDM two-electron energy =      37.302363554287
-        * p2RDM total energy      =     -76.052804542342
+        p2RDM one-electron energy =    -122.156631725257
+        p2RDM two-electron energy =      37.302361618395
+        * p2RDM total energy      =     -76.052804542294
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-         19         5          20  -76.0528045423  -76.0528045423    0.0000000002
+         19         2          20  -76.0528045421  -76.0528045423    0.0000000004
 
-    ==> Begin pp2RDM iterations <==
-
-        iter          energy       d(Energy)          |d(T)|
-           0   -0.0732744034    0.0732744034    0.0000016361
-           1   -0.0732744038    0.0000000004    0.0000004113
-           2   -0.0732744039    0.0000000002    0.0000001065
-           3   -0.0732744039    0.0000000000    0.0000000021
-
-        p2RDM one-electron energy =    -122.156633662930
-        p2RDM two-electron energy =      37.302363556006
-        * p2RDM total energy      =     -76.052804542356
+        p2RDM one-electron energy =    -122.156631736404
+        p2RDM two-electron energy =      37.302361629501
+        * p2RDM total energy      =     -76.052804542336
 
     ==> Orbital Optimization <==
 
-        p2RDM one-electron energy =    -122.156632643496
-        p2RDM two-electron energy =      37.302362536571
-        * p2RDM total energy      =     -76.052804542358
+        p2RDM one-electron energy =    -122.156632117565
+        p2RDM two-electron energy =      37.302362010641
+        * p2RDM total energy      =     -76.052804542357
 
     ==> oo-pp2RDM summary <==
 
        iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
-         20         4           3  -76.0528045424  -76.0528045424    0.0000000000
+         20         2          16  -76.0528045423  -76.0528045424    0.0000000001
 
       oo-pp2RDM iterations converged!
 
-    * oo-pp2RDM total energy:                  -76.052804542358
+    * oo-pp2RDM total energy:                  -76.052804542357
 
 
  # Natural Orbital Occupation Numbers (spin free) #
  Irrep: 1
       1:  1.9999920
-      2:  1.9928882
+      2:  1.9928883
       3:  1.9755650
       4:  1.9755650
-      5:  1.9928879
+      5:  1.9928878
       6:  0.0237944
-      7:  0.0237944
+      7:  0.0237943
       8:  0.0011203
       9:  0.0011203
-     10:  0.0064849
-     11:  0.0064845
+     10:  0.0064850
+     11:  0.0064844
      12:  0.0001516
      13:  0.0001516
 
     SCF total energy..................................................PASSED
     pp2RDM total energy...............................................PASSED
 
-    Psi4 stopped on: Friday, 10 July 2020 11:35AM
-    Psi4 wall time for execution: 0:00:02.18
+    Psi4 stopped on: Saturday, 11 July 2020 08:53PM
+    Psi4 wall time for execution: 0:00:01.83
 
 *** Psi4 exiting successfully. Buy a developer a beer!

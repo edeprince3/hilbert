@@ -1,40 +1,28 @@
-#
-# @BEGIN LICENSE
-#
-# hilbert by DePrince Group, a plugin to:
-#
-# Psi4: an open-source quantum chemistry software package
-#
-# Copyright (c) 2007-2019 The Psi4 Developers.
-#
-# The copyrights for code used from other parties are included in
-# the corresponding files.
-#
-# This file is part of Psi4.
-#
-# Psi4 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, version 3.
-#
-# Psi4 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License along
-# with Psi4; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-#
-# @END LICENSE
-#
+if (POLICY CMP0025)
+  cmake_policy(SET CMP0025 NEW)
+endif ()
+
+cmake_policy(SET CMP0048 NEW)  # project_VERSION* variables populated from project(... VERSION x.x.x) string
+
+project(hilbert
+        VERSION 0.1
+        LANGUAGES CXX C Fortran)
+set(hilbert_AUTHORS      "A. Eugene DePrince III and the DePrince Group")
+set(hilbert_DESCRIPTION  "Hilbert: A space for quantum chemistry plugins to Psi4")
+set(hilbert_URL          "https://github.com/edeprince3/hiblert")
+set(hilbert_LICENSE      "GPL-3.0+")
+set(CMAKE_CXX_STANDARD 17)
 
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
-project(hilbert CXX Fortran)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-find_package(psi4 1.1 REQUIRED)
+include(psi4OptionsTools)
 
-add_psi4_plugin(hilbert 
+find_package(pybind11 REQUIRED)
+find_package(psi4 1.3 REQUIRED)
+
+add_psi4_plugin(hilbert
 
     src/plugin.cc
 
@@ -93,6 +81,14 @@ add_psi4_plugin(hilbert
     src/v2rdm_doci/write_tpdm_iwl.cc
 )
 
+# external projects (liblbfgs)
+set(EXTERNAL_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/external/install)
+add_subdirectory(external)
+
+# how in the world am i supposed to link lbfgs?
+set(LBFGS_LIBRARY_DIR "${PROJECT_SOURCE_DIR}/external/install/lib")
+set(LBFGS_LIBRARY "${LBFGS_LIBRARY_DIR}/liblbfgs.a")
+target_link_libraries(hilbert PRIVATE ${LBFGS_LIBRARY})
 
 install(DIRECTORY ${hilbert_BINARY_DIR}/
         DESTINATION ${CMAKE_INSTALL_PREFIX}
