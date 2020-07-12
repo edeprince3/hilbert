@@ -55,17 +55,13 @@
 #include <psi4/libmints/basisset.h>
 #include <psi4/libmints/local.h>
 
-// diis solver
 #include "diis.h"
-
 #include "pp2rdm_solver.h"
 
-// greg
-#include "../focas/focas_c_interface.h"
-
-#include "../misc/misc.h"
-#include "../misc/omp.h"
-#include "../misc/blas.h"
+#include <focas/focas_c_interface.h>
+#include <misc/misc.h>
+#include <misc/omp.h>
+#include <misc/blas.h>
 
 using namespace psi;
 using namespace fnocc;

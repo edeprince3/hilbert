@@ -44,7 +44,7 @@
 #include <psi4/libmints/matrix.h>
 #include <psi4/libmints/vector.h>
 
-#include "../misc/hilbert_psifiles.h"
+#include <misc/hilbert_psifiles.h>
 
 namespace psi{ namespace pp2rdm{
 

@@ -1,9 +1,9 @@
 #ifndef PYTHON_HELPERS_H
 #define PYTHON_HELPERS_H
 
-#include "../v2rdm_doci/v2rdm_solver.h"
-#include "../doci/doci_solver.h"
-#include "../pp2rdm/pp2rdm_solver.h"
+#include <v2rdm_doci/v2rdm_solver.h>
+#include <doci/doci_solver.h>
+#include <pp2rdm/pp2rdm_solver.h>
 
 namespace psi{ 
 

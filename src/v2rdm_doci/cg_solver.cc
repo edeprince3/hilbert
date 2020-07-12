@@ -32,10 +32,9 @@
 #include <psi4/libplugin/plugin.h>
 #include <psi4/psi4-dec.h>
 #include <psi4/liboptions/liboptions.h>
-//#include <psi4/libmints/mints.h>
 #include <psi4/libpsio/psio.hpp>
-//#include <../bin/fnocc/blas.h>
 #include <psi4/libqt/qt.h>
+
 #include "cg_solver.h"
 
 namespace psi{ 

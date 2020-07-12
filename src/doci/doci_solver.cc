@@ -55,10 +55,10 @@
 #include "david.h"
 #include "doci_solver.h"
 
-#include "../focas/focas_c_interface.h"
-#include "../misc/misc.h"
-#include "../misc/blas.h"
-#include "../misc/omp.h"
+#include <focas/focas_c_interface.h>
+#include <misc/misc.h>
+#include <misc/blas.h>
+#include <misc/omp.h>
 
 using namespace psi;
 using namespace fnocc;

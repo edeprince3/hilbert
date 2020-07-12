@@ -85,10 +85,14 @@ add_psi4_plugin(hilbert
 set(EXTERNAL_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/external/)
 add_subdirectory(external)
 
-# how in the world am i supposed to link lbfgs?
-set(LBFGS_LIBRARY_DIR "${PROJECT_SOURCE_DIR}/external/lib")
-set(LBFGS_LIBRARY "${LBFGS_LIBRARY_DIR}/liblbfgs.a")
+# link liblbfgs and find header
+set(LBFGS_LIBRARY "${PROJECT_SOURCE_DIR}/external/lib/liblbfgs.a")
 target_link_libraries(hilbert PRIVATE ${LBFGS_LIBRARY})
+set(EXTERNAL_INCLUDE "${PROJECT_SOURCE_DIR}/external/include")
+target_include_directories(hilbert PRIVATE ${EXTERNAL_INCLUDE})
+
+# hilbert module headers
+target_include_directories(hilbert PRIVATE "${PROJECT_SOURCE_DIR}/src")
 
 add_dependencies(hilbert liblbfgs_external)
 

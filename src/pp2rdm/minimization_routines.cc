@@ -32,13 +32,7 @@
 #include <psi4/libpsi4util/PsiOutStream.h>
 #include <psi4/libtrans/integraltransform.h>
 
-#include "../../external/include/lbfgs.h"
-
-/*
-//#include <lbfgs.h>
-#include "/opt/local/include/lbfgs.h"
-//#include "/usr/local/include/lbfgs.h"
-*/
+#include <lbfgs.h>
 
 #include "pp2rdm_solver.h"
 

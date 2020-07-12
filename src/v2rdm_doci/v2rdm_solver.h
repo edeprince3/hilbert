@@ -38,12 +38,11 @@
 #include <psi4/liboptions/liboptions.h>
 #include <psi4/libpsio/psio.hpp>
 #include <psi4/libqt/qt.h>
-
 #include <psi4/libmints/wavefunction.h>
 #include <psi4/libmints/matrix.h>
 #include <psi4/libmints/vector.h>
 
-#include "../misc/hilbert_psifiles.h"
+#include <misc/hilbert_psifiles.h>
 
 namespace psi{ namespace v2rdm_doci{
 
