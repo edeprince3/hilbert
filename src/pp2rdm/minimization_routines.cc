@@ -32,7 +32,7 @@
 #include <psi4/libpsi4util/PsiOutStream.h>
 #include <psi4/libtrans/integraltransform.h>
 
-#include "../../external/install/include/lbfgs.h"
+#include "../../external/include/lbfgs.h"
 
 /*
 //#include <lbfgs.h>

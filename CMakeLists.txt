@@ -81,14 +81,16 @@ add_psi4_plugin(hilbert
     src/v2rdm_doci/write_tpdm_iwl.cc
 )
 
-# external projects (liblbfgs)
-set(EXTERNAL_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/external/install)
+# external projects 
+set(EXTERNAL_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/external/)
 add_subdirectory(external)
 
 # how in the world am i supposed to link lbfgs?
-set(LBFGS_LIBRARY_DIR "${PROJECT_SOURCE_DIR}/external/install/lib")
+set(LBFGS_LIBRARY_DIR "${PROJECT_SOURCE_DIR}/external/lib")
 set(LBFGS_LIBRARY "${LBFGS_LIBRARY_DIR}/liblbfgs.a")
 target_link_libraries(hilbert PRIVATE ${LBFGS_LIBRARY})
+
+add_dependencies(hilbert liblbfgs_external)
 
 install(DIRECTORY ${hilbert_BINARY_DIR}/
         DESTINATION ${CMAKE_INSTALL_PREFIX}
