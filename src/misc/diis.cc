@@ -26,16 +26,16 @@
  */
 
 #include "diis.h"
-#include "psi4/libqt/qt.h"
-#include "psi4/libpsio/psio.hpp"
 
-#include "psi4/psifiles.h"
+#include <psi4/libqt/qt.h>
+#include <psi4/libpsio/psio.hpp>
+#include <psi4/psifiles.h>
 
 #include <string.h>
 
 using namespace psi;
 
-namespace psi{ namespace pp2rdm {
+namespace psi{ 
 
 DIIS::DIIS(int n) {
 
@@ -272,4 +272,4 @@ void DIIS::DIISCoefficients(int nvec){
     free(ipiv);
 }
 
-}} // end of namespaces
+} // end of namespaces

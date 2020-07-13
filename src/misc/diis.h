@@ -28,7 +28,7 @@
 #ifndef DIIS_H
 #define DIIS_H
 
-namespace psi{ namespace pp2rdm {
+namespace psi{ 
 
 class DIIS {
 
@@ -71,6 +71,6 @@ private:
     int replace_diis_iter_;
 };
 
-}} // end of namespace
+} // end of namespace
 
 #endif

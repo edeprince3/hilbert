@@ -32,12 +32,13 @@ add_psi4_plugin(hilbert
     src/doci/doci_solver.cc
     src/doci/write_tpdm.cc
 
-    src/pp2rdm/diis.cc
     src/pp2rdm/minimization_routines.cc
     src/pp2rdm/pp2rdm_solver.cc
     src/pp2rdm/write_tpdm.cc
 
     src/misc/threeindexintegrals.cc
+    src/misc/cg_solver.cc
+    src/misc/diis.cc
 
     src/focas/update_transformation_matrix.cc
 
@@ -60,7 +61,6 @@ add_psi4_plugin(hilbert
 
     src/v2rdm_doci/backtransform_tpdm.cc
     src/v2rdm_doci/basis.cc
-    src/v2rdm_doci/cg_solver.cc
     src/v2rdm_doci/checkpoint.cc
     src/v2rdm_doci/d2.cc
     src/v2rdm_doci/d3.cc

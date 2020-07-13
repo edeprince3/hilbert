@@ -51,13 +51,13 @@
 #include <psi4/libmints/basisset.h>
 #include <psi4/libmints/local.h>
 
-#include "cg_solver.h"
 #include "v2rdm_solver.h"
 
 #include <focas/focas_c_interface.h>
 #include <misc/blas.h>
 #include <misc/misc.h>
 #include <misc/omp.h>
+#include <misc/cg_solver.h>
 
 using namespace psi;
 using namespace fnocc;
