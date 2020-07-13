@@ -36,7 +36,9 @@
 #include <psi4/libtrans/mospace.h>
 #include <psi4/libtrans/integraltransform.h>
 
-namespace psi {
+using namespace psi;
+
+namespace psi{
 
 struct dpdfile4;
 struct dpdbuf4;
@@ -45,6 +47,10 @@ class Dimension;
 class Wavefunction;
 
 typedef std::vector<std::shared_ptr< MOSpace> > SpaceVec;
+
+}
+
+namespace hilbert{
 
 class TPDMBackTransform: public IntegralTransform{
 

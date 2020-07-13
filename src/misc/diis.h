@@ -27,7 +27,7 @@
 #ifndef DIIS_H
 #define DIIS_H
 
-namespace psi{ 
+namespace hilbert{
 
 class DIIS {
 

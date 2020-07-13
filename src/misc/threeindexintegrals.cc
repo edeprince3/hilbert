@@ -40,7 +40,7 @@
 using namespace psi;
 using namespace fnocc;
 
-namespace psi { 
+namespace hilbert{
 
 void ThreeIndexIntegrals(std::shared_ptr<Wavefunction> ref, long int &nQ, long int memory) {
 

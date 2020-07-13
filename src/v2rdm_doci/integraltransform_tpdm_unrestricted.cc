@@ -45,6 +45,8 @@
 
 using namespace psi;
 
+namespace hilbert{
+
 void
 TPDMBackTransform::backtransform_tpdm_unrestricted()
 {
@@ -399,4 +401,6 @@ TPDMBackTransform::backtransform_tpdm_unrestricted()
 
     // Hand DPD control back to the user
     dpd_set_default(currentActiveDPD);
+}
+
 }

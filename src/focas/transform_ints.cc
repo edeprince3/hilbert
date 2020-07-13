@@ -33,6 +33,8 @@
 using namespace psi;
 using namespace fnocc;
 
+namespace hilbert{
+
 void transform_ints_driver(double * int1, double * int2, double * U, int *nmopi, int *frzvpi, int nirrep, int nQ){
 
   int max_num_threads = 1;
@@ -285,5 +287,7 @@ void transform_oei(double *int1, double *U, int *nmopi, int *frzvpi, int* U_offs
  
   free(int1_tmp1);
   free(int1_tmp2);
+
+}
 
 }

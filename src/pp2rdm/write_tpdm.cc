@@ -35,7 +35,7 @@
 
 using namespace psi;
 
-namespace psi{namespace pp2rdm{
+namespace hilbert{
 
 struct tpdm {
     int i;
@@ -136,6 +136,6 @@ void pp2RDMSolver::WriteTPDM(){
 
 }
 
-}} //end namespaces
+} //end namespaces
 
 

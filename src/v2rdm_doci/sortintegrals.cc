@@ -37,7 +37,7 @@ using namespace psi;
 
 
 
-namespace psi{namespace v2rdm_doci{
+namespace hilbert{
 
 void v2RDMSolver::ReadAllIntegrals(iwlbuf *Buf) {
 
@@ -121,4 +121,4 @@ void v2RDMSolver::GetTEIFromDisk(){
 }
 
 
-}}
+}

@@ -40,7 +40,7 @@
 
 using namespace psi;
 
-namespace psi{ namespace v2rdm_doci{
+namespace hilbert{
 
 void v2RDMSolver::WriteCheckpointFile() {
 
@@ -181,4 +181,4 @@ void v2RDMSolver::ReadOrbitalsFromCheckpointFile() {
     psio->close(PSIF_V2RDM_CHECKPOINT,1);
 }
 
-}}
+}

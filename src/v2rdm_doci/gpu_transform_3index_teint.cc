@@ -26,6 +26,8 @@
 
 #include "gpu_transform_3index_teint.h"
 
+namespace hilbert{
+
 void transform_3index_teints_driver_(double *int2_, double *U_, int *nmopi_, int* nirrep_, int* nQ_){
 
   int* U_offset;
@@ -368,5 +370,7 @@ int max_numQ_per_pass(int nQ, int nmo_tot, int nirrep, int max_nmopi, double max
   if ( num_Q > nQ ) num_Q = nQ;
   
   return num_Q;
+
+}
 
 }

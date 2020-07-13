@@ -37,7 +37,7 @@
 
 using namespace psi;
 
-namespace psi{ namespace hilbert {
+namespace hilbert {
 
 extern "C" PSI_API
 int read_options(std::string name, Options& options)
@@ -192,19 +192,19 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
     if ( options.get_str("HILBERT_METHOD") == "DOCI") {
 
-        std::shared_ptr<doci::DOCISolver> doci (new doci::DOCISolver(ref_wfn,options));
+        std::shared_ptr<DOCISolver> doci (new DOCISolver(ref_wfn,options));
         double energy = doci->compute_energy();
         return (std::shared_ptr<Wavefunction>)doci;
 
     }else if ( options.get_str("HILBERT_METHOD") == "PP2RDM") {
 
-        std::shared_ptr<pp2rdm::pp2RDMSolver> pp2rdm (new pp2rdm::pp2RDMSolver(ref_wfn,options));
+        std::shared_ptr<pp2RDMSolver> pp2rdm (new pp2RDMSolver(ref_wfn,options));
         double energy = pp2rdm->compute_energy();
         return (std::shared_ptr<Wavefunction>)pp2rdm;
 
     }else if ( options.get_str("HILBERT_METHOD") == "V2RDM_DOCI") {
 
-        std::shared_ptr<v2rdm_doci::v2RDMSolver> v2rdm_doci (new v2rdm_doci::v2RDMSolver(ref_wfn,options));
+        std::shared_ptr<v2RDMSolver> v2rdm_doci (new v2RDMSolver(ref_wfn,options));
         double energy = v2rdm_doci->compute_energy();
         return (std::shared_ptr<Wavefunction>)v2rdm_doci;
 
@@ -213,5 +213,5 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
     return ref_wfn;
 }
 
-}} // End namespaces
+} // End namespaces
 

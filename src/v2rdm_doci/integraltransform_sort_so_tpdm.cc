@@ -40,7 +40,7 @@
 #   define INDEX2(i,j) ((i) > (j) ? (i)*((i)+1)/2 + (j) : (j)*((j)+1)/2 + (i))
 #endif
 
-namespace psi{
+namespace hilbert{
 
 void TPDMBackTransform::setup_tpdm_buffer(const dpdbuf4 *D)
 {
@@ -284,4 +284,5 @@ void TPDMBackTransform::sort_so_tpdm(const dpdbuf4 *D, int irrep, size_t first_r
         delete [] toc;
     } // End pq iterator
 }
+
 } // End namespace

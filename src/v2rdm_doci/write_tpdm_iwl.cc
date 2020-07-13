@@ -40,7 +40,7 @@
 
 using namespace psi;
 
-namespace psi{namespace v2rdm_doci{
+namespace hilbert{
 
 
 // function to write TPDM to disk in MO basis for subsequent use in deriv()
@@ -209,4 +209,4 @@ void v2RDMSolver::WriteTPDM_IWL(){
 
 }
 
-}} //end namespaces
+} //end namespaces

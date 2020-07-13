@@ -45,7 +45,9 @@
 
 #include <misc/hilbert_psifiles.h>
 
-namespace psi{ namespace doci{
+using namespace psi;
+
+namespace hilbert{
 
 class DOCISolver: public Wavefunction{
   public:
@@ -169,6 +171,6 @@ class DOCISolver: public Wavefunction{
 
 };
 
-}}
+}
 #endif
 

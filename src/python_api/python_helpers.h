@@ -31,7 +31,7 @@
 #include <doci/doci_solver.h>
 #include <pp2rdm/pp2rdm_solver.h>
 
-namespace psi{ 
+namespace hilbert{
 
 class DOCIHelper{
 
@@ -45,7 +45,7 @@ class DOCIHelper{
   protected:
 
     /// the DOCISolver 
-    std::shared_ptr<doci::DOCISolver> doci;
+    std::shared_ptr<DOCISolver> doci;
 
 };
 
@@ -61,7 +61,7 @@ class pp2RDMHelper{
   protected:
 
     /// the pp2RDMSolver 
-    std::shared_ptr<pp2rdm::pp2RDMSolver> pp2rdm;
+    std::shared_ptr<pp2RDMSolver> pp2rdm;
 
 };
 
@@ -77,7 +77,7 @@ class v2RDMHelper{
   protected:
 
     /// the v2RDMSolver 
-    std::shared_ptr<v2rdm_doci::v2RDMSolver> v2rdm;
+    std::shared_ptr<v2RDMSolver> v2rdm;
 
 };
 

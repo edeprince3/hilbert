@@ -41,7 +41,7 @@
 
 using namespace psi;
 
-namespace psi{ namespace v2rdm_doci{
+namespace hilbert{
 
 SharedMatrix v2RDMSolver::GetOEI() {
     std::shared_ptr<MintsHelper> mints(new MintsHelper(reference_wavefunction_));
@@ -51,4 +51,4 @@ SharedMatrix v2RDMSolver::GetOEI() {
     return K1;
 }
 
-}}
+}

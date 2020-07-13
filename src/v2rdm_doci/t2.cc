@@ -39,7 +39,7 @@
 
 using namespace psi;
 
-namespace psi{ namespace v2rdm_doci{
+namespace hilbert{
 
 // T2 portion of A.x (with symmetry)
 void v2RDMSolver::T2_constraints_Au(SharedVector A,SharedVector u){
@@ -1288,4 +1288,4 @@ void v2RDMSolver::T2_constraints_ATu(SharedVector A,SharedVector u){
 
 }
 
-}} // end namespaces
+} // end namespaces

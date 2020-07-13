@@ -34,7 +34,7 @@
 
 using namespace psi;
 
-namespace psi{ 
+namespace hilbert{
 
 DIIS::DIIS(int n) {
 

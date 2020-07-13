@@ -39,7 +39,7 @@
 
 using namespace psi;
 
-namespace psi{ namespace v2rdm_doci{
+namespace hilbert{
 
 // transform primal solute to new basis after semicanonical orbital transformation
 // note, we're only transforming the D1/D2/D3
@@ -264,4 +264,4 @@ void v2RDMSolver::TransformFourIndex(double * inout, double * tmp, SharedMatrix 
 
 }
 
-}}
+}

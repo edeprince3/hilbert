@@ -27,7 +27,7 @@
 #ifndef DAVID_H
 #define DAVID_H
 
-namespace psi{
+namespace hilbert{
 
 // callback function
 typedef void (*CallbackType)(size_t N, size_t maxdim,double **sigma, double **b, void * data);

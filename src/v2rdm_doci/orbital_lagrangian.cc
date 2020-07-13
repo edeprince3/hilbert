@@ -39,7 +39,7 @@
 
 using namespace psi;
 
-namespace psi{ namespace v2rdm_doci{
+namespace hilbert{
 
 void v2RDMSolver::OrbitalLagrangian() {
 
@@ -219,4 +219,4 @@ void v2RDMSolver::DualD1Q1() {
     free(temp);
 }
 
-}}
+}

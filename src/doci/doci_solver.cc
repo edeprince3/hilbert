@@ -60,15 +60,14 @@
 #include <misc/omp.h>
 
 using namespace psi;
-using namespace fnocc;
+
+namespace hilbert{
 
 static void evaluate_sigma(size_t N, size_t maxdim,double **sigma, double **b, void * data) {
-    doci::DOCISolver* doci = reinterpret_cast<doci::DOCISolver*>(data);
+    DOCISolver* doci = reinterpret_cast<DOCISolver*>(data);
     //doci->BuildSigma(N,maxdim,b,sigma);
     doci->BuildSigmaFast(N,maxdim,b,sigma);
 }
-
-namespace psi{ namespace doci{
 
 DOCISolver::DOCISolver(SharedWavefunction reference_wavefunction,Options & options):
     Wavefunction(options){
@@ -274,7 +273,7 @@ void  DOCISolver::common_init(){
 
         double start = omp_get_wtime();
 
-        ::ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
+        ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
 
         Qmo_ = (double*)malloc(nmo_*(nmo_+1)/2*nQ_*sizeof(double));
         memset((void*)Qmo_,'\0',nmo_*(nmo_+1)/2*nQ_*sizeof(double));
@@ -596,7 +595,7 @@ double DOCISolver::compute_energy() {
 
     // push final transformation matrix onto Ca_ and Cb_
     if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
-        ::UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
+        UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
     }
 
     // write tpdm to disk?
@@ -1122,4 +1121,4 @@ void DOCISolver::BuildRDMs(double * ci_wfn, bool print){
 
 }
 
-}} //end namespaces
+} //end namespaces

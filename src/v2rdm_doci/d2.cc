@@ -39,7 +39,7 @@
 
 using namespace psi;
 
-namespace psi{ namespace v2rdm_doci{
+namespace hilbert{
 
 // D2 portion of A^T.y ( and D1 / Q1 ) 
 void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
@@ -190,4 +190,4 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
     offset += amo_*amo_;
 }
 
-}}
+}

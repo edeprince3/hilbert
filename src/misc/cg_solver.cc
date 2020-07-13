@@ -36,7 +36,9 @@
 
 #include "cg_solver.h"
 
-namespace psi{ 
+using namespace psi;
+
+namespace hilbert{
 
 CGSolver::CGSolver(long int n) {
     n_              = n;

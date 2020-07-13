@@ -29,7 +29,9 @@
 
 #include<psi4/libmints/vector.h>
 
-namespace psi{ 
+using namespace psi;
+
+namespace hilbert{
 
 typedef void (*CallbackType)(long int,SharedVector,SharedVector,void *);  
 

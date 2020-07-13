@@ -27,7 +27,7 @@
 #ifndef THREEINDEXINTEGRALS_H
 #define THREEINDEXINTEGRALS_H
 
-namespace psi{
+namespace hilbert{
 
 /// transform three-index integrals to MO basis
 void ThreeIndexIntegrals(std::shared_ptr<Wavefunction> ref, long int &nQ, long int memory);

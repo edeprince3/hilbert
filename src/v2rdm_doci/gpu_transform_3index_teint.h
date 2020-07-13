@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+namespace hilbert{
+
 extern "C" {
   void transform_3index_teints_driver_(double *int2_, double *U_, int *nmopi_, int* nirrep_, int* nQ_);
 }
@@ -38,3 +40,5 @@ int gamma_mn(int gamma_m, int gamma_n);
 int ind_ij(int i, int j, int dim_i);
 
 int max_numQ_per_pass(int nQ, int nmo_tot, int max_nmopi, int nirrep, double max_gpu_mem_mb, int *nmopi);
+
+}

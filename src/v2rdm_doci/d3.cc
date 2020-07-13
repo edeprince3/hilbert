@@ -28,7 +28,7 @@
 
 using namespace psi;
 
-namespace psi{ namespace v2rdm_doci{
+namespace hilbert{
 
 
 // D3 portion of A^T.y 
@@ -219,4 +219,4 @@ void v2RDMSolver::D3_constraints_Au(SharedVector A,SharedVector u){
 
 }
 
-}}
+}

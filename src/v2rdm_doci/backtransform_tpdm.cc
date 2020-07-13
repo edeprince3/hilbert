@@ -38,6 +38,8 @@
 
 using namespace psi;
 
+namespace hilbert{
+
 TPDMBackTransform::TPDMBackTransform(SharedWavefunction wfn,
                                      SpaceVec spaces,
                                      TransformationType transformationType,
@@ -305,5 +307,7 @@ TPDMBackTransform::backtransform_density()
                            "to the integral object's constructor");
 
     backtransform_tpdm_unrestricted();
+
+}
 
 }

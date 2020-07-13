@@ -34,7 +34,7 @@
 using namespace psi;
 using namespace fnocc;
 
-namespace psi{ namespace v2rdm_casscf{
+namespace hilbert{
 
 void v2RDMSolver::exponentiate_step(double * X) { 
 
@@ -242,4 +242,4 @@ void v2RDMSolver::exponentiate_step(double * X) {
 }
 
 
-}} // end of namespaces
+} // end of namespaces

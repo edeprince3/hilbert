@@ -39,7 +39,7 @@ using namespace psi;
 namespace py = pybind11;
 using namespace pybind11::literals;
 
-namespace psi{ 
+namespace hilbert{
 
 void export_HilbertHelper(py::module& m) {
     py::class_<DOCIHelper, std::shared_ptr<DOCIHelper> >(m, "DOCIHelper")
@@ -62,7 +62,7 @@ PYBIND11_MODULE(hilbert, m) {
 
 DOCIHelper::DOCIHelper(SharedWavefunction reference_wavefunction,Options & options)
 {
-    doci = (std::shared_ptr<doci::DOCISolver>)(new doci::DOCISolver(reference_wavefunction,options));
+    doci = (std::shared_ptr<DOCISolver>)(new DOCISolver(reference_wavefunction,options));
 }
 
 DOCIHelper::~DOCIHelper()
@@ -76,7 +76,7 @@ double DOCIHelper::compute_energy() {
 
 pp2RDMHelper::pp2RDMHelper(SharedWavefunction reference_wavefunction,Options & options)
 {
-    pp2rdm = (std::shared_ptr<pp2rdm::pp2RDMSolver>)(new pp2rdm::pp2RDMSolver(reference_wavefunction,options));
+    pp2rdm = (std::shared_ptr<pp2RDMSolver>)(new pp2RDMSolver(reference_wavefunction,options));
 }
 
 pp2RDMHelper::~pp2RDMHelper()
@@ -89,7 +89,7 @@ double pp2RDMHelper::compute_energy() {
 
 v2RDMHelper::v2RDMHelper(SharedWavefunction reference_wavefunction,Options & options)
 {
-    v2rdm = (std::shared_ptr<v2rdm_doci::v2RDMSolver>)(new v2rdm_doci::v2RDMSolver(reference_wavefunction,options));
+    v2rdm = (std::shared_ptr<v2RDMSolver>)(new v2RDMSolver(reference_wavefunction,options));
 }
 
 v2RDMHelper::~v2RDMHelper()

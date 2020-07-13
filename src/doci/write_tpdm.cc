@@ -35,7 +35,7 @@
 
 using namespace psi;
 
-namespace psi{namespace doci{
+namespace hilbert{
 
 struct tpdm {
     int i;
@@ -136,6 +136,6 @@ void DOCISolver::WriteTPDM(){
 
 }
 
-}} //end namespaces
+} //end namespaces
 
 

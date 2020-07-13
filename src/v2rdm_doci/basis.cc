@@ -39,7 +39,7 @@
 
 using namespace psi;
 
-namespace psi{ namespace v2rdm_doci{
+namespace hilbert{
 
 void v2RDMSolver::BuildBasis() {
 
@@ -643,4 +643,4 @@ void v2RDMSolver::BuildBasis() {
 }
 
 
-}}
+}

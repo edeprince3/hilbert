@@ -27,7 +27,7 @@
 #ifndef FOCAS_C_INTERFACE_H
 #define FOCAS_C_INTERFACE_H
 
-namespace psi {
+namespace hilbert{
 
 /// after orbital optimization, update Ca/Cb matrices and repack energy-order transformation matrix as pitzer order
 void UpdateTransformationMatrix(std::shared_ptr<Wavefunction> ref, std::shared_ptr<Matrix> newMO,

@@ -35,7 +35,7 @@
 
 using namespace psi;
 
-namespace psi{
+namespace hilbert{
 
 // update Ca/Cb matrices and repack energy-order transformation matrix as pitzer order
 void UpdateTransformationMatrix(std::shared_ptr<Wavefunction> ref, std::shared_ptr<Matrix> newMO, 

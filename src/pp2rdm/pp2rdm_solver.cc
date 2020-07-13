@@ -65,7 +65,7 @@
 using namespace psi;
 using namespace fnocc;
 
-namespace psi{ namespace pp2rdm{
+namespace hilbert{
 
 pp2RDMSolver::pp2RDMSolver(SharedWavefunction reference_wavefunction,Options & options):
     Wavefunction(options){
@@ -271,7 +271,7 @@ void  pp2RDMSolver::common_init(){
 
         double start = omp_get_wtime();
 
-        ::ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
+        ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
 
         Qmo_ = (double*)malloc(nmo_*(nmo_+1)/2*nQ_*sizeof(double));
         memset((void*)Qmo_,'\0',nmo_*(nmo_+1)/2*nQ_*sizeof(double));
@@ -552,7 +552,7 @@ double pp2RDMSolver::compute_energy() {
 
     // push final transformation matrix onto Ca_ and Cb_
     if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
-        ::UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
+        UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
     }
 
     // write tpdm to disk?
@@ -2019,4 +2019,4 @@ void pp2RDMSolver::setup_integrals() {
     //outfile->Printf("hey new scf energy: %20.12lf\n",escf_);
 }
 
-}} //end namespaces
+} //end namespaces

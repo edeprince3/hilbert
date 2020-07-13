@@ -61,15 +61,16 @@
 using namespace psi;
 using namespace fnocc;
 
+namespace hilbert{
+
 static void evaluate_Ap(long int n, SharedVector Ax, SharedVector x, void * data) {
 
     // reinterpret void * as an instance of v2RDMSolver
-    v2rdm_doci::v2RDMSolver* BPSDPcg = reinterpret_cast<v2rdm_doci::v2RDMSolver*>(data);
+    v2RDMSolver* BPSDPcg = reinterpret_cast<v2RDMSolver*>(data);
     // call a function from class to evaluate Ax product:
     BPSDPcg->cg_Ax(n,Ax,x);
 
 }
-namespace psi{ namespace v2rdm_doci{
 
 v2RDMSolver::v2RDMSolver(SharedWavefunction reference_wavefunction,Options & options):
     Wavefunction(options){
@@ -909,7 +910,7 @@ void  v2RDMSolver::common_init(){
 
         double start = omp_get_wtime();
 
-        ::ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
+        ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
 
         Qmo_ = (double*)malloc(nmo_*(nmo_+1)/2*nQ_*sizeof(double));
         memset((void*)Qmo_,'\0',nmo_*(nmo_+1)/2*nQ_*sizeof(double));
@@ -1230,7 +1231,7 @@ double v2RDMSolver::compute_energy() {
 
     // push final transformation matrix onto Ca_ and Cb_
     if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
-        ::UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
+        UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
     }
 
     if ( options_.get_bool("MOLDEN_WRITE") ) {
@@ -1249,7 +1250,7 @@ double v2RDMSolver::compute_energy() {
             RotateOrbitals();
 
             // push final transformation matrix onto Ca_ and Cb_
-            ::UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
+            UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
 
             // transform D1, D2, D3 to semicanonical basis
             UpdatePrimal();
@@ -1998,4 +1999,4 @@ void v2RDMSolver::RotateOrbitals(){
     RepackIntegrals();
 }
 
-}} //end namespaces
+} //end namespaces

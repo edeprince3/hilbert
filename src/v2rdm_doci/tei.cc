@@ -39,7 +39,7 @@
 
 using namespace psi;
 
-namespace psi{ namespace v2rdm_doci{
+namespace hilbert{
 
 void v2RDMSolver::GetIntegrals() {
 
@@ -197,4 +197,4 @@ double v2RDMSolver::TEI(int i, int j, int k, int l, int h) {
 
 
 
-}}
+}

@@ -36,7 +36,8 @@
 #include "pp2rdm_solver.h"
 
 using namespace psi;
-using namespace pp2rdm;
+
+namespace hilbert {
 
 void lbfgs_error_check(int value) {
 
@@ -169,7 +170,6 @@ static int progress(
     return 0;
 }
 
-namespace psi { namespace pp2rdm {
 
 void pp2RDMSolver::set_number_of_lbfgs_iterations(int iter) {
 
@@ -800,4 +800,4 @@ double pp2RDMSolver::pp2rdm_newton_raphson_iterations(int & ci_iter) {
     return energy;
 }
 
-}}// end of namespaces
+}// end of namespaces

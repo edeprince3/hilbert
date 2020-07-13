@@ -45,7 +45,9 @@
 
 #include <misc/hilbert_psifiles.h>
 
-namespace psi{ namespace pp2rdm{
+using namespace psi;
+
+namespace hilbert{
 
 class pp2RDMSolver: public Wavefunction{
   public:
@@ -264,6 +266,6 @@ class pp2RDMSolver: public Wavefunction{
 
 };
 
-}}
+}
 #endif
 

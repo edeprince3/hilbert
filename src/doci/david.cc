@@ -39,7 +39,9 @@
 #include "david.h"
 #include "doci_solver.h"
 
-namespace psi {
+using namespace psi;
+
+namespace hilbert{
 
 #define BIGNUM 1E100
 #define MAXIT 1000
@@ -109,7 +111,7 @@ size_t david_direct(double *Adiag, size_t N, size_t M, double *eps, double **v, 
         }
         G->zero();
 
-        doci::DOCISolver* doci = reinterpret_cast<doci::DOCISolver*>(data);
+        DOCISolver* doci = reinterpret_cast<DOCISolver*>(data);
 
         for(size_t i = 0; i < init_dim; i++) {
             for(size_t j = 0; j < init_dim; j++){
@@ -621,7 +623,7 @@ int david_direct_redo(double *Adiag, int N, int M, double *eps, double **v, doub
             lambda_old_p[i] = minimum;
         }
 
-        doci::DOCISolver* doci = reinterpret_cast<doci::DOCISolver*>(data);
+        DOCISolver* doci = reinterpret_cast<DOCISolver*>(data);
 
         for (i = 0; i < init_dim; i++) {
             for (j = 0; j < init_dim; j++) G_p[i][j] = doci->HamiltonianElement(small2big[i],small2big[j]);;

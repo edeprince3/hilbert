@@ -43,7 +43,9 @@
 
 #include <misc/hilbert_psifiles.h>
 
-namespace psi{ namespace v2rdm_doci{
+using namespace psi;
+
+namespace hilbert{
 
 class v2RDMSolver: public Wavefunction{
   public:
@@ -127,9 +129,6 @@ class v2RDMSolver: public Wavefunction{
 
     /// number of auxilliary basis functions
     long int nQ_;
-
-    /// read three-index integrals and transform them to MO basis
-    void ThreeIndexIntegrals();
 
     /// three-index integral buffer
     double * Qmo_;
@@ -352,13 +351,10 @@ class v2RDMSolver: public Wavefunction{
     /// transform a four-index quantity from one basis to another
     void TransformFourIndex(double * inout, double * tmp, SharedMatrix trans);
 
-    /// update ao/mo transformation matrix after orbital optimization
-    void UpdateTransformationMatrix();
-
     /// mo-mo transformation matrix
     SharedMatrix newMO_;
 };
 
-}}
+}
 #endif
 
