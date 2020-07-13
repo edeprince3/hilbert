@@ -24,8 +24,8 @@
  *  @END LICENSE
  */
 
-#ifndef MISC_H
-#define MISC_H
+#ifndef THREEINDEXINTEGRALS_H
+#define THREEINDEXINTEGRALS_H
 
 namespace psi{
 

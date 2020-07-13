@@ -57,7 +57,7 @@
 #include "pp2rdm_solver.h"
 
 #include <focas/focas_c_interface.h>
-#include <misc/misc.h>
+#include <misc/threeindexintegrals.h>
 #include <misc/omp.h>
 #include <misc/blas.h>
 #include <misc/diis.h>

@@ -1,6 +1,6 @@
 
 # job description:
-print('        H2O / 6-31g / DOCI, scf_type = DF, rOH = 1.0 A, aHOH = 104.5')
+print('        H2O / 6-31g / v2RDM-DOCI, scf_type = DF, rOH = 1.0 A, aHOH = 104.5')
 
 sys.path.insert(0, '../../..')
 import hilbert

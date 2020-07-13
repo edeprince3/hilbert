@@ -55,7 +55,7 @@
 #include "doci_solver.h"
 
 #include <focas/focas_c_interface.h>
-#include <misc/misc.h>
+#include <misc/threeindexintegrals.h>
 #include <misc/blas.h>
 #include <misc/omp.h>
 
