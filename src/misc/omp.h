@@ -1,6 +1,8 @@
 #ifndef MY_OMP_H
 #define MY_OMP_H
 
+#include<time.h>
+
 #ifdef _OPENMP
     #include<omp.h>
 #else

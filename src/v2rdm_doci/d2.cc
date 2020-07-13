@@ -28,31 +28,19 @@
 #include <psi4/psi4-dec.h>
 #include <psi4/liboptions/liboptions.h>
 #include <psi4/libqt/qt.h>
-
-#include<psi4/libtrans/integraltransform.h>
-#include<psi4/libtrans/mospace.h>
-
-#include<psi4/libmints/wavefunction.h>
-//#include<psi4/libmints/mints.h>
-#include<psi4/libmints/vector.h>
-#include<psi4/libmints/matrix.h>
-//#include<../bin/fnocc/blas.h>
-#include<time.h>
+#include <psi4/libtrans/integraltransform.h>
+#include <psi4/libtrans/mospace.h>
+#include <psi4/libmints/wavefunction.h>
+#include <psi4/libmints/vector.h>
+#include <psi4/libmints/matrix.h>
 
 #include"v2rdm_solver.h"
 
-#ifdef _OPENMP
-    #include<omp.h>
-#else
-    #define omp_get_wtime() ( (double)clock() / CLOCKS_PER_SEC )
-    #define omp_get_max_threads() 1
-#endif
+#include <misc/omp.h>
 
 using namespace psi;
-//using namespace fnocc;
 
 namespace psi{ namespace v2rdm_doci{
-
 
 // D2 portion of A^T.y ( and D1 / Q1 ) 
 void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){

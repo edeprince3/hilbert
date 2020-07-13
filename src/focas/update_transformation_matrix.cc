@@ -33,7 +33,6 @@
 #include <psi4/libmints/wavefunction.h>
 #include <psi4/libmints/vector.h>
 #include <psi4/libmints/matrix.h>
-#include <time.h>
 
 using namespace psi;
 

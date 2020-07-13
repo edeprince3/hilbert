@@ -361,10 +361,7 @@ void  DOCISolver::common_init(){
         orbopt_transformation_matrix_[i * nmo_ + i] = 1.0;
     }
 
-    size_t nthread = 1;
-    #ifdef _OPENMP
-        nthread = omp_get_max_threads();
-    #endif
+    size_t nthread = omp_get_max_threads();
 
     orbopt_data_    = (double*)malloc(15*sizeof(double));
     orbopt_data_[0] = (double)nthread;

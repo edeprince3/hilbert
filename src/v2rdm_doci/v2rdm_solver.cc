@@ -959,10 +959,7 @@ void  v2RDMSolver::common_init(){
 
     // input/output array for orbopt sweeps
 
-    int nthread = 1;
-    #ifdef _OPENMP
-        nthread = omp_get_max_threads();
-    #endif
+    int nthread = omp_get_max_threads();
 
     orbopt_data_    = (double*)malloc(15*sizeof(double));
     orbopt_data_[0] = (double)nthread;
