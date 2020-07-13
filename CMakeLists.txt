@@ -9,7 +9,7 @@ project(hilbert
         LANGUAGES CXX C Fortran)
 set(hilbert_AUTHORS      "A. Eugene DePrince III and the DePrince Group")
 set(hilbert_DESCRIPTION  "Hilbert: A space for quantum chemistry plugins to Psi4")
-set(hilbert_URL          "https://github.com/edeprince3/hiblert")
+set(hilbert_URL          "https://github.com/edeprince3/hilbert")
 set(hilbert_LICENSE      "GPL-3.0+")
 set(CMAKE_CXX_STANDARD 17)
 
