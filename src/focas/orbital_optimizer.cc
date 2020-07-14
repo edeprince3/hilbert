@@ -28,16 +28,24 @@
 
 #include <psi4/libplugin/plugin.h>
 #include <psi4/psi4-dec.h>
+#include <psi4/libpsio/psio.hpp>
 #include <psi4/liboptions/liboptions.h>
 #include <psi4/libpsi4util/PsiOutStream.h>
 #include <psi4/libmints/wavefunction.h>
 #include <psi4/libmints/matrix.h>
 #include <psi4/libmints/vector.h>
 #include <psi4/libmints/molecule.h>
+#include <psi4/libmints/basisset.h>
+#include <psi4/libtrans/integraltransform.h>
+#include <psi4/psifiles.h>
+#include <psi4/libqt/qt.h>
+
+#include <misc/blas.h>
 
 #include "orbital_optimizer.h"
 
 using namespace psi;
+using namespace fnocc;
 
 namespace hilbert{
 
@@ -52,6 +60,17 @@ OrbitalOptimizer::OrbitalOptimizer(std::shared_ptr<Wavefunction> reference_wavef
     frzcpi_ = reference_wavefunction->frzcpi();
     frzvpi_ = reference_wavefunction->frzvpi();
     nmopi_  = reference_wavefunction->nmopi();
+
+    if ( reference_wavefunction->options().get_str("SCF_TYPE") == "DF" ) {
+        std::shared_ptr<BasisSet> primary = reference_wavefunction->basisset();
+        std::shared_ptr<BasisSet> auxiliary = reference_wavefunction->get_basisset("DF_BASIS_SCF");
+        nQ_ = auxiliary->nbf();
+    }else if ( reference_wavefunction->options().get_str("SCF_TYPE") == "CD" ) {
+        std::shared_ptr<PSIO> psio(new PSIO());
+        psio->open(PSIF_DFSCF_BJ,PSIO_OPEN_OLD);
+        psio->read_entry(PSIF_DFSCF_BJ, "length", (char*)&nQ_, sizeof(long int));
+        psio->close(PSIF_DFSCF_BJ,1);
+    }
 
     // restricted doubly occupied orbitals per irrep (optimized)
     rstcpi_   = (int*)malloc(nirrep_*sizeof(int));
@@ -367,6 +386,140 @@ void OrbitalOptimizer::get_hessian(std::shared_ptr<Matrix> Hessian){
 }
 
 
+// dumb functions that only work in C1:
+
+
+void OrbitalOptimizer::dumb_orbital_hessian(double * d2, double * d1, double * oei, double * Qmo) {
+
+    if ( nirrep_ != 1 ) {
+        throw PsiException("function dumb_orbital_hessian only works in c1 symmetry",__FILE__,__LINE__);
+    }
+
+    double **hp = dumb_hessian_->pointer();
+
+    int ntri = nmo_*(nmo_+1)/2;
+    dumb_tei_ = (double*)malloc(ntri*ntri*sizeof(double));
+    memset((void*)dumb_tei_,'\0',ntri*ntri*sizeof(double));
+
+    F_DGEMM('n','t',nmo_*(nmo_+1)/2,nmo_*(nmo_+1)/2,nQ_,1.0,Qmo,nmo_*(nmo_+1)/2,Qmo,nmo_*(nmo_+1)/2,0.0,dumb_tei_,nmo_*(nmo_+1)/2);
+
+    for (int p = 0; p < nmo_; p++) {
+        for (int q = 0; q < nmo_; q++) {
+            for (int r = 0; r < nmo_; r++) {
+                for (int s = 0; s < nmo_; s++) {
+                    double dum = dumb_hessian_pqrs(p,q,r,s,d2,d1,oei)
+                               - dumb_hessian_pqrs(p,q,s,r,d2,d1,oei)
+                               - dumb_hessian_pqrs(q,p,s,r,d2,d1,oei)
+                               + dumb_hessian_pqrs(q,p,s,r,d2,d1,oei);
+                }
+            }
+        }
+    }
+
+    free(dumb_tei_);
 
 }
 
+double OrbitalOptimizer::dumb_hessian_pqrs(int p, int q, int r, int s, double * d2, double * d1, double * oei) {
+
+    double val = 0.0;
+
+    int n1 = nmo_;
+    int n2 = nmo_ * nmo_;
+    int n3 = nmo_ * nmo_  * nmo_;
+    int ntri = nmo_*(nmo_+1)/2;
+
+    //one-electron terms
+    val += -oei[INDEX( s , p )] * d1[INDEX( q , r )] - oei[INDEX( q , r )] * d1[INDEX( s , p )];
+
+    if ( q == r ) {
+        for (int u = 0; u < nmo_; u++) {
+            val += 0.5 * (oei[INDEX( u , p )] * d1[INDEX( s , u )] + oei[INDEX( s , u )] * d1[INDEX( u , p )]);
+        }
+    }
+    if ( p == s ) {
+        for (int u = 0; u < nmo_; u++) {
+            val += 0.5 * (oei[INDEX( u , r )] * d1[INDEX( q , u )] + oei[INDEX( q , u )] * d1[INDEX( u , r )]);
+        }
+    }
+
+    //two-electron terms
+    if ( q == r ) {
+        for (int t = 0; t < nmo_; t++) {
+            for (int u = 0; u < nmo_; u++) {
+                for (int v = 0; v < nmo_; v++) {
+                    val += 0.5 * dumb_tei_[INDEX( u , p ) * ntri + INDEX( v , t )] * d2[ s * n3 + t * n2 + u * n1 + v ];
+                    val += 0.5 * dumb_tei_[INDEX( s , u ) * ntri + INDEX( t , v )] * d2[ u * n3 + v * n2 + p * n1 + t ];
+                }
+            }
+        }
+    }
+    if ( p == s ) {
+        for (int t = 0; t < nmo_; t++) {
+            for (int u = 0; u < nmo_; u++) {
+                for (int v = 0; v < nmo_; v++) {
+                    val += 0.5 * dumb_tei_[INDEX( q , u ) * ntri + INDEX( t , v )] * d2[ u * n3 + v * n2 + r * n1 + t ];
+                    val += 0.5 * dumb_tei_[INDEX( u , r ) * ntri + INDEX( v , t )] * d2[ q * n3 + t * n2 + u * n1 + v ];
+                }
+            }
+        }
+    }
+    for (int u = 0; u < nmo_; u++) {
+        for (int v = 0; v < nmo_; v++) {
+            val += dumb_tei_[INDEX( u , p ) * ntri + INDEX( v , r )] * d2[ q * n3 + s * n2 + u * n1 + v ];
+            val += dumb_tei_[INDEX( q , u ) * ntri + INDEX( s , v )] * d2[ u * n3 + v * n2 + p * n1 + r ];
+        }
+    }
+    for (int u = 0; u < nmo_; u++) {
+        for (int t = 0; t < nmo_; t++) {
+            val -= dumb_tei_[INDEX( s , p ) * ntri + INDEX( t , u )] * d2[ q * n3 + u * n2 + r * n1 + t ];
+            val -= dumb_tei_[INDEX( t , p ) * ntri + INDEX( s , u )] * d2[ q * n3 + u * n2 + t * n1 + r ];
+            val -= dumb_tei_[INDEX( q , r ) * ntri + INDEX( u , t )] * d2[ s * n3 + t * n2 + p * n1 + u ];
+            val -= dumb_tei_[INDEX( q , t ) * ntri + INDEX( u , r )] * d2[ t * n3 + s * n2 + p * n1 + u ];
+        }
+    }
+
+    return val;
+}
+
+// evaluates orbital gradient 
+// g(pq) = <0| [E_{pq}^- , H ] |0> = 2 <0| [E_{pq} , H ] |0>
+void OrbitalOptimizer::dumb_orbital_gradient(double * d2, double * d1, double * oei, double * Qmo){
+
+    if ( nirrep_ != 1 ) {
+        throw PsiException("function dumb_orbital_gradient only works in c1 symmetry",__FILE__,__LINE__);
+    }
+
+    dumb_gradient_->zero();
+    double ** gradient_p = dumb_gradient_->pointer();
+
+    for (int p = 0; p < nmo_; p++) {
+        for (int q = 0; q < nmo_; q++) {
+            double dum = 0.0;
+            for (int r = 0; r < nmo_; r++) {
+                dum += oei[INDEX(r,p)] * d1[INDEX(q,r)];
+                dum -= oei[INDEX(q,r)] * d1[INDEX(r,p)];
+            }
+            gradient_p[p][q] = 2.0 * dum;
+        }
+    }
+
+    for (int p = 0; p < nmo_; p++) {
+        for (int r = 0; r < nmo_; r++) {
+            for (int s = 0; s < nmo_; s++) {
+                for (int t = 0; t < nmo_; t++) {
+                    int rp = INDEX(r,p);
+                    int st = INDEX(s,t);
+                    double v_rspt = C_DDOT(nQ_,Qmo + rp,nmo_*(nmo_+1)/2,Qmo + st,nmo_*(nmo_+1)/2);
+                    for (int q = 0; q < nmo_; q++) {
+                        double val = 2.0 * d2[q*nmo_*nmo_*nmo_ + t*nmo_*nmo_ + r*nmo_ + s];
+                        gradient_p[p][q] += v_rspt * val;
+                        gradient_p[q][p] -= v_rspt * val;
+                    }
+                }
+            }
+        }
+    }
+}
+
+}// end of namespace

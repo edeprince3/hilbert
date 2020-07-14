@@ -69,6 +69,9 @@ class OrbitalOptimizer {
     /// number of irreps
     int nirrep_;
 
+    /// number of auxiliary basis functions
+    long int nQ_;
+
     /// number of molecular orbitals
     int nmo_;
 
@@ -131,6 +134,27 @@ class OrbitalOptimizer {
 
     /// algorithm
     std::string algorithm_;
+
+
+    // dumb functions AED is playing with
+
+    /// evaluate orbital gradient
+    void dumb_orbital_gradient(double * d2, double * d1, double * oei, double * Qmo);
+
+    /// evaluate orbital hessian
+    void dumb_orbital_hessian(double * d2, double * d1, double * oei, double * Qmo);
+
+    /// an element of the orbital hessian, kind of
+    double dumb_hessian_pqrs(int p, int q, int r, int s, double * d2, double * d1, double * oei);
+
+    /// the orbital hessian
+    std::shared_ptr<Matrix> dumb_hessian_;
+
+    /// the orbital gradient
+    std::shared_ptr<Matrix> dumb_gradient_;
+
+    /// four-index two-electron integrals
+    double * dumb_tei_;
 
 };
 
