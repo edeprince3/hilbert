@@ -34,6 +34,7 @@
 #else
     #define omp_get_wtime() ( (double)clock() / CLOCKS_PER_SEC )
     #define omp_get_max_threads() 1
+    #define omp_get_thread_num() 0
 #endif
 
 #endif
