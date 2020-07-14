@@ -320,17 +320,17 @@ OrbitalOptimizer::OrbitalOptimizer(std::shared_ptr<Wavefunction> reference_wavef
 
     // options
     // TODO: some options are missing:
-    //    ORBOPT_ACTIVE_ACTIVE_ROTATIONS (all hilbert plugins so far assume this is true)
     //    ORBOPT_ONE_STEP (should be handled outside of this class)
     //    ORBOPT_FREQUENCY (should be handled outside of this class)
     //    ORBOPT_NUM_DIIS_VECTORS (is diis implemented?)
 
-    e_convergence_          = options.get_double("ORBOPT_ENERGY_CONVERGENCE");
-    g_convergence_          = options.get_double("ORBOPT_GRADIENT_CONVERGENCE");
-    maxiter_                = options.get_int("ORBOPT_MAXITER");
-    write_                  = options.get_bool("ORBOPT_WRITE");
-    exact_diagonal_hessian_ = options.get_bool("ORBOPT_EXACT_DIAGONAL_HESSIAN");
-    algorithm_              = options.get_str("ORBOPT_ALGORITHM");
+    e_convergence_           = options.get_double("ORBOPT_ENERGY_CONVERGENCE");
+    g_convergence_           = options.get_double("ORBOPT_GRADIENT_CONVERGENCE");
+    active_active_rotations_ = options.get_bool("ORBOPT_ACTIVE_ACTIVE_ROTATIONS");
+    maxiter_                 = options.get_int("ORBOPT_MAXITER");
+    write_                   = options.get_bool("ORBOPT_WRITE");
+    exact_diagonal_hessian_  = options.get_bool("ORBOPT_EXACT_DIAGONAL_HESSIAN");
+    algorithm_               = options.get_str("ORBOPT_ALGORITHM");
 
     outfile->Printf("  ==> Orbital optimization parameters <==\n");
     outfile->Printf("\n");
@@ -340,6 +340,7 @@ OrbitalOptimizer::OrbitalOptimizer(std::shared_ptr<Wavefunction> reference_wavef
     outfile->Printf("        exact diagonal Hessian:      %12s\n",exact_diagonal_hessian_ ? "true" : "false");
     outfile->Printf("        print iteration info:        %12s\n",write_ ? "true" : "false");
     outfile->Printf("        algorithm:                   %12s\n",algorithm_.c_str());
+    outfile->Printf("        active-active rotations:     %12s\n",active_active_rotations_ ? "true" : "false");
     outfile->Printf("\n");
 
 }
