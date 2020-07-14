@@ -27,6 +27,8 @@
 #ifndef ORBITAL_OPTIMIZER_H
 #define ORBITAL_OPTIMIZER_H
 
+#include <string>
+
 #include <psi4/libplugin/plugin.h>
 #include <psi4/psi4-dec.h>
 #include <psi4/liboptions/liboptions.h>
@@ -46,7 +48,6 @@ class OrbitalOptimizer {
     void optimize_orbitals(double * d2, double * d1, double * tei, double * oei, double * transformation_matrix);
     void get_lagrangian(std::shared_ptr<Matrix> Lagrangian);
     void get_hessian(std::shared_ptr<Matrix> Hessian);
-    void set_options(double * option_list);
     bool is_converged(){ return is_energy_converged_ && is_gradient_converged_; }
 
   protected:
@@ -80,8 +81,7 @@ class OrbitalOptimizer {
     int maxiter_;
     bool write_;
     bool exact_diagonal_hessian_;
-
-    double * option_list_;
+    std::string algorithm_;
 
 };
 

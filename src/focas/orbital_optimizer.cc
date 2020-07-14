@@ -24,6 +24,8 @@
  *  @END LICENSE
  */
 
+#include <string>
+
 #include <psi4/libplugin/plugin.h>
 #include <psi4/psi4-dec.h>
 #include <psi4/liboptions/liboptions.h>
@@ -134,14 +136,6 @@ OrbitalOptimizer::OrbitalOptimizer(std::shared_ptr<Wavefunction> reference_wavef
         amo_     += nmopi_[h]-frzcpi_[h]-rstcpi_[h]-rstvpi_[h]-frzvpi_[h];
         amopi_[h] = nmopi_[h]-frzcpi_[h]-rstcpi_[h]-rstvpi_[h]-frzvpi_[h];
     }
-
-    e_convergence_ = options.get_double("ORBOPT_ENERGY_CONVERGENCE");
-    g_convergence_ = options.get_double("ORBOPT_GRADIENT_CONVERGENCE");
-
-// TODO! option list needs to be populated. 
-// really, though, probably should use explicit variables that get set through appropriate functions.
-
-    option_list_ = (double*)malloc(20*sizeof(double));
 
     // lastly, determine orbital symmetries (in energy order)
     orbital_symmetries_ = (int*)malloc(nmo_*sizeof(int));
@@ -324,30 +318,29 @@ OrbitalOptimizer::OrbitalOptimizer(std::shared_ptr<Wavefunction> reference_wavef
     outfile->Printf(" ]\n");
     outfile->Printf("\n");
 
+    // options
+    // TODO: some options are missing:
+    //    ORBOPT_ACTIVE_ACTIVE_ROTATIONS (all hilbert plugins so far assume this is true)
+    //    ORBOPT_ONE_STEP (should be handled outside of this class)
+    //    ORBOPT_FREQUENCY (should be handled outside of this class)
+    //    ORBOPT_NUM_DIIS_VECTORS (is diis implemented?)
+
+    e_convergence_          = options.get_double("ORBOPT_ENERGY_CONVERGENCE");
+    g_convergence_          = options.get_double("ORBOPT_GRADIENT_CONVERGENCE");
     maxiter_                = options.get_int("ORBOPT_MAXITER");
     write_                  = options.get_bool("ORBOPT_WRITE");
     exact_diagonal_hessian_ = options.get_bool("ORBOPT_EXACT_DIAGONAL_HESSIAN");
+    algorithm_              = options.get_str("ORBOPT_ALGORITHM");
 
     outfile->Printf("  ==> Orbital optimization parameters <==\n");
     outfile->Printf("\n");
-    outfile->Printf("        g_convergence:                  %5.3le\n",g_convergence_);
-    outfile->Printf("        e_convergence:                  %5.3le\n",e_convergence_);
-    outfile->Printf("        maximum iterations:                 %5i\n",maxiter_);
-    outfile->Printf("        exact diagonal Hessian:             %5s\n",exact_diagonal_hessian_ ? "true" : "false");
-    outfile->Printf("        print iteration info:               %5s\n",write_ ? "true" : "false");
+    outfile->Printf("        g_convergence:               %12.3le\n",g_convergence_);
+    outfile->Printf("        e_convergence:               %12.3le\n",e_convergence_);
+    outfile->Printf("        maximum iterations:          %12i\n",maxiter_);
+    outfile->Printf("        exact diagonal Hessian:      %12s\n",exact_diagonal_hessian_ ? "true" : "false");
+    outfile->Printf("        print iteration info:        %12s\n",write_ ? "true" : "false");
+    outfile->Printf("        algorithm:                   %12s\n",algorithm_.c_str());
     outfile->Printf("\n");
-
-// not relevant within optimizer 
-    //outfile->Printf("        1-step algorithm:                   %5s\n",options_.get_bool("ORBOPT_ONE_STEP") ? "true" : "false");
-
-// not relevant within optimizer
-    //outfile->Printf("        frequency:                          %5i\n",options_.get_int("ORBOPT_FREQUENCY"));
-
-// not used in any methods in hilbert yet (all assume this to be true)
-    //outfile->Printf("        active-active rotations:            %5s\n",options_.get_bool("ORBOPT_ACTIVE_ACTIVE_ROTATIONS") ? "true" : "false");
-
-// is diis implemented?
-    //outfile->Printf("        number of DIIS vectors:             %5i\n",options_.get_int("ORBOPT_NUM_DIIS_VECTORS"));
 
 }
 
@@ -356,7 +349,6 @@ OrbitalOptimizer::~OrbitalOptimizer(){
     free(rstcpi_);
     free(rstvpi_);
     free(amopi_);
-    free(option_list_);
     free(orbital_symmetries_);
 
 }
@@ -373,9 +365,6 @@ void OrbitalOptimizer::get_hessian(std::shared_ptr<Matrix> Hessian){
     throw PsiException("get_hessian not yet implemented",__FILE__,__LINE__);
 }
 
-void OrbitalOptimizer::set_options(double * option_list){
-    throw PsiException("set_options not yet implemented",__FILE__,__LINE__);
-}
 
 
 }

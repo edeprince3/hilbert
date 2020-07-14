@@ -41,6 +41,7 @@ add_psi4_plugin(hilbert
     src/misc/diis.cc
 
     src/focas/update_transformation_matrix.cc
+    src/focas/orbital_optimizer.cc
 
     src/focas/focas_data.F90
     src/focas/focas_exponential.F90
