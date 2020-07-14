@@ -420,6 +420,7 @@ void OrbitalOptimizer::dumb_orbital_hessian(double * d2, double * d1, double * o
 
 }
 
+// one permutation of Eq. A6 of J. Chem. Phys. 141, 244104 (2014); https://doi.org/10.1063/1.4904384
 double OrbitalOptimizer::dumb_hessian_pqrs(int p, int q, int r, int s, double * d2, double * d1, double * oei) {
 
     double val = 0.0;
