@@ -58,6 +58,7 @@
 #include <misc/threeindexintegrals.h>
 #include <misc/blas.h>
 #include <misc/omp.h>
+#include <focas/orbital_optimizer.h>
 
 using namespace psi;
 
@@ -92,6 +93,8 @@ DOCISolver::~DOCISolver()
 }
 
 void  DOCISolver::common_init(){
+
+    orbopt_ = (std::shared_ptr<OrbitalOptimizer>)(new OrbitalOptimizer(reference_wavefunction_,options_));
 
     is_df_ = false;
 

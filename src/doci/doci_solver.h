@@ -45,6 +45,8 @@
 
 #include <misc/hilbert_psifiles.h>
 
+#include <focas/orbital_optimizer.h>
+
 using namespace psi;
 
 namespace hilbert{
@@ -66,6 +68,9 @@ class DOCISolver: public Wavefunction{
 
 
   protected:
+
+    /// the orbital optimizer
+    std::shared_ptr<OrbitalOptimizer> orbopt_;
 
     virtual bool same_a_b_orbs() const { return same_a_b_orbs_; }
     virtual bool same_a_b_dens() const { return same_a_b_dens_; }

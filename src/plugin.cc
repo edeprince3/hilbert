@@ -111,6 +111,9 @@ int read_options(std::string name, Options& options)
         /*- convergence in energy for rotations -*/
         options.add_double("ORBOPT_ENERGY_CONVERGENCE",1.0e-8);
 
+        /*- do rotate active-active orbital pairs. No methods in Hilbert use this flag currently !expert -*/
+        options.add_bool("ORBOPT_ACTIVE_ACTIVE_ROTATIONS",false);
+
         /*- flag for using exact expresions for diagonal Hessian element -*/
         options.add_bool("ORBOPT_EXACT_DIAGONAL_HESSIAN",true);
 
