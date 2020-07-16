@@ -33,7 +33,7 @@
 #include <psi4/libmints/vector.h>
 #include <psi4/libmints/matrix.h>
 
-#include "v2rdm_solver.h"
+#include "v2rdm_doci_solver.h"
 
 #include <misc/omp.h>
 
@@ -43,7 +43,7 @@ namespace hilbert{
 
 // transform primal solute to new basis after semicanonical orbital transformation
 // note, we're only transforming the D1/D2/D3
-void v2RDMSolver::UpdatePrimal() {
+void v2RDM_DOCISolver::UpdatePrimal() {
 
     throw PsiException("function UpdatePrimal() is currently broken",__FILE__,__LINE__);
 
@@ -170,7 +170,7 @@ void v2RDMSolver::UpdatePrimal() {
 
 }
 
-void v2RDMSolver::TransformFourIndex(double * inout, double * tmp, SharedMatrix trans) {
+void v2RDM_DOCISolver::TransformFourIndex(double * inout, double * tmp, SharedMatrix trans) {
 
     throw PsiException("function TransformFourIndex() is currently broken",__FILE__,__LINE__);
 

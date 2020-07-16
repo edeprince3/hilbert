@@ -31,7 +31,7 @@
 #include <psi4/libtrans/integraltransform.h>
 #include <psi4/libpsi4util/PsiOutStream.h>
 
-#include "v2rdm_solver.h"
+#include "v2rdm_doci_solver.h"
 
 using namespace psi;
 
@@ -39,7 +39,7 @@ using namespace psi;
 
 namespace hilbert{
 
-void v2RDMSolver::ReadAllIntegrals(iwlbuf *Buf) {
+void v2RDM_DOCISolver::ReadAllIntegrals(iwlbuf *Buf) {
 
   unsigned long int lastbuf;
   Label *lblptr;
@@ -113,7 +113,7 @@ void v2RDMSolver::ReadAllIntegrals(iwlbuf *Buf) {
 }
 
 
-void v2RDMSolver::GetTEIFromDisk(){
+void v2RDM_DOCISolver::GetTEIFromDisk(){
   struct iwlbuf Buf;
   iwl_buf_init(&Buf,PSIF_MO_TEI,0.0,1,1);
   ReadAllIntegrals(&Buf);

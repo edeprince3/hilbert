@@ -33,7 +33,7 @@
 #include <psi4/libmints/vector.h>
 #include <psi4/libmints/matrix.h>
 
-#include "v2rdm_solver.h"
+#include "v2rdm_doci_solver.h"
 
 #include <misc/omp.h>
 
@@ -41,7 +41,7 @@ using namespace psi;
 
 namespace hilbert{
 
-void v2RDMSolver::BuildBasis() {
+void v2RDM_DOCISolver::BuildBasis() {
 
     // product table:
     table = (int*)malloc(64*sizeof(int));

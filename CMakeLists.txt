@@ -77,7 +77,7 @@ add_psi4_plugin(hilbert
     src/v2rdm_doci/t2.cc
     src/v2rdm_doci/tei.cc
     src/v2rdm_doci/update_primal.cc
-    src/v2rdm_doci/v2rdm_solver.cc
+    src/v2rdm_doci/v2rdm_doci_solver.cc
     src/v2rdm_doci/write_tpdm.cc
     src/v2rdm_doci/write_tpdm_iwl.cc
 )

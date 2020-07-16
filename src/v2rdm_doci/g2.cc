@@ -33,7 +33,7 @@
 #include <psi4/libmints/vector.h>
 #include <psi4/libmints/matrix.h>
 
-#include"v2rdm_solver.h"
+#include"v2rdm_doci_solver.h"
 
 #include <misc/omp.h>
 
@@ -42,7 +42,7 @@ using namespace psi;
 namespace hilbert{
 
 // G2 portion of A.x (with symmetry)
-void v2RDMSolver::G2_constraints_Au(SharedVector A,SharedVector u){
+void v2RDM_DOCISolver::G2_constraints_Au(SharedVector A,SharedVector u){
 
     double* A_p = A->pointer();
     double* u_p = u->pointer();
@@ -106,7 +106,7 @@ void v2RDMSolver::G2_constraints_Au(SharedVector A,SharedVector u){
 }
 
 // G2 portion of A^T.y (with symmetry)
-void v2RDMSolver::G2_constraints_ATu(SharedVector A,SharedVector u){
+void v2RDM_DOCISolver::G2_constraints_ATu(SharedVector A,SharedVector u){
 
     double* A_p = A->pointer();
     double* u_p = u->pointer();

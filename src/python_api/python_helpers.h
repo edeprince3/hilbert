@@ -27,7 +27,7 @@
 #ifndef PYTHON_HELPERS_H
 #define PYTHON_HELPERS_H
 
-#include <v2rdm_doci/v2rdm_solver.h>
+#include <v2rdm_doci/v2rdm_doci_solver.h>
 #include <doci/doci_solver.h>
 #include <pp2rdm/pp2rdm_solver.h>
 
@@ -65,19 +65,19 @@ class pp2RDMHelper{
 
 };
 
-class v2RDMHelper{
+class v2RDM_DOCIHelper{
 
   public:
 
-    v2RDMHelper(SharedWavefunction reference_wavefunction,Options & options);
-    ~v2RDMHelper();
+    v2RDM_DOCIHelper(SharedWavefunction reference_wavefunction,Options & options);
+    ~v2RDM_DOCIHelper();
     void common_init();
     double compute_energy();
 
   protected:
 
     /// the v2RDMSolver 
-    std::shared_ptr<v2RDMSolver> v2rdm;
+    std::shared_ptr<v2RDM_DOCISolver> v2rdm_doci;
 
 };
 

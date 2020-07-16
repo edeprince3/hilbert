@@ -33,7 +33,7 @@
 #include <psi4/libmints/vector.h>
 #include <psi4/libmints/matrix.h>
 
-#include "v2rdm_solver.h"
+#include "v2rdm_doci_solver.h"
 
 #include <misc/omp.h>
 
@@ -41,7 +41,7 @@ using namespace psi;
 
 namespace hilbert{
 
-void v2RDMSolver::OrbitalLagrangian() {
+void v2RDM_DOCISolver::OrbitalLagrangian() {
 
     // unpack lagrangian, which was returned from orbital optimizer as
     // 
@@ -147,7 +147,7 @@ void v2RDMSolver::OrbitalLagrangian() {
 
 }
 
-void v2RDMSolver::DualD1Q1() {
+void v2RDM_DOCISolver::DualD1Q1() {
 
     // unpack the part of the dual solution corresponding to D1/Q1 mapping
 

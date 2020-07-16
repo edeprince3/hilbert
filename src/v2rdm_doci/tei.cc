@@ -33,7 +33,7 @@
 #include <psi4/libmints/vector.h>
 #include <psi4/libmints/matrix.h>
 
-#include "v2rdm_solver.h"
+#include "v2rdm_doci_solver.h"
 
 #include <misc/omp.h>
 
@@ -41,7 +41,7 @@ using namespace psi;
 
 namespace hilbert{
 
-void v2RDMSolver::GetIntegrals() {
+void v2RDM_DOCISolver::GetIntegrals() {
 
     // one-electron integrals:  
     SharedMatrix K1 = GetOEI();
@@ -124,7 +124,7 @@ void v2RDMSolver::GetIntegrals() {
 }
 
 // repack rotated full-space integral into active-space integrals
-void v2RDMSolver::RepackIntegrals(){ 
+void v2RDM_DOCISolver::RepackIntegrals(){ 
 
     FrozenCoreEnergy();
 
@@ -152,7 +152,7 @@ void v2RDMSolver::RepackIntegrals(){
         }
     }
 }
-void v2RDMSolver::FrozenCoreEnergy() {
+void v2RDM_DOCISolver::FrozenCoreEnergy() {
 
     // if frozen core, adjust oei's and compute frozen core energy:
     efzc_ = 0.0;
@@ -170,7 +170,7 @@ void v2RDMSolver::FrozenCoreEnergy() {
 
 }
 
-double v2RDMSolver::TEI(int i, int j, int k, int l, int h) {
+double v2RDM_DOCISolver::TEI(int i, int j, int k, int l, int h) {
     double dum = 0.0;
 
     if ( is_df_ ) {

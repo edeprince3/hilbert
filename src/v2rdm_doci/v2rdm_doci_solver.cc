@@ -50,7 +50,7 @@
 #include <psi4/libmints/basisset.h>
 #include <psi4/libmints/local.h>
 
-#include "v2rdm_solver.h"
+#include "v2rdm_doci_solver.h"
 
 #include <focas/focas_c_interface.h>
 #include <misc/blas.h>
@@ -65,20 +65,20 @@ namespace hilbert{
 
 static void evaluate_Ap(long int n, SharedVector Ax, SharedVector x, void * data) {
 
-    // reinterpret void * as an instance of v2RDMSolver
-    v2RDMSolver* BPSDPcg = reinterpret_cast<v2RDMSolver*>(data);
+    // reinterpret void * as an instance of v2RDM_DOCISolver
+    v2RDM_DOCISolver* BPSDPcg = reinterpret_cast<v2RDM_DOCISolver*>(data);
     // call a function from class to evaluate Ax product:
     BPSDPcg->cg_Ax(n,Ax,x);
 
 }
 
-v2RDMSolver::v2RDMSolver(SharedWavefunction reference_wavefunction,Options & options):
+v2RDM_DOCISolver::v2RDM_DOCISolver(SharedWavefunction reference_wavefunction,Options & options):
     Wavefunction(options){
     reference_wavefunction_ = reference_wavefunction;
     common_init();
 }
 
-v2RDMSolver::~v2RDMSolver()
+v2RDM_DOCISolver::~v2RDM_DOCISolver()
 {
     free(tei_full_sym_);
     free(oei_full_sym_);
@@ -93,7 +93,7 @@ v2RDMSolver::~v2RDMSolver()
 
 }
 
-void  v2RDMSolver::common_init(){
+void  v2RDM_DOCISolver::common_init(){
 
     is_df_ = false;
     if ( options_.get_str("SCF_TYPE") == "DF" || options_.get_str("SCF_TYPE") == "CD" ) {
@@ -1020,15 +1020,15 @@ void  v2RDMSolver::common_init(){
 
 }
 
-int v2RDMSolver::SymmetryPair(int i,int j) {
+int v2RDM_DOCISolver::SymmetryPair(int i,int j) {
     return table[i*8+j];
 }
-int v2RDMSolver::TotalSym(int i,int j,int k, int l) {
+int v2RDM_DOCISolver::TotalSym(int i,int j,int k, int l) {
     return SymmetryPair(SymmetryPair(symmetry[i],symmetry[j]),SymmetryPair(symmetry[k],symmetry[l]));
 }
 
 // compute the energy!
-double v2RDMSolver::compute_energy() {
+double v2RDM_DOCISolver::compute_energy() {
 
     double start_total_time = omp_get_wtime();
 
@@ -1303,7 +1303,7 @@ double v2RDMSolver::compute_energy() {
     return energy_primal + enuc_ + efzc_;
 }
 
-void v2RDMSolver::WriteMoldenFile() {
+void v2RDM_DOCISolver::WriteMoldenFile() {
 
     throw PsiException("function WriteMoldenFile() is currently broken",__FILE__,__LINE__);
 
@@ -1362,7 +1362,7 @@ void v2RDMSolver::WriteMoldenFile() {
 
 }
 
-void v2RDMSolver::NaturalOrbitals() {
+void v2RDM_DOCISolver::NaturalOrbitals() {
 
     throw PsiException("function NaturalOrbitals() is currently broken",__FILE__,__LINE__);
 
@@ -1382,7 +1382,7 @@ void v2RDMSolver::NaturalOrbitals() {
 
 }
 
-void v2RDMSolver::MullikenPopulations() {
+void v2RDM_DOCISolver::MullikenPopulations() {
 
     throw PsiException("function NaturalOrbitals() is currently broken",__FILE__,__LINE__);
 
@@ -1460,7 +1460,7 @@ void v2RDMSolver::MullikenPopulations() {
 
 }
 
-void v2RDMSolver::Guess(){
+void v2RDM_DOCISolver::Guess(){
 
     double* x_p = x->pointer();
     double* z_p = z->pointer();
@@ -1481,7 +1481,7 @@ void v2RDMSolver::Guess(){
 
 }
 
-void v2RDMSolver::BuildConstraints(){
+void v2RDM_DOCISolver::BuildConstraints(){
 
     //constraint on the Trace of D2(s=0,ms=0)
 
@@ -1652,7 +1652,7 @@ void v2RDMSolver::BuildConstraints(){
 }
 
 ///Build A dot u where u =[z,c]
-void v2RDMSolver::bpsdp_Au(SharedVector A, SharedVector u){
+void v2RDM_DOCISolver::bpsdp_Au(SharedVector A, SharedVector u){
 
     memset((void*)A->pointer(),'\0',nconstraints_*sizeof(double));
 
@@ -1682,7 +1682,7 @@ void v2RDMSolver::bpsdp_Au(SharedVector A, SharedVector u){
 } // end Au
 
 ///Build AT dot u where u =[z,c]
-void v2RDMSolver::bpsdp_ATu(SharedVector A, SharedVector u){
+void v2RDM_DOCISolver::bpsdp_ATu(SharedVector A, SharedVector u){
 
     memset((void*)A->pointer(),'\0',dimx_*sizeof(double));
 
@@ -1711,7 +1711,7 @@ void v2RDMSolver::bpsdp_ATu(SharedVector A, SharedVector u){
 
 }//end ATu
 
-void v2RDMSolver::cg_Ax(long int N,SharedVector A,SharedVector ux){
+void v2RDM_DOCISolver::cg_Ax(long int N,SharedVector A,SharedVector ux){
 
     A->zero();
     bpsdp_ATu(ATy,ux);
@@ -1720,7 +1720,7 @@ void v2RDMSolver::cg_Ax(long int N,SharedVector A,SharedVector ux){
 }//end cg_Ax
 
 // update x and z
-void v2RDMSolver::Update_xz() {
+void v2RDM_DOCISolver::Update_xz() {
 
     // evaluate M(mu*x + ATy - c)
     bpsdp_ATu(ATy,y);
@@ -1800,7 +1800,7 @@ void v2RDMSolver::Update_xz() {
     }
 }
 
-void v2RDMSolver::PackSpatialDensity() {
+void v2RDM_DOCISolver::PackSpatialDensity() {
 
     memset((void*)d2_act_spatial_sym_,'\0',d2_act_spatial_dim_*sizeof(double));
 
@@ -1937,7 +1937,7 @@ void v2RDMSolver::PackSpatialDensity() {
 
 }
 
-void v2RDMSolver::RotateOrbitals(){
+void v2RDM_DOCISolver::RotateOrbitals(){
 
     PackSpatialDensity();
 

@@ -34,7 +34,7 @@
 #include <psi4/libmints/matrix.h>
 #include <psi4/libpsi4util/PsiOutStream.h>
 
-#include"v2rdm_solver.h"
+#include"v2rdm_doci_solver.h"
 
 #include <misc/omp.h>
 
@@ -42,7 +42,7 @@ using namespace psi;
 
 namespace hilbert{
 
-void v2RDMSolver::WriteCheckpointFile() {
+void v2RDM_DOCISolver::WriteCheckpointFile() {
 
     // Update Ca_/Cb_
     //UpdateTransformationMatrix();
@@ -81,7 +81,7 @@ void v2RDMSolver::WriteCheckpointFile() {
     psio->close(PSIF_V2RDM_CHECKPOINT,1);
 }
 
-void v2RDMSolver::ReadFromCheckpointFile() {
+void v2RDM_DOCISolver::ReadFromCheckpointFile() {
 
     std::shared_ptr<PSIO> psio ( new PSIO() );
 
@@ -109,7 +109,7 @@ void v2RDMSolver::ReadFromCheckpointFile() {
     psio->close(PSIF_V2RDM_CHECKPOINT,1);
 }
 
-void v2RDMSolver::ReadOrbitalsFromCheckpointFile() {
+void v2RDM_DOCISolver::ReadOrbitalsFromCheckpointFile() {
 
     std::shared_ptr<PSIO> psio ( new PSIO() );
 

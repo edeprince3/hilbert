@@ -31,7 +31,7 @@
 #include <psi4/libpsio/psio.hpp>
 #include <psi4/libpsio/psio.hpp>
 
-#include <v2rdm_doci/v2rdm_solver.h>
+#include <v2rdm_doci/v2rdm_doci_solver.h>
 #include <doci/doci_solver.h>
 #include <pp2rdm/pp2rdm_solver.h>
 
@@ -207,7 +207,7 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
     }else if ( options.get_str("HILBERT_METHOD") == "V2RDM_DOCI") {
 
-        std::shared_ptr<v2RDMSolver> v2rdm_doci (new v2RDMSolver(ref_wfn,options));
+        std::shared_ptr<v2RDM_DOCISolver> v2rdm_doci (new v2RDM_DOCISolver(ref_wfn,options));
         double energy = v2rdm_doci->compute_energy();
         return (std::shared_ptr<Wavefunction>)v2rdm_doci;
 

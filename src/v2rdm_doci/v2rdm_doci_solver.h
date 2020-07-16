@@ -47,10 +47,10 @@ using namespace psi;
 
 namespace hilbert{
 
-class v2RDMSolver: public Wavefunction{
+class v2RDM_DOCISolver: public Wavefunction{
   public:
-    v2RDMSolver(SharedWavefunction reference_wavefunction,Options & options);
-    ~v2RDMSolver();
+    v2RDM_DOCISolver(SharedWavefunction reference_wavefunction,Options & options);
+    ~v2RDM_DOCISolver();
     void common_init();
     double compute_energy();
     virtual bool same_a_b_orbs() const { return same_a_b_orbs_; }

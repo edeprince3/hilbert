@@ -35,7 +35,7 @@
 #include <psi4/libmints/matrix.h>
 #include <psi4/psifiles.h>
 
-#include "v2rdm_solver.h"
+#include "v2rdm_doci_solver.h"
 
 #include <misc/omp.h>
 
@@ -43,7 +43,7 @@ using namespace psi;
 
 namespace hilbert{
 
-SharedMatrix v2RDMSolver::GetOEI() {
+SharedMatrix v2RDM_DOCISolver::GetOEI() {
     std::shared_ptr<MintsHelper> mints(new MintsHelper(reference_wavefunction_));
     SharedMatrix K1 (new Matrix(mints->so_potential()));
     K1->add(mints->so_kinetic());

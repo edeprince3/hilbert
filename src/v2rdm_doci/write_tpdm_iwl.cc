@@ -36,7 +36,7 @@
 #include <psi4/libdpd/dpd.h>
 
 
-#include "v2rdm_solver.h"
+#include "v2rdm_doci_solver.h"
 
 using namespace psi;
 
@@ -44,7 +44,7 @@ namespace hilbert{
 
 
 // function to write TPDM to disk in MO basis for subsequent use in deriv()
-void v2RDMSolver::WriteTPDM_IWL(){
+void v2RDM_DOCISolver::WriteTPDM_IWL(){
 
     throw PsiException("function WriteTPDM_IWL() is currently broken",__FILE__,__LINE__);
 

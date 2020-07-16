@@ -252,11 +252,11 @@ def test_v2rdm_doci():
     options.set_current_module('HILBERT')
 
     # evaluate v2RDM-DOCI energy
-    v2rdm_doci = hilbert.v2RDMHelper(ref_wfn,options)
+    v2rdm_doci = hilbert.v2RDM_DOCIHelper(ref_wfn,options)
     current_energy = v2rdm_doci.compute_energy()
 
     assert psi4.compare_values(ref_scf, scf_energy, 8, "SCF total energy")
-    assert psi4.compare_values(ref_v2rdm_doci, current_energy, 5, "v2RDM-DOCI total energy")
+    assert psi4.compare_values(ref_v2rdm_doci, current_energy, 4, "v2RDM-DOCI total energy")
 
 #test_doci()
 #test_pp2rdm()

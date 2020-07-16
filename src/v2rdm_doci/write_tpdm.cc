@@ -31,7 +31,7 @@
 #include <psi4/libtrans/integraltransform.h>
 #include <psi4/libmints/mintshelper.h>
 
-#include "v2rdm_solver.h"
+#include "v2rdm_doci_solver.h"
 
 using namespace psi;
 
@@ -45,7 +45,7 @@ struct tpdm {
     double val;
 };
 
-void v2RDMSolver::WriteTPDM(){
+void v2RDM_DOCISolver::WriteTPDM(){
 
     memset((void*)d2_act_spatial_sym_,'\0',d2_act_spatial_dim_*sizeof(double));
 

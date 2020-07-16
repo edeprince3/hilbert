@@ -24,7 +24,7 @@
  *  @END LICENSE
  */
 
-#include "v2rdm_solver.h"
+#include "v2rdm_doci_solver.h"
 
 using namespace psi;
 
@@ -32,7 +32,7 @@ namespace hilbert{
 
 
 // D3 portion of A^T.y 
-void v2RDMSolver::D3_constraints_ATu(SharedVector A,SharedVector u){
+void v2RDM_DOCISolver::D3_constraints_ATu(SharedVector A,SharedVector u){
     double* A_p = A->pointer();
     double* u_p = u->pointer();
 
@@ -127,7 +127,7 @@ void v2RDMSolver::D3_constraints_ATu(SharedVector A,SharedVector u){
 }
 
 // D3 portion of A.x (and D1/Q1) 
-void v2RDMSolver::D3_constraints_Au(SharedVector A,SharedVector u){
+void v2RDM_DOCISolver::D3_constraints_Au(SharedVector A,SharedVector u){
 
     double* A_p = A->pointer();
     double* u_p = u->pointer();
