@@ -23,7 +23,8 @@ set {
   reference rohf
 
 }
-set v2rdm_casscf {
+
+set hilbert {
   positivity d
   constrain_d3 true
   r_convergence  1e-5

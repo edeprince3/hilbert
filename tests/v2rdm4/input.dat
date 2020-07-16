@@ -44,7 +44,7 @@ set {
   active          [   0,   1,   1,   3,   1,   3,   0,   1 ]
 }
 
-set v2rdm_casscf {
+set hilbert {
 
   positivity dqg
   constrain_spin true
@@ -57,6 +57,7 @@ set v2rdm_casscf {
   orbopt_frequency 500
 
   maxiter 100000
+  orbopt_maxiter 20
 
 }
 

@@ -391,7 +391,6 @@ class v2RDMSolver: public Wavefunction{
     void ExtendedKoopmans();
     void EKTEigensolver(std::shared_ptr<Matrix> V, std::shared_ptr<Matrix> D, std::shared_ptr<Vector> epsilon, bool use_dggev,std::string spin);
 
-
     /// compute natural orbitals and transform OPDM and TPDM to natural orbital basis
     void ComputeNaturalOrbitals();
 
@@ -441,14 +440,14 @@ class v2RDMSolver: public Wavefunction{
     /// function to rotate orbitals
     void RotateOrbitals();
 
-    /// function to exponentiate step vector
-    void exponentiate_step(double * X);
+    /// update ao/mo transformation matrix after orbital optimization
+    // TODO: this function belongs in the new orbital optimizer class
+    void UpdateTransformationMatrix();
 
     double * orbopt_transformation_matrix_;
     double * orbopt_data_;
     char * orbopt_outfile_;
     bool orbopt_converged_;
-
 
     /// are we using 3-index integrals?
     bool is_df_;

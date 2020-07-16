@@ -1883,7 +1883,7 @@ double v2RDMSolver::compute_energy() {
     energy_ = energy_primal+enuc_+efzc_;
 
     // push final transformation matrix onto Ca_ and Cb_
-    UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
+    UpdateTransformationMatrix();
 
     energy_primal = C_DDOT(dimx_,c->pointer(),1,x->pointer(),1);
 
@@ -1921,7 +1921,7 @@ double v2RDMSolver::compute_energy() {
             RotateOrbitals();
 
             // push final transformation matrix onto Ca_ and Cb_
-            UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
+            UpdateTransformationMatrix();
 
             // transform D1, D2, D3 to semicanonical basis
             UpdatePrimal();

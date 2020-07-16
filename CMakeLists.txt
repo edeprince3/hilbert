@@ -102,6 +102,7 @@ add_psi4_plugin(hilbert
     src/v2rdm_casscf/t2.cc
     src/v2rdm_casscf/tei.cc
     src/v2rdm_casscf/update_primal.cc
+    src/v2rdm_casscf/update_transformation_matrix.cc
     #src/v2rdm_casscf/v2rdm_helper.cc
     src/v2rdm_casscf/v2rdm_solver.cc
     src/v2rdm_casscf/write_3pdm.cc
