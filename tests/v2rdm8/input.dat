@@ -1,0 +1,44 @@
+#! cc-pvdz H2 (2,2) active space Test python API for v2RDM CASSCF
+
+# job description:
+print('        H2 / cc-pVDZ / D(2,2), scf_type = DF, rHH = 1.0 A')
+
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule h2 {
+0 1
+h
+h 1 r
+symmetry c1
+}
+
+set {
+  basis cc-pvdz 
+  mcscf_type df
+  scf_type df
+  d_convergence      1e-10
+  maxiter 500
+  restricted_docc [  0 ]
+  restricted_uocc [  8 ]
+  active          [  2 ]
+}
+set v2rdm_casscf {
+  positivity d
+  r_convergence  1e-6
+  e_convergence  1e-8
+  maxiter 20000
+}
+
+activate(h2)
+
+h2.r = 1.0
+
+set df_ints_io save
+en,wfn = energy('scf',return_wfn = True)
+
+en1 = v2rdm_casscf.v2rdm_scf_solver(wfn)
+en2 = energy('casscf')
+
+compare_values(en1, en2, 6, "v2RDM-CASSCF total energy") # TEST
+

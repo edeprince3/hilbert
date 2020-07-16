@@ -27,6 +27,8 @@
 #ifndef FOCAS_C_INTERFACE_H
 #define FOCAS_C_INTERFACE_H
 
+using namespace psi;
+
 namespace hilbert{
 
 /// after orbital optimization, update Ca/Cb matrices and repack energy-order transformation matrix as pitzer order

@@ -24,8 +24,8 @@
  *  @END LICENSE
  */
 
-#ifndef V2RDM_SOLVER_H
-#define V2RDM_SOLVER_H
+#ifndef V2RDM_DOCI_SOLVER_H
+#define V2RDM_DOCI_SOLVER_H
 
 #include<stdio.h>
 #include<stdlib.h>

@@ -31,6 +31,7 @@
 #include <psi4/libpsio/psio.hpp>
 #include <psi4/libpsio/psio.hpp>
 
+#include <v2rdm_casscf/v2rdm_solver.h>
 #include <v2rdm_doci/v2rdm_doci_solver.h>
 #include <doci/doci_solver.h>
 #include <pp2rdm/pp2rdm_solver.h>
@@ -85,18 +86,33 @@ int read_options(std::string name, Options& options)
         options.add_double("CHOLESKY_TOLERANCE",1e-4);
 
         /*- Do localize orbitals prior to v2RDM-DOCI? -*/
-        options.add_bool("LOCALIZE_ORBITALS",true);
+        options.add_bool("LOCALIZE_ORBITALS",false);
 
         /*- Do localize virtual orbitals prior to v2RDM-DOCI? -*/
         options.add_bool("LOCALIZE_VIRTUAL_ORBITALS",false);
 
         /*- Do add random noise to initial orbitals prior to DOCI -*/
-        options.add_bool("NOISY_ORBITALS",true);
+        options.add_bool("NOISY_ORBITALS",false);
 
         /*- Do optimize orbitals? -*/
         options.add_bool("OPTIMIZE_ORBITALS",true);
 
         /*- SUBSECTION ORBITAL OPTIMIZATION -*/
+
+        options.add_bool("MOLDEN_WRITE", false);
+        /*- Do write a MOLDEN file for guess orbitals?  If so, the filename will
+        end in .guess.molden, and the prefix is determined by 
+        |globals__writer_file_label| (if set), or else by the name of the output
+        file plus the name of the current molecule. -*/
+
+        options.add_bool("GUESS_ORBITALS_WRITE", false);
+        /*- Do write a ORBOPT output file?  If so, the filename will end in
+        .molden, and the prefix is determined by |globals__writer_file_label|
+        (if set), or else by the name of the output file plus the name of
+        the current molecule. -*/
+
+        /*- flag to optimize orbitals using a one-step type approach -*/
+        options.add_bool("ORBOPT_ONE_STEP",true);
 
         /*- algorithm for orbital optimization. only valid for v2rdm-doci -*/
         options.add_str("ORBOPT_ALGORITHM", "HAGER_ZHANG", "STEEPEST_DESCENT HESTENES_STIEFEL DAI_YUAN HAGER_ZHANG KOU_DAI");
@@ -173,7 +189,7 @@ int read_options(std::string name, Options& options)
         options.add_int("MU_UPDATE_FREQUENCY",1000);
 
         /*- The type of 2-positivity computation -*/
-        options.add_str("POSITIVITY", "DQG", "DQG D DQ DG DQGT2 DQGT1 DQGT1T2 DQGT2");
+        options.add_str("POSITIVITY", "DQG", "DQG D DQ DG DQGT1 DQGT2 DQGT1T2");
 
         /*- Do constrain D3/D2 mapping? -*/
         options.add_bool("CONSTRAIN_D3",false);
@@ -183,6 +199,59 @@ int read_options(std::string name, Options& options)
 
         /*- maximum number of conjugate gradient iterations -*/
         options.add_int("CG_MAXITER", 10000);
+
+        /*- SUBSECTION v2RDM-CASSCF -*/
+
+        /*- fractional charge -*/
+        options.add_double("FRACTIONAL_CHARGE", 0.0);
+
+        /*- do extended koopmans theorem computation? -*/
+        options.add_bool("EXTENDED_KOOPMANS",false);
+
+        /*- Do v2RDM-CASSCF gradient? !expert -*/
+        options.add_str("DERTYPE", "NONE", "NONE FIRST");
+
+        /* Do write fcidump files? -*/
+        options.add_bool("FCIDUMP", false);
+
+        /*- Rotate guess orbitals -*/
+        options.add("MCSCF_ROTATE", new ArrayType());
+
+        /*- Do compute natural orbitals and transform 1- and 2-RDM to the natural orbital basis? 
+        The OPDM and Ca/Cb matrices pushed onto the wavefunction will correspond to the natural orbital basis -*/
+        options.add_bool("NAT_ORBS",false);
+
+        /*- Do write the 1-RDM to disk? All nonzero elements of the 1-RDM will be written.  -*/
+        options.add_bool("OPDM_WRITE_FULL",false);
+
+        /*- Do write the spin-free 2-RDM to disk? All nonzero elements of the 2-RDM will be written.  -*/
+        options.add_bool("TPDM_WRITE_SPIN_FREE",false);
+
+        /*- Do write the 2-RDM to disk? Only the nonzero elements of the active 2-RDM will be written. -*/
+        options.add_bool("TPDM_WRITE",false);
+
+        /*- Do write the 3-RDM to disk? -*/
+        options.add_bool("3PDM_WRITE",false);
+
+        /*- A parameter introduced by Mazziotti [PRL 106, 083001 (2011)] to "increase the
+        sensitivity of y on the deviation of x from primal feasibility."  Should 
+        lie on the interval [1.0, 1.6]. -*/
+        options.add_double("TAU_PARAMETER",1.0);
+
+        /*- Do constrain D4 to D3 mapping? -*/
+        options.add_bool("CONSTRAIN_D4",false);
+
+        /*- Do spin adapt G2 condition? -*/
+        options.add_bool("SPIN_ADAPT_G2", false);
+
+        /*- Do spin adapt Q2 condition? -*/
+        options.add_bool("SPIN_ADAPT_Q2", false);
+
+        /*- Do constrain spin squared? -*/
+        options.add_bool("CONSTRAIN_SPIN", true);
+
+        /*- Do constrain sz? -*/
+        options.add_bool("CONSTRAIN_SZ", true);
 
     }
 
@@ -210,6 +279,12 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         std::shared_ptr<v2RDM_DOCISolver> v2rdm_doci (new v2RDM_DOCISolver(ref_wfn,options));
         double energy = v2rdm_doci->compute_energy();
         return (std::shared_ptr<Wavefunction>)v2rdm_doci;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "V2RDM_CASSCF") {
+
+        std::shared_ptr<v2RDMSolver> v2rdm (new v2RDMSolver(ref_wfn,options));
+        double energy = v2rdm->compute_energy();
+        return (std::shared_ptr<Wavefunction>)v2rdm;
 
     }
 
