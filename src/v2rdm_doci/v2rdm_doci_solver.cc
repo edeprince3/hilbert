@@ -65,7 +65,7 @@ using namespace fnocc;
 namespace hilbert{
 
 // AATy
-static void evaluate_CG_LHS(SharedVector Ax, SharedVector x, void * data) {
+static void evaluate_cg_lhs(SharedVector Ax, SharedVector x, void * data) {
 
     // reinterpret void * as an instance of v2RDM_DOCISolver
     v2RDM_DOCISolver* v2rdm_doci = reinterpret_cast<v2RDM_DOCISolver*>(data);
@@ -1065,7 +1065,7 @@ double v2RDM_DOCISolver::compute_energy() {
     int orbopt_iter = 0;
     do { 
 
-        sdp->solve(x, b, c, dimensions_, options_.get_int("ORBOPT_FREQUENCY"), evaluate_Au, evaluate_ATu, evaluate_CG_LHS, (void*)this);
+        sdp->solve(x, b, c, dimensions_, options_.get_int("ORBOPT_FREQUENCY"), evaluate_Au, evaluate_ATu, evaluate_cg_lhs, (void*)this);
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
 
@@ -1085,7 +1085,8 @@ double v2RDM_DOCISolver::compute_energy() {
 
         outfile->Printf("\n");
 
-    }while( !orbopt_converged_);
+    }while( !orbopt_converged_ || !sdp->is_converged() );
+
 
     outfile->Printf("\n");
     outfile->Printf("      v2RDM-DOCI iterations converged!\n");
@@ -1130,10 +1131,6 @@ double v2RDM_DOCISolver::compute_energy() {
             // push final transformation matrix onto Ca_ and Cb_
             UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
 
-            // transform D1, D2, D3 to semicanonical basis
-            UpdatePrimal();
-            //printf("primal energy after transformation:        %20.12lf\n",C_DDOT(dimx_,c->pointer(),1,x->pointer(),1)+efzc_);
-    
         }
     } 
 
@@ -1580,14 +1577,6 @@ void v2RDM_DOCISolver::bpsdp_ATu(SharedVector A, SharedVector u){
     }
 
 }//end ATu
-
-void v2RDM_DOCISolver::cg_Ax(long int N,SharedVector A,SharedVector ux){
-
-//    A->zero();
-//    bpsdp_ATu(ATy,ux);
-//    bpsdp_Au(A,ATy);
-
-}//end cg_Ax
 
 void v2RDM_DOCISolver::PackSpatialDensity() {
 

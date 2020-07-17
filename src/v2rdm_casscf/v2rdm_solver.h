@@ -44,6 +44,7 @@
 
 #include <focas/focas_c_interface.h>
 #include <misc/hilbert_psifiles.h>
+#include <misc/bpsdp_solver.h>
 
 namespace hilbert{ 
 
@@ -74,6 +75,9 @@ class v2RDMSolver: public Wavefunction{
 
     /// ATu function for interfacing with bpsdp solver
     void bpsdp_ATu(SharedVector A, SharedVector u);
+
+    /// return dimension of the primal solution vector
+    int n_primal(){return dimx_;}
 
     /// return spin-free one-particle density matrix. full space. sparse
     std::vector<opdm> get_opdm_sparse(std::string type);
@@ -115,6 +119,9 @@ class v2RDMSolver: public Wavefunction{
 
     virtual bool same_a_b_orbs() const { return same_a_b_orbs_; }
     virtual bool same_a_b_dens() const { return same_a_b_dens_; }
+
+    /// the sdp solver
+    std::shared_ptr<BPSDPSolver> sdp_;
 
     double nalpha_;
     double nbeta_;
@@ -250,21 +257,6 @@ class v2RDMSolver: public Wavefunction{
     int * d4bbbaoff;
     int * d4bbbboff;
 
-    /// convergence in primal energy
-    double e_convergence_;
-
-    /// convergence in primal and dual error
-    double r_convergence_;
-
-    /// convergence in conjugate gradient solver
-    double cg_convergence_;
-
-    /// maximum number of boundary-point SDP (outer) iterations
-    int maxiter_;
-
-    /// maximum number of conjugate gradient (inner) iterations
-    int cg_maxiter_;
-
     /// standard vector of dimensions of each block of primal solution vector
     std::vector<int> dimensions_;
 
@@ -339,7 +331,6 @@ class v2RDMSolver: public Wavefunction{
     void G2_constraints_guess(SharedVector u);
     void G2_constraints_guess_spin_adapted(SharedVector u);
 
-    void bpsdp_Au_slow(SharedVector A, SharedVector u);
     void Spin_constraints_Au(SharedVector A,SharedVector u);
     void D2_constraints_Au(SharedVector A,SharedVector u);
     void Q2_constraints_Au(SharedVector A,SharedVector u);
@@ -353,7 +344,6 @@ class v2RDMSolver: public Wavefunction{
     void D3_constraints_Au(SharedVector A,SharedVector u);
     void D4_constraints_Au(SharedVector A,SharedVector u);
 
-    void bpsdp_ATu_slow(SharedVector A, SharedVector u);
     void Spin_constraints_ATu(SharedVector A,SharedVector u);
     void D2_constraints_ATu(SharedVector A,SharedVector u);
     void Q2_constraints_ATu(SharedVector A,SharedVector u);
@@ -373,23 +363,10 @@ class v2RDMSolver: public Wavefunction{
     /// nuclear repulsion energy
     double enuc_;
 
-    double tau, mu, ed, ep;
-
     //vectors
-    SharedVector Ax;     // vector to hold A . x
-    SharedVector ATy;    // vector to hold A^T . y
     SharedVector c;      // 1ei and 2ei of bpsdp
-    SharedVector y;      // dual solution
     SharedVector b;      // constraint vector
     SharedVector x;      // primal solution
-    SharedVector z;      // second dual solution
-    SharedVector rx;       // square root of x (for diis)
-    SharedVector rz;       // square root of z (for diis)
-    SharedVector rx_error; // error vector for x (for diis)
-    SharedVector rz_error; // error vector for z (for diis)
-
-    void Update_xz();
-    void Update_xz_nonsymmetric();
 
     /// extended koopman's theorem
     void ExtendedKoopmans();
@@ -465,20 +442,8 @@ class v2RDMSolver: public Wavefunction{
     /// read orbitals from a checkpoint file
     void ReadOrbitalsFromCheckpointFile();
 
-    /// wall time for microiterations
-    double iiter_time_;
-
-    /// wall time for macroiterations
-    double oiter_time_;
-
     /// wall time for orbital optimization
     double orbopt_time_;
-
-    /// total number of microiterations
-    long int iiter_total_;
-
-    /// total number of macroiterations
-    long int oiter_total_;
 
     /// total number of orbital optimization
     long int orbopt_iter_total_;
@@ -517,13 +482,9 @@ class v2RDMSolver: public Wavefunction{
     double * X_;
 
     void OrbitalLagrangian();
-    void DualD1Q1();
 
     /// memory available beyond what is allocated for v2RDM-CASSCF
     long int available_memory_;
-
-    /// update primal solution after semicanonicalization
-    void UpdatePrimal();
 
     /// transform a four-index quantity from one basis to another
     void TransformFourIndex(double * inout, double * tmp, SharedMatrix trans);

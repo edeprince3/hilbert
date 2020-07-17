@@ -68,10 +68,12 @@ BPSDPSolver::BPSDPSolver(long int n_primal, long int n_dual, Options & options)
     e_convergence_ = options_.get_double("E_CONVERGENCE");
     r_convergence_ = options_.get_double("R_CONVERGENCE");
 
+    is_converged_ = false;
 }
 
 BPSDPSolver::~BPSDPSolver(){
 }
+
 
 void BPSDPSolver::solve(std::shared_ptr<Vector> x,   
                         std::shared_ptr<Vector> b, 
@@ -80,7 +82,7 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
                         int maxiter,
                         BPSDPCallbackFunction evaluate_Au, 
                         BPSDPCallbackFunction evaluate_ATu, 
-                        CGCallbackFunction evaluate_CG_LHS, 
+                        CGCallbackFunction evaluate_cg_lhs, 
                         void * data){
 
     // cg solver
@@ -134,7 +136,7 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
         cg->set_convergence(cg_conv_i);
 
         // solve CG problem (step 1 in table 1 of PRL 106 083001)
-        cg->solve(Au_,y_,cg_rhs_,evaluate_CG_LHS,data);
+        cg->solve(Au_,y_,cg_rhs_,evaluate_cg_lhs,data);
         int iiter = cg->total_iterations();
 
         double end = omp_get_wtime();
@@ -181,9 +183,15 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
             mu_ = mu_ * primal_error_ / dual_error_;
         }
 
+        if ( primal_error_ > r_convergence_ || dual_error_ > r_convergence_  || primal_dual_energy_gap > e_convergence_ ) {
+            is_converged_ = false;
+        }else {
+            is_converged_ = true;
+        }
+
         if ( oiter_local == maxiter ) break;
 
-    }while( primal_error_ > r_convergence_ || dual_error_ > r_convergence_  || primal_dual_energy_gap > e_convergence_ );
+    }while( !is_converged_ );
 
 }
 

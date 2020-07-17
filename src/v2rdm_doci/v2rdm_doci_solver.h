@@ -57,7 +57,6 @@ class v2RDM_DOCISolver: public Wavefunction{
     virtual bool same_a_b_dens() const { return same_a_b_dens_; }
 
     // public methods
-    void cg_Ax(long int n,SharedVector A, SharedVector u);
     void bpsdp_Au(SharedVector A, SharedVector u);
     void bpsdp_ATu(SharedVector A, SharedVector u);
     int n_primal(){return dimx_;}
@@ -310,9 +309,6 @@ class v2RDM_DOCISolver: public Wavefunction{
 
     /// memory available beyond what is allocated for v2RDM-DOCI
     long int available_memory_;
-
-    /// update primal solution after semicanonicalization
-    void UpdatePrimal();
 
     /// transform a four-index quantity from one basis to another
     void TransformFourIndex(double * inout, double * tmp, SharedMatrix trans);

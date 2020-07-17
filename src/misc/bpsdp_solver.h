@@ -59,10 +59,20 @@ class BPSDPSolver{
                CGCallbackFunction evaluate_CG_LHS,
                void * data);
 
-    int iiter_total(){return iiter_total_;}
-    int oiter_total(){return oiter_;}
-    double iiter_time(){return iiter_time_;}
-    double oiter_time(){return oiter_time_;}
+    int iiter_total() { return iiter_total_; }
+    int oiter_total() { return oiter_; }
+    double iiter_time() { return iiter_time_; }
+    double oiter_time() { return oiter_time_; }
+
+    void set_mu(double mu) { mu_ = mu; }
+    void set_y(std::shared_ptr<Vector> y) { y_->copy(y.get()); }
+    void set_z(std::shared_ptr<Vector> z) { z_->copy(z.get()); }
+
+    double get_mu() { return mu_; }
+    std::shared_ptr<Vector> get_y() { return y_; }
+    std::shared_ptr<Vector> get_z() { return z_; }
+
+    bool is_converged(){ return is_converged_; }
 
   protected:
 
@@ -74,6 +84,9 @@ class BPSDPSolver{
 
     /// the error in the dual constraints
     double dual_error_;
+
+    /// is the solver converged?
+    bool is_converged_;
 
     /// the number of outer iterations
     int oiter_;
