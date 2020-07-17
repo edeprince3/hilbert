@@ -35,7 +35,6 @@
 #include "bpsdp_solver.h"
 
 #include <misc/cg_solver.h>
-#include <misc/diis.h>
 #include <misc/omp.h>
 #include <misc/blas.h>
 
@@ -91,11 +90,6 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
     cg->set_max_iter(options_.get_int("CG_MAXITER"));
     double cg_convergence = options_.get_int("CG_CONVERGENCE");
     cg->set_convergence(cg_convergence);
-
-    std::shared_ptr<DIIS> diis ( new DIIS(2 * n_primal_) );
-
-    bool do_diis = true;
-    double * tmp = (double*)malloc(2*n_primal_*sizeof(double));
 
     // the iterations
     outfile->Printf("\n");
