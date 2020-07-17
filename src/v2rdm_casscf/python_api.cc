@@ -35,7 +35,6 @@
 
 using namespace psi;
 
-
 namespace hilbert {
 
 std::vector<opdm> v2RDMSolver::get_opdm_sparse(std::string type) {

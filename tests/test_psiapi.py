@@ -258,7 +258,50 @@ def test_v2rdm_doci():
     assert psi4.compare_values(ref_scf, scf_energy, 8, "SCF total energy")
     assert psi4.compare_values(ref_v2rdm_doci, current_energy, 4, "v2RDM-DOCI total energy")
 
+def test_v2rdm():
+    #! cc-pvdz N2 (6,6) active space Test DQG
+
+    print('        N2 / cc-pVDZ / DQG(6,6), scf_type = DF, rNN = 1.1 A')
+
+    import psi4
+
+    import sys
+    sys.path.insert(0, '../..')
+    import hilbert
+
+    n2 = psi4.geometry("""
+    0 1
+    n
+    n 1 r
+    """)
+
+    psi4.set_options({
+      'basis':           'cc-pvdz',
+      'scf_type':        'df',
+      'd_convergence':   1e-10,
+      'maxiter':         500,
+      'restricted_docc': [ 2, 0, 0, 0, 0, 2, 0, 0 ],
+      'active':          [ 1, 0, 1, 1, 0, 1, 1, 1 ],
+    })
+    psi4.set_module_options('hilbert', {
+      'positivity':      'dqg',
+      'r_convergence':   1e-5,
+      'e_convergence':   1e-6,
+      'maxiter':         20000,
+    })
+
+    psi4.activate(n2)
+
+    n2.r     = 1.1
+    refscf   = -108.95348837831371
+    refv2rdm = -109.094404909477
+
+    psi4.energy('v2rdm-casscf')
+
+    assert psi4.compare_values(refscf, psi4.variable("SCF TOTAL ENERGY"), 8, "SCF total energy")
+    assert psi4.compare_values(refv2rdm, psi4.variable("CURRENT ENERGY"), 5, "v2RDM-CASSCF total energy")
+
 #test_doci()
 #test_pp2rdm()
 #test_pccd()
-test_v2rdm_doci()
+test_v2rdm()

@@ -63,6 +63,7 @@ add_psi4_plugin(hilbert
 
     src/v2rdm_doci/backtransform_tpdm.cc
     src/v2rdm_doci/basis.cc
+    src/v2rdm_doci/checkpoint.cc
     src/v2rdm_doci/d2.cc
     src/v2rdm_doci/d3.cc
     src/v2rdm_doci/g2.cc
@@ -75,7 +76,6 @@ add_psi4_plugin(hilbert
     src/v2rdm_doci/t1.cc
     src/v2rdm_doci/t2.cc
     src/v2rdm_doci/tei.cc
-    src/v2rdm_doci/update_primal.cc
     src/v2rdm_doci/v2rdm_doci_solver.cc
     src/v2rdm_doci/write_tpdm.cc
     src/v2rdm_doci/write_tpdm_iwl.cc
@@ -94,16 +94,14 @@ add_psi4_plugin(hilbert
     src/v2rdm_casscf/natural_orbitals.cc
     src/v2rdm_casscf/oei.cc
     src/v2rdm_casscf/orbital_lagrangian.cc
-    #src/v2rdm_casscf/python_api.cc
+    src/v2rdm_casscf/python_api.cc
     src/v2rdm_casscf/q2.cc
     src/v2rdm_casscf/sortintegrals.cc
     src/v2rdm_casscf/spin.cc
     src/v2rdm_casscf/t1.cc
     src/v2rdm_casscf/t2.cc
     src/v2rdm_casscf/tei.cc
-    src/v2rdm_casscf/update_primal.cc
     src/v2rdm_casscf/update_transformation_matrix.cc
-    #src/v2rdm_casscf/v2rdm_helper.cc
     src/v2rdm_casscf/v2rdm_solver.cc
     src/v2rdm_casscf/write_3pdm.cc
     src/v2rdm_casscf/write_opdm.cc

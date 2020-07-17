@@ -111,10 +111,6 @@ class v2RDMSolver: public Wavefunction{
     /// Find out which orbitals belong where
     void orbital_locations(const std::string &orbital_name, int *start, int *end);
 
-
-    // public methods
-    void cg_Ax(SharedVector A, SharedVector u);
-
   protected:
 
     virtual bool same_a_b_orbs() const { return same_a_b_orbs_; }
