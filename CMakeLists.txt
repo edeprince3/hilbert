@@ -38,6 +38,7 @@ add_psi4_plugin(hilbert
 
     src/misc/threeindexintegrals.cc
     src/misc/cg_solver.cc
+    src/misc/bpsdp_solver.cc
     src/misc/diis.cc
 
     src/focas/update_transformation_matrix.cc
@@ -62,7 +63,6 @@ add_psi4_plugin(hilbert
 
     src/v2rdm_doci/backtransform_tpdm.cc
     src/v2rdm_doci/basis.cc
-    src/v2rdm_doci/checkpoint.cc
     src/v2rdm_doci/d2.cc
     src/v2rdm_doci/d3.cc
     src/v2rdm_doci/g2.cc

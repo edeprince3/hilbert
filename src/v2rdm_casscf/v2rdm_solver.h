@@ -69,6 +69,12 @@ class v2RDMSolver: public Wavefunction{
 
     double compute_energy();
 
+    /// Au function for interfacing with bpsdp solver
+    void bpsdp_Au(SharedVector A, SharedVector u);
+
+    /// ATu function for interfacing with bpsdp solver
+    void bpsdp_ATu(SharedVector A, SharedVector u);
+
     /// return spin-free one-particle density matrix. full space. sparse
     std::vector<opdm> get_opdm_sparse(std::string type);
 
@@ -103,7 +109,7 @@ class v2RDMSolver: public Wavefunction{
 
 
     // public methods
-    void cg_Ax(long int n,SharedVector A, SharedVector u);
+    void cg_Ax(SharedVector A, SharedVector u);
 
   protected:
 
@@ -333,7 +339,6 @@ class v2RDMSolver: public Wavefunction{
     void G2_constraints_guess(SharedVector u);
     void G2_constraints_guess_spin_adapted(SharedVector u);
 
-    void bpsdp_Au(SharedVector A, SharedVector u);
     void bpsdp_Au_slow(SharedVector A, SharedVector u);
     void Spin_constraints_Au(SharedVector A,SharedVector u);
     void D2_constraints_Au(SharedVector A,SharedVector u);
@@ -348,7 +353,6 @@ class v2RDMSolver: public Wavefunction{
     void D3_constraints_Au(SharedVector A,SharedVector u);
     void D4_constraints_Au(SharedVector A,SharedVector u);
 
-    void bpsdp_ATu(SharedVector A, SharedVector u);
     void bpsdp_ATu_slow(SharedVector A, SharedVector u);
     void Spin_constraints_ATu(SharedVector A,SharedVector u);
     void D2_constraints_ATu(SharedVector A,SharedVector u);

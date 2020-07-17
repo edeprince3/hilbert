@@ -33,24 +33,17 @@ using namespace psi;
 
 namespace hilbert{
 
-typedef void (*CallbackType)(long int,SharedVector,SharedVector,void *);  
+typedef void (*CGCallbackFunction)(SharedVector,SharedVector,void *);  
 
 class CGSolver {
 public:
 
     CGSolver(long int n);
     ~CGSolver();
-    void preconditioned_solve(long int n,
-               SharedVector Ap,
+    void solve(SharedVector Ap,
                SharedVector  x,
                SharedVector  b,
-               SharedVector  precon,
-               CallbackType function, void * data);
-    void solve(long int n,
-               SharedVector Ap,
-               SharedVector  x,
-               SharedVector  b,
-               CallbackType function, void * data);
+               CGCallbackFunction function, void * data);
 
     int total_iterations();
     void set_max_iter(int iter);

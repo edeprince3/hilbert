@@ -58,6 +58,9 @@ class v2RDM_DOCISolver: public Wavefunction{
 
     // public methods
     void cg_Ax(long int n,SharedVector A, SharedVector u);
+    void bpsdp_Au(SharedVector A, SharedVector u);
+    void bpsdp_ATu(SharedVector A, SharedVector u);
+    int n_primal(){return dimx_;}
 
   protected:
 
@@ -212,7 +215,6 @@ class v2RDM_DOCISolver: public Wavefunction{
 
     void Guess();
 
-    void bpsdp_Au(SharedVector A, SharedVector u);
     void D2_constraints_Au(SharedVector A,SharedVector u);
     void Q2_constraints_Au(SharedVector A,SharedVector u);
     void G2_constraints_Au(SharedVector A,SharedVector u);
@@ -220,7 +222,6 @@ class v2RDM_DOCISolver: public Wavefunction{
     void T1_constraints_Au(SharedVector A,SharedVector u);
     void T2_constraints_Au(SharedVector A,SharedVector u);
 
-    void bpsdp_ATu(SharedVector A, SharedVector u);
     void D2_constraints_ATu(SharedVector A,SharedVector u);
     void Q2_constraints_ATu(SharedVector A,SharedVector u);
     void G2_constraints_ATu(SharedVector A,SharedVector u);
@@ -234,19 +235,10 @@ class v2RDM_DOCISolver: public Wavefunction{
     /// nuclear repulsion energy
     double enuc_;
 
-    double tau, mu, ed, ep;
-
     //vectors
-    SharedVector Ax;     // vector to hold A . x
-    SharedVector ATy;    // vector to hold A^T . y
     SharedVector c;      // 1ei and 2ei of bpsdp
-    SharedVector y;      // dual solution
     SharedVector b;      // constraint vector
     SharedVector x;      // primal solution
-    SharedVector z;      // second dual solution
-
-    void Update_xz();
-    void Update_xz_nonsymmetric();
 
     void NaturalOrbitals();
     void MullikenPopulations();
@@ -293,29 +285,8 @@ class v2RDM_DOCISolver: public Wavefunction{
     /// are we using 3-index integrals?
     bool is_df_;
 
-    /// write primal, dual, and orbitals to a checkpoint file
-    void WriteCheckpointFile();
-
-    /// read primal, dual, and orbitals from a checkpoint file
-    void ReadFromCheckpointFile();
-
-    /// read orbitals from a checkpoint file
-    void ReadOrbitalsFromCheckpointFile();
-
-    /// wall time for microiterations
-    double iiter_time_;
-
-    /// wall time for macroiterations
-    double oiter_time_;
-
     /// wall time for orbital optimization
     double orbopt_time_;
-
-    /// total number of microiterations
-    long int iiter_total_;
-
-    /// total number of macroiterations
-    long int oiter_total_;
 
     /// total number of orbital optimization
     long int orbopt_iter_total_;
@@ -325,9 +296,6 @@ class v2RDM_DOCISolver: public Wavefunction{
 
     /// write full 2RDM to disk in IWL format
     void WriteTPDM_IWL();
-
-    /// write active-active-active-active 2RDM to disk
-    //void WriteActiveTPDM();
 
     /// read 2RDM from disk
     void ReadTPDM();
@@ -339,8 +307,6 @@ class v2RDM_DOCISolver: public Wavefunction{
     double * X_;
 
     void OrbitalLagrangian();
-    void DualD1Q1();
-    void PrintDual();
 
     /// memory available beyond what is allocated for v2RDM-DOCI
     long int available_memory_;

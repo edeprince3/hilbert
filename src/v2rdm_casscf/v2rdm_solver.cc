@@ -100,12 +100,31 @@ void NonsymmetricEigenvalue(long int N, double * A, double * VL, double * VR, do
 
 namespace hilbert{
 
-static void evaluate_Ap(long int n, SharedVector Ax, SharedVector x, void * data) {
+static void evaluate_Au(SharedVector Au, SharedVector u, void * data) {
+
+    // reinterpret void * as an instance of v2RDMSolver
+    v2RDMSolver* v2rdm = reinterpret_cast<v2RDMSolver*>(data);
+    // call a function from class to evaluate Ax product:
+    v2rdm->bpsdp_Au(Au,u);
+
+}
+
+static void evaluate_ATu(SharedVector ATu, SharedVector u, void * data) {
+
+    // reinterpret void * as an instance of v2RDMSolver
+    v2RDMSolver* v2rdm = reinterpret_cast<v2RDMSolver*>(data);
+    // call a function from class to evaluate Ax product:
+    v2rdm->bpsdp_ATu(ATu,u);
+
+}
+
+
+static void evaluate_Ap(SharedVector Ax, SharedVector x, void * data) {
 
     // reinterpret void * as an instance of v2RDMSolver
     v2RDMSolver* BPSDPcg = reinterpret_cast<v2RDMSolver*>(data);
     // call a function from class to evaluate Ax product:
-    BPSDPcg->cg_Ax(n,Ax,x);
+    BPSDPcg->cg_Ax(Ax,x);
 
 }
 
@@ -1765,7 +1784,7 @@ double v2RDMSolver::compute_energy() {
         cg->set_convergence(cg_conv_i);
 
         // solve CG problem (step 1 in table 1 of PRL 106 083001)
-        cg->solve(N,Ax,y,B,evaluate_Ap,(void*)this);
+        cg->solve(Ax,y,B,evaluate_Ap,(void*)this);
         int iiter = cg->total_iterations();
 
         double end = omp_get_wtime();
@@ -3133,7 +3152,7 @@ void v2RDMSolver::bpsdp_ATu_slow(SharedVector A, SharedVector u){
 
 }//end ATu
 
-void v2RDMSolver::cg_Ax(long int N,SharedVector A,SharedVector ux){
+void v2RDMSolver::cg_Ax(SharedVector A,SharedVector ux){
 
     A->zero();
     bpsdp_ATu(ATy,ux);

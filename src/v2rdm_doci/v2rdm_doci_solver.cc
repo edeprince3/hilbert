@@ -57,18 +57,39 @@
 #include <misc/threeindexintegrals.h>
 #include <misc/omp.h>
 #include <misc/cg_solver.h>
+#include <misc/bpsdp_solver.h>
 
 using namespace psi;
 using namespace fnocc;
 
 namespace hilbert{
 
-static void evaluate_Ap(long int n, SharedVector Ax, SharedVector x, void * data) {
+// AATy
+static void evaluate_CG_LHS(SharedVector Ax, SharedVector x, void * data) {
 
     // reinterpret void * as an instance of v2RDM_DOCISolver
-    v2RDM_DOCISolver* BPSDPcg = reinterpret_cast<v2RDM_DOCISolver*>(data);
-    // call a function from class to evaluate Ax product:
-    BPSDPcg->cg_Ax(n,Ax,x);
+    v2RDM_DOCISolver* v2rdm_doci = reinterpret_cast<v2RDM_DOCISolver*>(data);
+
+    Ax->zero();
+    std::shared_ptr<Vector> ATy (new Vector(v2rdm_doci->n_primal()));
+    v2rdm_doci->bpsdp_ATu(ATy,x);
+    v2rdm_doci->bpsdp_Au(Ax,ATy);
+
+}
+
+static void evaluate_Au(std::shared_ptr<Vector> Au, std::shared_ptr<Vector> u, void * data) {
+
+    // reinterpret void * as an instance of v2RDM_DOCISolver
+    v2RDM_DOCISolver* v2rdm_doci = reinterpret_cast<v2RDM_DOCISolver*>(data);
+    v2rdm_doci->bpsdp_Au(Au,u);
+
+}
+
+static void evaluate_ATu(std::shared_ptr<Vector> ATu, std::shared_ptr<Vector> u, void * data) {
+
+    // reinterpret void * as an instance of v2RDM_DOCISolver
+    v2RDM_DOCISolver* v2rdm_doci = reinterpret_cast<v2RDM_DOCISolver*>(data);
+    v2rdm_doci->bpsdp_ATu(ATu,u);
 
 }
 
@@ -899,9 +920,9 @@ void  v2RDM_DOCISolver::common_init(){
 
     //  if restarting, need to grab Ca_ from disk before integral transformation
     // checkpoint file
-    if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
-        ReadOrbitalsFromCheckpointFile();
-    }
+    //if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
+    //    ReadOrbitalsFromCheckpointFile();
+    //}
 
     // if using 3-index integrals, transform them before allocating any memory integrals, transform
     if ( is_df_ ) {
@@ -949,12 +970,8 @@ void  v2RDM_DOCISolver::common_init(){
     }
 
     // allocate vectors
-    Ax     = SharedVector(new Vector("A . x",nconstraints_));
-    ATy    = SharedVector(new Vector("A^T . y",dimx_));
     x      = SharedVector(new Vector("primal solution",dimx_));
     c      = SharedVector(new Vector("OEI and TEI",dimx_));
-    y      = SharedVector(new Vector("dual solution",nconstraints_));
-    z      = SharedVector(new Vector("dual solution 2",dimx_));
     b      = SharedVector(new Vector("constraints",nconstraints_));
 
     // input/output array for orbopt sweeps
@@ -1002,12 +1019,7 @@ void  v2RDM_DOCISolver::common_init(){
     }
 
     // initialize timers and iteration counters
-    iiter_total_       = 0;
-    oiter_total_       = 0;
     orbopt_iter_total_ = 0;
-
-    iiter_time_        = 0.0;
-    oiter_time_        = 0.0;
     orbopt_time_       = 0.0;
 
     // allocate memory for orbital lagrangian (TODO: make these smaller)
@@ -1035,185 +1047,51 @@ double v2RDM_DOCISolver::compute_energy() {
     // hartree-fock guess
     Guess();
 
-    tau = 1.0;
-    mu  = 1.0;
-
     // checkpoint file
-    if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
-        ReadFromCheckpointFile();
-    }
+    //if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
+    //    ReadFromCheckpointFile();
+    //}
 
     // get integrals
     GetIntegrals();
+
     // generate constraint vector
     BuildConstraints();
-    // AATy = A(c-z)+tu(b-Ax) rearange w.r.t cg solver
-    // Ax   = AATy and b=A(c-z)+tu(b-Ax)
-    SharedVector B   = SharedVector(new Vector("compound B",nconstraints_));
 
-    // congugate gradient solver
-    long int N = nconstraints_;
-    std::shared_ptr<CGSolver> cg (new CGSolver(N));
-    cg->set_max_iter(cg_maxiter_);
-    // evaluate guess energy (c.x):
-    double energy_primal = C_DDOT(dimx_,c->pointer(),1,x->pointer(),1);
+    // sdp solver
+    std::shared_ptr<BPSDPSolver> sdp (new BPSDPSolver(dimx_,nconstraints_,options_));
 
-    outfile->Printf("\n");
-    outfile->Printf("    reference energy:     %20.12lf\n",escf_);
-    outfile->Printf("    frozen core energy:   %20.12lf\n",efzc_);
-    outfile->Printf("    initial 2-RDM energy: %20.12lf\n",energy_primal + enuc_ + efzc_);
-    outfile->Printf("\n");
-    outfile->Printf("      oiter");
-    outfile->Printf(" iiter");
-    outfile->Printf("        E(p)");
-    outfile->Printf("        E(d)");
-    outfile->Printf("      E gap)");
-    outfile->Printf("      mu");
-    outfile->Printf("     eps(p)");
-    outfile->Printf("     eps(d)\n");
+    // iterate
+    int orbopt_iter = 0;
+    do { 
 
-    double energy_dual,egap;
-    double denergy_primal = fabs(energy_primal);
-
-    int checkpoint_frequency = options_.get_int("ORBOPT_FREQUENCY");
-    if ( options_["CHECKPOINT_FREQUENCY"].has_changed() ) {
-        checkpoint_frequency = options_.get_int("CHECKPOINT_FREQUENCY");
-    }
-    int mu_update_frequency  = options_.get_int("MU_UPDATE_FREQUENCY");
-    int orbopt_frequency     = options_.get_int("ORBOPT_FREQUENCY");
-    bool orbopt_one_step     = true;//options_.get_bool("ORBOPT_ONE_STEP");
-
-    int oiter=0;
-
-    bool stop_updating_mu = false;
-
-    do {
-        if ( amo_ == 0 ) break;
-
-        double start = omp_get_wtime();
-
-        // evaluate tau * mu * (b - Ax) for CG
-        bpsdp_Au(Ax, x);
-        Ax->subtract(b);
-        Ax->scale(-tau*mu);
-
-        // evaluate A(c-z) ( but don't overwrite c! )
-        z->scale(-1.0);
-        z->add(c);
-        bpsdp_Au(B,z);
-        // add tau*mu*(b-Ax) to A(c-z) and put result in B
-        B->add(Ax);
-
-
-        // set convergence for CG problem (step 1 in table 1 of PRL 106 083001)
-        double cg_conv_i = cg_convergence_;
-        if (oiter == 0) 
-            cg_conv_i = 0.01;
-        else
-            cg_conv_i = (ep > ed) ? 0.01 * ed : 0.01 * ep;
-        if (cg_conv_i < cg_convergence_)
-            cg_conv_i = cg_convergence_;
-        cg->set_convergence(cg_conv_i);
-
-        // solve CG problem (step 1 in table 1 of PRL 106 083001)
-        cg->solve(N,Ax,y,B,evaluate_Ap,(void*)this);
-        int iiter = cg->total_iterations();
-        double end = omp_get_wtime();
-
-        iiter_time_  += end - start;
-        iiter_total_ += iiter;
-
-        start = omp_get_wtime();
-
-        // update primal and dual solutions
-        Update_xz();
-
-        end = omp_get_wtime();
-
-        oiter_time_ += end - start;
-        oiter_total_++;
-
-        // update mu (step 3)
-
-        // evaluate || A^T y - c + z||
-        bpsdp_ATu(ATy, y);
-        ATy->add(z);
-        ATy->subtract(c);
-        ed = ATy->norm()/sqrt(dimx_);
-
-        // evaluate || Ax - b ||
-        bpsdp_Au(Ax, x);
-        Ax->subtract(b);
-        ep = Ax->norm()/sqrt(nconstraints_);
-
-        // don't update mu every iteration
-        if ( oiter % mu_update_frequency == 0 && oiter > 0 && !stop_updating_mu) {
-            mu = mu*ep/ed;
-        }
-
-        // compute current primal and dual energies
-        double current_energy = C_DDOT(dimx_,c->pointer(),1,x->pointer(),1);
-        energy_dual   = C_DDOT(nconstraints_,b->pointer(),1,y->pointer(),1);
+        sdp->solve(x, b, c, dimensions_, options_.get_int("ORBOPT_FREQUENCY"), evaluate_Au, evaluate_ATu, evaluate_CG_LHS, (void*)this);
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
-            //if ( orbopt_one_step == 1 && oiter % orbopt_frequency == 0 && oiter > 0 && current_energy+enuc_+efzc_ < escf_ )
-            if ( orbopt_one_step && oiter % orbopt_frequency == 0 && oiter > 0 ) {
 
-                start = omp_get_wtime();
-                RotateOrbitals();
-                end = omp_get_wtime();
+            double start = omp_get_wtime();
+            RotateOrbitals();
+            double end = omp_get_wtime();
 
-                orbopt_time_      += end - start;
-                orbopt_iter_total_++;
+            orbopt_time_  += end - start;
+            orbopt_iter_total_++;
 
-                // compute current primal and dual energies
-                current_energy = C_DDOT(dimx_,c->pointer(),1,x->pointer(),1);
-                energy_dual   = C_DDOT(nconstraints_,b->pointer(),1,y->pointer(),1);
-            }
+            double energy_primal = C_DDOT(dimx_,c->pointer(),1,x->pointer(),1);
+            outfile->Printf("            Total energy: %20.12lf\n",energy_primal+enuc_+efzc_);
+
         }else {
             orbopt_converged_ = true;
         }
 
+        outfile->Printf("\n");
 
-        //energy_primal = C_DDOT(dimx_,c->pointer(),1,x->pointer(),1);
-
-        outfile->Printf("      %5i %5i %11.6lf %11.6lf %11.6lf %7.3lf %10.6lf %10.6lf\n",
-                    oiter,iiter,current_energy+enuc_+efzc_,energy_dual+efzc_+enuc_,fabs(current_energy-energy_dual),mu,ep,ed);
-        oiter++;
-
-        if (oiter == maxiter_) break;
-
-        egap = fabs(current_energy-energy_dual);
-        denergy_primal = fabs(energy_primal - current_energy);
-        energy_primal = current_energy;
-
-        if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
-            if ( ep < r_convergence_ && ed < r_convergence_ && egap < e_convergence_ ) {
-                //stop_updating_mu = true;
-
-                start = omp_get_wtime();
-                RotateOrbitals();
-                end = omp_get_wtime();
-
-                orbopt_time_      += end - start;
-                orbopt_iter_total_++;
-
-                energy_primal = C_DDOT(dimx_,c->pointer(),1,x->pointer(),1);
-            }
-        }else {
-            orbopt_converged_ = true;
-        }
-
-    }while( ep > r_convergence_ || ed > r_convergence_  || egap > e_convergence_ || !orbopt_converged_);
-
-    if ( oiter == maxiter_ ) {
-        throw PsiException("v2RDM did not converge.",__FILE__,__LINE__);
-    }
+    }while( !orbopt_converged_);
 
     outfile->Printf("\n");
     outfile->Printf("      v2RDM-DOCI iterations converged!\n");
     outfile->Printf("\n");
 
+    double energy_primal = C_DDOT(dimx_,c->pointer(),1,x->pointer(),1);
     outfile->Printf("    * v2RDM-DOCI total energy:        %20.12lf\n",energy_primal+enuc_+efzc_);
     outfile->Printf("\n");
 
@@ -1267,20 +1145,20 @@ double v2RDM_DOCISolver::compute_energy() {
     // for derivatives:
     if ( options_.get_str("DERTYPE") == "FIRST" ) {
 
-        // write checkpoint file for next step in optimization
-        WriteCheckpointFile();
+        throw PsiException("derivatives not yet enabled for v2rdm-doci",__FILE__,__LINE__);
 
-        orbopt_data_[8] = -1.0;
-        RotateOrbitals();
+        //// write checkpoint file for next step in optimization
+        //WriteCheckpointFile();
 
-        // write 2-RDM in IWL format
-        WriteTPDM_IWL();
+        //orbopt_data_[8] = -1.0;
+        //RotateOrbitals();
 
-        // push orbital lagrangian onto wave function
-        OrbitalLagrangian();
+        //// write 2-RDM in IWL format
+        //WriteTPDM_IWL();
 
-        // push dual corresponding to D1/Q1 mapping onto S_ in the wave function
-        DualD1Q1();
+        //// push orbital lagrangian onto wave function
+        //OrbitalLagrangian();
+
     }
 
     double end_total_time = omp_get_wtime();
@@ -1288,14 +1166,14 @@ double v2RDM_DOCISolver::compute_energy() {
     outfile->Printf("\n");
     outfile->Printf("  ==> Iteration count <==\n");
     outfile->Printf("\n");
-    outfile->Printf("      Microiterations:            %12li\n",iiter_total_);
-    outfile->Printf("      Macroiterations:            %12li\n",oiter_total_);
+    outfile->Printf("      Microiterations:            %12li\n",sdp->iiter_total());
+    outfile->Printf("      Macroiterations:            %12li\n",sdp->oiter_total());
     outfile->Printf("      Orbital optimization steps: %12li\n",orbopt_iter_total_);
     outfile->Printf("\n");
     outfile->Printf("  ==> Wall time <==\n");
     outfile->Printf("\n");
-    outfile->Printf("      Microiterations:            %12.2lf s\n",iiter_time_);
-    outfile->Printf("      Macroiterations:            %12.2lf s\n",oiter_time_);
+    outfile->Printf("      Microiterations:            %12.2lf s\n",sdp->iiter_time());
+    outfile->Printf("      Macroiterations:            %12.2lf s\n",sdp->oiter_time());
     outfile->Printf("      Orbital optimization:       %12.2lf s\n",orbopt_time_);
     outfile->Printf("      Total:                      %12.2lf s\n",end_total_time - start_total_time);
     outfile->Printf("\n");
@@ -1463,20 +1341,12 @@ void v2RDM_DOCISolver::MullikenPopulations() {
 void v2RDM_DOCISolver::Guess(){
 
     double* x_p = x->pointer();
-    double* z_p = z->pointer();
-    double* y_p = y->pointer();
 
     memset((void*)x_p,'\0',dimx_*sizeof(double));
-    memset((void*)z_p,'\0',dimx_*sizeof(double));
-    memset((void*)y_p,'\0',nconstraints_*sizeof(double));
 
     srand(0);
     for (int i = 0; i < dimx_; i++) {
-        x_p[i] = ( (double)rand()/RAND_MAX - 1.0 ) * 2.0;// / 100.0;
-        z_p[i] = ( (double)rand()/RAND_MAX - 1.0 ) * 2.0;// / 100.0;
-    }
-    for (int i = 0; i < nconstraints_; i++) {
-        y_p[i] = ( (double)rand()/RAND_MAX - 1.0 ) * 2.0;// / 100.0;
+        x_p[i] = ( (double)rand()/RAND_MAX - 1.0 ) * 2.0;
     }
 
 }
@@ -1713,92 +1583,11 @@ void v2RDM_DOCISolver::bpsdp_ATu(SharedVector A, SharedVector u){
 
 void v2RDM_DOCISolver::cg_Ax(long int N,SharedVector A,SharedVector ux){
 
-    A->zero();
-    bpsdp_ATu(ATy,ux);
-    bpsdp_Au(A,ATy);
+//    A->zero();
+//    bpsdp_ATu(ATy,ux);
+//    bpsdp_Au(A,ATy);
 
 }//end cg_Ax
-
-// update x and z
-void v2RDM_DOCISolver::Update_xz() {
-
-    // evaluate M(mu*x + ATy - c)
-    bpsdp_ATu(ATy,y);
-    ATy->subtract(c);
-    x->scale(mu);
-    ATy->add(x);
-
-    // loop over each block of x/z
-    for (int i = 0; i < dimensions_.size(); i++) {
-
-        if ( dimensions_[i] == 0 ) continue;
-
-        int myoffset = 0;
-        for (int j = 0; j < i; j++) {
-            myoffset += dimensions_[j] * dimensions_[j];
-        }
-
-
-        SharedMatrix mat     (new Matrix(dimensions_[i],dimensions_[i]));
-        SharedMatrix eigvec  (new Matrix(dimensions_[i],dimensions_[i]));
-        SharedMatrix eigvec2 (new Matrix(dimensions_[i],dimensions_[i]));
-        SharedVector eigval  (new Vector(dimensions_[i]));
-
-        double ** mat_p = mat->pointer();
-        double * A_p    = ATy->pointer();
-
-        double dum = 0.0;
-        for (int p = 0; p < dimensions_[i]; p++) {
-            for (int q = p; q < dimensions_[i]; q++) {
-                double dum = 0.5 * ( A_p[myoffset + p * dimensions_[i] + q] +
-                                     A_p[myoffset + q * dimensions_[i] + p] );
-                mat_p[p][q] = mat_p[q][p] = dum;
-
-            }
-        }
-
-        mat->diagonalize(eigvec,eigval);
-        //for (int p = 0; p < dimensions_[i]; p++) {
-        //    if ( fabs(eigval->pointer()[p]) < r_convergence_*0.1 ) eigval->pointer()[p] = 0.0;
-        //}
-
-        // separate U+ and U-, transform back to nondiagonal basis
-
-        double * eval_p   = eigval->pointer();
-        double ** evec_p  = eigvec->pointer();
-        double ** evec2_p = eigvec2->pointer();
-
-        double * x_p      = x->pointer();
-        double * z_p      = z->pointer();
-
-        // (+) part
-        long int mydim = 0;
-        for (long int j = 0; j < dimensions_[i]; j++) {
-            if ( eval_p[j] > 0.0 ) {
-                for (long int q = 0; q < dimensions_[i]; q++) {
-                    mat_p[q][mydim]   = evec_p[q][j] * eval_p[j]/mu;
-                    evec2_p[q][mydim] = evec_p[q][j];
-                }
-                mydim++;
-            }
-        }
-        F_DGEMM('t','n',dimensions_[i],dimensions_[i],mydim,1.0,&mat_p[0][0],dimensions_[i],&evec2_p[0][0],dimensions_[i],0.0,x_p+myoffset,dimensions_[i]);
-
-        // (-) part
-        mydim = 0;
-        for (long int j = 0; j < dimensions_[i]; j++) {
-            if ( eval_p[j] < 0.0 ) {
-                for (long int q = 0; q < dimensions_[i]; q++) {
-                    mat_p[q][mydim]   = -evec_p[q][j] * eval_p[j];
-                    evec2_p[q][mydim] =  evec_p[q][j];
-                }
-                mydim++;
-            }
-        }
-        F_DGEMM('t','n',dimensions_[i],dimensions_[i],mydim,1.0,&mat_p[0][0],dimensions_[i],&evec2_p[0][0],dimensions_[i],0.0,z_p+myoffset,dimensions_[i]);
-
-    }
-}
 
 void v2RDM_DOCISolver::PackSpatialDensity() {
 

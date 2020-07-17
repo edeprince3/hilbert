@@ -58,78 +58,10 @@ void CGSolver::set_convergence(double conv) {
     cg_convergence_ = conv;
 }
 
-void CGSolver::preconditioned_solve(long int n,
-                    SharedVector Ap, 
-                    SharedVector  x, 
-                    SharedVector  b, 
-                    SharedVector  precon, 
-                    CallbackType function, void * data) {
-
-    if ( n != n_ ) {
-        throw PsiException("Warning: dimension does not match dimension from initialization",__FILE__,__LINE__);
-    }
-
-    double * p_p = p->pointer();
-    double * r_p = r->pointer();
-    double * z_p = z->pointer();
-
-    double alpha = 0.0;
-    double beta  = 0.0;
-
-    // call some function to evaluate A.x.  Result in Ap
-    function(n,Ap,x,data);
-
-    double * b_p      = b->pointer();
-    double * x_p      = x->pointer();
-    double * Ap_p     = Ap->pointer();
-    double * precon_p = precon->pointer();
-
-    for (int i = 0; i < n; i++) {
-        r_p[i] = b_p[i] - Ap_p[i];
-        z_p[i] = precon_p[i] * r_p[i];
-    }
-    C_DCOPY(n,z_p,1,p_p,1);
-
-    iter_ = 0;
-    do {
-
-        // call some function to evaluate A.p.  Result in Ap
-        function(n,Ap,p,data);
-
-        double rz  = C_DDOT(n_,r_p,1,z_p,1);
-        double pap = C_DDOT(n_,p_p,1,Ap_p,1);
-        double alpha = rz / pap;
-        C_DAXPY(n_,alpha,p_p,1,x_p,1);
-        C_DAXPY(n_,-alpha,Ap_p,1,r_p,1);
-
-        // if r is sufficiently small, then exit loop
-        double rrnew = C_DDOT(n_,r_p,1,r_p,1);
-        double nrm = sqrt(rrnew);// / sqrt(n_);
-        if ( nrm < cg_convergence_ ) break;
-
-        for (int i = 0; i < n; i++) {
-            z_p[i] = precon_p[i] * r_p[i];
-        }
-        double rznew  = C_DDOT(n_,r_p,1,z_p,1);
-        double beta = rznew/rz;
-
-        C_DSCAL(n_,beta,p_p,1);
-        C_DAXPY(n_,1.0,z_p,1,p_p,1);
-
-        iter_++;
-
-    }while(iter_ < cg_max_iter_ );
-}
-
-void CGSolver::solve(long int n,
-                    SharedVector Ap, 
-                    SharedVector  x, 
-                    SharedVector  b, 
-                    CallbackType function, void * data) {
-
-    if ( n != n_ ) {
-        throw PsiException("Warning: dimension does not match dimension from initialization",__FILE__,__LINE__);
-    }
+void CGSolver::solve(SharedVector Ap, 
+                     SharedVector  x, 
+                     SharedVector  b, 
+                     CGCallbackFunction function, void * data) {
 
     double * p_p = p->pointer();
     double * r_p = r->pointer();
@@ -138,23 +70,23 @@ void CGSolver::solve(long int n,
     double beta  = 0.0;
 
     // call some function to evaluate A.x.  Result in Ap
-    function(n,Ap,x,data);
+    function(Ap,x,data);
 
     double * b_p  = b->pointer();
     double * x_p  = x->pointer();
     double * Ap_p = Ap->pointer();
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n_; i++) {
         r_p[i] = b_p[i] - Ap_p[i];
     }
 
-    C_DCOPY(n,r_p,1,p_p,1);
+    C_DCOPY(n_,r_p,1,p_p,1);
 
     iter_ = 0;
     do {
 
         // call some function to evaluate A.p.  Result in Ap
-        function(n,Ap,p,data);
+        function(Ap,p,data);
 
         double rr  = C_DDOT(n_,r_p,1,r_p,1);
         double pap = C_DDOT(n_,p_p,1,Ap_p,1);
