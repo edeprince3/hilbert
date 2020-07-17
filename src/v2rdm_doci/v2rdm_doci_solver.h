@@ -42,6 +42,7 @@
 #include <psi4/libmints/vector.h>
 
 #include <misc/hilbert_psifiles.h>
+#include <misc/bpsdp_solver.h>
 
 using namespace psi;
 
@@ -62,6 +63,9 @@ class v2RDM_DOCISolver: public Wavefunction{
     int n_primal(){return dimx_;}
 
   protected:
+
+    /// the sdp solver
+    std::shared_ptr<BPSDPSolver> sdp_;
 
     /// constrain T1 to be positive semidefinite?
     bool constrain_t1_;
@@ -315,6 +319,15 @@ class v2RDM_DOCISolver: public Wavefunction{
 
     /// mo-mo transformation matrix
     SharedMatrix newMO_;
+
+    /// write primal, dual, and orbitals to a checkpoint file
+    void WriteCheckpointFile();
+
+    /// read primal, dual, and orbitals from a checkpoint file
+    void ReadFromCheckpointFile();
+
+    /// read orbitals from a checkpoint file
+    void ReadOrbitalsFromCheckpointFile();
 };
 
 }

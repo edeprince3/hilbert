@@ -19,15 +19,15 @@ set {
   scf_type df
 
   e_convergence 1e-4
-  r_convergence 1e-6
+  r_convergence 1e-5
   orbopt_gradient_convergence 1e-6
   orbopt_energy_convergence 1e-8
 
   localize_orbitals true
-  noisy_orbitals    true
+  noisy_orbitals    false
   optimize_orbitals true
-  orbopt_maxiter 20
-  orbopt_frequency 1000
+  orbopt_maxiter 50
+  orbopt_frequency 500
   maxiter 100000
 
   positivity dqg

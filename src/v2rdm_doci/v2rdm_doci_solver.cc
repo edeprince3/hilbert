@@ -920,9 +920,9 @@ void  v2RDM_DOCISolver::common_init(){
 
     //  if restarting, need to grab Ca_ from disk before integral transformation
     // checkpoint file
-    //if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
-    //    ReadOrbitalsFromCheckpointFile();
-    //}
+    if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
+        ReadOrbitalsFromCheckpointFile();
+    }
 
     // if using 3-index integrals, transform them before allocating any memory integrals, transform
     if ( is_df_ ) {
@@ -1048,9 +1048,9 @@ double v2RDM_DOCISolver::compute_energy() {
     Guess();
 
     // checkpoint file
-    //if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
-    //    ReadFromCheckpointFile();
-    //}
+    if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
+        ReadFromCheckpointFile();
+    }
 
     // get integrals
     GetIntegrals();
@@ -1059,13 +1059,13 @@ double v2RDM_DOCISolver::compute_energy() {
     BuildConstraints();
 
     // sdp solver
-    std::shared_ptr<BPSDPSolver> sdp (new BPSDPSolver(dimx_,nconstraints_,options_));
+    sdp_ = (std::shared_ptr<BPSDPSolver>)(new BPSDPSolver(dimx_,nconstraints_,options_));
 
     // iterate
     int orbopt_iter = 0;
     do { 
 
-        sdp->solve(x, b, c, dimensions_, options_.get_int("ORBOPT_FREQUENCY"), evaluate_Au, evaluate_ATu, evaluate_cg_lhs, (void*)this);
+        sdp_->solve(x, b, c, dimensions_, options_.get_int("ORBOPT_FREQUENCY"), evaluate_Au, evaluate_ATu, evaluate_cg_lhs, (void*)this);
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
 
@@ -1085,7 +1085,7 @@ double v2RDM_DOCISolver::compute_energy() {
 
         outfile->Printf("\n");
 
-    }while( !orbopt_converged_ || !sdp->is_converged() );
+    }while( !orbopt_converged_ || !sdp_->is_converged() );
 
 
     outfile->Printf("\n");
@@ -1142,19 +1142,17 @@ double v2RDM_DOCISolver::compute_energy() {
     // for derivatives:
     if ( options_.get_str("DERTYPE") == "FIRST" ) {
 
-        throw PsiException("derivatives not yet enabled for v2rdm-doci",__FILE__,__LINE__);
+        // write checkpoint file for next step in optimization
+        WriteCheckpointFile();
 
-        //// write checkpoint file for next step in optimization
-        //WriteCheckpointFile();
+        orbopt_data_[8] = -1.0;
+        RotateOrbitals();
 
-        //orbopt_data_[8] = -1.0;
-        //RotateOrbitals();
+        // write 2-RDM in IWL format
+        WriteTPDM_IWL();
 
-        //// write 2-RDM in IWL format
-        //WriteTPDM_IWL();
-
-        //// push orbital lagrangian onto wave function
-        //OrbitalLagrangian();
+        // push orbital lagrangian onto wave function
+        OrbitalLagrangian();
 
     }
 
@@ -1163,14 +1161,14 @@ double v2RDM_DOCISolver::compute_energy() {
     outfile->Printf("\n");
     outfile->Printf("  ==> Iteration count <==\n");
     outfile->Printf("\n");
-    outfile->Printf("      Microiterations:            %12li\n",sdp->iiter_total());
-    outfile->Printf("      Macroiterations:            %12li\n",sdp->oiter_total());
+    outfile->Printf("      Microiterations:            %12li\n",sdp_->iiter_total());
+    outfile->Printf("      Macroiterations:            %12li\n",sdp_->oiter_total());
     outfile->Printf("      Orbital optimization steps: %12li\n",orbopt_iter_total_);
     outfile->Printf("\n");
     outfile->Printf("  ==> Wall time <==\n");
     outfile->Printf("\n");
-    outfile->Printf("      Microiterations:            %12.2lf s\n",sdp->iiter_time());
-    outfile->Printf("      Macroiterations:            %12.2lf s\n",sdp->oiter_time());
+    outfile->Printf("      Microiterations:            %12.2lf s\n",sdp_->iiter_time());
+    outfile->Printf("      Macroiterations:            %12.2lf s\n",sdp_->oiter_time());
     outfile->Printf("      Orbital optimization:       %12.2lf s\n",orbopt_time_);
     outfile->Printf("      Total:                      %12.2lf s\n",end_total_time - start_total_time);
     outfile->Printf("\n");
