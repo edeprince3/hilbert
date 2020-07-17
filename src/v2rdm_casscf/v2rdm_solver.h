@@ -401,9 +401,6 @@ class v2RDMSolver: public Wavefunction{
     double * d1_act_spatial_sym_;
     int d1_act_spatial_dim_;
 
-    /// unpack active-space density into full-space density
-    void UnpackDensityPlusCore();
-
     /// pack active-space spin-blocked density into spatial density
     void PackSpatialDensity();
 
@@ -470,9 +467,6 @@ class v2RDMSolver: public Wavefunction{
 
     /// read 3RDM from disk
     void Read3PDM();
-
-    /// check spin structure of 1- and 2-RDM
-    void CheckSpinStructure();
 
     /// orbital lagrangian
     double * X_;
