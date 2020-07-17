@@ -35,6 +35,7 @@
 #include "bpsdp_solver.h"
 
 #include <misc/cg_solver.h>
+#include <misc/diis.h>
 #include <misc/omp.h>
 #include <misc/blas.h>
 
@@ -90,6 +91,11 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
     cg->set_max_iter(options_.get_int("CG_MAXITER"));
     double cg_convergence = options_.get_int("CG_CONVERGENCE");
     cg->set_convergence(cg_convergence);
+
+    std::shared_ptr<DIIS> diis ( new DIIS(2 * n_primal_) );
+
+    bool do_diis = true;
+    double * tmp = (double*)malloc(2*n_primal_*sizeof(double));
 
     // the iterations
     outfile->Printf("\n");
@@ -193,6 +199,35 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
 
     }while( !is_converged_ );
 
+}
+
+std::shared_ptr<Vector> BPSDPSolver::ATAx_minus_ATb(std::shared_ptr<Vector> x,
+                                                    std::shared_ptr<Vector> b,
+                                                    BPSDPCallbackFunction evaluate_Au,
+                                                    BPSDPCallbackFunction evaluate_ATu,
+                                                    void * data){
+
+    std::shared_ptr<Vector> ret (new Vector(n_primal_));
+
+    evaluate_Au(Au_, x, data);
+    Au_->subtract(b);
+
+    evaluate_ATu(ret,Au_,data);
+
+    return ret;
+
+}
+std::shared_ptr<Vector> BPSDPSolver::ATy_plus_z_minus_c(std::shared_ptr<Vector> c,
+                                                        BPSDPCallbackFunction evaluate_ATu,
+                                                        void * data){
+
+    std::shared_ptr<Vector> ret (new Vector(n_primal_));
+
+    evaluate_ATu(ret,y_,data);
+    ret->add(z_);
+    ret->subtract(c);
+
+    return ret;
 }
 
 // update x and z

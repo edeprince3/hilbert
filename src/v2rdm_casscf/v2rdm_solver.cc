@@ -56,7 +56,7 @@
 
 #include <focas/focas_c_interface.h>
 #include <misc/blas.h>
-#include <misc/cg_solver.h>
+#include <misc/diis.h>
 #include <misc/bpsdp_solver.h>
 #include <misc/threeindexintegrals.h>
 #include <misc/omp.h>
@@ -1681,11 +1681,19 @@ double v2RDMSolver::compute_energy() {
     // generate constraint vector
     BuildConstraints();
 
+    std::shared_ptr<DIIS> diis ( new DIIS(nconstraints_ + 2*dimx_) );
+
+    //bool do_diis = options_.get_bool("DIIS");
+    //double * tmp = (double*)malloc((nconstraints_ + 2*dimx_)*sizeof(double));
+
     // iterate
     int orbopt_iter = 0;
+
+    int local_maxiter = options_.get_bool("OPTIMIZE_ORBITALS") ? options_.get_int("ORBOPT_FREQUENCY") : options_.get_int("MU_UPDATE_FREQUENCY");
+
     do {
 
-        sdp_->solve(x, b, c, dimensions_, options_.get_int("ORBOPT_FREQUENCY"), evaluate_Au, evaluate_ATu, evaluate_cg_lhs, (void*)this);
+        sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, evaluate_cg_lhs, (void*)this);
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
     
@@ -1703,9 +1711,43 @@ double v2RDMSolver::compute_energy() {
             orbopt_converged_ = true;
         }
 
+/*
+        if ( do_diis ) {
+
+            // current solution
+            C_DCOPY(dimx_,x->pointer(),1,tmp,1);
+            C_DCOPY(dimx_,sdp_->get_z()->pointer(),1,tmp+dimx_,1);
+            C_DCOPY(nconstraints_,sdp_->get_y()->pointer(),1,tmp+2*dimx_,1);
+            diis->WriteVector(tmp);
+
+            // current error vectors
+            std::shared_ptr<Vector> primal_error_vector  = sdp_->ATAx_minus_ATb(x,b,evaluate_Au,evaluate_ATu,(void*)this);
+            std::shared_ptr<Vector> dual_error_vector    = sdp_->ATy_plus_z_minus_c(c,evaluate_ATu,(void*)this);
+            std::shared_ptr<Vector> dual_error_vector_y (new Vector(nconstraints_));
+            bpsdp_Au(dual_error_vector_y,dual_error_vector);
+
+            C_DCOPY(dimx_,primal_error_vector->pointer(),1,tmp,1);
+            C_DCOPY(dimx_,dual_error_vector->pointer(),1,tmp+dimx_,1);
+            C_DCOPY(nconstraints_,dual_error_vector_y->pointer(),1,tmp+2*dimx_,1);
+
+            diis->WriteErrorVector(tmp);
+
+            diis->Extrapolate(tmp);
+            C_DCOPY(dimx_,tmp+dimx_,1,x->pointer(),1);
+            sdp_->set_z(x);
+            C_DCOPY(dimx_,tmp,1,x->pointer(),1);
+
+            C_DCOPY(nconstraints_,tmp+2*dimx_,1,dual_error_vector_y->pointer(),1);
+            sdp_->set_y(dual_error_vector_y);
+            
+        }
+*/
+
         outfile->Printf("\n");
 
     }while( !orbopt_converged_ || !sdp_->is_converged() );
+
+    //free(tmp);
 
     outfile->Printf("\n");
     outfile->Printf("      v2RDM iterations converged!\n");

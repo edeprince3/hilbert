@@ -74,6 +74,18 @@ class BPSDPSolver{
 
     bool is_converged(){ return is_converged_; }
 
+    // augmented primal error vector
+    std::shared_ptr<Vector> ATAx_minus_ATb(std::shared_ptr<Vector> x,
+                                           std::shared_ptr<Vector> b,
+                                           BPSDPCallbackFunction evaluate_Au,
+                                           BPSDPCallbackFunction evaluate_ATu,
+                                           void * data);
+
+    // dual error vector
+    std::shared_ptr<Vector> ATy_plus_z_minus_c(std::shared_ptr<Vector> c,
+                                               BPSDPCallbackFunction evaluate_ATu,
+                                               void * data);
+
   protected:
 
     /// Options object

@@ -51,6 +51,9 @@ int read_options(std::string name, Options& options)
         /*- qc solver -*/
         options.add_str("HILBERT_METHOD", "", "DOCI PP2RDM V2RDM_DOCI");
 
+        /*- Do DIIS? Only valid for v2rdm-casscf -*/
+        options.add_bool("DIIS", true);
+
         /*- The amount of information printed to the output file -*/
         options.add_int("PRINT", 1);
 
