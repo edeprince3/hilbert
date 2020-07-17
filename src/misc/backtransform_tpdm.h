@@ -38,7 +38,6 @@
 
 #include <psi4/libtrans/integraltransform.h>
 
-
 namespace psi {
 
 struct dpdfile4;

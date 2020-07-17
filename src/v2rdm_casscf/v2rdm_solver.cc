@@ -1624,6 +1624,8 @@ void  v2RDMSolver::common_init(){
     same_a_b_orbs_ = false;
     same_a_b_dens_ = false;
 
+    // sdp solver
+    sdp_ = (std::shared_ptr<BPSDPSolver>)(new BPSDPSolver(dimx_,nconstraints_,options_));
 }
 
 int v2RDMSolver::SymmetryPair(int i,int j) {
@@ -1678,9 +1680,6 @@ double v2RDMSolver::compute_energy() {
 
     // generate constraint vector
     BuildConstraints();
-
-    // sdp solver
-    sdp_ = (std::shared_ptr<BPSDPSolver>)(new BPSDPSolver(dimx_,nconstraints_,options_));
 
     // iterate
     int orbopt_iter = 0;

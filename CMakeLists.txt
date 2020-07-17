@@ -36,6 +36,9 @@ add_psi4_plugin(hilbert
     src/pp2rdm/pp2rdm_solver.cc
     src/pp2rdm/write_tpdm.cc
 
+    src/misc/backtransform_tpdm.cc
+    src/misc/integraltransform_sort_so_tpdm.cc
+    src/misc/integraltransform_tpdm_unrestricted.cc
     src/misc/threeindexintegrals.cc
     src/misc/cg_solver.cc
     src/misc/bpsdp_solver.cc
@@ -61,14 +64,11 @@ add_psi4_plugin(hilbert
     src/focas/focas_semicanonical.F90
     src/focas/focas_full_hessian.F90
 
-    src/v2rdm_doci/backtransform_tpdm.cc
     src/v2rdm_doci/basis.cc
     src/v2rdm_doci/checkpoint.cc
     src/v2rdm_doci/d2.cc
     src/v2rdm_doci/d3.cc
     src/v2rdm_doci/g2.cc
-    src/v2rdm_doci/integraltransform_sort_so_tpdm.cc
-    src/v2rdm_doci/integraltransform_tpdm_unrestricted.cc
     src/v2rdm_doci/oei.cc
     src/v2rdm_doci/orbital_lagrangian.cc
     src/v2rdm_doci/q2.cc
@@ -80,7 +80,6 @@ add_psi4_plugin(hilbert
     src/v2rdm_doci/write_tpdm.cc
     src/v2rdm_doci/write_tpdm_iwl.cc
 
-    src/v2rdm_casscf/backtransform_tpdm.cc
     src/v2rdm_casscf/basis.cc
     src/v2rdm_casscf/checkpoint.cc
     src/v2rdm_casscf/d2.cc
@@ -89,8 +88,6 @@ add_psi4_plugin(hilbert
     src/v2rdm_casscf/extended_koopmans.cc
     src/v2rdm_casscf/fcidump.cc
     src/v2rdm_casscf/g2.cc
-    src/v2rdm_casscf/integraltransform_sort_so_tpdm.cc
-    src/v2rdm_casscf/integraltransform_tpdm_unrestricted.cc
     src/v2rdm_casscf/natural_orbitals.cc
     src/v2rdm_casscf/oei.cc
     src/v2rdm_casscf/orbital_lagrangian.cc

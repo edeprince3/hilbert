@@ -35,6 +35,7 @@
 #include <v2rdm_doci/v2rdm_doci_solver.h>
 #include <doci/doci_solver.h>
 #include <pp2rdm/pp2rdm_solver.h>
+#include <misc/backtransform_tpdm.h>
 
 using namespace psi;
 
@@ -153,8 +154,8 @@ int read_options(std::string name, Options& options)
         /*- do check analytic hessian for accuracy? -*/
         options.add_bool("CHECK_HESSIAN",false);
 
-        /*- restart from checkpoint file? -*/
-        options.add_bool("RESTART_FROM_CHECKPOINT_FILE",false);
+        /*- File containing previous primal/dual solutions and integrals. -*/
+        options.add_str("RESTART_FROM_CHECKPOINT_FILE","");
 
         /*- algorithm type -*/
         options.add_str("P2RDM_ALGORITHM","PROJECTION","PROJECTION LBFGS NEWTON_RAPHSON");
@@ -284,9 +285,27 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         std::shared_ptr<v2RDMSolver> v2rdm (new v2RDMSolver(ref_wfn,options));
         double energy = v2rdm->compute_energy();
+
+        if ( options.get_str("DERTYPE") == "FIRST" ) {
+
+            // backtransform the tpdm
+            std::vector<std::shared_ptr<MOSpace> > spaces;
+            spaces.push_back(MOSpace::all);
+            std::shared_ptr<TPDMBackTransform> transform = std::shared_ptr<TPDMBackTransform>(
+            new TPDMBackTransform(ref_wfn,
+                            spaces,
+                            IntegralTransform::TransformationType::Unrestricted, // Transformation type
+                            IntegralTransform::OutputType::DPDOnly,              // Output buffer
+                            IntegralTransform::MOOrdering::QTOrder,              // MO ordering
+                            IntegralTransform::FrozenOrbitals::None));           // Frozen orbitals?
+            transform->backtransform_density();
+            transform.reset();
+        }
+
         return (std::shared_ptr<Wavefunction>)v2rdm;
 
     }
+
 
     return ref_wfn;
 }

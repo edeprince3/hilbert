@@ -272,7 +272,6 @@ def run_v2rdm_casscf_gradient(name, **kwargs):
         raise ValidationError("""Error: analytic v2RDM-CASSCF gradients not implemented for scf_type %s.""" % scf_type)
 
     v2rdm_wfn = run_v2rdm_casscf(name,**kwargs)
-
     derivobj = psi4.core.Deriv(v2rdm_wfn)
     derivobj.set_deriv_density_backtransformed(True)
     derivobj.set_ignore_reference(True)
