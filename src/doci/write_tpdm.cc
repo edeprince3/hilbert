@@ -75,22 +75,26 @@ void DOCISolver::WriteTPDM(){
                     d2.j   = j;
                     d2.k   = k;
                     d2.l   = l;
-                    d2.val = valab;
-                    psio->write(PSIF_V2RDM_D2AB,"D2ab",(char*)&d2,sizeof(tpdm),addr_ab,&addr_ab);
-                    countab++;
+
+                    if ( fabs(valab) > 1e-12 ) {
+                        d2.val = valab;
+                        psio->write(PSIF_V2RDM_D2AB,"D2ab",(char*)&d2,sizeof(tpdm),addr_ab,&addr_ab);
+                        countab++;
+                    }
 
                     if ( i != j && k != l ) {
 
                         double valaa = d2aa_[i*nmo_*nmo_*nmo_+j*nmo_*nmo_+k*nmo_+l];
-                        double valbb = d2aa_[i*nmo_*nmo_*nmo_+j*nmo_*nmo_+k*nmo_+l];
 
-                        d2.val = valaa;
-                        psio->write(PSIF_V2RDM_D2AA,"D2aa",(char*)&d2,sizeof(tpdm),addr_aa,&addr_aa);
-                        countaa++;
+                        if ( fabs(valaa) > 1e-12 ) {
+                            d2.val = valaa;
 
-                        d2.val = valbb;
-                        psio->write(PSIF_V2RDM_D2BB,"D2bb",(char*)&d2,sizeof(tpdm),addr_bb,&addr_bb);
-                        countbb++;
+                            psio->write(PSIF_V2RDM_D2AA,"D2aa",(char*)&d2,sizeof(tpdm),addr_aa,&addr_aa);
+                            countaa++;
+
+                            psio->write(PSIF_V2RDM_D2BB,"D2bb",(char*)&d2,sizeof(tpdm),addr_bb,&addr_bb);
+                            countbb++;
+                        }
 
                     }
 
