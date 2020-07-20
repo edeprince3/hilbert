@@ -32,6 +32,10 @@ add_psi4_plugin(hilbert
     src/doci/doci_solver.cc
     src/doci/write_tpdm.cc
 
+    src/p2rdm/p2rdm_solver.cc
+    src/p2rdm/p2rdm_residual.cc
+    src/p2rdm/write_tpdm.cc
+
     src/pp2rdm/minimization_routines.cc
     src/pp2rdm/pp2rdm_solver.cc
     src/pp2rdm/write_tpdm.cc
