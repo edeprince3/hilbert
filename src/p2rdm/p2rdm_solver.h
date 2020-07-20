@@ -96,13 +96,13 @@ class p2RDMSolver: public Wavefunction{
     double * orbital_lagrangian_;
 
     /// evaluate the projection energy
-    double evaluate_projection_energy(double * t2);
+    double evaluate_projection_energy();
 
     /// evaluate residual vector
-    void evaluate_residual(double * residual, double * t2);
+    void evaluate_residual();
 
     /// update amplitudes
-    double update_amplitudes(double * residual, double * t2, bool do_diis, std::shared_ptr<DIIS> diis);
+    double update_amplitudes(bool do_diis, std::shared_ptr<DIIS> diis);
 
     /// 1-RDM
     double * d1_;

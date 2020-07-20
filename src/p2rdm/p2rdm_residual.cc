@@ -47,7 +47,7 @@ using namespace fnocc;
 
 namespace hilbert {
 
-void p2RDMSolver::evaluate_residual(double * residual, double * t2) {
+void p2RDMSolver::evaluate_residual() {
 
     int o = nalpha_;
     int v = nmo_ - nalpha_;
@@ -91,7 +91,7 @@ void p2RDMSolver::evaluate_residual(double * residual, double * t2) {
         for (int j = 0; j < o; j++) {
             for (int k = 0; k < o; k++) {
                 for (int c = 0; c < v; c++) {
-                    tempt[b*o*o*v+j*o*v+k*v+c] = t2[b*o*o*v+c*o*o+k*o+j];
+                    tempt[b*o*o*v+j*o*v+k*v+c] = t2_[b*o*o*v+c*o*o+k*o+j];
                 }
             }
         }
@@ -103,7 +103,7 @@ void p2RDMSolver::evaluate_residual(double * residual, double * t2) {
         for (int b = 0; b < v; b++) {
             for (int i = 0; i < o; i++) {
                 for (int j = 0; j < o; j++) {
-                    residual[a*o*o*v+b*o*o+i*o+j] = 0.5 * tempv[b*o*o*v+j*o*v+a*o+i] + tempv[b*o*o*v+i*o*v+a*o+j];
+                    r2_[a*o*o*v+b*o*o+i*o+j] = 0.5 * tempv[b*o*o*v+j*o*v+a*o+i] + tempv[b*o*o*v+i*o*v+a*o+j];
                 }
             }
         }
@@ -127,7 +127,7 @@ void p2RDMSolver::evaluate_residual(double * residual, double * t2) {
         for (int c = 0; c < v; c++) {
             for (int b = 0; b < v; b++) {
                 for (int j = 0; j < o; j++) {
-                    tempt[k*o*v*v+c*o*v+b*o+j] = 2.0 * t2[b*o*o*v+c*o*o+j*o+k] - t2[b*o*o*v+c*o*o+k*o+j];
+                    tempt[k*o*v*v+c*o*v+b*o+j] = 2.0 * t2_[b*o*o*v+c*o*o+j*o+k] - t2_[b*o*o*v+c*o*o+k*o+j];
                 }
             }
         }
@@ -138,7 +138,7 @@ void p2RDMSolver::evaluate_residual(double * residual, double * t2) {
         for (int b = 0; b < v; b++) {
             for (int i = 0; i < o; i++) {
                 for (int j = 0; j < o; j++) {
-                    residual[a*o*o*v+b*o*o+i*o+j] += tempv[a*o*o*v+i*o*v+b*o+j];
+                    r2_[a*o*o*v+b*o*o+i*o+j] += tempv[a*o*o*v+i*o*v+b*o+j];
                 }
             }
         }
@@ -150,7 +150,7 @@ void p2RDMSolver::evaluate_residual(double * residual, double * t2) {
         for (int a = 0; a < v; a++) {
             for (int i = 0; i < o; i++) {
                 for (int j = 0; j < o; j++) {
-                    tempt[c*o*o*v+a*o*o+i*o+j] = t2[a*o*o*v+c*o*o+i*o+j];
+                    tempt[c*o*o*v+a*o*o+i*o+j] = t2_[a*o*o*v+c*o*o+i*o+j];
                 }
             }
         }
@@ -161,23 +161,23 @@ void p2RDMSolver::evaluate_residual(double * residual, double * t2) {
         for (int b = 0; b < v; b++) {
             for (int i = 0; i < o; i++) {
                 for (int j = 0; j < o; j++) {
-                    residual[a*o*o*v+b*o*o+i*o+j] += tempv[b*o*o*v+a*o*o+i*o+j];
+                    r2_[a*o*o*v+b*o*o+i*o+j] += tempv[b*o*o*v+a*o*o+i*o+j];
                 }
             }
         }
     }
 
     // E2 b: -t(a,b,i,k) F(kj)
-    F_DGEMM('n','n',o,o*v*v,o,-1.0,foo_,o,t2,o,1.0,residual,o);
+    F_DGEMM('n','n',o,o*v*v,o,-1.0,foo_,o,t2_,o,1.0,r2_,o);
 
     // R2 = R2 + P(ia,jb) R2
-    C_DCOPY(o*o*v*v,residual,1,integrals,1);
+    C_DCOPY(o*o*v*v,r2_,1,integrals,1);
     #pragma omp parallel for schedule (static)
     for (int a = 0; a < v; a++) {
         for (int b = 0; b < v; b++) {
             for (int i = 0; i < o; i++) {
                 for (int j = 0; j < o; j++) {
-                    residual[a*o*o*v+b*o*o+i*o+j] += integrals[b*o*o*v+a*o*o+j*o+i];
+                    r2_[a*o*o*v+b*o*o+i*o+j] += integrals[b*o*o*v+a*o*o+j*o+i];
                 }
             }
         }
@@ -195,7 +195,7 @@ void p2RDMSolver::evaluate_residual(double * residual, double * t2) {
             }
         }
     }
-    F_DGEMM('n','n',o*o,v*v,o*o,1.0,tempt,o*o,t2,o*o,1.0,residual,o*o);
+    F_DGEMM('n','n',o*o,v*v,o*o,1.0,tempt,o*o,t2_,o*o,1.0,r2_,o*o);
 
     // (ac|bd) t2(cd,ij)
     long int oov = o * o * v;
@@ -210,11 +210,11 @@ void p2RDMSolver::evaluate_residual(double * residual, double * t2) {
             for (long int a = 0; a < v; a++) {
                 for (long int b = a; b < v; b++) {
                     tempt[INDEX(a, b) * otri + ij] =
-                        (t2[a * oov + b * oo + i * o + j] + t2[b * oov + a * oo + i * o + j]);
+                        (t2_[a * oov + b * oo + i * o + j] + t2_[b * oov + a * oo + i * o + j]);
                     tempt[INDEX(a, b) * otri + ij + vtri * otri] =
-                        (t2[a * oov + b * oo + i * o + j] - t2[b * oov + a * oo + i * o + j]);
+                        (t2_[a * oov + b * oo + i * o + j] - t2_[b * oov + a * oo + i * o + j]);
                 }
-                tempt[INDEX(a, a) * otri + ij] = t2[a * oov + a * oo + i * o + j];
+                tempt[INDEX(a, a) * otri + ij] = t2_[a * oov + a * oo + i * o + j];
             }
         }
     }
@@ -269,10 +269,10 @@ void p2RDMSolver::evaluate_residual(double * residual, double * t2) {
             for (long int i = 0; i < o; i++) {
                 for (long int j = 0; j < o; j++) {
                     int sg = (i > j) ? 1 : -1;
-                    residual[a * oo * v + b * oo + i * o + j] +=
+                    r2_[a * oo * v + b * oo + i * o + j] +=
                         Abij[(b - a) * otri + INDEX(i, j)] + sg * Sbij[(b - a) * otri + INDEX(i, j)];
                     if (a != b) {
-                        residual[b * oov + a * oo + i * o + j] +=
+                        r2_[b * oov + a * oo + i * o + j] +=
                             Abij[(b - a) * otri + INDEX(i, j)] - sg * Sbij[(b - a) * otri + INDEX(i, j)];
                     }
                 }

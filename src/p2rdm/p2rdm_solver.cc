@@ -448,9 +448,8 @@ double p2RDMSolver::compute_energy() {
         ci_iter_ = 0;
 
         double ci_energy = p2rdm_iterations(ci_iter_);
-printf("%20.12lf\n",ci_energy + enuc_ + escf_);fflush(stdout);
 
-        double rdm_energy = 0.0;//BuildRDMs(true);
+        double rdm_energy = BuildRDMs(true);
 
         double oo_energy;
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
@@ -542,7 +541,7 @@ printf("%20.12lf\n",ci_energy + enuc_ + escf_);fflush(stdout);
 
 }
 
-double p2RDMSolver::update_amplitudes(double * residual, double * t2, bool do_diis, std::shared_ptr<DIIS> diis) {
+double p2RDMSolver::update_amplitudes(bool do_diis, std::shared_ptr<DIIS> diis) {
 
     int o = nalpha_;
     int v = nmo_ - nalpha_;
@@ -574,18 +573,18 @@ double p2RDMSolver::update_amplitudes(double * residual, double * t2, bool do_di
 
                     double dabij = dabi - foo_[j*o+j];
 
-                    dt[abij] = -(integrals[aibj] + residual[abij]) / dabij;
+                    dt[abij] = -(integrals[aibj] + r2_[abij]) / dabij;
                 }
             }
         }
     }
 
-    C_DAXPY(o*o*v*v, 1.0, dt, 1, t2, 1);
+    C_DAXPY(o*o*v*v, 1.0, dt, 1, t2_, 1);
 
     if ( do_diis ) {
-        diis->WriteVector(t2);
+        diis->WriteVector(t2_);
         diis->WriteErrorVector(dt);
-        diis->Extrapolate(t2);
+        diis->Extrapolate(t2_);
     }
 
     free(integrals);
@@ -594,12 +593,12 @@ double p2RDMSolver::update_amplitudes(double * residual, double * t2, bool do_di
     return C_DNRM2(o*o*v*v,dt,1);
 }
 
-double p2RDMSolver::evaluate_projection_energy(double * t2) {
+double p2RDMSolver::evaluate_projection_energy() {
 
     int o = nalpha_;
     int v = nmo_ - nalpha_;
 
-    //Normalization();
+    Normalization();
 
     // df (ai|bj)
 
@@ -615,7 +614,7 @@ double p2RDMSolver::evaluate_projection_energy(double * t2) {
                     long int abij = a * v * o * o + b * o * o + i * o + j;
                     long int iajb = i * v * v * o + a * v * o + j * v + b;
                     long int jaib = j * v * v * o + a * v * o + i * v + b;
-                    energy += (2.0 * integrals[iajb] - integrals[jaib]) * t2[abij];
+                    energy += (2.0 * integrals[iajb] - integrals[jaib]) * t2_[abij] / t0_[abij];
                 }
             }
         }
@@ -765,14 +764,14 @@ double p2RDMSolver::p2rdm_iterations(int & ci_iter_) {
 
     do { 
         // evaluate residual
-        evaluate_residual(r2_, t2_);
+        evaluate_residual();
 
         // update amplitudes
-        double nrm = update_amplitudes(r2_, t2_, do_diis, diis);
+        double nrm = update_amplitudes(do_diis, diis);
 
         double dE = energy;
 
-        energy = evaluate_projection_energy(t2_);
+        energy = evaluate_projection_energy();
 
         dE -= energy;
 
@@ -799,14 +798,208 @@ double p2RDMSolver::BuildRDMs(bool print){
     memset((void*)d2ab_,'\0',nmo_*nmo_*nmo_*nmo_*sizeof(double));
     memset((void*)d2aa_,'\0',nmo_*nmo_*nmo_*nmo_*sizeof(double));
 
-    throw PsiException("implement me",__FILE__,__LINE__);
+    // build opdm first:
+    int o = nalpha_;
+    int v = nmo_ - nalpha_;
+
+    double * Dij = (double*)malloc(o*o*sizeof(double));
+    double * Dab = (double*)malloc(v*v*sizeof(double));
+
+    memset((void*)Dij,'\0',o*o*sizeof(double));
+    memset((void*)Dab,'\0',v*v*sizeof(double));
+
+    double * ta = (double*)malloc(o*o*v*v*sizeof(double));
+    double * tb = t2_;
+
+    for (int i = 0; i < o; i++) {
+        for (int j = 0; j < o; j++) {
+            for (int a = 0; a < v; a++) {
+                for (int b = 0; b < v; b++) {
+                    ta[a*o*o*v + b*o*o + i*o + j] = tb[a*o*o*v + b*o*o + i*o + j] - tb[b*o*o*v + a*o*o + i*o + j];
+                }
+            }
+        }
+    }
+    Normalization();
+
+    // Dij
+    for (int i = 0; i < o; i++) {
+        for (int j = 0; j < o; j++) {
+            double dum = 0.0;
+            for (int k = 0; k < o; k++) {
+                for (int a = 0; a < v; a++) {
+                    for (int b = 0; b < v; b++) {
+                        dum -= 0.5 * ta[a*o*o*v+b*o*o+j*o+k] * ta[a*o*o*v+b*o*o+i*o+k];
+                        dum -= tb[a*o*o*v+b*o*o+j*o+k] * tb[a*o*o*v+b*o*o+i*o+k];
+                    }
+                }
+            }
+            Dij[i*o+j] = dum;
+        }
+    }
+    // Dab
+    for (int a = 0; a < v; a++) {
+        for (int b = 0; b < v; b++) {
+            double dum = 0.0;
+            for (int c = 0; c < v; c++) {
+                for (int i = 0; i < o; i++) {
+                    for (int j = 0; j < o; j++) {
+                        dum += 0.5 * ta[a*o*o*v+c*o*o+i*o+j] * ta[b*o*o*v+c*o*o+i*o+j];
+                        dum += tb[a*o*o*v+c*o*o+i*o+j] * tb[b*o*o*v+c*o*o+i*o+j];
+                    }
+                }
+            }
+            Dab[a*v+b] = dum;
+        }
+    }
+
+    // TPDM:
+
+    // ijkl:
+    for (int i = 0; i < o; i++) {
+        for (int j = 0; j < o; j++) {
+            for (int k = 0; k < o; k++) {
+                for (int l = 0; l < o; l++) {
+                    double dumb = 0.0;
+
+                    dumb += (i==k) * (j==l);
+                    dumb += Dij[i*o+k] * (j==l) + Dij[j*o+l] * (i==k);
+
+                    for (int a = 0; a < v; a++) {
+                        for (int b = 0; b < v; b++) {
+                            dumb += tb[a*o*o*v+b*o*o+i*o+j] * tb[a*o*o*v+b*o*o+k*o+l];
+                        }
+                    }
+                    d2ab_[i*nmo_*nmo_*nmo_+j*nmo_*nmo_+k*nmo_+l] = dumb;
+                }
+            }
+        }
+    }
+
+    // ijab / abij
+    for (int i = 0; i < o; i++) {
+        for (int j = 0; j < o; j++) {
+            for (int a = 0; a < v; a++) {
+                for (int b = 0; b < v; b++) {
+                    double dum = t0_[a*o*o*v+b*o*o+i*o+j] * tb[a*o*o*v+b*o*o+i*o+j];
+                    d2ab_[i*nmo_*nmo_*nmo_+j*nmo_*nmo_+(a+o)*nmo_+(b+o)] = dum;
+                    d2ab_[(a+o)*nmo_*nmo_*nmo_+(b+o)*nmo_*nmo_+i*nmo_+j] = dum;
+                }
+            }
+        }
+    }
+
+    // iajb / aibj:
+    for (int i = 0; i < o; i++) {
+        for (int a = 0; a < v; a++) {
+            for (int j = 0; j < o; j++) {
+                for (int b = 0; b < v; b++) {
+
+                    double dumb = (i==j) * Dab[a*v+b];
+                    for (int k = 0; k < o; k++) {
+                        for (int c = 0; c < v; c++) {
+                            dumb -= tb[a*o*o*v+c*o*o+k*o+j] * tb[b*o*o*v+c*o*o+k*o+i];
+                        }
+                    }
+                    d2ab_[i*nmo_*nmo_*nmo_+(a+o)*nmo_*nmo_+j*nmo_+(b+o)] = dumb;
+                    d2ab_[(a+o)*nmo_*nmo_*nmo_+i*nmo_*nmo_+(b+o)*nmo_+j] = dumb;
+
+                }
+            }
+        }
+    }
+
+    // iabj / aijb (this guy is a little weird for the ab block)
+    for (int i = 0; i < o; i++) {
+        for (int a = 0; a < v; a++) {
+            for (int j = 0; j < o; j++) {
+                for (int b = 0; b < v; b++) {
+                    double dumb = 0.0;
+                    for (int k = 0; k < o; k++) {
+                        for (int c = 0; c < v; c++) {
+                            dumb += tb[a*o*o*v+c*o*o+j*o+k] * ta[b*o*o*v+c*o*o+i*o+k];
+                            dumb += ta[a*o*o*v+c*o*o+j*o+k] * tb[b*o*o*v+c*o*o+i*o+k];
+                        }
+                    }
+                    d2ab_[i*nmo_*nmo_*nmo_+(a+o)*nmo_*nmo_+(b+o)*nmo_+j] = dumb;
+                    d2ab_[(a+o)*nmo_*nmo_*nmo_+i*nmo_*nmo_+j*nmo_+(b+o)] = dumb;
+                }
+            }
+        }
+    }
+
+    F_DGEMM('t','n',v*v,v*v,o*o,1.0,tb,o*o,tb,o*o,0.0,d2aa_,v*v);
+    for (int a = 0; a < v; a++) {
+        for (int b = 0; b < v; b++) {
+            for (int c = 0; c < v; c++) {
+                for (int d = 0; d < v; d++) {
+                    d2ab_[(a+o)*nmo_*nmo_*nmo_+(b+o)*nmo_*nmo_+(c+o)*nmo_+(d+o)] = d2aa_[a*v*v*v+b*v*v+c*v+d];
+                }
+            }
+        }
+    }
+
+    // construct d2aa from d2ab:
+    for (int p = 0; p < nmo_; p++) {
+        for (int q = 0; q < nmo_; q++) {
+            for (int r = 0; r < nmo_; r++) {
+                for (int s = 0; s < nmo_; s++) {
+                    d2aa_[p*nmo_*nmo_*nmo_+q*nmo_*nmo_+r*nmo_+s] = d2ab_[p*nmo_*nmo_*nmo_+q*nmo_*nmo_+r*nmo_+s]
+                                                                 - d2ab_[q*nmo_*nmo_*nmo_+p*nmo_*nmo_+r*nmo_+s];
+
+                }
+            }
+        }
+    }
 
     // build d1 by contraction
+    for (int i = 0; i < nmo_; i++) {
+        for (int j = 0; j < nmo_; j++) {
 
-    double e1 = 0.0;
-    double e2 = 0.0;
+            double dum = 0.0;
+            for (int p = 0; p < nmo_; p++) {
+                dum += d2aa_[i*nmo_*nmo_*nmo_+p*nmo_*nmo_+j*nmo_+p];
+                dum += d2ab_[i*nmo_*nmo_*nmo_+p*nmo_*nmo_+j*nmo_+p];
+            }
+            d1_[INDEX(i,j)] = 2.0 * dum / (2.0 * nalpha_-1.0);
 
-    return e1 + e2;
+        }
+    }
+
+    // check energy
+
+    double en1 = 0.0;
+    double en2 = 0.0;
+
+    for (int i = 0; i < nmo_; i++) {
+        for (int j = 0; j < nmo_; j++) {
+            for (int k = 0; k < nmo_; k++) {
+                for (int l = 0; l < nmo_; l++) {
+                    double d2 = d2aa_[i*nmo_*nmo_*nmo_+j*nmo_*nmo_+k*nmo_+l] + d2ab_[i*nmo_*nmo_*nmo_+j*nmo_*nmo_+k*nmo_+l];
+                    int ik = INDEX(i,k);
+                    int jl = INDEX(j,l);
+                    double k2 = C_DDOT(nQ_,Qmo_ + ik,nmo_*(nmo_+1)/2,Qmo_+jl,nmo_*(nmo_+1)/2);
+                    en2 += k2 * d2;
+                    k2       = 1.0 / (2.0 * nalpha_ - 1.0) * ( (i==k)*oei_[INDEX(j,l)] + (j==l)*oei_[INDEX(i,k)]);
+                    en1 += k2 * d2;
+                }
+            }
+        }
+    }
+
+    if ( print ) {
+        outfile->Printf("\n");
+        outfile->Printf("    p2RDM one-electron energy = %20.12lf\n",en1);
+        outfile->Printf("    p2RDM two-electron energy = %20.12lf\n",en2);
+        outfile->Printf("    * p2RDM total energy      = %20.12lf\n",en1 + en2 + enuc_);
+        outfile->Printf("\n");
+    }
+
+    free(Dij);
+    free(Dab);
+
+    return en1 + en2;
+
 }
 
 void p2RDMSolver::Normalization() {
@@ -816,7 +1009,15 @@ void p2RDMSolver::Normalization() {
     
     if ( options_.get_str("P2RDM_TYPE") == "K" ) {
 
-        throw PsiException("implement me",__FILE__,__LINE__);
+        for (int i = 0; i < o; i++) {
+            for (int j = 0; j < o; j++) {
+                for (int a = 0; a < v; a++) {
+                    for (int b = 0; b < v; b++) {
+                        t0_[a*o*o*v + b*o*o + i*o + j] = 1.0;
+                    }
+                }
+            }
+        }
 
     }else if ( options_.get_str("P2RDM_TYPE") == "CID" ) {
 
