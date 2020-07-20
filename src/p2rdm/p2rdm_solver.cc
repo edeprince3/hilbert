@@ -449,7 +449,7 @@ double p2RDMSolver::compute_energy() {
 
         double ci_energy = p2rdm_iterations(ci_iter_);
 
-        double rdm_energy = BuildRDMs(true);
+        double rdm_energy = build_rdms(true);
 
         double oo_energy;
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
@@ -512,7 +512,7 @@ double p2RDMSolver::compute_energy() {
     }
 
     // Natural Orbitals
-    BuildRDMs(false);
+    build_rdms(false);
     std::shared_ptr<Matrix> opdm (new Matrix(nmo_,nmo_));
     for (int i = 0; i < nmo_; i++) {
         for (int j = 0; j < nmo_; j++) {
@@ -726,10 +726,10 @@ double p2RDMSolver::RotateOrbitals() {
 
     // evaluate energy
 
-    throw PsiException("implement me",__FILE__,__LINE__);
 
     double e1 = 0.0;
     double e2 = 0.0;
+    evaluate_rdm_energy(e1,e2);
 
     if ( orbopt_data_[8] > 0 ) {
         outfile->Printf("        p2RDM one-electron energy = %20.12lf\n",e1);
@@ -792,7 +792,7 @@ double p2RDMSolver::p2rdm_iterations(int & ci_iter_) {
 }
 
 
-double p2RDMSolver::BuildRDMs(bool print){
+double p2RDMSolver::build_rdms(bool print){
 
     memset((void*)d1_,'\0', oei_dim_ *  sizeof(double));
     memset((void*)d2ab_,'\0',nmo_*nmo_*nmo_*nmo_*sizeof(double));
@@ -968,8 +968,32 @@ double p2RDMSolver::BuildRDMs(bool print){
 
     // check energy
 
-    double en1 = 0.0;
-    double en2 = 0.0;
+    double e1 = 0.0;
+    double e2 = 0.0;
+    evaluate_rdm_energy(e1,e2);
+
+    if ( print ) {
+        outfile->Printf("\n");
+        outfile->Printf("    p2RDM one-electron energy = %20.12lf\n",e1);
+        outfile->Printf("    p2RDM two-electron energy = %20.12lf\n",e2);
+        outfile->Printf("    * p2RDM total energy      = %20.12lf\n",e1 + e2 + enuc_);
+        outfile->Printf("\n");
+    }
+
+    free(Dij);
+    free(Dab);
+
+    return e1 + e2;
+
+}
+
+void p2RDMSolver::evaluate_rdm_energy(double &e1, double &e2){
+
+    int o = nalpha_;
+    int v = nmo_ - nalpha_;
+
+    e1 = 0.0;
+    e2 = 0.0;
 
     for (int i = 0; i < nmo_; i++) {
         for (int j = 0; j < nmo_; j++) {
@@ -979,26 +1003,13 @@ double p2RDMSolver::BuildRDMs(bool print){
                     int ik = INDEX(i,k);
                     int jl = INDEX(j,l);
                     double k2 = C_DDOT(nQ_,Qmo_ + ik,nmo_*(nmo_+1)/2,Qmo_+jl,nmo_*(nmo_+1)/2);
-                    en2 += k2 * d2;
+                    e2 += k2 * d2;
                     k2       = 1.0 / (2.0 * nalpha_ - 1.0) * ( (i==k)*oei_[INDEX(j,l)] + (j==l)*oei_[INDEX(i,k)]);
-                    en1 += k2 * d2;
+                    e1 += k2 * d2;
                 }
             }
         }
     }
-
-    if ( print ) {
-        outfile->Printf("\n");
-        outfile->Printf("    p2RDM one-electron energy = %20.12lf\n",en1);
-        outfile->Printf("    p2RDM two-electron energy = %20.12lf\n",en2);
-        outfile->Printf("    * p2RDM total energy      = %20.12lf\n",en1 + en2 + enuc_);
-        outfile->Printf("\n");
-    }
-
-    free(Dij);
-    free(Dab);
-
-    return en1 + en2;
 
 }
 

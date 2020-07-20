@@ -31,7 +31,6 @@
 #include<stdlib.h>
 #include<math.h>
 
-#include<bitset>
 #include <psi4/libiwl/iwl.h>
 #include <psi4/libplugin/plugin.h>
 #include <psi4/psi4-dec.h>

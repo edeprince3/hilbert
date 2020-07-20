@@ -35,6 +35,7 @@
 #include <v2rdm_doci/v2rdm_doci_solver.h>
 #include <doci/doci_solver.h>
 #include <pp2rdm/pp2rdm_solver.h>
+#include <p2rdm/p2rdm_solver.h>
 #include <misc/backtransform_tpdm.h>
 
 using namespace psi;
@@ -277,6 +278,12 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         std::shared_ptr<pp2RDMSolver> pp2rdm (new pp2RDMSolver(ref_wfn,options));
         double energy = pp2rdm->compute_energy();
         return (std::shared_ptr<Wavefunction>)pp2rdm;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "P2RDM") {
+
+        std::shared_ptr<p2RDMSolver> p2rdm (new p2RDMSolver(ref_wfn,options));
+        double energy = p2rdm->compute_energy();
+        return (std::shared_ptr<Wavefunction>)p2rdm;
 
     }else if ( options.get_str("HILBERT_METHOD") == "V2RDM_DOCI") {
 

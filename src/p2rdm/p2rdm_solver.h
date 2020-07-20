@@ -101,6 +101,9 @@ class p2RDMSolver: public Wavefunction{
     /// evaluate residual vector
     void evaluate_residual();
 
+    /// evaluate energy using rdms
+    void evaluate_rdm_energy(double &e1, double &e2);
+
     /// update amplitudes
     double update_amplitudes(bool do_diis, std::shared_ptr<DIIS> diis);
 
@@ -126,7 +129,7 @@ class p2RDMSolver: public Wavefunction{
     void Normalization_RDMs();
 
     /// construct 1- and 2-RDM
-    double BuildRDMs(bool print);
+    double build_rdms(bool print);
 
     /// optimize orbitals
     double RotateOrbitals();

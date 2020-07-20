@@ -428,8 +428,7 @@ void  pp2RDMSolver::common_init(){
     same_a_b_orbs_ = true;
     same_a_b_dens_ = true;
 
-//AED
-    orbital_lagrangian_ = (double*)malloc(nmo_*nmo_*nmo_*nmo_*sizeof(double));
+    orbital_lagrangian_ = (double*)malloc(nmo_*nmo_*sizeof(double));
 }
 
 // compute the energy!
