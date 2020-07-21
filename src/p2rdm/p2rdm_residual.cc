@@ -71,7 +71,7 @@ void p2RDMSolver::evaluate_residual() {
     double * Sbij      = (double *)malloc(o*(o+1)/2*v * sizeof(double));
 
     // construct c0
-    //Normalization();
+    Normalization();
 
     // C2 = -1/2 t(bc,kj) (ki|ac)
     //      +    t(bc,ki) (kj|ac) 
@@ -287,28 +287,55 @@ void p2RDMSolver::evaluate_residual() {
     }
     C_DCOPY(nQ_*v*v,integrals,1,Qvv_,1);
 
-    free(integrals);
-    free(tempt);
-    free(tempv);
-    free(Abij);
-    free(Sbij);
-
-/*
     // last funny term for coupled-pair methods:
     if ( options_.get_str("P2RDM_TYPE") == "K" ) {
 
-        throw PsiException("implement me",__FILE__,__LINE__);
+        // todo
+        //throw PsiException("implement me",__FILE__,__LINE__);
 
     }else if ( options_.get_str("P2RDM_TYPE") == "CID" ) {
 
-        throw PsiException("implement me",__FILE__,__LINE__);
+        // (ai|bj)
+        F_DGEMM('n', 't', o * v, o * v, nQ_, 1.0, Qvo_, o * v, Qvo_, o * v, 0.0, integrals, o * v);
+        double dum = 0.0;
+        for (int a = 0; a < v; a++) {
+            for (int b = 0; b < v; b++) {
+                for (int i = 0; i < o; i++) {
+                    for (int j = 0; j < o; j++) {
+                        int abij = a*o*o*v+b*o*o+i*o+j;
+                        int abji = a*o*o*v+b*o*o+j*o+i;
+                        int aibj = a*o*o*v+i*o*v+b*o+j;
+                        dum += (2.0 * t2_[abij] - t2_[abji]) / t0_[abij] * integrals[aibj];
+                    }
+                }
+            }
+        }
+
+        for (int a = 0; a < v; a++) {
+            for (int b = 0; b < v; b++) {
+                for (int i = 0; i < o; i++) {
+                    for (int j = 0; j < o; j++) {
+                        int abij = a*o*o*v+b*o*o+i*o+j;
+                        int aibj = a*o*o*v+i*o*v+b*o+j;
+                        r2_[abij] -= dum * t2_[abij];
+                    }
+                }
+            }
+        }
+
 
     }else if ( options_.get_str("P2RDM_TYPE") == "CEPA(0)" ) {
 
         // nothing to add
 
     }
-*/
+
+    free(integrals);
+    free(tempt);
+    free(tempv);
+    free(Abij);
+    free(Sbij);
+
 
 }
 

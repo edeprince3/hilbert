@@ -329,7 +329,8 @@ def run_p2rdm(name, **kwargs):
 # Integration with driver routines
 
 # p2rdm
-psi4.driver.procedures['energy']['p2rdm']    = run_p2rdm
+psi4.driver.procedures['energy']['p2rdm'] = run_p2rdm
+psi4.driver.procedures['energy']['cid']   = run_p2rdm
 
 # pair methods:
 psi4.driver.procedures['energy']['pp2rdm']   = run_pp2rdm

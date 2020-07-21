@@ -448,7 +448,7 @@ double p2RDMSolver::compute_energy() {
         ci_iter_ = 0;
 
         double ci_energy = p2rdm_iterations(ci_iter_);
-
+printf("%20.12lf %20.12lf %20.12lf %20.12lf\n",enuc_,escf_,ci_energy,ci_energy + escf_);
         double rdm_energy = build_rdms(true);
 
         double oo_energy;
@@ -546,7 +546,8 @@ double p2RDMSolver::update_amplitudes(bool do_diis, std::shared_ptr<DIIS> diis) 
     int o = nalpha_;
     int v = nmo_ - nalpha_;
 
-    // df (ai|bj)
+    // c0 (ai|bj)
+    Normalization();
 
     double * integrals = (double*)malloc(o*o*v*v*sizeof(double));
     F_DGEMM('n', 't', o * v, o * v, nQ_, 1.0, Qvo_, o * v, Qvo_, o * v, 0.0, integrals, o * v);
@@ -573,7 +574,7 @@ double p2RDMSolver::update_amplitudes(bool do_diis, std::shared_ptr<DIIS> diis) 
 
                     double dabij = dabi - foo_[j*o+j];
 
-                    dt[abij] = -(integrals[aibj] + r2_[abij]) / dabij;
+                    dt[abij] = -(t0_[abij] * integrals[aibj] + r2_[abij]) / dabij;
                 }
             }
         }
@@ -732,9 +733,9 @@ double p2RDMSolver::RotateOrbitals() {
     evaluate_rdm_energy(e1,e2);
 
     if ( orbopt_data_[8] > 0 ) {
-        outfile->Printf("        p2RDM one-electron energy = %20.12lf\n",e1);
-        outfile->Printf("        p2RDM two-electron energy = %20.12lf\n",e2);
-        outfile->Printf("        * p2RDM total energy      = %20.12lf\n",e1 + e2 + enuc_);
+        outfile->Printf("        %s one-electron energy = %20.12lf\n",name_.c_str(),e1);
+        outfile->Printf("        %s two-electron energy = %20.12lf\n",name_.c_str(),e2);
+        outfile->Printf("        * %s total energy      = %20.12lf\n",name_.c_str(),e1 + e2 + enuc_);
     }
 
     return e1 + e2;
@@ -974,9 +975,9 @@ double p2RDMSolver::build_rdms(bool print){
 
     if ( print ) {
         outfile->Printf("\n");
-        outfile->Printf("    p2RDM one-electron energy = %20.12lf\n",e1);
-        outfile->Printf("    p2RDM two-electron energy = %20.12lf\n",e2);
-        outfile->Printf("    * p2RDM total energy      = %20.12lf\n",e1 + e2 + enuc_);
+        outfile->Printf("    %s one-electron energy = %20.12lf\n",name_.c_str(),e1);
+        outfile->Printf("    %s two-electron energy = %20.12lf\n",name_.c_str(),e2);
+        outfile->Printf("    * %s total energy      = %20.12lf\n",name_.c_str(),e1 + e2 + enuc_);
         outfile->Printf("\n");
     }
 
@@ -1017,7 +1018,7 @@ void p2RDMSolver::Normalization() {
 
     int o = nalpha_;
     int v = nmo_ - nalpha_;
-    
+
     if ( options_.get_str("P2RDM_TYPE") == "K" ) {
 
         for (int i = 0; i < o; i++) {
@@ -1032,38 +1033,25 @@ void p2RDMSolver::Normalization() {
 
     }else if ( options_.get_str("P2RDM_TYPE") == "CID" ) {
 
-        throw PsiException("implement me",__FILE__,__LINE__);
-
-    }else if ( options_.get_str("P2RDM_TYPE") == "CEPA(0)" ) {
-
+        double dum = 0.0;
         for (int i = 0; i < o; i++) {
             for (int j = 0; j < o; j++) {
                 for (int a = 0; a < v; a++) {
                     for (int b = 0; b < v; b++) {
-                        t0_[a*o*o*v + b*o*o + i*o + j] = 1.0;
+                        dum += t2_[a*o*o*v + b*o*o + i*o + j] * ( 2.0 * t2_[a*o*o*v + b*o*o + i*o + j] - t2_[b*o*o*v + a*o*o + i*o + j] );
                     }
                 }
             }
         }
-
-    }
-
-}
-
-void p2RDMSolver::Normalization_RDMs() {
-
-    int o = nalpha_;
-    int v = nmo_ - nalpha_;
-
-    throw PsiException("implement me",__FILE__,__LINE__);
-    
-    if ( options_.get_str("P2RDM_TYPE") == "K" ) {
-
-        throw PsiException("implement me",__FILE__,__LINE__);
-
-    }else if ( options_.get_str("P2RDM_TYPE") == "CID" ) {
-
-        throw PsiException("implement me",__FILE__,__LINE__);
+        for (int i = 0; i < o; i++) {
+            for (int j = 0; j < o; j++) {
+                for (int a = 0; a < v; a++) {
+                    for (int b = 0; b < v; b++) {
+                        t0_[a*o*o*v + b*o*o + i*o + j] = sqrt(1.0 - dum);
+                    }
+                }
+            }
+        }
 
     }else if ( options_.get_str("P2RDM_TYPE") == "CEPA(0)" ) {
 
