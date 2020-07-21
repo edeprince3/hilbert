@@ -293,9 +293,6 @@ void p2RDMSolver::evaluate_residual() {
         // (ai|bj)
         F_DGEMM('n', 't', o * v, o * v, nQ_, 1.0, Qvo_, o * v, Qvo_, o * v, 0.0, integrals, o * v);
 
-        double * Iij = (double*)malloc(o*o*sizeof(double));
-        double * Iab = (double*)malloc(v*v*sizeof(double));
-
         for (int a = 0; a < v; a++) {
             for (int b = 0; b < v; b++) {
                 for (int i = 0; i < o; i++) {
@@ -308,42 +305,68 @@ void p2RDMSolver::evaluate_residual() {
                 }
             }
         }
- 
+
+        double * Io = (double*)malloc(o*sizeof(double));
+        double * Iv = (double*)malloc(v*sizeof(double));
+        double * Ivo = (double*)malloc(o*v*sizeof(double));
 
         for (int i = 0; i < o; i++) {
-            for (int j = 0; j < o; j++) {
-                double dum = 0.0; 
-                for (int c = 0; c < v; c++) {
-                    for (int d = 0; d < v; d++) {
-                        for (int l = 0; l < o; l++) {
-                            dum += tempt[c*o*o*v + d*o*o + i*o + l];
-                            dum += tempt[c*o*o*v + d*o*o + j*o + l];
-                        }
-                        for (int k = 0; k < o; k++) {
-                            dum += tempt[c*o*o*v + d*o*o + k*o + i];
-                            dum += tempt[c*o*o*v + d*o*o + k*o + j];
-                        }
+            double dum = 0.0;
+            for (int c = 0; c < v; c++) {
+                for (int d = 0; d < v; d++) {
+                    for (int l = 0; l < o; l++) {
+                        dum += tempt[c*o*o*v + d*o*o + i*o + l];
+                    }
+                    for (int k = 0; k < o; k++) {
+                        dum += tempt[c*o*o*v + d*o*o + k*o + i];
                     }
                 }
-                Iij[i*o+j] = 0.25 * dum;
             }
+            Io[i] = 0.25 * dum;
         }
         for (int a = 0; a < v; a++) {
-            for (int b = 0; b < v; b++) {
-                double dum = 0.0;
-                for (int k = 0; k < o; k++) {
-                    for (int l = 0; l < o; l++) {
-                        for (int d = 0; d < v; d++) {
-                            dum += tempt[a*o*o*v + d*o*o + k*o + l];
-                            dum += tempt[b*o*o*v + d*o*o + k*o + l];
-                        }
-                        for (int c = 0; c < v; c++) {
-                            dum += tempt[c*o*o*v + a*o*o + k*o + l];
-                            dum += tempt[c*o*o*v + b*o*o + k*o + l];
-                        }
+            double dum = 0.0;
+            for (int k = 0; k < o; k++) {
+                for (int l = 0; l < o; l++) {
+                    for (int d = 0; d < v; d++) {
+                        dum += tempt[a*o*o*v + d*o*o + k*o + l];
+                    }
+                    for (int c = 0; c < v; c++) {
+                        dum += tempt[c*o*o*v + a*o*o + k*o + l];
                     }
                 }
-                Iab[a*v+b] = 0.25 * dum;
+            }
+            Iv[a] = 0.25 * dum;
+        }
+
+        for (int a = 0; a < v; a++) {
+            for (int i = 0; i < o; i++) {
+                double dum = 0.0;
+                for (int d = 0; d < v; d++) {
+                    for (int l = 0; l < o; l++) {
+                        // d(ac) d(ik)
+                        dum += tempt[a*o*o*v + d*o*o + i*o + l];
+                    }
+                }
+                for (int d = 0; d < v; d++) {
+                    for (int k = 0; k < o; k++) {
+                        // d(ac) d(il)
+                        dum += tempt[a*o*o*v + d*o*o + k*o + i];
+                    }
+                }
+                for (int c = 0; c < v; c++) {
+                    for (int l = 0; l < o; l++) {
+                        // d(ad) d(ik)
+                        dum += tempt[c*o*o*v + a*o*o + i*o + l];
+                    }
+                }
+                for (int c = 0; c < v; c++) {
+                    for (int k = 0; k < o; k++) {
+                        // d(ad) d(il)
+                        dum += tempt[c*o*o*v + a*o*o + k*o + i];
+                    }
+                }
+                Ivo[a * o + i] = dum;
             }
         }
 
@@ -351,65 +374,16 @@ void p2RDMSolver::evaluate_residual() {
             for (int b = 0; b < v; b++) {
                 for (int i = 0; i < o; i++) {
                     for (int j = 0; j < o; j++) {
-
-                        double dum = 0.0;
-                        for (int d = 0; d < v; d++) {
-                            for (int l = 0; l < o; l++) {
-                                // d(ac) d(ik)
-                                dum += tempt[a*o*o*v + d*o*o + i*o + l];
-                                // d(ac) d(jk)
-                                dum += tempt[a*o*o*v + d*o*o + j*o + l];
-                                // d(bc) d(ik)
-                                dum += tempt[b*o*o*v + d*o*o + i*o + l];
-                                // d(bc) d(jk)
-                                dum += tempt[b*o*o*v + d*o*o + j*o + l];
-                            }
-                        }
-                        for (int d = 0; d < v; d++) {
-                            for (int k = 0; k < o; k++) {
-                                // d(ac) d(il)
-                                dum += tempt[a*o*o*v + d*o*o + k*o + i];
-                                // d(ac) d(jl)
-                                dum += tempt[a*o*o*v + d*o*o + k*o + j];
-                                // d(bc) d(il)
-                                dum += tempt[b*o*o*v + d*o*o + k*o + i];
-                                // d(bc) d(jl)
-                                dum += tempt[b*o*o*v + d*o*o + k*o + j];
-                            }
-                        }
-                        for (int c = 0; c < v; c++) {
-                            for (int l = 0; l < o; l++) {
-                                // d(ad) d(ik)
-                                dum += tempt[c*o*o*v + a*o*o + i*o + l];
-                                // d(ad) d(jk)
-                                dum += tempt[c*o*o*v + a*o*o + j*o + l];
-                                // d(bd) d(ik)
-                                dum += tempt[c*o*o*v + b*o*o + i*o + l];
-                                // d(bd) d(jk)
-                                dum += tempt[c*o*o*v + b*o*o + j*o + l];
-                            }
-                        }
-                        for (int c = 0; c < v; c++) {
-                            for (int k = 0; k < o; k++) {
-                                // d(ad) d(il)
-                                dum += tempt[c*o*o*v + a*o*o + k*o + i];
-                                // d(ad) d(jl)
-                                dum += tempt[c*o*o*v + a*o*o + k*o + j];
-                                // d(bd) d(il)
-                                dum += tempt[c*o*o*v + b*o*o + k*o + i];
-                                // d(bd) d(jl)
-                                dum += tempt[c*o*o*v + b*o*o + k*o + j];
-                            }
-                        }
-
-                        r2_[a*o*o*v + b*o*o + i*o + j] -= t2_[a*o*o*v + b*o*o + i*o + j] * (Iij[i*o+j] + Iab[a*v+b] - 0.0625*dum);
-
+                        double dum = Ivo[a*o+i] + Ivo[a*o+j] + Ivo[b*o+i] + Ivo[b*o+j];
+                        r2_[a*o*o*v + b*o*o + i*o + j] -= t2_[a*o*o*v + b*o*o + i*o + j] * (Io[i] + Io[j] + Iv[a] + Iv[b] - 0.0625*dum);
                     }
                 }
             }
         }
-        free(Iij);
-        free(Iab);
+ 
+        free(Io);
+        free(Iv);
+        free(Ivo);
 
 
     }else if ( options_.get_str("P2RDM_TYPE") == "CID" ) {
