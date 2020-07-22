@@ -54,14 +54,14 @@ void p2RDMSolver::evaluate_residual() {
 
     // need several buffers the size of t2 plus some other stuff
 
-    long int                dim = 2L*v*v*v;
+    long int                 dim = 2L*v*v*v;
     if (2*nQ_*o*v     > dim) dim = 2*nQ_*o*v;
-    if (o*o*v*v      > dim) dim = o*o*v*v;
+    if (o*o*v*v       > dim) dim = o*o*v*v;
     if (nQ_*v*v       > dim) dim = nQ_*v*v;
     if (nQ_*nso_*nso_ > dim) dim = nQ_*nso_*nso_;
 
     long int                  tempvdim = o*o*v*v;
-    if (nQ_*o*v > tempvdim)    tempvdim = nQ_*o*v;
+    if (nQ_*o*v > tempvdim)   tempvdim = nQ_*o*v;
     if (nso_*nso_ > tempvdim) tempvdim = nso_*nso_;
 
     double * integrals = (double *)malloc(dim * sizeof(double));

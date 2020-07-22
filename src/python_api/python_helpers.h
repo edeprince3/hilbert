@@ -31,6 +31,7 @@
 #include <v2rdm_casscf/v2rdm_solver.h>
 #include <doci/doci_solver.h>
 #include <pp2rdm/pp2rdm_solver.h>
+#include <p2rdm/p2rdm_solver.h>
 
 namespace hilbert{
 
@@ -63,6 +64,22 @@ class pp2RDMHelper{
 
     /// the pp2RDMSolver 
     std::shared_ptr<pp2RDMSolver> pp2rdm;
+
+};
+
+class p2RDMHelper{
+
+  public:
+
+    p2RDMHelper(SharedWavefunction reference_wavefunction,Options & options);
+    ~p2RDMHelper();
+    void common_init();
+    double compute_energy();
+
+  protected:
+
+    /// the p2RDMSolver 
+    std::shared_ptr<p2RDMSolver> p2rdm;
 
 };
 

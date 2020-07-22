@@ -34,6 +34,7 @@
 #include <v2rdm_casscf/v2rdm_solver.h>
 #include <doci/doci_solver.h>
 #include <pp2rdm/pp2rdm_solver.h>
+#include <p2rdm/p2rdm_solver.h>
 
 using namespace psi;
 
@@ -53,6 +54,11 @@ void export_HilbertHelper(py::module& m) {
     py::class_<pp2RDMHelper, std::shared_ptr<pp2RDMHelper> >(m, "pp2RDMHelper")
         .def(py::init<std::shared_ptr<Wavefunction>,Options &>())
         .def("compute_energy", &pp2RDMHelper::compute_energy);
+
+    // p2rdm
+    py::class_<p2RDMHelper, std::shared_ptr<p2RDMHelper> >(m, "p2RDMHelper")
+        .def(py::init<std::shared_ptr<Wavefunction>,Options &>())
+        .def("compute_energy", &p2RDMHelper::compute_energy);
 
     // v2rdm-doci
     py::class_<v2RDM_DOCIHelper, std::shared_ptr<v2RDM_DOCIHelper> >(m, "v2RDM_DOCIHelper")
@@ -90,6 +96,8 @@ PYBIND11_MODULE(hilbert, m) {
     export_HilbertHelper(m);
 }
 
+// begin DOCI
+
 DOCIHelper::DOCIHelper(SharedWavefunction reference_wavefunction,Options & options)
 {
     doci = (std::shared_ptr<DOCISolver>)(new DOCISolver(reference_wavefunction,options));
@@ -103,6 +111,7 @@ double DOCIHelper::compute_energy() {
     return doci->compute_energy();
 }
 
+// begin pair p2RDM
 
 pp2RDMHelper::pp2RDMHelper(SharedWavefunction reference_wavefunction,Options & options)
 {
@@ -117,6 +126,23 @@ double pp2RDMHelper::compute_energy() {
     return pp2rdm->compute_energy();
 }
 
+// begin p2RDM
+
+p2RDMHelper::p2RDMHelper(SharedWavefunction reference_wavefunction,Options & options)
+{
+    p2rdm = (std::shared_ptr<p2RDMSolver>)(new p2RDMSolver(reference_wavefunction,options));
+}
+
+p2RDMHelper::~p2RDMHelper()
+{
+}
+
+double p2RDMHelper::compute_energy() {
+    return p2rdm->compute_energy();
+}
+
+// begin v2RDM-DOCI
+
 v2RDM_DOCIHelper::v2RDM_DOCIHelper(SharedWavefunction reference_wavefunction,Options & options)
 {
     v2rdm_doci = (std::shared_ptr<v2RDM_DOCISolver>)(new v2RDM_DOCISolver(reference_wavefunction,options));
@@ -129,6 +155,8 @@ v2RDM_DOCIHelper::~v2RDM_DOCIHelper()
 double v2RDM_DOCIHelper::compute_energy() {
     return v2rdm_doci->compute_energy();
 }
+
+// begin v2RDM
 
 v2RDMHelper::v2RDMHelper(SharedWavefunction reference_wavefunction,Options & options){
     v2rdm = (std::shared_ptr<v2RDMSolver>)(new v2RDMSolver(reference_wavefunction,options));
