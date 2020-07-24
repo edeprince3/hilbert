@@ -36,6 +36,7 @@
 #include <doci/doci_solver.h>
 #include <pp2rdm/pp2rdm_solver.h>
 #include <p2rdm/p2rdm_solver.h>
+#include <jellium/jellium_scf_solver.h>
 #include <misc/backtransform_tpdm.h>
 
 using namespace psi;
@@ -49,10 +50,10 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION General -*/
 
-        /*- qc solver -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI PP2RDM V2RDM_DOCI");
+        /*- qc solver. used internally !expert -*/
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF");
 
-        /*- Do DIIS? Only valid for v2rdm-casscf -*/
+        /*- Do DIIS? -*/
         options.add_bool("DIIS", true);
 
         /*- The amount of information printed to the output file -*/
@@ -258,6 +259,25 @@ int read_options(std::string name, Options& options)
         /*- Do constrain sz? -*/
         options.add_bool("CONSTRAIN_SZ", true);
 
+
+        /*- SUBSECTION JELLIUM -*/
+
+        /*- The number of grid points for the Gauss-Legendre quadrature -*/
+        options.add_int("N_GRID_POINTS", 10);
+
+        /*- The number of electrons -*/
+        options.add_int("N_ELECTRONS", 2);
+
+        /*- The number of basis functions -*/
+        options.add_int("N_BASIS_FUNCTIONS", 26);
+
+        /*- The length of the box in nm -*/
+        options.add_double("LENGTH", 1.0);
+        //options.add_double("LENGTH", 0.166245);
+
+        ///*- The density of the box in e/nm^3 -*/
+        //options.add_double("DENSITY", 92);    
+
     }
 
     return true;
@@ -272,6 +292,12 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         std::shared_ptr<DOCISolver> doci (new DOCISolver(ref_wfn,options));
         double energy = doci->compute_energy();
         return (std::shared_ptr<Wavefunction>)doci;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "JELLIUM_SCF") {
+
+        std::shared_ptr<JelliumSCFSolver> jellium (new JelliumSCFSolver(options));
+        double energy = jellium->compute_energy();
+        return ref_wfn;
 
     }else if ( options.get_str("HILBERT_METHOD") == "PP2RDM") {
 

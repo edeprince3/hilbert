@@ -1,0 +1,29 @@
+
+# job description:
+print('        Jellium SCF / 8 electrons / 60 basis functions / 50 grid points')
+
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule {
+O
+H 1 R
+H 1 R 2 A
+
+R = .9
+A = 104.5
+}
+
+set {
+  n_grid_points         50
+  n_electrons           8
+  n_basis_functions     60
+  e_convergence         1e-10
+  d_convergence         1e-10
+  diis                  true
+}
+
+energy('jellium-scf')
+ref_jellium = 48.039048089998   # TEST
+
+compare_values(ref_jellium, variable("CURRENT ENERGY"), 6, "Jellium SCF total energy") # TEST

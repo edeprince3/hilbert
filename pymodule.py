@@ -31,6 +31,7 @@
 import psi4
 import psi4.driver.p4util as p4util
 from psi4.driver.procrouting import proc_util
+from psi4.driver.procrouting import proc
 
 def run_doci(name, **kwargs):
     r"""Function encoding sequence of PSI module and plugin calls so that
@@ -325,8 +326,33 @@ def run_p2rdm(name, **kwargs):
 
     return p2rdm_wfn
 
+def run_jellium_scf(name, **kwargs):
+    r"""Function encoding sequence of PSI module and plugin calls so that
+    jellium_scf can be called via :py:func:`~driver.energy`. For post-scf plugins.
+
+    >>> energy('jellium-scf')
+
+    """
+    lowername = name.lower()
+    kwargs = p4util.kwargs_lower(kwargs)
+
+    # build empty reference wavefunction to pass into plugin
+
+    ref_molecule = kwargs.get('molecule', psi4.core.get_active_molecule())
+    base_wfn = psi4.core.Wavefunction.build(ref_molecule, 'STO-3G')
+    ref_wfn = proc.scf_wavefunction_factory('HF', base_wfn, psi4.core.get_global_option('REFERENCE'))
+
+    psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'JELLIUM_SCF')
+
+    jellium_scf_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
+
+    return jellium_scf_wfn
+
 
 # Integration with driver routines
+
+# jellium-scf
+psi4.driver.procedures['energy']['jellium-scf'] = run_jellium_scf
 
 # p2rdm
 psi4.driver.procedures['energy']['p2rdm'] = run_p2rdm

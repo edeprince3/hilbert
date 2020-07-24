@@ -1,0 +1,187 @@
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.4a2.dev397 
+
+                         Git: Rev {master} b3df9b2 dirty
+
+
+    R. M. Parrish, L. A. Burns, D. G. A. Smith, A. C. Simmonett,
+    A. E. DePrince III, E. G. Hohenstein, U. Bozkaya, A. Yu. Sokolov,
+    R. Di Remigio, R. M. Richard, J. F. Gonthier, A. M. James,
+    H. R. McAlexander, A. Kumar, M. Saitow, X. Wang, B. P. Pritchard,
+    P. Verma, H. F. Schaefer III, K. Patkowski, R. A. King, E. F. Valeev,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, and C. D. Sherrill,
+    J. Chem. Theory Comput. 13(7) pp 3185--3197 (2017).
+    (doi: 10.1021/acs.jctc.7b00174)
+
+
+                         Additional Contributions by
+    P. Kraus, H. Kruse, M. H. Lechner, M. C. Schieber, R. A. Shaw,
+    A. Alenaizan, R. Galvelis, Z. L. Glick, S. Lehtola, and J. P. Misiewicz
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Friday, 24 July 2020 02:35PM
+
+    Process ID: 99560
+    Host:       illegally-used-at.fsu
+    PSIDATADIR: /Users/deprince/edeprince3/psi4/install/master/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input File <==
+
+--------------------------------------------------------------------------
+
+# job description:
+print('        Jellium SCF / 8 electrons / 60 basis functions / 50 grid points')
+
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule {
+O
+H 1 R
+H 1 R 2 A
+
+R = .9
+A = 104.5
+}
+
+set {
+  n_grid_points         50
+  n_electrons           8
+  n_basis_functions     60
+  e_convergence         1e-10
+  d_convergence         1e-10
+  diis                  true
+}
+
+energy('jellium-scf')
+ref_jellium = 48.039048089998   # TEST
+
+compare_values(ref_jellium, variable("CURRENT ENERGY"), 6, "Jellium SCF total energy") # TEST
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line    81 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/sto-3g.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/sto-3g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              RHF Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c2v
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.061664597388    15.994914619570
+         H            0.000000000000    -0.711620616369     0.489330954643     1.007825032230
+         H            0.000000000000     0.711620616369     0.489330954643     1.007825032230
+
+  Running in c2v symmetry.
+
+  Rotational constants: A =     31.01920  B =     16.51522  C =     10.77722 [cm^-1]
+  Rotational constants: A = 929932.18703  B = 495113.78650  C = 323092.90708 [MHz]
+  Nuclear repulsion =    9.779406182852640
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is PK.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is AUTO.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-10
+  Integral threshold = 0.00e+00
+
+  ==> Primary Basis <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis function: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+
+        ***************************************************
+        *                                                 *
+        *                                                 *
+        *    Jellium Hartree-Fock                         *
+        *                                                 *
+        *                                                 *
+        ***************************************************
+
+
+    ==> Jellium Integral Construction <==
+
+
+    build g tensor................done.
+    build sqrt tensor.............done.
+    build (P|Q)...................done.
+
+    time for (P|Q) construction:                   5.7 s
+
+    build potential integrals.....done.
+
+    time for potential integral construction:      0.0 s
+
+
+    ==> Jellium Hartree-Fock parameters <==
+
+    Number of electrons:                  8
+    Number of basis functions:           60
+    Maximum particle-in-a-box state:      5
+
+    initial energy:     -16.213024942122
+
+      iter              energy                |dE|             |FD-DF|
+         0     49.142663549612     65.355688491734      3.787627526734
+         1     48.039718278867      1.102945270745      0.109614883261
+         2     48.039050082664      0.000668196202      0.004906450785
+         3     48.039048096840      0.000001985824      0.000306394361
+         4     48.039048089999      0.000000006841      0.000005418195
+         5     48.039048089998      0.000000000002      0.000000117143
+         6     48.039048089998      0.000000000000      0.000000002262
+         7     48.039048089998      0.000000000000      0.000000000013
+
+      SCF iterations converged!
+
+    * Jellium SCF total energy:      48.039048089998
+    Jellium SCF total energy..........................................PASSED
+
+    Psi4 stopped on: Friday, 24 July 2020 02:35PM
+    Psi4 wall time for execution: 0:00:16.44
+
+*** Psi4 exiting successfully. Buy a developer a beer!

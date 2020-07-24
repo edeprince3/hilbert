@@ -28,6 +28,10 @@ add_psi4_plugin(hilbert
 
     src/python_api/python_helpers.cc
 
+    src/jellium/jellium_scf_solver.cc
+    src/jellium/jellium_integrals.cc
+    src/jellium/legendre.cc
+
     src/doci/david.cc
     src/doci/doci_solver.cc
     src/doci/write_tpdm.cc
