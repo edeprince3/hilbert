@@ -172,7 +172,7 @@ double JelliumSCFSolver::compute_energy(){
             for (short p = 0; p < nsopi[hp]; p++) {
                 short pp = p + offp;
 
-                for (short q = 0; q < nsopi[hp]; q++) {
+                for (short q = p; q < nsopi[hp]; q++) {
                     short qq = q + offp;
                     double myJ = 0.0;
                     double myK = 0.0;
@@ -196,7 +196,9 @@ double JelliumSCFSolver::compute_energy(){
                         }
                     }
                     j_p[p][q] = myJ;
+                    j_p[q][p] = myJ;
                     k_p[p][q] = myK;
+                    k_p[q][p] = myK;
                 }
             }
         }
