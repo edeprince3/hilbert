@@ -32,6 +32,11 @@ import psi4
 import psi4.driver.p4util as p4util
 from psi4.driver.procrouting import proc_util
 from psi4.driver.procrouting import proc
+#from psi4.driver.qcdb import molecule
+
+# to build a fake molecule
+import qcelemental as qcel
+from psi4.driver import qcdb
 
 def run_doci(name, **kwargs):
     r"""Function encoding sequence of PSI module and plugin calls so that
@@ -338,7 +343,10 @@ def run_jellium_scf(name, **kwargs):
 
     # build empty reference wavefunction to pass into plugin
 
-    ref_molecule = kwargs.get('molecule', psi4.core.get_active_molecule())
+    #ref_molecule = kwargs.get('molecule', psi4.core.get_active_molecule())
+    mol = """H 0 0 0
+    H 0 0 1"""
+    ref_molecule = psi4.core.Molecule.from_string(mol)
     base_wfn = psi4.core.Wavefunction.build(ref_molecule, 'STO-3G')
     ref_wfn = proc.scf_wavefunction_factory('HF', base_wfn, psi4.core.get_global_option('REFERENCE'))
 

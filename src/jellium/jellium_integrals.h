@@ -72,6 +72,9 @@ class JelliumIntegrals{
     int* doccpi_;
     int offset_pq;
     double ERI_unrolled_test(int * a, int * b, int * c, int * d, double ** PQ, int *** PQmap);
+
+    //int * x1, * x2, * y1, * y2, * z1, * z2;
+    double ERI_unrolled_new(int * a, int * b, int * c, int * d, double ** PQ, int *** PQmap);
     bool symmetry;
     int get_pq(int px, int py, int pz, int qx, int qy, int qz);
     double * PQ_small;

@@ -46,14 +46,14 @@ using namespace psi;
 
 namespace hilbert{
 
-JelliumSCFSolver::JelliumSCFSolver(Options & options)
+Jellium_SCFSolver::Jellium_SCFSolver(Options & options)
     :options_(options){
 }
 
-JelliumSCFSolver::~JelliumSCFSolver(){
+Jellium_SCFSolver::~Jellium_SCFSolver(){
 }
 
-double JelliumSCFSolver::compute_energy(){
+double Jellium_SCFSolver::compute_energy(){
 
     outfile->Printf("\n");
     outfile->Printf( "        ***************************************************\n");
@@ -73,6 +73,7 @@ double JelliumSCFSolver::compute_energy(){
     int nso       = options_.get_int("N_BASIS_FUNCTIONS"); 
     int nelectron = options_.get_int("N_ELECTRONS");
     int * nsopi   = jelly->nsopi();
+    int * doccpi  = jelly->doccpi();
     int nirrep    = jelly->nirrep();
 
     // number of electrons
@@ -127,7 +128,7 @@ double JelliumSCFSolver::compute_energy(){
     // build density matrix 
     std::shared_ptr<Matrix> Da (new Matrix(nirrep,nsopi,nsopi));
     for (int h = 0; h < nirrep; h++) {
-        C_DGEMM('n','t',nsopi[h],nsopi[h],jelly->doccpi()[h],1.0,
+        C_DGEMM('n','t',nsopi[h],nsopi[h],doccpi[h],1.0,
             &(Ca->pointer(h)[0][0]),nsopi[h],
             &(Ca->pointer(h)[0][0]),nsopi[h],0.0,
             &(Da->pointer(h)[0][0]),nsopi[h]);
@@ -177,11 +178,11 @@ double JelliumSCFSolver::compute_energy(){
                     double myJ = 0.0;
                     double myK = 0.0;
                     
-		    for (short hr = 0; hr < nirrep; hr++) {
+                    for (short hr = 0; hr < nirrep; hr++) {
                         double ** d_p = Da->pointer(hr);
                         short offr = 0;
                         
-			for (short myh = 0; myh < hr; myh++) {
+                        for (short myh = 0; myh < hr; myh++) {
                             offr += nsopi[myh];
                         }
 
@@ -268,7 +269,7 @@ double JelliumSCFSolver::compute_energy(){
 
         // evaluate new density
         for (int h = 0; h < nirrep; h++) {
-            C_DGEMM('n','t',nsopi[h],nsopi[h],jelly->doccpi()[h],1.0,
+            C_DGEMM('n','t',nsopi[h],nsopi[h],doccpi[h],1.0,
                 &(Ca->pointer(h)[0][0]),nsopi[h],
                 &(Ca->pointer(h)[0][0]),nsopi[h],0.0,
                 &(Da->pointer(h)[0][0]),nsopi[h]);

@@ -33,12 +33,12 @@ using namespace psi;
 
 namespace hilbert{
 
-class JelliumSCFSolver{
+class Jellium_SCFSolver{
 
   public:
 
-    JelliumSCFSolver(Options & options);
-    ~JelliumSCFSolver();
+    Jellium_SCFSolver(Options & options);
+    ~Jellium_SCFSolver();
     double compute_energy();
 
   protected:

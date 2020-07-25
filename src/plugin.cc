@@ -295,7 +295,7 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
     }else if ( options.get_str("HILBERT_METHOD") == "JELLIUM_SCF") {
 
-        std::shared_ptr<JelliumSCFSolver> jellium (new JelliumSCFSolver(options));
+        std::shared_ptr<Jellium_SCFSolver> jellium (new Jellium_SCFSolver(options));
         double energy = jellium->compute_energy();
         return ref_wfn;
 
