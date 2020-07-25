@@ -98,13 +98,23 @@ double Jellium_SCFSolver::compute_energy(){
     std::shared_ptr<Matrix> V = jelly->NucAttrac;
     V->scale(1.0/Lfac);
 
+    // convergence parameters
+    double e_convergence = options_.get_double("E_CONVERGENCE");
+    double d_convergence = options_.get_double("D_CONVERGENCE");
+    int    maxiter       = options_.get_int("MAXITER");
+    bool   do_diis       = options_.get_bool("DIIS");
+
     // print some information about this computation
     outfile->Printf("\n");
     outfile->Printf("    ==> Jellium Hartree-Fock parameters <==\n");
     outfile->Printf("\n");
-    outfile->Printf("    Number of electrons:              %5i\n",nelectron);
-    outfile->Printf("    Number of basis functions:        %5i\n",nso);
-    outfile->Printf("    Maximum particle-in-a-box state:  %5i\n",jelly->get_nmax());
+    outfile->Printf("    number of electrons:              %10i\n",nelectron);
+    outfile->Printf("    number of basis functions:        %10i\n",nso);
+    outfile->Printf("    maximum particle-in-a-box state:  %10i\n",jelly->get_nmax());
+    outfile->Printf("    e_convergence                     %10.2le\n",e_convergence);
+    outfile->Printf("    d_convergence                     %10.2le\n",d_convergence);
+    outfile->Printf("    maxiter                           %10i\n",maxiter);
+    outfile->Printf("    diis?                             %10s\n",do_diis ? "yes" : "no");
     outfile->Printf("\n");
 
     std::shared_ptr<Matrix> Ca (new Matrix(nirrep,nsopi,nsopi));
@@ -137,12 +147,6 @@ double Jellium_SCFSolver::compute_energy(){
     double energy = Da->vector_dot(h) + Da->vector_dot(Fa);
     outfile->Printf("    initial energy: %20.12lf\n",energy);
     outfile->Printf("\n");
-
-    // convergence parameters
-    double e_convergence = options_.get_double("E_CONVERGENCE");
-    double d_convergence = options_.get_double("D_CONVERGENCE");
-    int    maxiter       = options_.get_int("MAXITER");
-    bool   do_diis       = options_.get_bool("DIIS");
     
     int iter = 0;
     
@@ -161,7 +165,6 @@ double Jellium_SCFSolver::compute_energy(){
         std::shared_ptr<Matrix> Ja (new Matrix(nirrep,nsopi,nsopi));
         std::shared_ptr<Matrix> Ka (new Matrix(nirrep,nsopi,nsopi));
 
-        //#pragma omp parallel for
         for (int hp = 0; hp < nirrep; hp++) {
             int offp = 0;
             double ** k_p = Ka->pointer(hp);
@@ -170,7 +173,7 @@ double Jellium_SCFSolver::compute_energy(){
                 offp += nsopi[myh];
             }
 
-            #pragma omp parallel for schedule(static)
+            #pragma omp parallel for schedule(dynamic)
             for (int p = 0; p < nsopi[hp]; p++) {
                 int pp = p + offp;
 
@@ -187,14 +190,24 @@ double Jellium_SCFSolver::compute_energy(){
                             offr += nsopi[myh];
                         }
 
+                        // exchange
                         for (int r = 0; r < nsopi[hr]; r++) {
                             int rr = r + offr;
-
                             for (int s = 0; s < nsopi[hr]; s++) {
                                 int ss = s + offr;
-                                myJ += d_p[r][s] * jelly->ERI_int(pp,qq,rr,ss);
                                 myK += d_p[r][s] * jelly->ERI_int(pp,ss,rr,qq);
                             }
+                        }
+
+                        // coulomb
+                        for (int r = 0; r < nsopi[hr]; r++) {
+                            int rr = r + offr;
+                            double dum = 0.0;
+                            for (int s = r+1; s < nsopi[hr]; s++) {
+                                int ss = s + offr;
+                                dum += d_p[r][s] * jelly->ERI_int(pp,qq,rr,ss);
+                            }
+                            myJ += 2.0 * dum + d_p[r][r] * jelly->ERI_int(pp,qq,rr,rr);
                         }
                     }
                     j_p[p][q] = myJ;
@@ -216,7 +229,7 @@ double Jellium_SCFSolver::compute_energy(){
         // evaluate current energy, E = D(H+F)
         double new_energy = 0.0;
         new_energy += (nelectron*nelectron/2.0) * jelly->selfval/Lfac;
-	new_energy += Da->vector_dot(h);
+        new_energy += Da->vector_dot(h);
         new_energy += Da->vector_dot(Fa);
 
         // orbital gradient
@@ -282,7 +295,7 @@ double Jellium_SCFSolver::compute_energy(){
 
         iter++;
         if (iter > maxiter) break;
-        
+       
     }while (dele > e_convergence || g_nrm > d_convergence);
 
     if (iter > maxiter) {
