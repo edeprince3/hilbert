@@ -161,36 +161,37 @@ double Jellium_SCFSolver::compute_energy(){
         std::shared_ptr<Matrix> Ja (new Matrix(nirrep,nsopi,nsopi));
         std::shared_ptr<Matrix> Ka (new Matrix(nirrep,nsopi,nsopi));
 
-        #pragma omp parallel for
-        for (short hp = 0; hp < nirrep; hp++) {
-            short offp = 0;
+        //#pragma omp parallel for
+        for (int hp = 0; hp < nirrep; hp++) {
+            int offp = 0;
             double ** k_p = Ka->pointer(hp);
             double ** j_p = Ja->pointer(hp);
             for (int myh = 0; myh < hp; myh++) {
                 offp += nsopi[myh];
             }
 
-            for (short p = 0; p < nsopi[hp]; p++) {
-                short pp = p + offp;
+            #pragma omp parallel for schedule(static)
+            for (int p = 0; p < nsopi[hp]; p++) {
+                int pp = p + offp;
 
-                for (short q = p; q < nsopi[hp]; q++) {
-                    short qq = q + offp;
+                for (int q = p; q < nsopi[hp]; q++) {
+                    int qq = q + offp;
                     double myJ = 0.0;
                     double myK = 0.0;
                     
-                    for (short hr = 0; hr < nirrep; hr++) {
+                    for (int hr = 0; hr < nirrep; hr++) {
                         double ** d_p = Da->pointer(hr);
-                        short offr = 0;
+                        int offr = 0;
                         
-                        for (short myh = 0; myh < hr; myh++) {
+                        for (int myh = 0; myh < hr; myh++) {
                             offr += nsopi[myh];
                         }
 
-                        for (short r = 0; r < nsopi[hr]; r++) {
-                            short rr = r + offr;
+                        for (int r = 0; r < nsopi[hr]; r++) {
+                            int rr = r + offr;
 
-                            for (short s = 0; s < nsopi[hr]; s++) {
-                                short ss = s + offr;
+                            for (int s = 0; s < nsopi[hr]; s++) {
+                                int ss = s + offr;
                                 myJ += d_p[r][s] * jelly->ERI_int(pp,qq,rr,ss);
                                 myK += d_p[r][s] * jelly->ERI_int(pp,ss,rr,qq);
                             }
