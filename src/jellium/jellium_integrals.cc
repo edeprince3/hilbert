@@ -1783,6 +1783,243 @@ void JelliumIntegrals::OrderPsis3D(int &norbs, double *E, int **MO) {
 
 //create irreps
 void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons) {
+    int eee = 0;
+    int eeo = 0;
+    int eoe = 0;
+    int eoo = 0;
+    int oee = 0;
+    int oeo = 0;
+    int ooe = 0;
+    int ooo = 0;
+    for (int i = 0; i < orbitalMax; i++) {
+        if ( MO[i][0]%2==0 ){
+            if ( MO[i][1]%2==0 ){
+                if( MO[i][2]%2==0 ){
+                   eee++;
+                } else {
+                   eeo++;
+                }
+            }else{
+                if( MO[i][2]%2==0 ){
+                   eoe++;
+                } else {
+                   eoo++;
+                }
+            }
+        } else {
+            if ( MO[i][1]%2==0 ){
+                if( MO[i][2]%2==0 ){
+                   oee++;
+                } else {
+                   oeo++;
+                }
+            }else{
+                if( MO[i][2]%2==0 ){
+                   ooe++;
+                } else {
+                   ooo++;
+                }
+            } 
+        }
+    } 
+    //printf("eee: %d \neeo: %d \neoe: %d \neoo: %d\n oee: %d\n oeo: %d\n ooe: %d\n ooo: %d\n",eee,eeo,eoe,eoo,oee,oeo,ooe,ooo);
+    nirrep_ = 8;
+    nsopi_ = (int*)malloc(nirrep_*sizeof(int));
+    nsopi_[0] = eee;
+    nsopi_[1] = eeo;
+    nsopi_[2] = eoe;
+    nsopi_[3] = eoo;
+    nsopi_[4] = oee;
+    nsopi_[5] = oeo;
+    nsopi_[6] = ooe;
+    nsopi_[7] = ooo;
+    int tmp = 0;
+    double tmp_energy = 0;
+    double max_energy = E[electrons/2];
+    int* tmp_swap = (int*)malloc(3*sizeof(int));
+    for(int i = 0; i < orbitalMax; i++){
+        if(MO[i][0]%2==0 && MO[i][1]%2==0 && MO[i][2]%2==0){
+           tmp_swap[0]=MO[tmp][0];
+           tmp_swap[1]=MO[tmp][1];
+           tmp_swap[2]=MO[tmp][2];
+           tmp_energy = E[tmp];
+           MO[tmp][0]=MO[i][0];
+           MO[tmp][1]=MO[i][1];
+           MO[tmp][2]=MO[i][2];
+           E[tmp] = E[i];
+           tmp++;
+           MO[i][0]=tmp_swap[0];
+           MO[i][1]=tmp_swap[1];
+           MO[i][2]=tmp_swap[2];
+           E[i]=tmp_energy;
+        }
+   
+    }
+    for(int i = 0; i < orbitalMax; i++){
+        if(MO[i][0]%2==0 && MO[i][1]%2==0 && MO[i][2]%2==1){
+           tmp_swap[0]=MO[tmp][0];
+           tmp_swap[1]=MO[tmp][1];
+           tmp_swap[2]=MO[tmp][2];
+           tmp_energy = E[tmp];
+           MO[tmp][0]=MO[i][0];
+           MO[tmp][1]=MO[i][1];
+           MO[tmp][2]=MO[i][2];
+           E[tmp] = E[i];
+           tmp++;
+           MO[i][0]=tmp_swap[0];
+           MO[i][1]=tmp_swap[1];
+           MO[i][2]=tmp_swap[2];
+           E[i]=tmp_energy;
+        }
+   
+    }
+    for(int i = 0; i < orbitalMax; i++){
+        if(MO[i][0]%2==0 && MO[i][1]%2==1 && MO[i][2]%2==0){
+           tmp_swap[0]=MO[tmp][0];
+           tmp_swap[1]=MO[tmp][1];
+           tmp_swap[2]=MO[tmp][2];
+           tmp_energy = E[tmp];
+           MO[tmp][0]=MO[i][0];
+           MO[tmp][1]=MO[i][1];
+           MO[tmp][2]=MO[i][2];
+           E[tmp] = E[i];
+           tmp++;
+           MO[i][0]=tmp_swap[0];
+           MO[i][1]=tmp_swap[1];
+           MO[i][2]=tmp_swap[2];
+           E[i]=tmp_energy;
+        }
+   
+    }
+    for(int i = 0; i < orbitalMax; i++){
+        if(MO[i][0]%2==0 && MO[i][1]%2==1 && MO[i][2]%2==1){
+           tmp_swap[0]=MO[tmp][0];
+           tmp_swap[1]=MO[tmp][1];
+           tmp_swap[2]=MO[tmp][2];
+           tmp_energy = E[tmp];
+           MO[tmp][0]=MO[i][0];
+           MO[tmp][1]=MO[i][1];
+           MO[tmp][2]=MO[i][2];
+           E[tmp] = E[i];
+           tmp++;
+           MO[i][0]=tmp_swap[0];
+           MO[i][1]=tmp_swap[1];
+           MO[i][2]=tmp_swap[2];
+           E[i]=tmp_energy;
+        }
+   
+    }
+    for(int i = 0; i < orbitalMax; i++){
+        if(MO[i][0]%2==1 && MO[i][1]%2==0 && MO[i][2]%2==0){
+           tmp_swap[0]=MO[tmp][0];
+           tmp_swap[1]=MO[tmp][1];
+           tmp_swap[2]=MO[tmp][2];
+           tmp_energy = E[tmp];
+           MO[tmp][0]=MO[i][0];
+           MO[tmp][1]=MO[i][1];
+           MO[tmp][2]=MO[i][2];
+           E[tmp] = E[i];
+           tmp++;
+           MO[i][0]=tmp_swap[0];
+           MO[i][1]=tmp_swap[1];
+           MO[i][2]=tmp_swap[2];
+           E[i]=tmp_energy;
+        }
+   
+    }
+    for(int i = 0; i < orbitalMax; i++){
+        if(MO[i][0]%2==1 && MO[i][1]%2==0 && MO[i][2]%2==1){
+           tmp_swap[0]=MO[tmp][0];
+           tmp_swap[1]=MO[tmp][1];
+           tmp_swap[2]=MO[tmp][2];
+           tmp_energy = E[tmp];
+           MO[tmp][0]=MO[i][0];
+           MO[tmp][1]=MO[i][1];
+           MO[tmp][2]=MO[i][2];
+           E[tmp] = E[i];
+           tmp++;
+           MO[i][0]=tmp_swap[0];
+           MO[i][1]=tmp_swap[1];
+           MO[i][2]=tmp_swap[2];
+           E[i]=tmp_energy;
+        }
+   
+    }
+    for(int i = 0; i < orbitalMax; i++){
+        if(MO[i][0]%2==1 && MO[i][1]%2==1 && MO[i][2]%2==0){
+           tmp_swap[0]=MO[tmp][0];
+           tmp_swap[1]=MO[tmp][1];
+           tmp_swap[2]=MO[tmp][2];
+           tmp_energy = E[tmp];
+           MO[tmp][0]=MO[i][0];
+           MO[tmp][1]=MO[i][1];
+           MO[tmp][2]=MO[i][2];
+           E[tmp] = E[i];
+           tmp++;
+           MO[i][0]=tmp_swap[0];
+           MO[i][1]=tmp_swap[1];
+           MO[i][2]=tmp_swap[2];
+           E[i]=tmp_energy;
+        }
+   
+    }
+    doccpi_ = (int*)malloc(nirrep_*sizeof(int));
+    int offsetJ = 0;
+    int ecounter = 0;
+    for(int i = 0; i < nirrep_; i++){
+        doccpi_[i]=0;
+    }
+    for(int i = 0; i < nirrep_; i++){
+        for(int j = 0; j < nsopi_[i]; j++){
+            if(E[offsetJ + j] < max_energy && ecounter < electrons/2){
+                doccpi_[i]++;
+                ecounter++;
+            }
+        }
+        offsetJ += nsopi_[i];
+    }
+    offsetJ = 0;
+    for(int i = 0; i < nirrep_; i++){
+        for(int j = 0; j < nsopi_[i]; j++){
+            if(E[offsetJ + j] == max_energy && ecounter < electrons/2){
+                doccpi_[i]++;
+                ecounter++;
+            }
+        }
+        offsetJ += nsopi_[i];
+    }
+    //printf("max energy%f\n",max_energy);
+    for(int i = 0; i < nirrep_; i++){
+        //printf("electrons[%d] with <= max energy %d\n",i,doccpi_[i]);
+    }
+    offsetJ = 0;
+    for(int i = 0; i < nirrep_; i++){
+       for(int j = 0; j < nsopi_[i]; j++){
+          for(int k = j+1; k < nsopi_[i]; k++){
+             if(E[j+offsetJ]>E[k+offsetJ]){
+                tmp_swap[0] = MO[j+offsetJ][0];     
+                tmp_swap[1] = MO[j+offsetJ][1];     
+                tmp_swap[2] = MO[j+offsetJ][2];
+                tmp_energy = E[j+offsetJ];
+                MO[j+offsetJ][0] = MO[k+offsetJ][0];    
+                MO[j+offsetJ][1] = MO[k+offsetJ][1];    
+                MO[j+offsetJ][2] = MO[k+offsetJ][2];
+                E[j+offsetJ] = E[k+offsetJ];
+                MO[k+offsetJ][0] = tmp_swap[0];    
+                MO[k+offsetJ][1] = tmp_swap[1];    
+                MO[k+offsetJ][2] = tmp_swap[2]; 
+                E[k+offsetJ] = tmp_energy; 
+             }
+          }
+       }     
+       offsetJ += nsopi_[i];
+    }
+    for(int i = 0; i < orbitalMax; i++){
+       //printf("MO[%d][0]:%d\tMO[%d][1]:%d\tMO[%d][2]:%d energy: %f\n",i,MO[i][0],i,MO[i][1],i,MO[i][2],E[i]);
+    }
+}
+/*
+void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons) {
     int ee = 0;
     int eo = 0;
     int oe = 0;
@@ -1940,6 +2177,7 @@ void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons
     //   printf("MO[%d][0]:%d\tMO[%d][1]:%d\tMO[%d][2]:%d energy: %f\n",i,MO[i][0],i,MO[i][1],i,MO[i][2],E[i]);
     //}
 }
+*/
 
 int ** JelliumIntegrals::MAT_INT(int dim1, int dim2){
   int i,j;
