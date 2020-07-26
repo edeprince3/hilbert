@@ -28,6 +28,9 @@
 #define JELLIUM_SCF_H
 
 #include <psi4/liboptions/liboptions.h>
+#include <psi4/libmints/matrix.h>
+
+#include "jellium_integrals.h"
 
 using namespace psi;
 
@@ -45,6 +48,51 @@ class Jellium_SCFSolver{
 
     /// Options object
     Options& options_;    
+
+    /// finite jellium integrals
+    std::shared_ptr<JelliumIntegrals> jelly_;
+
+    /// number of orbitals
+    int nso_;
+
+    /// number of irreps
+    int nirrep_;
+
+    /// number of orbitals per irrep
+    int * nsopi_;
+
+    /// total number of electrons
+    int nelectron_;
+
+    /// number of doubly occupied orbitals per irrep
+    int * doccpi_;
+
+    /// length of box
+    double boxlength_;
+
+    /// scaling factor for integrals based on box length
+    double Lfac_;
+
+    /// kinetic energy integrals
+    std::shared_ptr<Matrix> T_;
+
+    /// potential energy integrals
+    std::shared_ptr<Matrix> V_;
+
+    /// so/mo transformation matrix
+    std::shared_ptr<Matrix> Ca_;
+
+    /// so-basis density matrix
+    std::shared_ptr<Matrix> Da_;
+
+    /// so-basis fock matrix
+    std::shared_ptr<Matrix> Fa_;
+
+    /// build coulomb matrix
+    void build_J(std::shared_ptr<Matrix> Da, std::shared_ptr<Matrix> Ja);
+
+    /// build exchange matrix
+    void build_K(std::shared_ptr<Matrix> Da, std::shared_ptr<Matrix> Ka);
 
 };
 
