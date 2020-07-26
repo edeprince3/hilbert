@@ -51,7 +51,7 @@ class JelliumIntegrals{
     int * doccpi(){ return doccpi_;}
     int nirrep(){ return nirrep_;}
 
-    double ERI_int(int a, int b, int c, int d);
+    double ERI(int a, int b, int c, int d);
 
     //Integral matricies
     std::shared_ptr<Matrix> NucAttrac;
@@ -90,7 +90,6 @@ class JelliumIntegrals{
     /// Options object
     Options & options_;
     //  Electron integral functions
-    double ERI(int dim, double *xa, double *w, int *a, int *b, int *c, int *d);
     double g_pq(int p, int q, double r);
     double pq_int(int dim, double *x, double *w, int px, int py, int pz, int qx, int qy, int qz);
     double E0_Int(int dim, double *xa, double *w);
@@ -98,7 +97,6 @@ class JelliumIntegrals{
     double Vab_Int_new(int dim, double *xa, double *w, int *a, int *b);
 
     double ERI_unrolled(int * a, int * b, int * c, int * d);
-    double ERI_new(int * a, int * b, int * c, int * d, double ** PQ, int *** PQmap);
     
     void OrderPsis3D(int &norbs, double *E, int **MO);
     int **MAT_INT(int dim1, int dim2);

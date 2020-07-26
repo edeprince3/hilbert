@@ -547,7 +547,7 @@ void JelliumIntegrals::compute_integrals() {
 }
 
 //Commented out code broken by removing symmetry
-double JelliumIntegrals::ERI_int(int a, int b, int c, int d){
+double JelliumIntegrals::ERI(int a, int b, int c, int d){
 
     if((MO[a][0]+MO[b][0]+MO[c][0]+MO[d][0])%2==1){
       return 0.0;

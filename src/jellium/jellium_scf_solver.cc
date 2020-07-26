@@ -289,6 +289,7 @@ void Jellium_SCFSolver::build_J(std::shared_ptr<Matrix> Da, std::shared_ptr<Matr
 
             for (int q = p; q < nsopi_[hp]; q++) {
                 int qq = q + offp;
+
                 double myJ = 0.0;
                 
                 for (int hr = 0; hr < nirrep_; hr++) {
@@ -304,9 +305,9 @@ void Jellium_SCFSolver::build_J(std::shared_ptr<Matrix> Da, std::shared_ptr<Matr
                         double dum = 0.0;
                         for (int s = r+1; s < nsopi_[hr]; s++) {
                             int ss = s + offr;
-                            dum += d_p[r][s] * jelly_->ERI_int(pp,qq,rr,ss);
+                            dum += d_p[r][s] * jelly_->ERI(pp,qq,rr,ss);
                         }
-                        myJ += 2.0 * dum + d_p[r][r] * jelly_->ERI_int(pp,qq,rr,rr);
+                        myJ += 2.0 * dum + d_p[r][r] * jelly_->ERI(pp,qq,rr,rr);
                     }
                 }
                 j_p[p][q] = myJ;
@@ -333,6 +334,7 @@ void Jellium_SCFSolver::build_K(std::shared_ptr<Matrix> Da, std::shared_ptr<Matr
 
             for (int q = p; q < nsopi_[hp]; q++) {
                 int qq = q + offp;
+
                 double myK = 0.0;
                 
                 for (int hr = 0; hr < nirrep_; hr++) {
@@ -348,7 +350,7 @@ void Jellium_SCFSolver::build_K(std::shared_ptr<Matrix> Da, std::shared_ptr<Matr
                         int rr = r + offr;
                         for (int s = 0; s < nsopi_[hr]; s++) {
                             int ss = s + offr;
-                            myK += d_p[r][s] * jelly_->ERI_int(pp,ss,rr,qq);
+                            myK += d_p[r][s] * jelly_->ERI(pp,ss,rr,qq);
                         }
                     }
                 }
