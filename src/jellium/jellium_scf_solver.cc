@@ -53,7 +53,7 @@ Jellium_SCFSolver::Jellium_SCFSolver(Options & options)
     outfile->Printf( "        ***************************************************\n");
     outfile->Printf( "        *                                                 *\n");
     outfile->Printf( "        *                                                 *\n");
-    outfile->Printf( "        *    Jellium Hartree-Fock                         *\n");
+    outfile->Printf( "        *    Finite Jellium Hartree-Fock                  *\n");
     outfile->Printf( "        *                                                 *\n");
     outfile->Printf( "        *                                                 *\n");
     outfile->Printf( "        ***************************************************\n");
@@ -365,6 +365,16 @@ void Jellium_SCFSolver::build_K(std::shared_ptr<Matrix> Da, std::shared_ptr<Matr
 
 void Jellium_SCFSolver::CIS_slow() {
 
+    outfile->Printf("\n");
+    outfile->Printf( "        ***************************************************\n");
+    outfile->Printf( "        *                                                 *\n");
+    outfile->Printf( "        *                                                 *\n");
+    outfile->Printf( "        *    Finite Jellium CIS                           *\n");
+    outfile->Printf( "        *                                                 *\n");
+    outfile->Printf( "        *                                                 *\n");
+    outfile->Printf( "        ***************************************************\n");
+
+    outfile->Printf("\n");
     int o = nelectron_ / 2;
     int v = nso_ - o;
 
@@ -382,43 +392,8 @@ void Jellium_SCFSolver::CIS_slow() {
     }
 
     /// transform fock matrix to mo basis
-    Fa_->transform(Ca_);
-    Fa_->print();
-
-    double * Fij = (double*)malloc(o*o*sizeof(double));
-    double * Fab = (double*)malloc(v*v*sizeof(double));
-
-    memset((void*)Fij,'\0',o*o*sizeof(double));
-    memset((void*)Fab,'\0',v*v*sizeof(double));
-
-    int * symmetry = (int*)malloc(nso_*sizeof(int));
-
-    int off = 0;
-    for (int h = 0; h < nirrep_; h++) {
-        double ** fp = Fa_->pointer(h);
-        for (int i = 0; i < doccpi_[h]; i++) {
-            int ii = i + off;
-            for (int j = 0; j < doccpi_[h]; j++) {
-                int jj = j + off;
-                Fij[ii*o+jj] = fp[i][j];
-            }
-            symmetry[ii] = h;
-        }
-        off += doccpi_[h];
-    }
-    off = 0;
-    for (int h = 0; h < nirrep_; h++) {
-        double ** fp = Fa_->pointer(h);
-        for (int a = 0; a < virpi[h]; a++) {
-            int aa = a + off;
-            for (int b = 0; b < virpi[h]; b++) {
-                int bb = b + off;
-                Fab[aa*v+bb] = fp[a+doccpi_[h]][b+doccpi_[h]];
-            }
-            symmetry[aa+o] = h;
-        }
-        off += virpi[h];
-    }
+    std::shared_ptr<Matrix> F (new Matrix(Fa_));
+    F->transform(Ca_);
 
     /// transform ERIs to mo basis
 
@@ -429,6 +404,7 @@ void Jellium_SCFSolver::CIS_slow() {
     int * jb = (int*)malloc(nirrep_*sizeof(int));
 
     // (ia|jb)
+    outfile->Printf("    transform (ia|jb), (ij|ab)...."); fflush(stdout);
     memset((void*)ia,'\0',nirrep_*sizeof(int));
     for (int hi = 0; hi < nirrep_; hi++) {
         for (int ha = 0; ha < nirrep_; ha++) {
@@ -513,10 +489,12 @@ void Jellium_SCFSolver::CIS_slow() {
             }
         }
     }
+    outfile->Printf("done.\n");
 
     // cis hamiltonian
     std::shared_ptr<Matrix> cis_ham (new Matrix(nirrep_,ovpi,ovpi));
 
+    outfile->Printf("    diagonalize CIS Hamiltonian..."); fflush(stdout);
     memset((void*)ia,'\0',nirrep_*sizeof(int));
     for (int hi = 0; hi < nirrep_; hi++) {
         for (int ha = 0; ha < nirrep_; ha++) {
@@ -540,11 +518,11 @@ void Jellium_SCFSolver::CIS_slow() {
 
                                     double dum = 2.0 * iajb_p[ia[hia]][jb[hjb]] - ijab_p[ia[hia]][jb[hjb]];
                                     if ( hi == hj && i == j ) {
-                                        double ** fp = Fa_->pointer(ha);
+                                        double ** fp = F->pointer(ha);
                                         dum += fp[a+doccpi_[ha]][b+doccpi_[ha]];
                                     }
                                     if ( ha == hb && a == b ) {
-                                        double ** fp = Fa_->pointer(hi);
+                                        double ** fp = F->pointer(hi);
                                         dum -= fp[i][j];
                                     }
                                     ham_p[ia[hia]][jb[hjb]] = dum;
@@ -559,10 +537,15 @@ void Jellium_SCFSolver::CIS_slow() {
             }
         }
     }
-
     std::shared_ptr<Matrix> cis_eigvec (new Matrix(cis_ham));
     std::shared_ptr<Vector> cis_eigval (new Vector(nirrep_,ovpi));
     cis_ham->diagonalize(cis_eigvec,cis_eigval,ascending);
+    outfile->Printf("done.\n");
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> CIS excitaiton energies <=="); fflush(stdout);
+    outfile->Printf("\n");
+
     cis_eigval->print();
 
     free(virpi);
