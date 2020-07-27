@@ -269,6 +269,8 @@ double Jellium_SCFSolver::compute_energy(){
     Process::environment.globals["CURRENT ENERGY"]    = energy;
     Process::environment.globals["JELLIUM SCF TOTAL ENERGY"] = energy;
 
+    //CIS_slow();
+
     return energy;
 
 }
@@ -360,6 +362,214 @@ void Jellium_SCFSolver::build_K(std::shared_ptr<Matrix> Da, std::shared_ptr<Matr
         }
     }
 }
+
+void Jellium_SCFSolver::CIS_slow() {
+
+    int o = nelectron_ / 2;
+    int v = nso_ - o;
+
+    int * virpi = (int*)malloc(nirrep_*sizeof(int));
+    int * ovpi  = (int*)malloc(nirrep_*sizeof(int));
+    for (int h = 0; h < nirrep_; h++) {
+        virpi[h] = nsopi_[h] - doccpi_[h];
+        ovpi[h]  = 0;
+    }
+    for (int ho = 0; ho < nirrep_; ho++) {
+        for (int hv = 0; hv < nirrep_; hv++) {
+            int hov = ho ^ hv;
+            ovpi[hov] += doccpi_[ho] * virpi[hv];
+        }
+    }
+
+    /// transform fock matrix to mo basis
+    Fa_->transform(Ca_);
+    Fa_->print();
+
+    double * Fij = (double*)malloc(o*o*sizeof(double));
+    double * Fab = (double*)malloc(v*v*sizeof(double));
+
+    memset((void*)Fij,'\0',o*o*sizeof(double));
+    memset((void*)Fab,'\0',v*v*sizeof(double));
+
+    int * symmetry = (int*)malloc(nso_*sizeof(int));
+
+    int off = 0;
+    for (int h = 0; h < nirrep_; h++) {
+        double ** fp = Fa_->pointer(h);
+        for (int i = 0; i < doccpi_[h]; i++) {
+            int ii = i + off;
+            for (int j = 0; j < doccpi_[h]; j++) {
+                int jj = j + off;
+                Fij[ii*o+jj] = fp[i][j];
+            }
+            symmetry[ii] = h;
+        }
+        off += doccpi_[h];
+    }
+    off = 0;
+    for (int h = 0; h < nirrep_; h++) {
+        double ** fp = Fa_->pointer(h);
+        for (int a = 0; a < virpi[h]; a++) {
+            int aa = a + off;
+            for (int b = 0; b < virpi[h]; b++) {
+                int bb = b + off;
+                Fab[aa*v+bb] = fp[a+doccpi_[h]][b+doccpi_[h]];
+            }
+            symmetry[aa+o] = h;
+        }
+        off += virpi[h];
+    }
+
+    /// transform ERIs to mo basis
+
+    std::shared_ptr<Matrix> iajb (new Matrix(nirrep_,ovpi,ovpi));
+    std::shared_ptr<Matrix> ijab (new Matrix(nirrep_,ovpi,ovpi));
+
+    int * ia = (int*)malloc(nirrep_*sizeof(int));
+    int * jb = (int*)malloc(nirrep_*sizeof(int));
+
+    // (ia|jb)
+    memset((void*)ia,'\0',nirrep_*sizeof(int));
+    for (int hi = 0; hi < nirrep_; hi++) {
+        for (int ha = 0; ha < nirrep_; ha++) {
+            int hia = hi ^ ha;
+            if ( ovpi[hia] == 0 ) continue;
+            for (int i = 0; i < doccpi_[hi]; i++) {
+                double ** ci = Ca_->pointer(hi);
+                for (int a = 0; a < virpi[ha]; a++) {
+                    double ** ca = Ca_->pointer(ha);
+
+                    double ** iajb_p = iajb->pointer(hia);
+                    double ** ijab_p = ijab->pointer(hia);
+
+                    memset((void*)jb,'\0',nirrep_*sizeof(int));
+                    for (int hj = 0; hj < nirrep_; hj++) {
+                        for (int hb = 0; hb < nirrep_; hb++) {
+                            int hjb = hj ^ hb;
+                            if ( hia != hjb ) continue;
+
+                            for (int j = 0; j < doccpi_[hj]; j++) {
+                                double ** cj = Ca_->pointer(hj);
+                                for (int b = 0; b < virpi[hb]; b++) {
+                                    double ** cb = Ca_->pointer(hb);
+
+                                    // (ia|jb) = (mu nu | lambda sigma) c(i,mu) c(a,nu) c(j,lambda) c(b,sigma)
+                                    double dum_iajb = 0.0;
+                                    int offmu = 0;
+                                    for (int mu = 0; mu < nsopi_[hi]; mu++) {
+                                        int offnu = 0;
+                                        for (int nu = 0; nu < nsopi_[ha]; nu++) {
+                                            int offlambda = 0;
+                                            for (int lambda = 0; lambda < nsopi_[hj]; lambda++) {
+                                                int offsigma = 0;
+                                                for (int sigma = 0; sigma < nsopi_[hb]; sigma++) {
+                                                    dum_iajb += jelly_->ERI(mu+offmu,nu+offnu,lambda+offlambda,sigma+offsigma)
+                                                              * ci[i            ][mu]
+                                                              * ca[a+doccpi_[ha]][nu]
+                                                              * cj[j            ][lambda]
+                                                              * cb[b+doccpi_[hb]][sigma];
+                                                }
+                                                offsigma += nsopi_[hb];
+                                            }
+                                            offlambda += nsopi_[hj];
+                                        }
+                                        offnu += nsopi_[ha];
+                                    }
+                                    offmu += nsopi_[hi];
+                                    iajb_p[ia[hia]][jb[hjb]] = dum_iajb;
+
+                                    // (ij|ab) = (mu nu | lambda sigma) c(i,mu) c(j,nu) c(a,lambda) c(b,sigma)
+                                    double dum_ijab = 0.0;
+                                    offmu = 0;
+                                    for (int mu = 0; mu < nsopi_[hi]; mu++) {
+                                        int offnu = 0;
+                                        for (int nu = 0; nu < nsopi_[hj]; nu++) {
+                                            int offlambda = 0;
+                                            for (int lambda = 0; lambda < nsopi_[ha]; lambda++) {
+                                                int offsigma = 0;
+                                                for (int sigma = 0; sigma < nsopi_[hb]; sigma++) {
+                                                    dum_ijab += jelly_->ERI(mu+offmu,nu+offnu,lambda+offlambda,sigma+offsigma)
+                                                              * ci[i            ][mu]
+                                                              * cj[j            ][nu]
+                                                              * ca[a+doccpi_[ha]][lambda]
+                                                              * cb[b+doccpi_[hb]][sigma];
+                                                    offsigma += nsopi_[hb];
+                                                }
+                                                offlambda += nsopi_[ha];
+                                            }
+                                            offnu += nsopi_[hj];
+                                        }
+                                        offmu += nsopi_[hi];
+                                    }
+                                    ijab_p[ia[hia]][jb[hjb]] = dum_ijab;
+
+                                    jb[hjb]++;
+                                }
+                            }
+                        }
+                    }
+                    ia[hia]++;
+                }
+            }
+        }
+    }
+
+    // cis hamiltonian
+    std::shared_ptr<Matrix> cis_ham (new Matrix(nirrep_,ovpi,ovpi));
+
+    memset((void*)ia,'\0',nirrep_*sizeof(int));
+    for (int hi = 0; hi < nirrep_; hi++) {
+        for (int ha = 0; ha < nirrep_; ha++) {
+            int hia = hi ^ ha;
+            if ( ovpi[hia] == 0 ) continue;
+            for (int i = 0; i < doccpi_[hi]; i++) {
+                for (int a = 0; a < virpi[ha]; a++) {
+
+                    double ** ham_p = cis_ham->pointer(hia);
+                    double ** iajb_p = iajb->pointer(hia);
+                    double ** ijab_p = ijab->pointer(hia);
+
+                    memset((void*)jb,'\0',nirrep_*sizeof(int));
+                    for (int hj = 0; hj < nirrep_; hj++) {
+                        for (int hb = 0; hb < nirrep_; hb++) {
+                            int hjb = hj ^ hb;
+                            if ( hia != hjb ) continue;
+
+                            for (int j = 0; j < doccpi_[hj]; j++) {
+                                for (int b = 0; b < virpi[hb]; b++) {
+
+                                    double dum = 2.0 * iajb_p[ia[hia]][jb[hjb]] - ijab_p[ia[hia]][jb[hjb]];
+                                    if ( hi == hj && i == j ) {
+                                        double ** fp = Fa_->pointer(ha);
+                                        dum += fp[a+doccpi_[ha]][b+doccpi_[ha]];
+                                    }
+                                    if ( ha == hb && a == b ) {
+                                        double ** fp = Fa_->pointer(hi);
+                                        dum -= fp[i][j];
+                                    }
+                                    ham_p[ia[hia]][jb[hjb]] = dum;
+                                    
+                                    jb[hjb]++;
+                                }
+                            }
+                        }
+                    }
+                    ia[hia]++;
+                }
+            }
+        }
+    }
+
+    std::shared_ptr<Matrix> cis_eigvec (new Matrix(cis_ham));
+    std::shared_ptr<Vector> cis_eigval (new Vector(nirrep_,ovpi));
+    cis_ham->diagonalize(cis_eigvec,cis_eigval,ascending);
+    cis_eigval->print();
+
+    free(virpi);
+    free(ovpi);
+}
+
+
 
 } // End namespaces
 
