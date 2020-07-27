@@ -66,7 +66,6 @@ class DOCISolver: public Wavefunction{
     // construct a given element of the hamiltonian
     double HamiltonianElement(size_t i, size_t j);
 
-
   protected:
 
     /// the orbital optimizer

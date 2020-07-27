@@ -51,10 +51,10 @@
 #include <psi4/libmints/basisset.h>
 #include "psi4/libmints/local.h"
 
-#include "david.h"
 #include "doci_solver.h"
 
 #include <focas/focas_c_interface.h>
+#include <misc/davidson_solver.h>
 #include <misc/threeindexintegrals.h>
 #include <misc/blas.h>
 #include <misc/omp.h>
@@ -68,6 +68,10 @@ static void evaluate_sigma(size_t N, size_t maxdim,double **sigma, double **b, v
     DOCISolver* doci = reinterpret_cast<DOCISolver*>(data);
     //doci->BuildSigma(N,maxdim,b,sigma);
     doci->BuildSigmaFast(N,maxdim,b,sigma);
+}
+static double hamiltonian_element(size_t i, size_t j, void * data) {
+    DOCISolver* doci = reinterpret_cast<DOCISolver*>(data);
+    return doci->HamiltonianElement(i,j);
 }
 
 DOCISolver::DOCISolver(SharedWavefunction reference_wavefunction,Options & options):
@@ -1010,10 +1014,20 @@ double DOCISolver::DiagonalizeHamiltonian(double * ci_wfn, size_t & ci_iter) {
     // diagonalize!
     std::shared_ptr<Matrix> eigvec (new Matrix(1,n_));
     std::shared_ptr<Vector> eigval (new Vector(n_));
-    //david_in_core(H->pointer(),n_,1,eigval->pointer(),eigvec->pointer(),r_convergence_,0,ci_iter);
 
-    //david_direct(Hdiag_->pointer(),n_,1,eigval->pointer(),eigvec->pointer(),r_convergence_,0,evaluate_sigma,ci_iter,(void*)this);
-    david_direct_redo(Hdiag_->pointer(),n_,1,eigval->pointer(),eigvec->pointer(),r_convergence_,0,evaluate_sigma,ci_iter,(void*)this,options_.get_int("DAVIDSON_MAXDIM"));
+    std::shared_ptr<DavidsonSolver> david (new DavidsonSolver());
+    david->solve(Hdiag_->pointer(),
+        n_, 
+        1,
+        eigval->pointer(),
+        eigvec->pointer(),
+        r_convergence_,
+        0,
+        evaluate_sigma,
+        hamiltonian_element,
+        ci_iter,
+        (void*)this,
+        options_.get_int("DAVIDSON_MAXDIM"));
 
     C_DCOPY(n_,eigvec->pointer()[0],1,ci_wfn,1);
 

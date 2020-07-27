@@ -32,7 +32,6 @@ add_psi4_plugin(hilbert
     src/jellium/jellium_integrals.cc
     src/jellium/legendre.cc
 
-    src/doci/david.cc
     src/doci/doci_solver.cc
     src/doci/write_tpdm.cc
 
@@ -45,12 +44,13 @@ add_psi4_plugin(hilbert
     src/pp2rdm/write_tpdm.cc
 
     src/misc/backtransform_tpdm.cc
+    src/misc/davidson_solver.cc
+    src/misc/diis.cc
+    src/misc/cg_solver.cc
+    src/misc/bpsdp_solver.cc
     src/misc/integraltransform_sort_so_tpdm.cc
     src/misc/integraltransform_tpdm_unrestricted.cc
     src/misc/threeindexintegrals.cc
-    src/misc/cg_solver.cc
-    src/misc/bpsdp_solver.cc
-    src/misc/diis.cc
 
     src/focas/update_transformation_matrix.cc
     src/focas/orbital_optimizer.cc
