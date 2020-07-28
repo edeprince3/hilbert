@@ -262,6 +262,10 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION JELLIUM -*/
 
+        /*- An array containing the number of doubly-occupied orbitals per irrep
+        (in Cotton order) -*/
+        options.add("DOCC", new ArrayType());
+
         /*- The number of grid points for the Gauss-Legendre quadrature -*/
         options.add_int("N_GRID_POINTS", 10);
 
@@ -277,6 +281,10 @@ int read_options(std::string name, Options& options)
 
         ///*- The density of the box in e/nm^3 -*/
         //options.add_double("DENSITY", 92);    
+
+        /*- The number of electronic states to computed, per irreducible
+        representation -*/
+        options.add("ROOTS_PER_IRREP", new ArrayType());
 
     }
 

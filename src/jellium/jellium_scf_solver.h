@@ -113,6 +113,12 @@ class Jellium_SCFSolver{
     /// list of CIS excitations
     std::vector<cis_transition> cis_transition_list_;
 
+    /// update occupations
+    void update_occupations(std::shared_ptr<Vector> epsilon_a);
+
+    /// print occupations
+    void print_occupations();
+
 };
 
 } // End namespaces

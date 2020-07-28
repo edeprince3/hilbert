@@ -24,6 +24,8 @@
  *  @END LICENSE
  */
 
+#include <algorithm>
+
 #include <psi4/psi4-dec.h>
 #include <psi4/physconst.h>
 #include <psi4/libpsi4util/process.h>
@@ -135,6 +137,16 @@ double Jellium_SCFSolver::compute_energy(){
     outfile->Printf("    diis?                             %10s\n",do_diis ? "yes" : "no");
     outfile->Printf("\n");
 
+    if ( options_["DOCC"].has_changed() ) {
+        if ( options_["DOCC"].size() != nirrep_ ) {
+            throw PSIEXCEPTION("Input DOCC array has the wrong dimensions");
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            doccpi_[h] = options_["DOCC"][h].to_integer();
+        }
+    }
+    print_occupations();
+
     // diis solver
     std::shared_ptr<DIIS> diis (new DIIS(nso_*nso_));
     
@@ -143,10 +155,10 @@ double Jellium_SCFSolver::compute_energy(){
     h->add(V_);
 
     // eigenvectors / eigenvalues of fock matrix
-    std::shared_ptr<Vector> Feval (new Vector(nirrep_,nsopi_));
+    std::shared_ptr<Vector> epsilon_a (new Vector(nirrep_,nsopi_));
 
     // diagonalize core hamiltonian, get orbitals
-    Fa_->diagonalize(Ca_,Feval);
+    Fa_->diagonalize(Ca_,epsilon_a);
 
     // build density matrix 
     for (int h = 0; h < nirrep_; h++) {
@@ -239,8 +251,10 @@ double Jellium_SCFSolver::compute_energy(){
         dele = fabs(new_energy - energy);
 
         // evaluate new orbitals
-        std::shared_ptr<Vector> Feval (new Vector(nirrep_, nsopi_));
-        Fa_->diagonalize(Ca_,Feval);
+        Fa_->diagonalize(Ca_,epsilon_a);
+
+        // update occupations
+        update_occupations(epsilon_a);
 
         // evaluate new density
         for (int h = 0; h < nirrep_; h++) {
@@ -273,6 +287,8 @@ double Jellium_SCFSolver::compute_energy(){
     outfile->Printf("    * Jellium SCF total energy: %20.12lf\n", energy);
     outfile->Printf("\n");
 
+    print_occupations();
+
     Process::environment.globals["CURRENT ENERGY"]    = energy;
     Process::environment.globals["JELLIUM SCF TOTAL ENERGY"] = energy;
 
@@ -281,6 +297,56 @@ double Jellium_SCFSolver::compute_energy(){
 
     return energy;
 
+}
+
+void Jellium_SCFSolver::update_occupations(std::shared_ptr<Vector> epsilon_a) {
+
+    if ( options_["DOCC"].has_changed() ) {
+        return;
+    }
+
+    int * old_docc = (int*)malloc(nirrep_*sizeof(int));
+    for (int h = 0; h < nirrep_; ++h) {
+        old_docc[h] = doccpi_[h];
+    }
+
+    std::vector<std::pair<double, int> > pairs_a;
+    for (int h = 0; h < epsilon_a->nirrep(); ++h) {
+        for (int i = 0; i < epsilon_a->dimpi()[h]; ++i) {
+            pairs_a.push_back(std::make_pair(epsilon_a->get(h, i), h));
+        }
+    }
+    sort(pairs_a.begin(), pairs_a.end());
+
+    memset(doccpi_, 0, sizeof(int) * epsilon_a->nirrep());
+    for (int i = 0; i < nelectron_ / 2; ++i) doccpi_[pairs_a[i].second]++;
+
+    bool occ_changed = false;
+    for (int h = 0; h < nirrep_; ++h) {
+        if (old_docc[h] != doccpi_[h]) {
+            occ_changed = true;
+            break;
+        }
+    }
+
+    if (occ_changed) {
+        print_occupations();
+    }
+
+    free(old_docc);
+}
+
+void Jellium_SCFSolver::print_occupations() {
+    outfile->Printf("\n");
+    outfile->Printf("    Occupation by irrep:\n");
+    outfile->Printf("\n");
+    outfile->Printf("           ");
+    for (int h = 0; h < nirrep_; ++h) outfile->Printf(" %4s ", jelly_->labels[h].c_str());
+    outfile->Printf("\n");
+    outfile->Printf("    DOCC [ ");
+    for (int h = 0; h < nirrep_ - 1; ++h) outfile->Printf(" %4d,", doccpi_[h]);
+    outfile->Printf(" %4d ]\n", doccpi_[nirrep_ - 1]);
+    outfile->Printf("\n");
 }
 
 void Jellium_SCFSolver::build_J(std::shared_ptr<Matrix> Da, std::shared_ptr<Matrix> Ja){
@@ -434,6 +500,7 @@ void Jellium_SCFSolver::CIS_slow() {
 
         double ** ham_p = cis_ham->pointer(h);
 
+        #pragma omp parallel for schedule(dynamic)
         for (int ia = 0; ia < cis_transition_list_.size(); ia++) {
 
             int i   = cis_transition_list_[ia].i;
@@ -585,7 +652,9 @@ void Jellium_SCFSolver::CIS_direct() {
             num_roots = ovpi[h];
         }
 
-        outfile->Printf("    Irrep:                     %10i\n",h);
+        if ( num_roots == 0 ) continue;
+
+        outfile->Printf("    Irrep:                     %10s\n",jelly_->labels[h].c_str());
         outfile->Printf("    Number of ia transitions:  %10i\n",ovpi[h]);
         outfile->Printf("    Number of roots requested: %10i\n",num_roots);
         outfile->Printf("\n");
@@ -673,6 +742,7 @@ void Jellium_SCFSolver::CIS_direct() {
 
         // transform (ia|ia), (ii,aa)
         outfile->Printf("    transform (ia|ia), (ii|aa)......."); fflush(stdout);
+        #pragma omp parallel for schedule(dynamic)
         for (int ia = 0; ia < cis_transition_list_.size(); ia++) {
 
             int i   = cis_transition_list_[ia].i;

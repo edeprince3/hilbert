@@ -27,10 +27,11 @@
 #ifndef JELLIUM_INTEGRALS_H
 #define JELLIUM_INTEGRALS_H
 
+#include <vector>
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <unordered_map>
 
 #include <psi4/liboptions/liboptions.h>
 #include <psi4/libmints/matrix.h>
@@ -55,6 +56,8 @@ class JelliumIntegrals{
     double dipole_x(int mu, int nu, double L);
     double dipole_y(int mu, int nu, double L);
     double dipole_z(int mu, int nu, double L);
+
+    std::vector<std::string> labels;
 
     //Integral matricies
     std::shared_ptr<Matrix> NucAttrac;
