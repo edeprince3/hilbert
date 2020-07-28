@@ -85,7 +85,7 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION DOCI -*/
 
-       /*- maximum size of the subspace in Davidson procedure -*/
+       /*- maximum size of Davidson subspace (will be multiplied by number of desired roots) -*/
         options.add_double("DAVIDSON_MAXDIM", 20);
 
         /*- Tolerance for Cholesky decomposition of the ERI tensor -*/

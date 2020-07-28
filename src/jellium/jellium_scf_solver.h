@@ -27,6 +27,8 @@
 #ifndef JELLIUM_SCF_H
 #define JELLIUM_SCF_H
 
+#include <vector>
+
 #include <psi4/liboptions/liboptions.h>
 #include <psi4/libmints/matrix.h>
 
@@ -36,6 +38,13 @@ using namespace psi;
 
 namespace hilbert{
 
+struct cis_transition {
+    int i;
+    int a;
+    int hi;
+    int ha;
+};
+
 class Jellium_SCFSolver{
 
   public:
@@ -44,7 +53,12 @@ class Jellium_SCFSolver{
     ~Jellium_SCFSolver();
     double compute_energy();
 
+    /// construct CIS sigma vectors for out-of-core davidson solver
+    void CIS_evaluate_sigma(size_t N, size_t maxdim, double ** bmat, double ** sigma);
+
   protected:
+
+    void CIS_direct();
 
     void CIS_slow();
 
@@ -95,6 +109,9 @@ class Jellium_SCFSolver{
 
     /// build exchange matrix
     void build_K(std::shared_ptr<Matrix> Da, std::shared_ptr<Matrix> Ka);
+
+    /// list of CIS excitations
+    std::vector<cis_transition> cis_transition_list_;
 
 };
 
