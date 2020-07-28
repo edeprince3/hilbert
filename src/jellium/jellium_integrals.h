@@ -52,6 +52,9 @@ class JelliumIntegrals{
     int nirrep(){ return nirrep_;}
 
     double ERI(int a, int b, int c, int d);
+    double dipole_x(int mu, int nu, double L);
+    double dipole_y(int mu, int nu, double L);
+    double dipole_z(int mu, int nu, double L);
 
     //Integral matricies
     std::shared_ptr<Matrix> NucAttrac;

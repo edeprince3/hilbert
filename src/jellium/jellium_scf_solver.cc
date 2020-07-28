@@ -277,7 +277,7 @@ double Jellium_SCFSolver::compute_energy(){
     Process::environment.globals["JELLIUM SCF TOTAL ENERGY"] = energy;
 
     //CIS_slow();
-    //CIS_direct();
+    CIS_direct();
 
     return energy;
 
@@ -569,11 +569,27 @@ void Jellium_SCFSolver::CIS_direct() {
     std::shared_ptr<Matrix> F (new Matrix(Fa_));
     F->transform(Ca_);
 
+    // dipole integrals
+    std::shared_ptr<Vector> dipole_x (new Vector(nirrep_,ovpi));
+    std::shared_ptr<Vector> dipole_y (new Vector(nirrep_,ovpi));
+    std::shared_ptr<Vector> dipole_z (new Vector(nirrep_,ovpi));
+
     // diagonalize blocks by irrep
     for (int h = 0; h < nirrep_; h++) {
 
-        outfile->Printf("    Irrep:                    %10i\n",h);
-        outfile->Printf("    Number of ia transitions: %10i\n",ovpi[h]);
+        int num_roots = 10;
+        if ( options_["ROOTS_PER_IRREP"].has_changed() ) {
+            num_roots = options_["ROOTS_PER_IRREP"][h].to_integer();
+        }
+        if ( num_roots > ovpi[h] ) {
+            num_roots = ovpi[h];
+        }
+
+        outfile->Printf("    Irrep:                     %10i\n",h);
+        outfile->Printf("    Number of ia transitions:  %10i\n",ovpi[h]);
+        outfile->Printf("    Number of roots requested: %10i\n",num_roots);
+        outfile->Printf("\n");
+
         if ( ovpi[h] == 0 ) {
             outfile->Printf("\n");
             continue;
@@ -600,12 +616,63 @@ void Jellium_SCFSolver::CIS_direct() {
             }
         }
 
+        // dipole integrals
+        outfile->Printf("    transform mu(i,a)................"); fflush(stdout);
+        double * dipole_x_p = dipole_x->pointer(h);
+        double * dipole_y_p = dipole_y->pointer(h);
+        double * dipole_z_p = dipole_z->pointer(h);
+        for (int ia = 0; ia < cis_transition_list_.size(); ia++) {
+
+            int i   = cis_transition_list_[ia].i;
+            int a   = cis_transition_list_[ia].a;
+            int hi  = cis_transition_list_[ia].hi;
+            int ha  = cis_transition_list_[ia].ha;
+
+            int i_off = 0;
+            for (int myh = 0; myh < hi; myh++) {
+                i_off += nsopi_[myh];
+            }
+
+            int a_off = 0;
+            for (int myh = 0; myh < ha; myh++) {
+                a_off += nsopi_[myh];
+            }
+
+            double ** ci = Ca_->pointer(hi);
+            double ** ca = Ca_->pointer(ha);
+
+            double dum_x = 0.0;
+            double dum_y = 0.0;
+            double dum_z = 0.0;
+            for (int mu = 0; mu < nsopi_[hi]; mu++) {
+                for (int nu = 0; nu < nsopi_[ha]; nu++) {
+
+                    double dip_x = jelly_->dipole_x(mu+i_off,nu+a_off,boxlength_);
+                    double dip_y = jelly_->dipole_y(mu+i_off,nu+a_off,boxlength_);
+                    double dip_z = jelly_->dipole_z(mu+i_off,nu+a_off,boxlength_);
+                    dum_x += dip_x
+                           * ci[i            ][mu]
+                           * ca[a+doccpi_[ha]][nu];
+                    dum_y += dip_y
+                           * ci[i            ][mu]
+                           * ca[a+doccpi_[ha]][nu];
+                    dum_z += dip_z
+                           * ci[i            ][mu]
+                           * ca[a+doccpi_[ha]][nu];
+                }
+                dipole_x_p[ia] = dum_x;
+                dipole_y_p[ia] = dum_y;
+                dipole_z_p[ia] = dum_z;
+            }
+        }
+        outfile->Printf("done\n");
+
         // construct diagonal elements of CIS hamiltonian
         std::shared_ptr<Vector> cis_diagonal_ham (new Vector(cis_transition_list_.size()));
         double * ham_p = cis_diagonal_ham->pointer();
 
         // transform (ia|ia), (ii,aa)
-        outfile->Printf("    transform (ia|ia), (ii|aa)......"); fflush(stdout);
+        outfile->Printf("    transform (ia|ia), (ii|aa)......."); fflush(stdout);
         for (int ia = 0; ia < cis_transition_list_.size(); ia++) {
 
             int i   = cis_transition_list_[ia].i;
@@ -670,19 +737,18 @@ void Jellium_SCFSolver::CIS_direct() {
         outfile->Printf("done\n");
 
 
-        outfile->Printf("    diagonalize CIS Hamiltonian....."); fflush(stdout);
+        outfile->Printf("    diagonalize CIS Hamiltonian......"); fflush(stdout);
         std::shared_ptr<DavidsonSolver> david (new DavidsonSolver());
 
         size_t ci_iter = 0;
-        int nstates    = 2;
         int print      = 1;
 
-        std::shared_ptr<Matrix> eigvec (new Matrix(nstates,ovpi[h]));
-        std::shared_ptr<Vector> eigval (new Vector(nstates));
+        std::shared_ptr<Matrix> eigvec (new Matrix(num_roots,ovpi[h]));
+        std::shared_ptr<Vector> eigval (new Vector(num_roots));
 
         david->solve(cis_diagonal_ham->pointer(),
             ovpi[h],
-            nstates,
+            num_roots,
             eigval->pointer(),
             eigvec->pointer(),
             options_.get_double("R_CONVERGENCE"),
@@ -691,18 +757,27 @@ void Jellium_SCFSolver::CIS_direct() {
             NULL,
             ci_iter,
             (void*)this,
-            options_.get_int("DAVIDSON_MAXDIM") * nstates);
+            options_.get_int("DAVIDSON_MAXDIM") * num_roots);
         outfile->Printf("done\n");
+
 
         outfile->Printf("    CIS excitation energies:\n");
         outfile->Printf("\n");
         outfile->Printf("    state");
         outfile->Printf("                w(Eh)");
         outfile->Printf("                w(eV)");
+        outfile->Printf("                    f");
         outfile->Printf("\n");
         double * eigval_p = eigval->pointer();
-        for (int I = 0; I < nstates; I++) {
-            outfile->Printf("    %5i %20.12lf %20.12lf\n",I,eigval_p[I],eigval_p[I] * pc_hartree2ev);
+        for (int I = 0; I < num_roots; I++) {
+
+            // evaluate oscillator strengths
+            double tdp_x = sqrt(2.0) * C_DDOT(cis_transition_list_.size(),eigvec->pointer()[I],1,dipole_x->pointer(h),1);
+            double tdp_y = sqrt(2.0) * C_DDOT(cis_transition_list_.size(),eigvec->pointer()[I],1,dipole_y->pointer(h),1);
+            double tdp_z = sqrt(2.0) * C_DDOT(cis_transition_list_.size(),eigvec->pointer()[I],1,dipole_z->pointer(h),1);
+            double f = 2.0 / 3.0 * eigval_p[I] * ( tdp_x * tdp_x + tdp_y * tdp_y + tdp_z * tdp_z );
+
+            outfile->Printf("    %5i %20.12lf %20.12lf %20.12lf\n",I,eigval_p[I],eigval_p[I] * pc_hartree2ev, f);
         }
         outfile->Printf("\n");
         //eigval->print();

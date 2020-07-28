@@ -546,6 +546,66 @@ void JelliumIntegrals::compute_integrals() {
 
 }
 
+double JelliumIntegrals::dipole_x(int mu, int nu, double L){
+
+    int mu_x = MO[mu][0];
+    int mu_y = MO[mu][1];
+    int mu_z = MO[mu][2];
+
+    int nu_x = MO[nu][0];
+    int nu_y = MO[nu][1];
+    int nu_z = MO[nu][2];
+
+    // many dipole integrals are zero
+    if ( mu_y != nu_y )           return 0.0;
+    if ( mu_z != nu_z )           return 0.0;
+    if ( mu_x == nu_x )           return 0.0;
+    if ( (mu_x + nu_x) % 2 != 1 ) return 0.0;
+
+    return fabs(((L / (M_PI * M_PI)) * ((nu_x * mu_x) / pow((nu_x*nu_x - mu_x*mu_x), 2))));
+
+}
+
+double JelliumIntegrals::dipole_y(int mu, int nu, double L){
+
+    int mu_x = MO[mu][0];
+    int mu_y = MO[mu][1];
+    int mu_z = MO[mu][2];
+
+    int nu_x = MO[nu][0];
+    int nu_y = MO[nu][1];
+    int nu_z = MO[nu][2];
+
+    // many dipole integrals are zero
+    if ( mu_x != nu_x )           return 0.0;
+    if ( mu_z != nu_z )           return 0.0;
+    if ( mu_y == nu_y )           return 0.0;
+    if ( (mu_y + nu_y) % 2 != 1 ) return 0.0;
+
+    return fabs(((L / (M_PI * M_PI)) * ((nu_y * mu_y) / pow((nu_y*nu_y - mu_y*mu_y), 2))));
+
+}
+
+double JelliumIntegrals::dipole_z(int mu, int nu, double L){
+
+    int mu_x = MO[mu][0];
+    int mu_y = MO[mu][1];
+    int mu_z = MO[mu][2];
+
+    int nu_x = MO[nu][0];
+    int nu_y = MO[nu][1];
+    int nu_z = MO[nu][2];
+
+    // many dipole integrals are zero
+    if ( mu_x != nu_x )           return 0.0;
+    if ( mu_y != nu_y )           return 0.0;
+    if ( mu_z == nu_z )           return 0.0;
+    if ( (mu_z + nu_z) % 2 != 1 ) return 0.0;
+
+    return fabs(((L / (M_PI * M_PI)) * ((nu_z * mu_z) / pow((nu_z*nu_z - mu_z*mu_z), 2))));
+
+}
+
 //Commented out code broken by removing symmetry
 double JelliumIntegrals::ERI(int a, int b, int c, int d){
 
