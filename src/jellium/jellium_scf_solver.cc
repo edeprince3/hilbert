@@ -54,6 +54,10 @@ static void evaluate_sigma(size_t N, size_t maxdim,double **sigma, double **b, v
     Jellium_SCFSolver* jellium = reinterpret_cast<Jellium_SCFSolver*>(data);
     jellium->CIS_evaluate_sigma(N,maxdim,b,sigma);
 }
+static double hamiltonian_element(size_t i, size_t j, void * data) {
+    Jellium_SCFSolver* jellium = reinterpret_cast<Jellium_SCFSolver*>(data);
+    return jellium->evaluate_hamiltonian_element(i,j);
+}
 
 Jellium_SCFSolver::Jellium_SCFSolver(Options & options)
     :options_(options){
@@ -292,7 +296,7 @@ double Jellium_SCFSolver::compute_energy(){
     Process::environment.globals["CURRENT ENERGY"]    = energy;
     Process::environment.globals["JELLIUM SCF TOTAL ENERGY"] = energy;
 
-    //CIS_slow();
+    CIS_slow();
     CIS_direct();
 
     return energy;
@@ -437,6 +441,7 @@ void Jellium_SCFSolver::build_K(std::shared_ptr<Matrix> Da, std::shared_ptr<Matr
     }
 }
 
+
 void Jellium_SCFSolver::CIS_slow() {
 
     outfile->Printf("\n");
@@ -469,11 +474,22 @@ void Jellium_SCFSolver::CIS_slow() {
     std::shared_ptr<Matrix> F (new Matrix(Fa_));
     F->transform(Ca_);
 
+    // dipole integrals
+    std::shared_ptr<Vector> dipole_x (new Vector(nirrep_,ovpi));
+    std::shared_ptr<Vector> dipole_y (new Vector(nirrep_,ovpi));
+    std::shared_ptr<Vector> dipole_z (new Vector(nirrep_,ovpi));
+
     /// transform ERIs to mo basis
 
     outfile->Printf("    transform (ia|jb), (ij|ab)...."); fflush(stdout);
     std::shared_ptr<Matrix> cis_ham (new Matrix(nirrep_,ovpi,ovpi));
     for (int h = 0; h < nirrep_; h++) {
+
+        int num_roots = 10;
+        if ( options_["ROOTS_PER_IRREP"].has_changed() ) {
+            num_roots = options_["ROOTS_PER_IRREP"][h].to_integer();
+        }
+        if ( num_roots == 0 ) continue;
 
         if ( ovpi[h] == 0 ) continue;
 
@@ -495,6 +511,55 @@ void Jellium_SCFSolver::CIS_slow() {
                         cis_transition_list_.push_back(me);
                     }
                 }
+            }
+        }
+
+        // dipole integrals
+        double * dipole_x_p = dipole_x->pointer(h);
+        double * dipole_y_p = dipole_y->pointer(h);
+        double * dipole_z_p = dipole_z->pointer(h);
+        for (int ia = 0; ia < cis_transition_list_.size(); ia++) {
+
+            int i   = cis_transition_list_[ia].i;
+            int a   = cis_transition_list_[ia].a;
+            int hi  = cis_transition_list_[ia].hi;
+            int ha  = cis_transition_list_[ia].ha;
+
+            int i_off = 0;
+            for (int myh = 0; myh < hi; myh++) {
+                i_off += nsopi_[myh];
+            }
+
+            int a_off = 0;
+            for (int myh = 0; myh < ha; myh++) {
+                a_off += nsopi_[myh];
+            }
+
+            double ** ci = Ca_->pointer(hi);
+            double ** ca = Ca_->pointer(ha);
+
+            double dum_x = 0.0;
+            double dum_y = 0.0;
+            double dum_z = 0.0;
+            for (int mu = 0; mu < nsopi_[hi]; mu++) {
+                for (int nu = 0; nu < nsopi_[ha]; nu++) {
+
+                    double dip_x = jelly_->dipole_x(mu+i_off,nu+a_off,boxlength_);
+                    double dip_y = jelly_->dipole_y(mu+i_off,nu+a_off,boxlength_);
+                    double dip_z = jelly_->dipole_z(mu+i_off,nu+a_off,boxlength_);
+                    dum_x += dip_x
+                           * ci[i            ][mu]
+                           * ca[a+doccpi_[ha]][nu];
+                    dum_y += dip_y
+                           * ci[i            ][mu]
+                           * ca[a+doccpi_[ha]][nu];
+                    dum_z += dip_z
+                           * ci[i            ][mu]
+                           * ca[a+doccpi_[ha]][nu];
+                }
+                dipole_x_p[ia] = dum_x;
+                dipole_y_p[ia] = dum_y;
+                dipole_z_p[ia] = dum_z;
             }
         }
 
@@ -598,12 +663,50 @@ void Jellium_SCFSolver::CIS_slow() {
     outfile->Printf("    ==> CIS excitaiton energies <=="); fflush(stdout);
     outfile->Printf("\n");
 
-    cis_eigval->print();
+    for (int h = 0; h < nirrep_; h++) {
+
+        int num_roots = 10;
+        if ( options_["ROOTS_PER_IRREP"].has_changed() ) {
+            num_roots = options_["ROOTS_PER_IRREP"][h].to_integer();
+        }
+        if ( num_roots == 0 ) continue;
+
+        outfile->Printf("\n");
+        outfile->Printf("    Irrep: %10s\n",jelly_->labels[h].c_str());
+        outfile->Printf("\n");
+        outfile->Printf("    state");
+        outfile->Printf("                w(Eh)");
+        outfile->Printf("                w(eV)");
+        outfile->Printf("                    f");
+        outfile->Printf("\n");
+        double * eigval_p = cis_eigval->pointer(h);
+        for (int I = 0; I < ovpi[h]; I++) {
+
+            // evaluate oscillator strengths
+            double tdp_x = 0.0;
+            double tdp_y = 0.0;
+            double tdp_z = 0.0;
+            for (int J = 0; J < ovpi[h]; J++) {
+                tdp_x += cis_eigvec->pointer(h)[J][I] * dipole_x->pointer(h)[J];
+                tdp_y += cis_eigvec->pointer(h)[J][I] * dipole_y->pointer(h)[J];
+                tdp_z += cis_eigvec->pointer(h)[J][I] * dipole_z->pointer(h)[J];
+            }
+            tdp_x *= sqrt(2.0);
+            tdp_y *= sqrt(2.0);
+            tdp_z *= sqrt(2.0);
+            //double tdp_x = sqrt(2.0) * C_DDOT(cis_transition_list_.size(),&(cis_eigvec->pointer(h)[0][I]),cis_transition_list_.size(),dipole_x->pointer(h),1);
+            //double tdp_y = sqrt(2.0) * C_DDOT(cis_transition_list_.size(),&(cis_eigvec->pointer(h)[0][I]),cis_transition_list_.size(),dipole_y->pointer(h),1);
+            //double tdp_z = sqrt(2.0) * C_DDOT(cis_transition_list_.size(),&(cis_eigvec->pointer(h)[0][I]),cis_transition_list_.size(),dipole_z->pointer(h),1);
+            double f = 2.0 / 3.0 * eigval_p[I] * ( tdp_x * tdp_x + tdp_y * tdp_y + tdp_z * tdp_z );
+
+            outfile->Printf("    %5i %20.12lf %20.12lf %20.12lf\n",I,eigval_p[I],eigval_p[I] * pc_hartree2ev, f);
+        }
+        outfile->Printf("\n");
+    }
 
     free(virpi);
     free(ovpi);
 }
-
 void Jellium_SCFSolver::CIS_direct() {
 
     outfile->Printf("\n");
@@ -739,7 +842,16 @@ void Jellium_SCFSolver::CIS_direct() {
         // construct diagonal elements of CIS hamiltonian
         std::shared_ptr<Vector> cis_diagonal_ham (new Vector(cis_transition_list_.size()));
         double * ham_p = cis_diagonal_ham->pointer();
+        for (int ia = 0; ia < cis_transition_list_.size(); ia++) {
 
+            int i   = cis_transition_list_[ia].i;
+            int a   = cis_transition_list_[ia].a;
+            int hi  = cis_transition_list_[ia].hi;
+            int ha  = cis_transition_list_[ia].ha;
+
+            ham_p[ia] = evaluate_hamiltonian_element(ia,ia);
+        }
+/*
         // transform (ia|ia), (ii,aa)
         outfile->Printf("    transform (ia|ia), (ii|aa)......."); fflush(stdout);
         #pragma omp parallel for schedule(dynamic)
@@ -805,7 +917,7 @@ void Jellium_SCFSolver::CIS_direct() {
 
         }
         outfile->Printf("done\n");
-
+*/
 
         outfile->Printf("    diagonalize CIS Hamiltonian......"); fflush(stdout);
         std::shared_ptr<DavidsonSolver> david (new DavidsonSolver());
@@ -824,7 +936,7 @@ void Jellium_SCFSolver::CIS_direct() {
             options_.get_double("R_CONVERGENCE"),
             print,
             evaluate_sigma,
-            NULL,
+            hamiltonian_element,
             ci_iter,
             (void*)this,
             options_.get_int("DAVIDSON_MAXDIM") * num_roots);
@@ -1033,6 +1145,161 @@ void Jellium_SCFSolver::CIS_evaluate_sigma(size_t N, size_t maxdim, double ** bm
     }
 
     //free(jb);
+
+}
+double Jellium_SCFSolver::evaluate_hamiltonian_element(size_t my_ia, size_t my_jb) {
+
+    int o = nelectron_ / 2;
+    int v = nso_ - o;
+
+    int * virpi = (int*)malloc(nirrep_*sizeof(int));
+    int * ovpi  = (int*)malloc(nirrep_*sizeof(int));
+    for (int h = 0; h < nirrep_; h++) {
+        virpi[h] = nsopi_[h] - doccpi_[h];
+        ovpi[h]  = 0;
+    }
+    for (int ho = 0; ho < nirrep_; ho++) {
+        for (int hv = 0; hv < nirrep_; hv++) {
+            int hov = ho ^ hv;
+            ovpi[hov] += doccpi_[ho] * virpi[hv];
+        }
+    }
+
+    /// transform fock matrix to mo basis
+    std::shared_ptr<Matrix> F (new Matrix(Fa_));
+    F->transform(Ca_);
+
+    /// transform ERIs to mo basis
+
+    //outfile->Printf("    transform (ia|jb), (ij|ab)...."); fflush(stdout);
+    //std::shared_ptr<Matrix> cis_ham (new Matrix(nirrep_,ovpi,ovpi));
+    double return_value;
+    for (int h = 0; h < nirrep_; h++) {
+
+        // obviously this is no good
+        if ( h != 5 ) continue;
+
+        if ( ovpi[h] == 0 ) continue;
+
+        // list of CIS transitions in this irrep
+        cis_transition_list_.clear();
+        for (int hi = 0; hi < nirrep_; hi++) {
+            for (int ha = 0; ha < nirrep_; ha++) {
+                int hia = hi ^ ha;
+                if ( hia != h ) continue;
+                for (int i = 0; i < doccpi_[hi]; i++) {
+                    for (int a = 0; a < virpi[ha]; a++) {
+
+                        cis_transition me;
+                        me.i   = i;
+                        me.a   = a;
+                        me.hi  = hi;
+                        me.ha  = ha;
+
+                        cis_transition_list_.push_back(me);
+                    }
+                }
+            }
+        }
+
+        //double ** ham_p = cis_ham->pointer(h);
+
+        #pragma omp parallel for schedule(dynamic)
+        for (int ia = 0; ia < cis_transition_list_.size(); ia++) {
+
+            if ( ia != my_ia ) continue;
+
+            int i   = cis_transition_list_[ia].i;
+            int a   = cis_transition_list_[ia].a;
+            int hi  = cis_transition_list_[ia].hi;
+            int ha  = cis_transition_list_[ia].ha;
+
+            int i_off = 0;
+            for (int myh = 0; myh < hi; myh++) {
+                i_off += nsopi_[myh];
+            }
+
+            int a_off = 0;
+            for (int myh = 0; myh < ha; myh++) {
+                a_off += nsopi_[myh];
+            }
+
+            double ** ci = Ca_->pointer(hi);
+            double ** ca = Ca_->pointer(ha);
+
+            for (int jb = 0; jb < cis_transition_list_.size(); jb++) {
+
+                if ( jb != my_jb ) continue;
+
+                int j   = cis_transition_list_[jb].i;
+                int b   = cis_transition_list_[jb].a;
+                int hj  = cis_transition_list_[jb].hi;
+                int hb  = cis_transition_list_[jb].ha;
+
+                int j_off = 0;
+                for (int myh = 0; myh < hj; myh++) {
+                    j_off += nsopi_[myh];
+                }
+
+                int b_off = 0;
+                for (int myh = 0; myh < hb; myh++) {
+                    b_off += nsopi_[myh];
+                }
+
+                double ** cj = Ca_->pointer(hj);
+                double ** cb = Ca_->pointer(hb);
+
+                // (ia|jb) = (mu nu | lambda sigma) c(i,mu) c(a,nu) c(j,lambda) c(b,sigma)
+                double dum_iajb = 0.0;
+                for (int mu = 0; mu < nsopi_[hi]; mu++) {
+                    for (int nu = 0; nu < nsopi_[ha]; nu++) {
+                        for (int lambda = 0; lambda < nsopi_[hj]; lambda++) {
+                            for (int sigma = 0; sigma < nsopi_[hb]; sigma++) {
+                                dum_iajb += jelly_->ERI(mu+i_off,nu+a_off,lambda+j_off,sigma+b_off)
+                                          * ci[i            ][mu]
+                                          * ca[a+doccpi_[ha]][nu]
+                                          * cj[j            ][lambda]
+                                          * cb[b+doccpi_[hb]][sigma];
+                            }
+                        }
+                    }
+                }
+
+                // (ij|ab) = (mu nu | lambda sigma) c(i,mu) c(j,nu) c(a,lambda) c(b,sigma)
+                double dum_ijab = 0.0;
+                for (int mu = 0; mu < nsopi_[hi]; mu++) {
+                    for (int nu = 0; nu < nsopi_[hj]; nu++) {
+                        for (int lambda = 0; lambda < nsopi_[ha]; lambda++) {
+                            for (int sigma = 0; sigma < nsopi_[hb]; sigma++) {
+                                dum_ijab += jelly_->ERI(mu+i_off,nu+j_off,lambda+a_off,sigma+b_off)
+                                          * ci[i            ][mu]
+                                          * cj[j            ][nu]
+                                          * ca[a+doccpi_[ha]][lambda]
+                                          * cb[b+doccpi_[hb]][sigma];
+                            }
+                        }
+                    }
+                }
+
+                double dum = 2.0 * dum_iajb - dum_ijab;
+                if ( hi == hj && i == j ) {
+                    double ** fp = F->pointer(ha);
+                    dum += fp[a+doccpi_[ha]][b+doccpi_[ha]];
+                }
+                if ( ha == hb && a == b ) {
+                    double ** fp = F->pointer(hi);
+                    dum -= fp[i][j];
+                }
+                return_value =  dum;
+                break;
+                //ham_p[ia][jb] = dum;
+            }
+        }
+    }
+    //outfile->Printf("done.\n");
+    free(virpi);
+    free(ovpi);
+    return return_value;
 
 }
 

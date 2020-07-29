@@ -55,6 +55,7 @@ class Jellium_SCFSolver{
 
     /// construct CIS sigma vectors for out-of-core davidson solver
     void CIS_evaluate_sigma(size_t N, size_t maxdim, double ** bmat, double ** sigma);
+    double evaluate_hamiltonian_element(size_t i,size_t j);
 
   protected:
 

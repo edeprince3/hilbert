@@ -90,9 +90,6 @@ int DavidsonSolver::solve(double *Adiag, int N, int M, double *eps, double **v, 
     double * Adiag2 = (double*)malloc(N*sizeof(double));
     C_DCOPY(N,Adiag,1,Adiag2,1);
 
-    int * small2big = (int*)malloc(19*M*sizeof(int));
-    memset((void*)small2big,'\0',19*M*sizeof(int));
-
     int smart_guess = 1;
     if ( hamiltonian_element == NULL ) {
         smart_guess = 0;
@@ -100,6 +97,9 @@ int DavidsonSolver::solve(double *Adiag, int N, int M, double *eps, double **v, 
 
     if(N > maxdim-M) init_dim = maxdim-M;
     else             init_dim =        M;
+
+    int * small2big = (int*)malloc(init_dim*sizeof(int));
+    memset((void*)small2big,'\0',init_dim*sizeof(int));
 
     if (smart_guess) { /* Use eigenvectors of a sub-matrix as initial guesses */
 

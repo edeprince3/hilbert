@@ -754,6 +754,7 @@ double JelliumIntegrals::ERI_unrolled_new(int * a, int * b, int * c, int * d, do
   int P;
 
   // 0,0,0
+
   Q = PQmap[ x2_0 ][ y2_0 ][ z2_0 ];
 
   P = PQmap[ x1_0 ][ y1_0 ][ z1_0 ];
@@ -976,13 +977,6 @@ double JelliumIntegrals::ERI_unrolled_new(int * a, int * b, int * c, int * d, do
 
   P = PQmap[ x1_1 ][ y1_1 ][ z1_1 ];
   eri_val += PQ[P][Q];
-
-  //free(x1);
-  //free(x2);
-  //free(y1);
-  //free(y2);
-  //free(z1);
-  //free(z2);
 
   return eri_val;
 
