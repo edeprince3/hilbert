@@ -296,7 +296,7 @@ double Jellium_SCFSolver::compute_energy(){
     Process::environment.globals["CURRENT ENERGY"]    = energy;
     Process::environment.globals["JELLIUM SCF TOTAL ENERGY"] = energy;
 
-    CIS_slow();
+    //CIS_slow();
     CIS_direct();
 
     return energy;
@@ -922,11 +922,21 @@ void Jellium_SCFSolver::CIS_direct() {
         outfile->Printf("    diagonalize CIS Hamiltonian......"); fflush(stdout);
         std::shared_ptr<DavidsonSolver> david (new DavidsonSolver());
 
+        davidson_irrep_ = h;
+
         size_t ci_iter = 0;
         int print      = 1;
 
         std::shared_ptr<Matrix> eigvec (new Matrix(num_roots,ovpi[h]));
         std::shared_ptr<Vector> eigval (new Vector(num_roots));
+
+        // type of guess for davidson. the smart guess will do N^4 work for each hamiltonian element
+        HamiltonianElementFunction my_hamiltonian_element;
+        if ( options_.get_bool("JELLIUM_CIS_SMART_GUESS") ) {
+            my_hamiltonian_element = hamiltonian_element;
+        }else {
+            my_hamiltonian_element = NULL;
+        }
 
         david->solve(cis_diagonal_ham->pointer(),
             ovpi[h],
@@ -936,7 +946,7 @@ void Jellium_SCFSolver::CIS_direct() {
             options_.get_double("R_CONVERGENCE"),
             print,
             evaluate_sigma,
-            NULL, //hamiltonian_element,
+            my_hamiltonian_element,
             ci_iter,
             (void*)this,
             options_.get_int("DAVIDSON_MAXDIM") * num_roots);
@@ -1176,8 +1186,8 @@ double Jellium_SCFSolver::evaluate_hamiltonian_element(size_t my_ia, size_t my_j
     double return_value;
     for (int h = 0; h < nirrep_; h++) {
 
-        // obviously this is no good
-        if ( h != 6 ) continue;
+        // clunky, but works
+        if ( h != davidson_irrep_ ) continue;
 
         if ( ovpi[h] == 0 ) continue;
 

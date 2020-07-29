@@ -114,6 +114,9 @@ class Jellium_SCFSolver{
     /// list of CIS excitations
     std::vector<cis_transition> cis_transition_list_;
 
+    /// which irrep is davidson working on?
+    int davidson_irrep_;
+
     /// update occupations
     void update_occupations(std::shared_ptr<Vector> epsilon_a);
 

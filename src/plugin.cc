@@ -286,6 +286,10 @@ int read_options(std::string name, Options& options)
         representation -*/
         options.add("ROOTS_PER_IRREP", new ArrayType());
 
+        /*- Do smart guess in Davidson? Requires exact hamiltonian elements 
+        and could get expensive, default = false -*/
+        options.add_bool("JELLIUM_CIS_SMART_GUESS", false);
+
     }
 
     return true;
