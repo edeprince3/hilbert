@@ -548,14 +548,14 @@ void Jellium_SCFSolver::CIS_slow() {
                     double dip_y = jelly_->dipole_y(mu+i_off,nu+a_off,boxlength_);
                     double dip_z = jelly_->dipole_z(mu+i_off,nu+a_off,boxlength_);
                     dum_x += dip_x
-                           * ci[i            ][mu]
-                           * ca[a+doccpi_[ha]][nu];
+                           * ci[mu][i            ]
+                           * ca[nu][a+doccpi_[ha]];
                     dum_y += dip_y
-                           * ci[i            ][mu]
-                           * ca[a+doccpi_[ha]][nu];
+                           * ci[mu][i            ]
+                           * ca[nu][a+doccpi_[ha]];
                     dum_z += dip_z
-                           * ci[i            ][mu]
-                           * ca[a+doccpi_[ha]][nu];
+                           * ci[mu][i            ]
+                           * ca[nu][a+doccpi_[ha]];
                 }
                 dipole_x_p[ia] = dum_x;
                 dipole_y_p[ia] = dum_y;
@@ -613,10 +613,10 @@ void Jellium_SCFSolver::CIS_slow() {
                         for (int lambda = 0; lambda < nsopi_[hj]; lambda++) {
                             for (int sigma = 0; sigma < nsopi_[hb]; sigma++) {
                                 dum_iajb += jelly_->ERI(mu+i_off,nu+a_off,lambda+j_off,sigma+b_off)
-                                          * ci[i            ][mu]
-                                          * ca[a+doccpi_[ha]][nu]
-                                          * cj[j            ][lambda]
-                                          * cb[b+doccpi_[hb]][sigma];
+                                          * ci[mu    ][i            ]
+                                          * ca[nu    ][a+doccpi_[ha]]
+                                          * cj[lambda][j            ]
+                                          * cb[sigma ][b+doccpi_[hb]];
                             }
                         }
                     }
@@ -629,10 +629,10 @@ void Jellium_SCFSolver::CIS_slow() {
                         for (int lambda = 0; lambda < nsopi_[ha]; lambda++) {
                             for (int sigma = 0; sigma < nsopi_[hb]; sigma++) {
                                 dum_ijab += jelly_->ERI(mu+i_off,nu+j_off,lambda+a_off,sigma+b_off)
-                                          * ci[i            ][mu]
-                                          * cj[j            ][nu]
-                                          * ca[a+doccpi_[ha]][lambda]
-                                          * cb[b+doccpi_[hb]][sigma];
+                                          * ci[mu    ][i            ]
+                                          * cj[nu    ][j            ]
+                                          * ca[lambda][a+doccpi_[ha]]
+                                          * cb[sigma ][b+doccpi_[hb]];
                             }
                         }
                     }
@@ -683,26 +683,25 @@ void Jellium_SCFSolver::CIS_slow() {
         for (int I = 0; I < ovpi[h]; I++) {
 
             // evaluate oscillator strengths
-            double tdp_x = 0.0;
-            double tdp_y = 0.0;
-            double tdp_z = 0.0;
-            for (int J = 0; J < ovpi[h]; J++) {
-                tdp_x += cis_eigvec->pointer(h)[J][I] * dipole_x->pointer(h)[J];
-                tdp_y += cis_eigvec->pointer(h)[J][I] * dipole_y->pointer(h)[J];
-                tdp_z += cis_eigvec->pointer(h)[J][I] * dipole_z->pointer(h)[J];
-            }
-            tdp_x *= sqrt(2.0);
-            tdp_y *= sqrt(2.0);
-            tdp_z *= sqrt(2.0);
-            //double tdp_x = sqrt(2.0) * C_DDOT(cis_transition_list_.size(),&(cis_eigvec->pointer(h)[0][I]),cis_transition_list_.size(),dipole_x->pointer(h),1);
-            //double tdp_y = sqrt(2.0) * C_DDOT(cis_transition_list_.size(),&(cis_eigvec->pointer(h)[0][I]),cis_transition_list_.size(),dipole_y->pointer(h),1);
-            //double tdp_z = sqrt(2.0) * C_DDOT(cis_transition_list_.size(),&(cis_eigvec->pointer(h)[0][I]),cis_transition_list_.size(),dipole_z->pointer(h),1);
+            double tdp_x = sqrt(2.0) * C_DDOT(cis_transition_list_.size(),&(cis_eigvec->pointer(h)[0][I]),cis_transition_list_.size(),dipole_x->pointer(h),1);
+            double tdp_y = sqrt(2.0) * C_DDOT(cis_transition_list_.size(),&(cis_eigvec->pointer(h)[0][I]),cis_transition_list_.size(),dipole_y->pointer(h),1);
+            double tdp_z = sqrt(2.0) * C_DDOT(cis_transition_list_.size(),&(cis_eigvec->pointer(h)[0][I]),cis_transition_list_.size(),dipole_z->pointer(h),1);
             double f = 2.0 / 3.0 * eigval_p[I] * ( tdp_x * tdp_x + tdp_y * tdp_y + tdp_z * tdp_z );
 
             outfile->Printf("    %5i %20.12lf %20.12lf %20.12lf\n",I,eigval_p[I],eigval_p[I] * pc_hartree2ev, f);
         }
         outfile->Printf("\n");
+
     }
+
+    // check sum
+    double check = 0.0;
+    for (int h = 0; h < nirrep_; h++) {
+        check += C_DNRM2(ovpi[h],cis_eigval->pointer(h),1);
+    }
+    //outfile->Printf("\n");
+    //outfile->Printf("    ||eps|| = %20.12lf\n",check);
+    //outfile->Printf("\n");
 
     free(virpi);
     free(ovpi);
@@ -745,6 +744,7 @@ void Jellium_SCFSolver::CIS_direct() {
     std::shared_ptr<Vector> dipole_z (new Vector(nirrep_,ovpi));
 
     // diagonalize blocks by irrep
+    double check = 0.0; 
     for (int h = 0; h < nirrep_; h++) {
 
         int num_roots = 10;
@@ -900,7 +900,8 @@ void Jellium_SCFSolver::CIS_direct() {
                 for (int nu = 0; nu < nsopi_[hi]; nu++) {
                     for (int lambda = 0; lambda < nsopi_[ha]; lambda++) {
                         for (int sigma = 0; sigma < nsopi_[ha]; sigma++) {
-                            dum_iiaa += jelly_->ERI(mu+i_off,nu+i_off,lambda+a_off,sigma+a_off)
+                            double eri = jelly_->ERI(mu+i_off,nu+i_off,lambda+a_off,sigma+a_off);
+                            dum_iiaa += eri
                                       * ci[i            ][mu]
                                       * ci[i            ][nu]
                                       * ca[a+doccpi_[ha]][lambda]
@@ -952,7 +953,6 @@ void Jellium_SCFSolver::CIS_direct() {
             options_.get_int("DAVIDSON_MAXDIM") * num_roots);
         outfile->Printf("done\n");
 
-
         outfile->Printf("    CIS excitation energies:\n");
         outfile->Printf("\n");
         outfile->Printf("    state");
@@ -972,8 +972,14 @@ void Jellium_SCFSolver::CIS_direct() {
             outfile->Printf("    %5i %20.12lf %20.12lf %20.12lf\n",I,eigval_p[I],eigval_p[I] * pc_hartree2ev, f);
         }
         outfile->Printf("\n");
-        //eigval->print();
+
+        check += C_DNRM2(ovpi[h],eigval->pointer(),1);
     }
+
+    // check sum
+    //outfile->Printf("\n");
+    //outfile->Printf("    ||eps|| = %20.12lf\n",check);
+    //outfile->Printf("\n");
 
     free(virpi);
     free(ovpi);
@@ -1040,7 +1046,7 @@ void Jellium_SCFSolver::CIS_evaluate_sigma(size_t N, size_t maxdim, double ** bm
 
             for (int mu = 0; mu < nsopi_[hj]; mu++) {
                 for (int nu = 0; nu < nsopi_[hb]; nu++) {
-                    dp[mu + mu_off][nu + nu_off] += cj[j][mu] * cb[b+doccpi_[hb]][nu] * bmat[k][jb];
+                    dp[mu + mu_off][nu + nu_off] += cj[mu][j] * cb[nu][b+doccpi_[hb]] * bmat[k][jb];
                 }
             }
         }
@@ -1145,8 +1151,8 @@ void Jellium_SCFSolver::CIS_evaluate_sigma(size_t N, size_t maxdim, double ** bm
             for (int mu = 0; mu < nsopi_[hi]; mu++) {
                 for (int nu = 0; nu < nsopi_[ha]; nu++) {
                     dum += (2.0 * jp[mu+mu_off][nu+nu_off] - kp[mu+mu_off][nu+nu_off]) 
-                         * ci[i][mu] 
-                         * ca[a+doccpi_[ha]][nu];
+                         * ci[mu][i            ] 
+                         * ca[nu][a+doccpi_[ha]];
                 }
             }
 
@@ -1155,8 +1161,8 @@ void Jellium_SCFSolver::CIS_evaluate_sigma(size_t N, size_t maxdim, double ** bm
     }
 
     //free(jb);
-
 }
+
 double Jellium_SCFSolver::evaluate_hamiltonian_element(size_t my_ia, size_t my_jb) {
 
     int o = nelectron_ / 2;

@@ -586,11 +586,6 @@ double JelliumIntegrals::dipole_z(int mu, int nu, double L){
 //Commented out code broken by removing symmetry
 double JelliumIntegrals::ERI(int a, int b, int c, int d){
 
-    // AED: i think this check is redundant, if ERI only called for a.b.c.d=Ag
-    //if((MO[a][0]+MO[b][0]+MO[c][0]+MO[d][0])%2==1){
-    //  return 0.0;
-    //}
-    
     //return ERI_unrolled_test(MO[a], MO[b], MO[c], MO[d], PQ->pointer(), PQmap);
     return ERI_unrolled_new(MO[a], MO[b], MO[c], MO[d], PQ->pointer(), PQmap);
     //return ERI_unrolled(MO[a], MO[b], MO[c], MO[d]);
