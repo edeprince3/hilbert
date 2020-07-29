@@ -842,6 +842,7 @@ void Jellium_SCFSolver::CIS_direct() {
         // construct diagonal elements of CIS hamiltonian
         std::shared_ptr<Vector> cis_diagonal_ham (new Vector(cis_transition_list_.size()));
         double * ham_p = cis_diagonal_ham->pointer();
+/*
         for (int ia = 0; ia < cis_transition_list_.size(); ia++) {
 
             int i   = cis_transition_list_[ia].i;
@@ -851,7 +852,7 @@ void Jellium_SCFSolver::CIS_direct() {
 
             ham_p[ia] = evaluate_hamiltonian_element(ia,ia);
         }
-/*
+*/
         // transform (ia|ia), (ii,aa)
         outfile->Printf("    transform (ia|ia), (ii|aa)......."); fflush(stdout);
         #pragma omp parallel for schedule(dynamic)
@@ -917,7 +918,6 @@ void Jellium_SCFSolver::CIS_direct() {
 
         }
         outfile->Printf("done\n");
-*/
 
         outfile->Printf("    diagonalize CIS Hamiltonian......"); fflush(stdout);
         std::shared_ptr<DavidsonSolver> david (new DavidsonSolver());
@@ -936,7 +936,7 @@ void Jellium_SCFSolver::CIS_direct() {
             options_.get_double("R_CONVERGENCE"),
             print,
             evaluate_sigma,
-            hamiltonian_element,
+            NULL, //hamiltonian_element,
             ci_iter,
             (void*)this,
             options_.get_int("DAVIDSON_MAXDIM") * num_roots);
@@ -1177,7 +1177,7 @@ double Jellium_SCFSolver::evaluate_hamiltonian_element(size_t my_ia, size_t my_j
     for (int h = 0; h < nirrep_; h++) {
 
         // obviously this is no good
-        if ( h != 5 ) continue;
+        if ( h != 6 ) continue;
 
         if ( ovpi[h] == 0 ) continue;
 
