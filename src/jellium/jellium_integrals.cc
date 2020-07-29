@@ -149,6 +149,7 @@ void JelliumIntegrals::compute_integrals() {
             }
         }
     }
+
     int Pdim = 0;
     for (int px = 0; px < 2*nmax+1; px++) {
         for (int py = 0; py < 2*nmax+1; py++) {
@@ -585,12 +586,14 @@ double JelliumIntegrals::dipole_z(int mu, int nu, double L){
 //Commented out code broken by removing symmetry
 double JelliumIntegrals::ERI(int a, int b, int c, int d){
 
-    if((MO[a][0]+MO[b][0]+MO[c][0]+MO[d][0])%2==1){
-      return 0.0;
-    }
+    // AED: i think this check is redundant, if ERI only called for a.b.c.d=Ag
+    //if((MO[a][0]+MO[b][0]+MO[c][0]+MO[d][0])%2==1){
+    //  return 0.0;
+    //}
     
     //return ERI_unrolled_test(MO[a], MO[b], MO[c], MO[d], PQ->pointer(), PQmap);
     return ERI_unrolled_new(MO[a], MO[b], MO[c], MO[d], PQ->pointer(), PQmap);
+    //return ERI_unrolled(MO[a], MO[b], MO[c], MO[d]);
 }
 
 double JelliumIntegrals::g_pq(int p, int q, double x) {
@@ -726,30 +729,23 @@ double JelliumIntegrals::E0_Int(int dim, double *xa, double *w) {
 // new on 7/24/20
 double JelliumIntegrals::ERI_unrolled_new(int * a, int * b, int * c, int * d, double ** PQ, int *** PQmap) {
 
-  //x1[0] = ax-bx, x1[1] = ax+bx
-  int* x1 = (int *)malloc(3*sizeof(int));
-  int* x2 = (int *)malloc(3*sizeof(int));
-  int* y1 = (int *)malloc(3*sizeof(int));
-  int* y2 = (int *)malloc(3*sizeof(int));
-  int* z1 = (int *)malloc(3*sizeof(int));
-  int* z2 = (int *)malloc(3*sizeof(int));
- 
-  x1[0] = abs(a[0] - b[0]);
-  y1[0] = abs(a[1] - b[1]);
-  z1[0] = abs(a[2] - b[2]);
+  int x1_0 = abs(a[0] - b[0]);
+  int y1_0 = abs(a[1] - b[1]);
+  int z1_0 = abs(a[2] - b[2]);
 
-  x1[1] = a[0] + b[0];
-  y1[1] = a[1] + b[1];
-  z1[1] = a[2] + b[2];
+  int x1_1 = a[0] + b[0];
+  int y1_1 = a[1] + b[1];
+  int z1_1 = a[2] + b[2];
 
   //x1[0] abs(= cx-dx, x1)[1] = cx+dx
-  x2[0] = abs(c[0] - d[0]);
-  y2[0] = abs(c[1] - d[1]);
-  z2[0] = abs(c[2] - d[2]);
+  int x2_0 = abs(c[0] - d[0]);
+  int y2_0 = abs(c[1] - d[1]);
+  int z2_0 = abs(c[2] - d[2]);
 
-  x2[1] = c[0] + d[0];
-  y2[1] = c[1] + d[1];
-  z2[1] = c[2] + d[2];
+  int x2_1 = c[0] + d[0];
+  int y2_1 = c[1] + d[1];
+  int z2_1 = c[2] + d[2];
+
   // Generate all combinations of phi_a phi_b phi_c phi_d in expanded cosine form
 
   double eri_val = 0.0;
@@ -758,235 +754,235 @@ double JelliumIntegrals::ERI_unrolled_new(int * a, int * b, int * c, int * d, do
   int P;
 
   // 0,0,0
-  Q = PQmap[ x2[0] ][ y2[0] ][ z2[0] ];
+  Q = PQmap[ x2_0 ][ y2_0 ][ z2_0 ];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
 
   // 1,0,0
 
-  Q = PQmap[ x2[1] ][ y2[0] ][ z2[0] ];
+  Q = PQmap[ x2_1 ][ y2_0 ][ z2_0 ];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
   // 0,1,0
 
-  Q = PQmap[ x2[0] ][ y2[1] ][ z2[0] ];
+  Q = PQmap[ x2_0 ][ y2_1 ][ z2_0 ];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_1 ];
   eri_val += PQ[P][Q];
-
 
   // 1,1,0
-  Q = PQmap[ x2[1] ][ y2[1] ][ z2[0] ];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[0] ];
+  Q = PQmap[ x2_1 ][ y2_1 ][ z2_0 ];
+
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
   // 0,0,1
 
-  Q = PQmap[ x2[0] ][ y2[0] ][ z2[1] ];
+  Q = PQmap[ x2_0 ][ y2_0 ][ z2_1 ];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
   // 1,0,1
 
-  Q = PQmap[ x2[1] ][ y2[0] ][ z2[1] ];
+  Q = PQmap[ x2_1 ][ y2_0 ][ z2_1 ];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
   // 0,1,1
 
-  Q = PQmap[ x2[0] ][ y2[1] ][ z2[1] ];
+  Q = PQmap[ x2_0 ][ y2_1 ][ z2_1 ];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
   // 1,1,1
 
-  Q = PQmap[ x2[1] ][ y2[1] ][ z2[1] ];
+  Q = PQmap[ x2_1 ][ y2_1 ][ z2_1 ];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_0 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[0] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_0 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_0 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[0] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_0 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[0] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_0 ][ y1_1 ][ z1_1 ];
   eri_val -= PQ[P][Q];
 
-  P = PQmap[ x1[1] ][ y1[1] ][ z1[1] ];
+  P = PQmap[ x1_1 ][ y1_1 ][ z1_1 ];
   eri_val += PQ[P][Q];
 
-  free(x1);
-  free(x2);
-  free(y1);
-  free(y2);
-  free(z1);
-  free(z2);
+  //free(x1);
+  //free(x2);
+  //free(y1);
+  //free(y2);
+  //free(z1);
+  //free(z2);
 
   return eri_val;
 
@@ -1292,12 +1288,12 @@ double JelliumIntegrals::ERI_unrolled_test(int * a, int * b, int * c, int * d, d
 //not used for now as this uses small_pq which does not work yet for the symmetry disabled version
 double JelliumIntegrals::ERI_unrolled(int * a, int * b, int * c, int * d) {
   //x1[0] = ax-bx, x1[1] = ax+bx
+  
   int* x1 = (int *)malloc(2*sizeof(int));
   int* x2 = (int *)malloc(2*sizeof(int));
   int* y1 = (int *)malloc(2*sizeof(int));
   int* y2 = (int *)malloc(2*sizeof(int));
-  
-int* z1 = (int *)malloc(2*sizeof(int));
+  int* z1 = (int *)malloc(2*sizeof(int));
   int* z2 = (int *)malloc(2*sizeof(int));
  
   
