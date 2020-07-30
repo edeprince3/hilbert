@@ -298,7 +298,7 @@ double Jellium_SCFSolver::compute_energy(){
     Process::environment.globals["CURRENT ENERGY"]    = energy;
     Process::environment.globals["JELLIUM SCF TOTAL ENERGY"] = energy;
 
-    //CIS_slow();
+    CIS_slow();
     CIS_direct();
 
     return energy;
@@ -640,7 +640,7 @@ void Jellium_SCFSolver::CIS_slow() {
                     }
                 }
 
-                double dum = 2.0 * dum_iajb - dum_ijab;
+                double dum = (2.0 * dum_iajb - dum_ijab)/Lfac_;
                 if ( hi == hj && i == j ) {
                     double ** fp = F->pointer(ha);
                     dum += fp[a+doccpi_[ha]][b+doccpi_[ha]];
@@ -844,17 +844,6 @@ void Jellium_SCFSolver::CIS_direct() {
         // construct diagonal elements of CIS hamiltonian
         std::shared_ptr<Vector> cis_diagonal_ham (new Vector(cis_transition_list_.size()));
         double * ham_p = cis_diagonal_ham->pointer();
-/*
-        for (int ia = 0; ia < cis_transition_list_.size(); ia++) {
-
-            int i   = cis_transition_list_[ia].i;
-            int a   = cis_transition_list_[ia].a;
-            int hi  = cis_transition_list_[ia].hi;
-            int ha  = cis_transition_list_[ia].ha;
-
-            ham_p[ia] = evaluate_hamiltonian_element(ia,ia);
-        }
-*/
         // transform (ia|ia), (ii,aa)
         outfile->Printf("    transform (ia|ia), (ii|aa)......."); fflush(stdout);
         #pragma omp parallel for schedule(dynamic)
@@ -913,7 +902,7 @@ void Jellium_SCFSolver::CIS_direct() {
                 }
             }
 
-            double dum = 2.0 * dum_iaia - dum_iiaa;
+            double dum = (2.0 * dum_iaia - dum_iiaa)/Lfac_;
             dum += F->pointer(ha)[a+doccpi_[ha]][a+doccpi_[ha]];
             dum -= F->pointer(hi)[i][i];
             
@@ -1117,6 +1106,8 @@ void Jellium_SCFSolver::CIS_evaluate_sigma(size_t N, size_t maxdim, double ** bm
                 }
             }
         }
+        Jmat->scale(1.0/Lfac_);
+        Kmat->scale(1.0/Lfac_);
 
         // loop over all CIS transitions, ia
         for (int ia = 0; ia < cis_transition_list_.size(); ia++) {
@@ -1299,7 +1290,7 @@ double Jellium_SCFSolver::evaluate_hamiltonian_element(size_t my_ia, size_t my_j
                     }
                 }
 
-                double dum = 2.0 * dum_iajb - dum_ijab;
+                double dum = (2.0 * dum_iajb - dum_ijab)/Lfac_;
                 if ( hi == hj && i == j ) {
                     double ** fp = F->pointer(ha);
                     dum += fp[a+doccpi_[ha]][b+doccpi_[ha]];
