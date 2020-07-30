@@ -266,6 +266,10 @@ int read_options(std::string name, Options& options)
         (in Cotton order) -*/
         options.add("DOCC", new ArrayType());
 
+        /*- The length of the box in nm. No default. If not specified, the
+        box length is chosen to satisfy <rho> = 1e-/a0^3 -*/
+        options.add_double("JELLIUM_BOX_LENGTH",1.0);
+
         /*- The number of grid points for the Gauss-Legendre quadrature -*/
         options.add_int("N_GRID_POINTS", 10);
 

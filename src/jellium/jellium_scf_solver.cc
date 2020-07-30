@@ -89,13 +89,15 @@ Jellium_SCFSolver::Jellium_SCFSolver(Options & options)
     }
 
     // factor for box size ... hard coded for now to give <rho> = 1
-    Lfac_      = pow(nelectron_,1.0/3.0) / M_PI;
-    boxlength_ = M_PI / 2; 
-    
-    //since box is already pi a.u. long
-    //double length_nm = options_.get_double("length");
-    //Lfac_ = length_nm * 18.89725988 / M_PI;
-    //boxlength_ = options_.get_double("LENGTH");
+    if ( !options_["JELLIUM_BOX_LENGTH"].has_changed() ) {
+        Lfac_      = pow(nelectron_,1.0/3.0) / M_PI;
+        boxlength_ = M_PI / 2; 
+    }else {
+        //since box is already pi a.u. long
+        double length_nm = options_.get_double("JELLIUM_BOX_LENGTH");
+        Lfac_ = length_nm * 10.0 / pc_bohr2angstroms / M_PI;
+        boxlength_ = length_nm * 10.0 / pc_bohr2angstroms / 2.0;
+    }
 
     // kinetic energy integrals
     T_ = jelly_->Ke;
