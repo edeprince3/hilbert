@@ -63,6 +63,8 @@ class Jellium_SCFSolver{
 
     void CIS_slow();
 
+    void CIS_in_core();
+
     /// Options object
     Options& options_;    
 
