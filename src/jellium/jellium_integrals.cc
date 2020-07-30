@@ -1804,6 +1804,8 @@ void JelliumIntegrals::OrderPsis3D(int &norbs, double *E, int **MO) {
 
 //create irreps
 void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons) {
+
+    // these labels are backward ... e = even quantum number = odd function
     int eee = 0;
     int eeo = 0;
     int eoe = 0;
@@ -1816,29 +1818,29 @@ void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons
         if ( MO[i][0]%2==0 ){
             if ( MO[i][1]%2==0 ){
                 if( MO[i][2]%2==0 ){
-                   eee++;
+                   ooo++;
                 } else {
-                   eeo++;
+                   ooe++;
                 }
             }else{
                 if( MO[i][2]%2==0 ){
-                   eoe++;
+                   oeo++;
                 } else {
-                   eoo++;
+                   oee++;
                 }
             }
         } else {
             if ( MO[i][1]%2==0 ){
                 if( MO[i][2]%2==0 ){
-                   oee++;
+                   eoo++;
                 } else {
-                   oeo++;
+                   eoe++;
                 }
             }else{
                 if( MO[i][2]%2==0 ){
-                   ooe++;
+                   eeo++;
                 } else {
-                   ooo++;
+                   eee++;
                 }
             } 
         }
@@ -1893,7 +1895,7 @@ void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons
 
     // Ag = eee
     for(int i = 0; i < orbitalMax; i++){
-        if(MO[i][0]%2==0 && MO[i][1]%2==0 && MO[i][2]%2==0){
+        if(MO[i][0]%2==1 && MO[i][1]%2==1 && MO[i][2]%2==1){
            tmp_swap[0]=MO[tmp][0];
            tmp_swap[1]=MO[tmp][1];
            tmp_swap[2]=MO[tmp][2];
@@ -1912,7 +1914,7 @@ void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons
     }
     // B1g = ooe
     for(int i = 0; i < orbitalMax; i++){
-        if(MO[i][0]%2==1 && MO[i][1]%2==1 && MO[i][2]%2==0){
+        if(MO[i][0]%2==0 && MO[i][1]%2==0 && MO[i][2]%2==1){
            tmp_swap[0]=MO[tmp][0];
            tmp_swap[1]=MO[tmp][1];
            tmp_swap[2]=MO[tmp][2];
@@ -1931,7 +1933,7 @@ void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons
     }
     // B2g = oeo
     for(int i = 0; i < orbitalMax; i++){
-        if(MO[i][0]%2==1 && MO[i][1]%2==0 && MO[i][2]%2==1){
+        if(MO[i][0]%2==0 && MO[i][1]%2==1 && MO[i][2]%2==0){
            tmp_swap[0]=MO[tmp][0];
            tmp_swap[1]=MO[tmp][1];
            tmp_swap[2]=MO[tmp][2];
@@ -1950,7 +1952,7 @@ void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons
     }
     // B3g = eoo
     for(int i = 0; i < orbitalMax; i++){
-        if(MO[i][0]%2==0 && MO[i][1]%2==1 && MO[i][2]%2==1){
+        if(MO[i][0]%2==1 && MO[i][1]%2==0 && MO[i][2]%2==0){
            tmp_swap[0]=MO[tmp][0];
            tmp_swap[1]=MO[tmp][1];
            tmp_swap[2]=MO[tmp][2];
@@ -1969,7 +1971,7 @@ void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons
     }
     // Au = ooo
     for(int i = 0; i < orbitalMax; i++){
-        if(MO[i][0]%2==1 && MO[i][1]%2==1 && MO[i][2]%2==1){
+        if(MO[i][0]%2==0 && MO[i][1]%2==0 && MO[i][2]%2==0){
            tmp_swap[0]=MO[tmp][0];
            tmp_swap[1]=MO[tmp][1];
            tmp_swap[2]=MO[tmp][2];
@@ -1988,7 +1990,7 @@ void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons
     }
     // B1u = eeo
     for(int i = 0; i < orbitalMax; i++){
-        if(MO[i][0]%2==0 && MO[i][1]%2==0 && MO[i][2]%2==1){
+        if(MO[i][0]%2==1 && MO[i][1]%2==1 && MO[i][2]%2==0){
            tmp_swap[0]=MO[tmp][0];
            tmp_swap[1]=MO[tmp][1];
            tmp_swap[2]=MO[tmp][2];
@@ -2007,7 +2009,7 @@ void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons
     }
     // B2u = eoe
     for(int i = 0; i < orbitalMax; i++){
-        if(MO[i][0]%2==0 && MO[i][1]%2==1 && MO[i][2]%2==0){
+        if(MO[i][0]%2==1 && MO[i][1]%2==0 && MO[i][2]%2==1){
            tmp_swap[0]=MO[tmp][0];
            tmp_swap[1]=MO[tmp][1];
            tmp_swap[2]=MO[tmp][2];
@@ -2026,7 +2028,7 @@ void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons
     }
     // B3u = oee
     for(int i = 0; i < orbitalMax; i++){
-        if(MO[i][0]%2==1 && MO[i][1]%2==0 && MO[i][2]%2==0){
+        if(MO[i][0]%2==0 && MO[i][1]%2==1 && MO[i][2]%2==1){
            tmp_swap[0]=MO[tmp][0];
            tmp_swap[1]=MO[tmp][1];
            tmp_swap[2]=MO[tmp][2];
@@ -2043,6 +2045,7 @@ void JelliumIntegrals::Orderirrep(int &norbs, double *E, int **MO, int electrons
         }
    
     }
+
 /*
     for(int i = 0; i < orbitalMax; i++){
         if(MO[i][0]%2==0 && MO[i][1]%2==0 && MO[i][2]%2==0){
