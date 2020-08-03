@@ -534,12 +534,18 @@ double JelliumIntegrals::dipole_x(int mu, int nu, double L){
     int nu_z = MO[nu][2];
 
     // many dipole integrals are zero
-    if ( mu_y != nu_y )           return 0.0;
-    if ( mu_z != nu_z )           return 0.0;
-    if ( mu_x == nu_x )           return 0.0;
-    if ( (mu_x + nu_x) % 2 != 1 ) return 0.0;
+    if ( mu_y != nu_y )             return 0.0;
+    if ( mu_z != nu_z )             return 0.0;
+    if ( mu_x == nu_x )             return 0.0;
+    if ( ( mu_x + nu_x ) % 2 != 1 ) return 0.0;
 
-    return fabs(((L / (M_PI * M_PI)) * ((nu_x * mu_x) / pow((nu_x*nu_x - mu_x*mu_x), 2))));
+    double val = 0.0;
+    double dum_m = L / M_PI / ( mu_x - nu_x);
+    double dum_p = L / M_PI / ( mu_x + nu_x);
+    val -= dum_m*dum_m;
+    val += dum_p*dum_p;
+
+    return val;
 
 }
 
@@ -554,12 +560,18 @@ double JelliumIntegrals::dipole_y(int mu, int nu, double L){
     int nu_z = MO[nu][2];
 
     // many dipole integrals are zero
-    if ( mu_x != nu_x )           return 0.0;
-    if ( mu_z != nu_z )           return 0.0;
-    if ( mu_y == nu_y )           return 0.0;
-    if ( (mu_y + nu_y) % 2 != 1 ) return 0.0;
+    if ( mu_x != nu_x )             return 0.0;
+    if ( mu_z != nu_z )             return 0.0;
+    if ( mu_y == nu_y )             return 0.0;
+    if ( ( mu_y + nu_y ) % 2 != 1 ) return 0.0;
 
-    return fabs(((L / (M_PI * M_PI)) * ((nu_y * mu_y) / pow((nu_y*nu_y - mu_y*mu_y), 2))));
+    double val = 0.0;
+    double dum_m = L / M_PI / ( mu_y - nu_y);
+    double dum_p = L / M_PI / ( mu_y + nu_y);
+    val -= dum_m*dum_m;
+    val += dum_p*dum_p;
+
+    return val;
 
 }
 
@@ -574,12 +586,18 @@ double JelliumIntegrals::dipole_z(int mu, int nu, double L){
     int nu_z = MO[nu][2];
 
     // many dipole integrals are zero
-    if ( mu_x != nu_x )           return 0.0;
-    if ( mu_y != nu_y )           return 0.0;
-    if ( mu_z == nu_z )           return 0.0;
-    if ( (mu_z + nu_z) % 2 != 1 ) return 0.0;
+    if ( mu_x != nu_x )             return 0.0;
+    if ( mu_y != nu_y )             return 0.0;
+    if ( mu_z == nu_z )             return 0.0;
+    if ( ( mu_z + nu_z ) % 2 != 1 ) return 0.0;
 
-    return fabs(((L / (M_PI * M_PI)) * ((nu_z * mu_z) / pow((nu_z*nu_z - mu_z*mu_z), 2))));
+    double val = 0.0;
+    double dum_m = L / M_PI / ( mu_z - nu_z);
+    double dum_p = L / M_PI / ( mu_z + nu_z);
+    val -= dum_m*dum_m;
+    val += dum_p*dum_p;
+
+    return val;
 
 }
 

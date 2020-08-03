@@ -90,13 +90,13 @@ Jellium_SCFSolver::Jellium_SCFSolver(Options & options)
 
     // factor for box size ... hard coded for now to give <rho> = 1
     if ( !options_["JELLIUM_BOX_LENGTH"].has_changed() ) {
-        Lfac_      = pow(nelectron_,1.0/3.0) / M_PI;
-        boxlength_ = M_PI / 2; 
+        boxlength_ = pow(nelectron_,1.0/3.0);
+        Lfac_ = boxlength_ / M_PI;
     }else {
         //since box is already pi a.u. long
         double length_nm = options_.get_double("JELLIUM_BOX_LENGTH");
-        Lfac_ = length_nm * 10.0 / pc_bohr2angstroms / M_PI;
-        boxlength_ = length_nm * 10.0 / pc_bohr2angstroms / 2.0;
+        boxlength_ = length_nm * 10.0 / pc_bohr2angstroms;
+        Lfac_ = boxlength_ / M_PI;
     }
 
     // kinetic energy integrals
@@ -286,9 +286,6 @@ double Jellium_SCFSolver::compute_energy(){
     outfile->Printf("\n");
     outfile->Printf("      SCF iterations converged!\n");
     outfile->Printf("\n");
-
-    //double fock_energy = D->vector_dot(K) / Lfac_;
-    //outfile->Printf("      Fock energy:             %20.12lf\n", fock_energy);
 
     outfile->Printf("    * Jellium SCF total energy: %20.12lf\n", energy);
     outfile->Printf("\n");
