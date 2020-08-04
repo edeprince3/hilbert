@@ -99,7 +99,7 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
     outfile->Printf(" iiter");
     outfile->Printf("        E(p)");
     outfile->Printf("        E(d)");
-    outfile->Printf("      E gap)");
+    outfile->Printf("      E(gap)");
     outfile->Printf("      mu");
     outfile->Printf("     eps(p)");
     outfile->Printf("     eps(d)\n");
