@@ -48,6 +48,7 @@ add_psi4_plugin(hilbert
     src/misc/diis.cc
     src/misc/cg_solver.cc
     src/misc/bpsdp_solver.cc
+    src/misc/rrsdp_solver.cc
     src/misc/integraltransform_sort_so_tpdm.cc
     src/misc/integraltransform_tpdm_unrestricted.cc
     src/misc/threeindexintegrals.cc
