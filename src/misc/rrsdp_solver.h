@@ -102,22 +102,22 @@ class RRSDPSolver{
     /// the number of outer iterations
     int oiter_;
 
-    /// the number of inner iterations
+    /// the number of inner (lbfgs) iterations
     int iiter_;
 
-    /// the total number of inner iterations
+    /// the total number of inner (lbfgs) iterations
     int iiter_total_;
 
     /// the penalty parameter
     double mu_;
 
-    /// copy of the input c vector
+    /// pointer to the input c vector
     std::shared_ptr<Vector> c_;
 
-    /// copy of the input x vector
+    /// pointer to the input x vector
     std::shared_ptr<Vector> x_;
 
-    /// copy of the input b vector
+    /// pointer to the input b vector
     std::shared_ptr<Vector> b_;
 
     /// the lagrange multipliers
@@ -128,9 +128,6 @@ class RRSDPSolver{
 
     /// temporary container the size of ATu
     std::shared_ptr<Vector> ATu_;
-
-    /// extra workspace
-    std::shared_ptr<Vector> tmp_;
 
     /// the requested convergence of the primal dual gap
     double e_convergence_;

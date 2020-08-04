@@ -90,7 +90,6 @@ RRSDPSolver::RRSDPSolver(long int n_primal, long int n_dual, Options & options)
     y_    = (std::shared_ptr<Vector>)(new Vector(n_dual_));
     Au_   = (std::shared_ptr<Vector>)(new Vector(n_dual_));
     ATu_  = (std::shared_ptr<Vector>)(new Vector(n_primal_));
-    tmp_  = (std::shared_ptr<Vector>)(new Vector(n_dual_));
 
     e_convergence_ = options_.get_double("E_CONVERGENCE");
     r_convergence_ = options_.get_double("R_CONVERGENCE");
@@ -241,7 +240,6 @@ double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t
     double * r_p   = (double*)r;
     double * x_p   = x_->pointer();
     double * c_p   = c_->pointer();
-    double * tmp_p = tmp_->pointer();
 
     // build x = r.rT
     int off = 0;
@@ -252,15 +250,25 @@ double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t
         off += n*n;
     }
 
+    // evaluate primal energy
+    double energy = C_DDOT(n_primal_,x_p,1,c_p,1);
+
     // evaluate (Ax-b)
     evaluate_Au_(Au_,x_,data_);
     Au_->subtract(b_);
 
+    // evaluate sqrt(||Ax-b||)
+    double nrm = Au_->norm();
+
+    // evaluate lagrangian
+    double lagrangian = energy - y_->vector_dot(Au_) + nrm*nrm/mu_;
+
+    // dL/dR = 2( A^T [ 2/mu(Ax-b) - y] + c) . r
+
     // evaluate A^T (2/mu[Ax-b] - y)
-    tmp_->copy(Au_.get());
-    tmp_->scale(2.0/mu_);
-    tmp_->subtract(y_);
-    evaluate_ATu_(ATu_,tmp_,data_);
+    Au_->scale(2.0/mu_);
+    Au_->subtract(y_);
+    evaluate_ATu_(ATu_,Au_,data_);
 
     // add integrals for derivative of energy
     ATu_->add(c_);
@@ -273,15 +281,6 @@ double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t
         F_DGEMM('n', 'n', n, n, n, 2.0, ATu_->pointer() + off, n, r_p + off, n, 0.0, g + off, n);
         off += n*n;
     }
-
-    // evaluate primal energy
-    double energy = C_DDOT(n_primal_,x_p,1,c_p,1);
-
-    // evaluate sqrt(||Ax-b||)
-    double nrm = Au_->norm();
-
-    // evaluate lagrangian
-    double lagrangian = energy - y_->vector_dot(Au_) + nrm*nrm/mu_;
 
     return lagrangian;
 }
