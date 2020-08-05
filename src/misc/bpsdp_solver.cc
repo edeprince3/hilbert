@@ -45,6 +45,39 @@ namespace hilbert {
 
 typedef void (*BPSDPCallbackFunction)(std::shared_ptr<Vector>,std::shared_ptr<Vector>,void *);
 
+/*
+// liblbfgs routines:
+static lbfgsfloatval_t lbfgs_evaluate_z(void * instance,
+    const lbfgsfloatval_t *x,
+    lbfgsfloatval_t *g,
+    const int n,
+    const lbfgsfloatval_t step) {
+
+    BPSDPSolver * sdp = reinterpret_cast<BPSDPSolver*>(instance);
+    double f = sdp->evaluate_gradient_z(x,g);
+
+    return f;
+}
+
+static int monitor_lbfgs_progress(
+    void *instance,
+    const lbfgsfloatval_t *x,
+    const lbfgsfloatval_t *g,
+    const lbfgsfloatval_t fx,
+    const lbfgsfloatval_t xnorm,
+    const lbfgsfloatval_t gnorm,
+    const lbfgsfloatval_t step,
+    int n,
+    int k,
+    int ls
+    )
+{
+    BPSDPSolver * sdp = reinterpret_cast<BPSDPSolver*>(instance);
+    sdp->set_lbfgs_iter(k);
+    return 0;
+}
+*/
+
 BPSDPSolver::BPSDPSolver(long int n_primal, long int n_dual, Options & options)
     :options_(options){
 
@@ -84,6 +117,25 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
                         BPSDPCallbackFunction evaluate_ATu, 
                         CGCallbackFunction evaluate_cg_lhs, 
                         void * data){
+
+/*
+    // copy block sizes
+    primal_block_dim_.clear();
+    for (int block = 0; block < primal_block_dim.size(); block++) {
+        primal_block_dim_.push_back(primal_block_dim[block]);
+    }
+    // copy block ranks (same as dimension for now)
+    primal_block_rank_.clear();
+    for (int block = 0; block < primal_block_dim.size(); block++) {
+        primal_block_rank_.push_back(primal_block_dim[block]);
+    }
+
+    data_         = data;
+    c_            = c;
+    x_            = x;
+    evaluate_Au_  = evaluate_Au;
+    evaluate_ATu_ = evaluate_ATu;
+*/
 
     // cg solver
     std::shared_ptr<CGSolver> cg (new CGSolver(n_dual_));
@@ -295,7 +347,108 @@ void BPSDPSolver::Update_xz(std::shared_ptr<Vector> x, std::shared_ptr<Vector> c
         F_DGEMM('t','n',primal_block_dim[i],primal_block_dim[i],mydim,1.0,&mat_p[0][0],primal_block_dim[i],&evec2_p[0][0],primal_block_dim[i],0.0,z_p+myoffset,primal_block_dim[i]);
 
     }
+
+/*
+printf("||z|| before %20.12lf\n",z_->norm());
+    // lbfgs container for dual solution vector, z
+    lbfgsfloatval_t * lbfgs_vars_z  = lbfgs_malloc(n_primal_);
+    srand(0);
+    for (int i = 0; i < n_primal_; i++) {
+        lbfgs_vars_z[i] = 2.0 * ( (double)rand()/RAND_MAX - 0.5 ) / 1000.0;
+    }
+    build_z(lbfgs_vars_z);
+
+    lbfgs_parameter_t param;
+    lbfgs_parameter_init(&param);
+
+    // adjust default lbfgs parameters
+    param.max_iterations = options_.get_int("MAXITER");
+    //param.epsilon        = 1e-12;//options_.get_double("LBFGS_CONVERGENCE");
+
+    // initial objective function value default parameters
+    lbfgsfloatval_t lag_z = evaluate_gradient_z(lbfgs_vars_z,ATu_->pointer());
+    lbfgs(n_primal_,lbfgs_vars_z,&lag_z,lbfgs_evaluate_z,monitor_lbfgs_progress,(void*)this,&param);
+
+    // build z = r.rT
+    build_z(lbfgs_vars_z);
+
+    printf("hey %5i lbfgs iterations\n",lbfgs_iter_);fflush(stdout);
+
+    free(lbfgs_vars_z);
+*/
+
 }
+
+/*
+double BPSDPSolver::evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatval_t * g) {
+
+    // L = || c - ATy + z ||^2 + || x.z ||^2, fixed y and z
+
+    // pointers
+    double * r_p   = (double*)r;
+    double * x_p   = x_->pointer();
+    double * z_p   = z_->pointer();
+    double * ATu_p = ATu_->pointer();
+
+    // build z = r.rT
+    build_z(r_p);
+
+    // evaluate || A^T y - c + z||
+    evaluate_ATu_(ATu_, y_, data_);
+    ATu_->subtract(c_);
+    ATu_->add(z_);
+    double dual_error = ATu_->norm();
+
+    // z.x = 0
+    double overlap = x_->vector_dot(z_);
+
+    // evaluate lagrangian
+    double lagrangian = dual_error*dual_error + overlap*overlap;
+
+    int off_nn = 0;
+    for (int block = 0; block < primal_block_dim_.size(); block++) {
+        int n = primal_block_dim_[block];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                ATu_p[i*n+j + off_nn]  = ( ATu_p[i*n+j + off_nn] + ATu_p[j*n+i + off_nn] );
+                ATu_p[i*n+j + off_nn] += (  x_p[i*n+j + off_nn] +  x_p[j*n+i + off_nn] ) * overlap;
+            }
+        }
+        off_nn += n*n;
+    }
+
+    off_nn = 0;
+    int off_nm = 0;
+    for (int block = 0; block < primal_block_dim_.size(); block++) {
+        int n = primal_block_dim_[block];
+        int m = primal_block_rank_[block];
+        if ( n == 0 ) continue;
+        F_DGEMM('n', 'n', n, m, n, 2.0, ATu_p + off_nn, n, r_p + off_nm, n, 0.0, g + off_nm, n);
+        off_nn += n*n;
+        off_nm += n*m;
+    }
+
+    return lagrangian;
+}
+
+// build z = r.rT
+void BPSDPSolver::build_z(double * r){
+
+    double * z_p = z_->pointer();
+
+    int off_nn = 0;
+    int off_nm = 0;
+    for (int block = 0; block < primal_block_dim_.size(); block++) {
+        int n = primal_block_dim_[block];
+        int m = primal_block_rank_[block];
+        if ( n == 0 ) continue;
+        F_DGEMM('n', 't', n, n, m, 1.0, r + off_nm, n, r + off_nm, n, 0.0, z_p + off_nn, n);
+        off_nm += n*m;
+        off_nn += n*n;
+    }
+
+}
+*/
 
 }
 

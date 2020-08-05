@@ -32,6 +32,10 @@
 
 #include <misc/cg_solver.h>
 
+/*
+#include <lbfgs.h>
+*/
+
 using namespace psi;
 
 namespace hilbert {
@@ -59,10 +63,17 @@ class BPSDPSolver{
                CGCallbackFunction evaluate_CG_LHS,
                void * data);
 
+/*
+    /// evaluate gradient of (x.z)^2 + ||ATy-c+z||^2
+    double evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatval_t * g);
+    void set_lbfgs_iter(int iter) { lbfgs_iter_ = iter; }
+*/
+
     int iiter_total() { return iiter_total_; }
     int oiter_total() { return oiter_; }
     double iiter_time() { return iiter_time_; }
     double oiter_time() { return oiter_time_; }
+
 
     void set_mu(double mu) { mu_ = mu; }
     void set_y(std::shared_ptr<Vector> y) { y_->copy(y.get()); }
@@ -148,6 +159,42 @@ class BPSDPSolver{
                    std::vector<int> primal_block_dim, 
                    BPSDPCallbackFunction evaluate_ATu,
                    void * data);
+
+/// new functions and members 
+/*
+
+    /// auxiliary parameters
+    std::shared_ptr<Vector> aux_;
+
+    /// pointer to the input c vector
+    std::shared_ptr<Vector> c_;
+
+    /// pointer to the input x vector
+    std::shared_ptr<Vector> x_;
+
+    /// pointer to input data
+    void * data_;
+
+    /// copy of Au callback function
+    BPSDPCallbackFunction evaluate_Au_;
+
+    /// copy of ATu callback function
+    BPSDPCallbackFunction evaluate_ATu_;
+
+    /// build z from auxiliary parameters
+    void build_z(double * r);
+
+    /// copy of list of block sizes
+    std::vector<int> primal_block_dim_;
+
+    /// copy of list of block ranks
+    std::vector<int> primal_block_rank_;
+
+    /// the number of lbfgs iterations
+    int lbfgs_iter_;
+
+*/
+ 
 
 };
 
