@@ -285,6 +285,21 @@ double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t
     // add integrals for derivative of energy
     ATu_->add(c_);
 
+    double * ATu_p = ATu_->pointer();
+    off_nn = 0;
+    for (int block = 0; block < primal_block_dim_.size(); block++) {
+        int n = primal_block_dim_[block];
+        for (int i = 0; i < n; i++) {
+            for (int j = i; j < n; j++) {
+                double dum_ij = ATu_p[i*n+j + off_nn];
+                double dum_ji = ATu_p[j*n+i + off_nn];
+                ATu_p[i*n+j + off_nn] = dum_ij + dum_ji;
+                ATu_p[j*n+i + off_nn] = dum_ij + dum_ji;
+            }
+        }
+        off_nn += n*n;
+    }
+
     // evaluate gradient of lagrangian
     off_nn = 0;
     off_nm = 0;
@@ -292,7 +307,7 @@ double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t
         int n = primal_block_dim_[block];
         int m = primal_block_rank_[block];
         if ( n == 0 ) continue;
-        F_DGEMM('n', 'n', n, m, n, 2.0, ATu_->pointer() + off_nn, n, r_p + off_nm, n, 0.0, g + off_nm, n);
+        F_DGEMM('n', 'n', n, m, n, 1.0, ATu_->pointer() + off_nn, n, r_p + off_nm, n, 0.0, g + off_nm, n);
         off_nn += n*n;
         off_nm += n*m;
     }
