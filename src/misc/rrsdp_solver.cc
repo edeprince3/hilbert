@@ -122,6 +122,11 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
     for (int block = 0; block < primal_block_dim.size(); block++) {
         primal_block_dim_.push_back(primal_block_dim[block]);
     }
+    // copy block ranks (same as dimension for now)
+    primal_block_rank_.clear();
+    for (int block = 0; block < primal_block_dim.size(); block++) {
+        primal_block_rank_.push_back(primal_block_dim[block]);
+    }
 
     // class pointers to input c,x,b
     c_ = c;
@@ -133,7 +138,7 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
     C_DCOPY(n_primal_,x_->pointer(),1,lbfgs_vars,1);
 
     // initial energy   
-    double energy =  C_DDOT(n_primal_,c_->pointer(),1,x_->pointer(),1);
+    double energy =  x_->vector_dot(c_);
 
     // this function can be called many times. don't forget to reset penalty parameter
     mu_ = 0.1;
@@ -157,7 +162,7 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
         // minimize lagrangian
 
         // initial objective function value default parameters
-        lbfgsfloatval_t lagrangian = evaluate_gradient(x_->pointer(),ATu_->pointer());
+        lbfgsfloatval_t lagrangian = evaluate_gradient(lbfgs_vars,ATu_->pointer());
         lbfgs_parameter_t param;
         lbfgs_parameter_init(&param);
 
@@ -172,16 +177,20 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
         // build x = r.rT
         double * x_p = x_->pointer();
         double * r_p = lbfgs_vars;
-        int off = 0;
+
+        int off_nn = 0;
+        int off_nm = 0;
         for (int block = 0; block < primal_block_dim_.size(); block++) {
             int n = primal_block_dim_[block];
-            if ( n == 0 ) continue;
-            F_DGEMM('n', 't', n, n, n, 1.0, r_p + off, n, r_p + off, n, 0.0, x_p + off, n);
-            off += n*n;
+            int m = primal_block_rank_[block];
+            if ( n == 0 ) continue; 
+            F_DGEMM('n', 't', n, n, m, 1.0, r_p + off_nm, n, r_p + off_nm, n, 0.0, x_p + off_nn, n);
+            off_nm += n*m;
+            off_nn += n*n;
         }
 
         // evaluate x^T.c
-        double energy_primal = C_DDOT(n_primal_,x_->pointer(),1,c_->pointer(),1);
+        double energy_primal =  x_->vector_dot(c_);
 
         // evaluate (Ax-b)
         evaluate_Au_(Au_,x_,data_);
@@ -242,16 +251,19 @@ double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t
     double * c_p   = c_->pointer();
 
     // build x = r.rT
-    int off = 0;
+    int off_nn = 0;
+    int off_nm = 0;
     for (int block = 0; block < primal_block_dim_.size(); block++) {
         int n = primal_block_dim_[block];
+        int m = primal_block_rank_[block];
         if ( n == 0 ) continue;
-        F_DGEMM('n', 't', n, n, n, 1.0, r_p + off, n, r_p + off, n, 0.0, x_p + off, n);
-        off += n*n;
+        F_DGEMM('n', 't', n, n, m, 1.0, r_p + off_nm, n, r_p + off_nm, n, 0.0, x_p + off_nn, n);
+        off_nm += n*m;
+        off_nn += n*n;
     }
 
     // evaluate primal energy
-    double energy = C_DDOT(n_primal_,x_p,1,c_p,1);
+    double energy = x_->vector_dot(c_);
 
     // evaluate (Ax-b)
     evaluate_Au_(Au_,x_,data_);
@@ -274,12 +286,15 @@ double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t
     ATu_->add(c_);
 
     // evaluate gradient of lagrangian
-    off = 0;
+    off_nn = 0;
+    off_nm = 0;
     for (int block = 0; block < primal_block_dim_.size(); block++) {
         int n = primal_block_dim_[block];
+        int m = primal_block_rank_[block];
         if ( n == 0 ) continue;
-        F_DGEMM('n', 'n', n, n, n, 2.0, ATu_->pointer() + off, n, r_p + off, n, 0.0, g + off, n);
-        off += n*n;
+        F_DGEMM('n', 'n', n, m, n, 2.0, ATu_->pointer() + off_nn, n, r_p + off_nm, n, 0.0, g + off_nm, n);
+        off_nn += n*n;
+        off_nm += n*m;
     }
 
     return lagrangian;

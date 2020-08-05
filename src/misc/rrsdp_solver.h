@@ -30,8 +30,6 @@
 #include <psi4/libmints/vector.h>
 #include <psi4/liboptions/liboptions.h>
 
-#include <misc/cg_solver.h>
-
 #include <lbfgs.h>
 
 using namespace psi;
@@ -89,6 +87,8 @@ class RRSDPSolver{
     /// copy of list of block sizes
     std::vector<int> primal_block_dim_;
 
+    /// copy of list of block ranks
+    std::vector<int> primal_block_rank_;
 
     /// Options object
     Options& options_;
