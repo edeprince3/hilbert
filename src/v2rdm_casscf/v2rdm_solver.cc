@@ -58,6 +58,8 @@
 #include <misc/blas.h>
 #include <misc/diis.h>
 #include <misc/bpsdp_solver.h>
+#include <misc/rrsdp_solver.h>
+#include <misc/dual_sdp_solver.h>
 #include <misc/threeindexintegrals.h>
 #include <misc/omp.h>
 
@@ -105,7 +107,6 @@ static void evaluate_Au(SharedVector Au, SharedVector u, void * data) {
 
     // reinterpret void * as an instance of v2RDMSolver
     v2RDMSolver* v2rdm = reinterpret_cast<v2RDMSolver*>(data);
-    // call a function from class to evaluate Ax product:
     v2rdm->bpsdp_Au(Au,u);
 
 }
@@ -114,21 +115,7 @@ static void evaluate_ATu(SharedVector ATu, SharedVector u, void * data) {
 
     // reinterpret void * as an instance of v2RDMSolver
     v2RDMSolver* v2rdm = reinterpret_cast<v2RDMSolver*>(data);
-    // call a function from class to evaluate Ax product:
     v2rdm->bpsdp_ATu(ATu,u);
-
-}
-
-
-static void evaluate_cg_lhs(SharedVector Ax, SharedVector x, void * data) {
-
-    // reinterpret void * as an instance of v2RDMSolver
-    v2RDMSolver* v2rdm = reinterpret_cast<v2RDMSolver*>(data);
-
-    Ax->zero();
-    std::shared_ptr<Vector> ATy (new Vector(v2rdm->n_primal()));
-    v2rdm->bpsdp_ATu(ATy,x);
-    v2rdm->bpsdp_Au(Ax,ATy);
 
 }
 
@@ -1681,7 +1668,7 @@ double v2RDMSolver::compute_energy() {
     // generate constraint vector
     BuildConstraints();
 
-    std::shared_ptr<DIIS> diis ( new DIIS(nconstraints_ + 2*dimx_) );
+    //std::shared_ptr<DIIS> diis ( new DIIS(nconstraints_ + 2*dimx_) );
 
     //bool do_diis = options_.get_bool("DIIS");
     //double * tmp = (double*)malloc((nconstraints_ + 2*dimx_)*sizeof(double));
@@ -1691,9 +1678,24 @@ double v2RDMSolver::compute_energy() {
 
     int local_maxiter = options_.get_bool("OPTIMIZE_ORBITALS") ? options_.get_int("ORBOPT_FREQUENCY") : options_.get_int("MU_UPDATE_FREQUENCY");
 
+/*
+    std::shared_ptr<RRSDPSolver> rrsdp (new RRSDPSolver(dimx_,nconstraints_,options_));
+    //    rrsdp->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
+
+    sdp_->solve(x, b, c, dimensions_, 50000, evaluate_Au, evaluate_ATu, evaluate_cg_lhs, (void*)this);
+
+    std::shared_ptr<DualSDPSolver> dualsdp (new DualSDPSolver(dimx_,nconstraints_,options_));
+//dualsdp->set_y(sdp_->get_y());
+//dualsdp->set_z(sdp_->get_z());
+dualsdp->set_mu(sdp_->get_mu());
+dualsdp->solve(x, b, c, dimensions_, 10000, evaluate_Au, evaluate_ATu, evaluate_cg_lhs, (void*)this);
+exit(0);
+*/
+
     do {
 
-        sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, evaluate_cg_lhs, (void*)this);
+        //rrsdp->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
+        sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
     

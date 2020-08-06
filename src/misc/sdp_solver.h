@@ -46,6 +46,18 @@ class SDPSolver{
     /// SDPSolver destructor
     ~SDPSolver();
 
+    /// solve the sdp problem
+    virtual void solve(std::shared_ptr<Vector> x,
+                       std::shared_ptr<Vector> b,
+                       std::shared_ptr<Vector> c,
+                       std::vector<int> primal_block_dim,
+                       int maxiter,
+                       SDPCallbackFunction evaluate_Au,
+                       SDPCallbackFunction evaluate_ATu,
+                       void * data){
+        throw PsiException("solve has not been implemented for this sdp solver",__FILE__,__LINE__);
+    }
+
     int iiter_total() { return iiter_total_; }
     int oiter_total() { return oiter_; }
     double iiter_time() { return iiter_time_; }
@@ -65,6 +77,15 @@ class SDPSolver{
 
     /// Options object
     Options& options_;
+
+    /// pointer to input data
+    void * data_;
+
+    /// copy of Au callback function
+    SDPCallbackFunction evaluate_Au_;
+
+    /// copy of ATu callback function
+    SDPCallbackFunction evaluate_ATu_;
 
     /// the error in the primal constraints
     double primal_error_;

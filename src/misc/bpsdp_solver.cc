@@ -43,6 +43,22 @@ using namespace fnocc;
 
 namespace hilbert {
 
+// CG callback function
+static void evaluate_cg_lhs(SharedVector Ax, SharedVector x, void * data) {
+
+    // reinterpret void * as an instance of v2RDMSolver
+    BPSDPSolver* sdp = reinterpret_cast<BPSDPSolver*>(data);
+    sdp->evaluate_AATu(Ax, x);
+
+}
+
+void BPSDPSolver::evaluate_AATu(std::shared_ptr<Vector> AATu,std::shared_ptr<Vector> u) {
+    AATu->zero();
+    std::shared_ptr<Vector> ATu (new Vector(n_primal_));
+    evaluate_ATu_(ATu,u,data_);
+    evaluate_Au_(AATu,ATu,data_);
+}
+
 /*
 // liblbfgs routines:
 static lbfgsfloatval_t lbfgs_evaluate_z(void * instance,
@@ -93,7 +109,6 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
                         int maxiter,
                         SDPCallbackFunction evaluate_Au, 
                         SDPCallbackFunction evaluate_ATu, 
-                        CGCallbackFunction evaluate_cg_lhs, 
                         void * data){
 
 /*
@@ -108,12 +123,13 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
         primal_block_rank_.push_back(primal_block_dim[block]);
     }
 
-    data_         = data;
     c_            = c;
     x_            = x;
+*/
+
+    data_         = data;
     evaluate_Au_  = evaluate_Au;
     evaluate_ATu_ = evaluate_ATu;
-*/
 
     // cg solver
     std::shared_ptr<CGSolver> cg (new CGSolver(n_dual_));
@@ -166,7 +182,7 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
         cg->set_convergence(cg_conv_i);
 
         // solve CG problem (step 1 in table 1 of PRL 106 083001)
-        cg->solve(Au_,y_,cg_rhs_,evaluate_cg_lhs,data);
+        cg->solve(Au_,y_,cg_rhs_,evaluate_cg_lhs,(void*)this);
         int iiter = cg->total_iterations();
 
         double end = omp_get_wtime();

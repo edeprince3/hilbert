@@ -31,7 +31,6 @@
 #include <psi4/liboptions/liboptions.h>
 
 #include <misc/sdp_solver.h>
-#include <misc/cg_solver.h>
 
 using namespace psi;
 
@@ -55,8 +54,9 @@ class BPSDPSolver: public SDPSolver{
                int maxiter,
                SDPCallbackFunction evaluate_Au,
                SDPCallbackFunction evaluate_ATu,
-               CGCallbackFunction evaluate_CG_LHS,
                void * data);
+
+    void evaluate_AATu(std::shared_ptr<Vector> AATu,std::shared_ptr<Vector> u);
 
 /*
     /// evaluate gradient of (x.z)^2 + ||ATy-c+z||^2

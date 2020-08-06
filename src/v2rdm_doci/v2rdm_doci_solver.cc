@@ -64,19 +64,6 @@ using namespace fnocc;
 
 namespace hilbert{
 
-// AATy
-static void evaluate_cg_lhs(SharedVector Ax, SharedVector x, void * data) {
-
-    // reinterpret void * as an instance of v2RDM_DOCISolver
-    v2RDM_DOCISolver* v2rdm_doci = reinterpret_cast<v2RDM_DOCISolver*>(data);
-
-    Ax->zero();
-    std::shared_ptr<Vector> ATy (new Vector(v2rdm_doci->n_primal()));
-    v2rdm_doci->bpsdp_ATu(ATy,x);
-    v2rdm_doci->bpsdp_Au(Ax,ATy);
-
-}
-
 static void evaluate_Au(std::shared_ptr<Vector> Au, std::shared_ptr<Vector> u, void * data) {
 
     // reinterpret void * as an instance of v2RDM_DOCISolver
@@ -1065,7 +1052,8 @@ double v2RDM_DOCISolver::compute_energy() {
     int orbopt_iter = 0;
     do { 
 
-        sdp_->solve(x, b, c, dimensions_, options_.get_int("ORBOPT_FREQUENCY"), evaluate_Au, evaluate_ATu, evaluate_cg_lhs, (void*)this);
+        //sdp_->solve(x, b, c, dimensions_, options_.get_int("ORBOPT_FREQUENCY"), evaluate_Au, evaluate_ATu, evaluate_cg_lhs, (void*)this);
+        sdp_->solve(x, b, c, dimensions_, options_.get_int("ORBOPT_FREQUENCY"), evaluate_Au, evaluate_ATu, (void*)this);
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
 
