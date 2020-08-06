@@ -58,8 +58,6 @@
 #include <misc/blas.h>
 #include <misc/diis.h>
 #include <misc/bpsdp_solver.h>
-#include <misc/rrsdp_solver.h>
-#include <misc/dual_sdp_solver.h>
 #include <misc/threeindexintegrals.h>
 #include <misc/omp.h>
 
@@ -1678,23 +1676,8 @@ double v2RDMSolver::compute_energy() {
 
     int local_maxiter = options_.get_bool("OPTIMIZE_ORBITALS") ? options_.get_int("ORBOPT_FREQUENCY") : options_.get_int("MU_UPDATE_FREQUENCY");
 
-/*
-    std::shared_ptr<RRSDPSolver> rrsdp (new RRSDPSolver(dimx_,nconstraints_,options_));
-    //    rrsdp->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
-
-    sdp_->solve(x, b, c, dimensions_, 50000, evaluate_Au, evaluate_ATu, evaluate_cg_lhs, (void*)this);
-
-    std::shared_ptr<DualSDPSolver> dualsdp (new DualSDPSolver(dimx_,nconstraints_,options_));
-//dualsdp->set_y(sdp_->get_y());
-//dualsdp->set_z(sdp_->get_z());
-dualsdp->set_mu(sdp_->get_mu());
-dualsdp->solve(x, b, c, dimensions_, 10000, evaluate_Au, evaluate_ATu, evaluate_cg_lhs, (void*)this);
-exit(0);
-*/
-
     do {
 
-        //rrsdp->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
         sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
