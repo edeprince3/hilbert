@@ -43,8 +43,6 @@ using namespace fnocc;
 
 namespace hilbert {
 
-typedef void (*BPSDPCallbackFunction)(std::shared_ptr<Vector>,std::shared_ptr<Vector>,void *);
-
 /*
 // liblbfgs routines:
 static lbfgsfloatval_t lbfgs_evaluate_z(void * instance,
@@ -79,29 +77,9 @@ static int monitor_lbfgs_progress(
 */
 
 BPSDPSolver::BPSDPSolver(long int n_primal, long int n_dual, Options & options)
-    :options_(options){
-
-    n_primal_     = n_primal;
-    n_dual_       = n_dual;
-    mu_           = 0.1;
-    primal_error_ = 0.0;
-    dual_error_   = 0.0;
-    oiter_        = 0;
-    iiter_total_  = 0;
-    oiter_time_   = 0.0;
-    iiter_time_   = 0.0;
-
-    y_   = (std::shared_ptr<Vector>)(new Vector(n_dual_));
-    Au_  = (std::shared_ptr<Vector>)(new Vector(n_dual_));
-    z_   = (std::shared_ptr<Vector>)(new Vector(n_primal_));
-    ATu_ = (std::shared_ptr<Vector>)(new Vector(n_primal_));
+    : SDPSolver(n_primal,n_dual,options) {
 
     cg_rhs_ = (std::shared_ptr<Vector>)(new Vector(n_dual_));
-
-    e_convergence_ = options_.get_double("E_CONVERGENCE");
-    r_convergence_ = options_.get_double("R_CONVERGENCE");
-
-    is_converged_ = false;
 }
 
 BPSDPSolver::~BPSDPSolver(){
@@ -113,8 +91,8 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
                         std::shared_ptr<Vector> c,
                         std::vector<int> primal_block_dim,
                         int maxiter,
-                        BPSDPCallbackFunction evaluate_Au, 
-                        BPSDPCallbackFunction evaluate_ATu, 
+                        SDPCallbackFunction evaluate_Au, 
+                        SDPCallbackFunction evaluate_ATu, 
                         CGCallbackFunction evaluate_cg_lhs, 
                         void * data){
 
@@ -249,8 +227,8 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
 
 std::shared_ptr<Vector> BPSDPSolver::ATAx_minus_ATb(std::shared_ptr<Vector> x,
                                                     std::shared_ptr<Vector> b,
-                                                    BPSDPCallbackFunction evaluate_Au,
-                                                    BPSDPCallbackFunction evaluate_ATu,
+                                                    SDPCallbackFunction evaluate_Au,
+                                                    SDPCallbackFunction evaluate_ATu,
                                                     void * data){
 
     std::shared_ptr<Vector> ret (new Vector(n_primal_));
@@ -263,8 +241,9 @@ std::shared_ptr<Vector> BPSDPSolver::ATAx_minus_ATb(std::shared_ptr<Vector> x,
     return ret;
 
 }
+
 std::shared_ptr<Vector> BPSDPSolver::ATy_plus_z_minus_c(std::shared_ptr<Vector> c,
-                                                        BPSDPCallbackFunction evaluate_ATu,
+                                                        SDPCallbackFunction evaluate_ATu,
                                                         void * data){
 
     std::shared_ptr<Vector> ret (new Vector(n_primal_));
@@ -277,7 +256,7 @@ std::shared_ptr<Vector> BPSDPSolver::ATy_plus_z_minus_c(std::shared_ptr<Vector> 
 }
 
 // update x and z
-void BPSDPSolver::Update_xz(std::shared_ptr<Vector> x, std::shared_ptr<Vector> c, std::vector<int> primal_block_dim, BPSDPCallbackFunction evaluate_ATu, void * data) {
+void BPSDPSolver::Update_xz(std::shared_ptr<Vector> x, std::shared_ptr<Vector> c, std::vector<int> primal_block_dim, SDPCallbackFunction evaluate_ATu, void * data) {
 
     // evaluate M(mu*x + ATy - c)
     evaluate_ATu(ATu_, y_, data);

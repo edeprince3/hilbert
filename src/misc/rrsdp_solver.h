@@ -32,13 +32,13 @@
 
 #include <lbfgs.h>
 
+#include <misc/sdp_solver.h>
+
 using namespace psi;
 
 namespace hilbert {
 
-typedef void (*RRSDPCallbackFunction)(std::shared_ptr<Vector>,std::shared_ptr<Vector>,void *);
-
-class RRSDPSolver{
+class RRSDPSolver: public SDPSolver {
 
   public:
 
@@ -54,24 +54,13 @@ class RRSDPSolver{
                std::shared_ptr<Vector> c,
                std::vector<int> primal_block_dim,
                int maxiter,
-               RRSDPCallbackFunction evaluate_Au,
-               RRSDPCallbackFunction evaluate_ATu,
+               SDPCallbackFunction evaluate_Au,
+               SDPCallbackFunction evaluate_ATu,
                void * data);
 
     double evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t * g);
 
     void set_iiter(int iiter) { iiter_ = iiter; }
-
-    int iiter_total() { return iiter_total_; }
-    int oiter_total() { return oiter_; }
-
-    void set_mu(double mu) { mu_ = mu; }
-    void set_y(std::shared_ptr<Vector> y) { y_->copy(y.get()); }
-
-    double get_mu() { return mu_; }
-    std::shared_ptr<Vector> get_y() { return y_; }
-
-    bool is_converged(){ return is_converged_; }
 
   protected:
 
@@ -79,10 +68,10 @@ class RRSDPSolver{
     void * data_;
 
     /// copy of Au callback function
-    RRSDPCallbackFunction evaluate_Au_;
+    SDPCallbackFunction evaluate_Au_;
 
     /// copy of ATu callback function
-    RRSDPCallbackFunction evaluate_ATu_;
+    SDPCallbackFunction evaluate_ATu_;
 
     /// copy of list of block sizes
     std::vector<int> primal_block_dim_;
@@ -90,26 +79,8 @@ class RRSDPSolver{
     /// copy of list of block ranks
     std::vector<int> primal_block_rank_;
 
-    /// Options object
-    Options& options_;
-
-    /// the error in the primal constraints
-    double primal_error_;
-
-    /// is the solver converged?
-    bool is_converged_;
-
-    /// the number of outer iterations
-    int oiter_;
-
     /// the number of inner (lbfgs) iterations
     int iiter_;
-
-    /// the total number of inner (lbfgs) iterations
-    int iiter_total_;
-
-    /// the penalty parameter
-    double mu_;
 
     /// pointer to the input c vector
     std::shared_ptr<Vector> c_;
@@ -119,27 +90,6 @@ class RRSDPSolver{
 
     /// pointer to the input b vector
     std::shared_ptr<Vector> b_;
-
-    /// the lagrange multipliers
-    std::shared_ptr<Vector> y_;
-
-    /// temporary container the size of Au
-    std::shared_ptr<Vector> Au_;
-
-    /// temporary container the size of ATu
-    std::shared_ptr<Vector> ATu_;
-
-    /// the requested convergence of the primal dual gap
-    double e_convergence_;
-
-    /// the requested convergence of the primal and dual errors
-    double r_convergence_;
-
-    /// the dimension of the primal vector
-    long int n_primal_;
-
-    /// the dimension of the dual vector
-    long int n_dual_;
 
 };
 

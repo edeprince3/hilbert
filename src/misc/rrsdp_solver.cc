@@ -44,8 +44,6 @@ using namespace fnocc;
 
 namespace hilbert {
 
-typedef void (*RRSDPCallbackFunction)(std::shared_ptr<Vector>,std::shared_ptr<Vector>,void *);
-
 // liblbfgs routines:
 static lbfgsfloatval_t lbfgs_evaluate(void * instance,
     const lbfgsfloatval_t *x,
@@ -78,36 +76,21 @@ static int monitor_lbfgs_progress(
 }
 
 RRSDPSolver::RRSDPSolver(long int n_primal, long int n_dual, Options & options)
-    :options_(options){
+    : SDPSolver(n_primal,n_dual,options) {
 
-    n_primal_     = n_primal;
-    n_dual_       = n_dual;
-    mu_           = 0.1;
-    primal_error_ = 0.0;
-    oiter_        = 0;
-    iiter_        = 0;
-
-    y_    = (std::shared_ptr<Vector>)(new Vector(n_dual_));
-    Au_   = (std::shared_ptr<Vector>)(new Vector(n_dual_));
-    ATu_  = (std::shared_ptr<Vector>)(new Vector(n_primal_));
-
-    e_convergence_ = options_.get_double("E_CONVERGENCE");
-    r_convergence_ = options_.get_double("R_CONVERGENCE");
-
-    is_converged_ = false;
+    iiter_ = 0;
 }
 
 RRSDPSolver::~RRSDPSolver(){
 }
-
 
 void RRSDPSolver::solve(std::shared_ptr<Vector> x,   
                         std::shared_ptr<Vector> b, 
                         std::shared_ptr<Vector> c,
                         std::vector<int> primal_block_dim,
                         int maxiter,
-                        RRSDPCallbackFunction evaluate_Au, 
-                        RRSDPCallbackFunction evaluate_ATu, 
+                        SDPCallbackFunction evaluate_Au, 
+                        SDPCallbackFunction evaluate_ATu, 
                         void * data){
 
     // class pointer to input data
@@ -273,12 +256,12 @@ double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t
     double nrm = Au_->norm();
 
     // evaluate lagrangian
-    double lagrangian = energy - y_->vector_dot(Au_) + nrm*nrm/mu_;
+    double lagrangian = energy - y_->vector_dot(Au_) + nrm*nrm/2.0 * mu_;
 
     // dL/dR = 2( A^T [ 2/mu(Ax-b) - y] + c) . r
 
     // evaluate A^T (2/mu[Ax-b] - y)
-    Au_->scale(2.0/mu_);
+    Au_->scale(1.0/mu_);
     Au_->subtract(y_);
     evaluate_ATu_(ATu_,Au_,data_);
 
