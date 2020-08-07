@@ -44,9 +44,9 @@ using namespace fnocc;
 namespace hilbert {
 
 // CG callback function
-static void evaluate_cg_lhs(SharedVector Ax, SharedVector x, void * data) {
+static void evaluate_cg_AATu(SharedVector Ax, SharedVector x, void * data) {
 
-    // reinterpret void * as an instance of v2RDMSolver
+    // reinterpret void * as an instance of BPSDPSolver
     BPSDPSolver* sdp = reinterpret_cast<BPSDPSolver*>(data);
     sdp->evaluate_AATu(Ax, x);
 
@@ -182,7 +182,7 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
         cg->set_convergence(cg_conv_i);
 
         // solve CG problem (step 1 in table 1 of PRL 106 083001)
-        cg->solve(Au_,y_,cg_rhs_,evaluate_cg_lhs,(void*)this);
+        cg->solve(Au_,y_,cg_rhs_,evaluate_cg_AATu,(void*)this);
         int iiter = cg->total_iterations();
 
         double end = omp_get_wtime();
