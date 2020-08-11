@@ -208,13 +208,13 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
     outfile->Printf("\n");
     outfile->Printf("           oiter");
     outfile->Printf("       y iter");
-    outfile->Printf("       x iter");
+    //outfile->Printf("       x iter");
     outfile->Printf("       z iter");
     outfile->Printf("        <x|z>");
     outfile->Printf("         E(p)");
     outfile->Printf("         E(d)");
     outfile->Printf("           mu");
-    outfile->Printf("       eps(p)\n");
+    outfile->Printf("       eps(p)");
     outfile->Printf("        eps(d)\n");
 
     int oiter_local = 0;
@@ -228,7 +228,7 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
 
     // adjust default lbfgs parameters
     param.max_iterations = options_.get_int("MAXITER");
-    param.epsilon        = 1e-8; //options_.get_double("LBFGS_CONVERGENCE");
+    param.epsilon        = r_convergence_;//1e-8; //options_.get_double("LBFGS_CONVERGENCE");
 
     do {
 
@@ -266,7 +266,12 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
         start = omp_get_wtime();
 
         // initial objective function value default parameters
-        lbfgsfloatval_t lag_z = evaluate_gradient_z(lbfgs_vars_z_,ATu_->pointer());
+
+        // evaluate A^T y - c. don't overwrite ... ATu_ is used by lbfgs
+        evaluate_ATu_(ATu_, y_, data_);
+        ATu_->subtract(c_);
+
+        lbfgsfloatval_t lag_z = evaluate_gradient_z(lbfgs_vars_z_,tmp_->pointer());
         lbfgs(n_primal_,lbfgs_vars_z_,&lag_z,lbfgs_evaluate_z,monitor_lbfgs_progress,(void*)this,&param);
         int z_iter = iiter_;
 
@@ -292,15 +297,40 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
         if ( oiter_ % 20 == 0 && oiter_ > 0 ) {
 
 /*
-            // solve for x, given y, z, and mu
-            lbfgsfloatval_t lag_x = evaluate_gradient_x(lbfgs_vars_x,ATu_->pointer());
-            lbfgs(n_primal_,lbfgs_vars_x,&lag_x,lbfgs_evaluate_x,monitor_lbfgs_progress,(void*)this,&param);
-            x_iter = iiter_;
+            if ( oiter_ % 1000 == 0 ) {
 
-            // build x = r.rT
-            build_x(lbfgs_vars_x);
+                mu_primal_ = 1e-2;
 
-            mu_primal_ *= 0.1;
+                // lbfgs container auxiliary variables that define x
+                lbfgsfloatval_t * lbfgs_vars_x = lbfgs_malloc(n_primal_);
+
+                // seed auxiliary variables
+                for (int i = 0; i < n_primal_; i++) {
+                    lbfgs_vars_x[i] = 2.0 * ( (double)rand()/RAND_MAX - 0.5 ) / 1000.0;
+                }
+
+                // solve for x, given y, z, and mu
+                lbfgsfloatval_t lag_x = evaluate_gradient_x(lbfgs_vars_x,ATu_->pointer());
+                lbfgs(n_primal_,lbfgs_vars_x,&lag_x,lbfgs_evaluate_x,monitor_lbfgs_progress,(void*)this,&param);
+
+                // build x = r.rT
+                build_x(lbfgs_vars_x);
+
+                free(lbfgs_vars_z_);
+
+                // evaluate primal energy
+                double energy_primal = x_->vector_dot(c_);
+
+                // evaluate primal energy: ||Ax - b||
+                evaluate_Au_(Au_,x_,data_);
+                Au_->subtract(b_);
+                primal_error_ = Au_->norm();
+                printf("%20.12lf %20.12lf\n",energy_primal,primal_error_);
+
+                return;
+
+                mu_primal_ *= 0.1;
+            }
 */
 
             // update lagrange multipliers, x
@@ -346,7 +376,9 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
 
 double DualSDPSolver::evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatval_t * g) {
 
-    // L = || c - ATy + z ||^2 + (x.z)^2, fixed y and z
+    // L = || ATy - c + z ||^2 + (x.z)^2, fixed y and z
+    //std::shared_ptr<Vector> dual_error_vector (new Vector(n_primal_));
+    //double * dual_p     = dual_error_vector->pointer();
 
     // pointers
     double * r_p   = (double*)r;
@@ -359,10 +391,15 @@ double DualSDPSolver::evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatv
     build_z(r_p);
 
     // evaluate || A^T y - c + z||
-    evaluate_ATu_(ATu_, y_, data_);
-    ATu_->subtract(c_);
+    //evaluate_ATu_(ATu_, y_, data_);
+    //ATu_->subtract(c_);
     ATu_->add(z_);
     double dual_error = ATu_->norm();
+
+    // evaluate || A^T y - c + z||
+    //dual_error_vector->copy(ATu_.get());
+    //dual_error_vector->add(z_);
+    //double dual_error = dual_error_vector->norm();
 
     // z.x = 0
     double xz = x_->vector_dot(z_);
@@ -386,6 +423,7 @@ double DualSDPSolver::evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatv
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 tmp_p[i*n+j + off_nn]  = ( ATu_p[i*n+j + off_nn] + ATu_p[j*n+i + off_nn] );
+                //tmp_p[i*n+j + off_nn]  = ( dual_p[i*n+j + off_nn] + dual_p[j*n+i + off_nn] );
                 tmp_p[i*n+j + off_nn] += (  x_p[i*n+j + off_nn] +  x_p[j*n+i + off_nn] ) * xz;
 
                 // ||ATy - c + z||^2
@@ -415,6 +453,9 @@ double DualSDPSolver::evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatv
         off_nn += n*n;
         off_nm += n*m;
     }
+
+//printf("||g|| %20.12lf\n",C_DNRM2(n_primal_,g,1));
+    ATu_->subtract(z_);
 
     return lagrangian;
 }
