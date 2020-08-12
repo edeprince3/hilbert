@@ -228,7 +228,7 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
 
     // adjust default lbfgs parameters
     param.max_iterations = options_.get_int("MAXITER");
-    param.epsilon        = r_convergence_;//1e-8; //options_.get_double("LBFGS_CONVERGENCE");
+    //param.epsilon        = 1e-10; //options_.get_double("LBFGS_CONVERGENCE");
 
     do {
 
@@ -248,6 +248,17 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
 
         // add tau*mu*(b-Ax) to A(c-z) and put result in cg_rhs_
         cg_rhs_->add(Au_);
+
+        double cg_conv_i = options_.get_double("CG_CONVERGENCE");
+        if (oiter_ == 0) {
+            cg_conv_i = 0.01;
+        }else {
+            cg_conv_i = 0.01 * dual_error_;
+        }
+        if (cg_conv_i < cg_convergence) {
+            cg_conv_i = cg_convergence;
+        }
+        cg->set_convergence(cg_conv_i);
 
         // solve CG problem (solve dL/dy = 0)
         cg->solve(Au_,y_,cg_rhs_,evaluate_cg_AATu,(void*)this);
@@ -271,6 +282,9 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
         evaluate_ATu_(ATu_, y_, data_);
         ATu_->subtract(c_);
 
+        if ( oiter_ > 0 ) {
+            param.epsilon = dual_error_ * 0.01; 
+        }
         lbfgsfloatval_t lag_z = evaluate_gradient_z(lbfgs_vars_z_,tmp_->pointer());
         lbfgs(n_primal_,lbfgs_vars_z_,&lag_z,lbfgs_evaluate_z,monitor_lbfgs_progress,(void*)this,&param);
         int z_iter = iiter_;
@@ -337,7 +351,7 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
             for (int i = 0; i < n_primal_; i++) {
                 x_p[i] += err_p[i] / mu_;
             }
-            //mu_ *= 0.1;
+            //mu_ *= primal_error_ / dual_error_;
 
             double overlap = x_->vector_dot(z_);
             lag_xz_  += overlap / mu_xz_;
@@ -352,6 +366,10 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
         evaluate_Au_(Au_,x_,data_);
         Au_->subtract(b_);
         primal_error_ = Au_->norm();
+
+        //if ( oiter_ % 500 == 0 && oiter_ > 0 ) {
+        //    mu_ *= primal_error_ / dual_error_;
+        //}
 
         outfile->Printf("    %12i %12i %12i %12.6lf %12.6lf %12.6lf %12.2le %12.3le %12.3le\n",
                     oiter_,cg_iter, z_iter, x_->vector_dot(z_),energy_primal,energy_dual,mu_,primal_error_,dual_error_);
