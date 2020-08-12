@@ -56,9 +56,9 @@ static void evaluate_cg_AATu(SharedVector Ax, SharedVector x, void * data) {
 
 void DualSDPSolver::evaluate_AATu(std::shared_ptr<Vector> AATu,std::shared_ptr<Vector> u) {
     AATu->zero();
-    std::shared_ptr<Vector> ATu (new Vector(n_primal_));
-    evaluate_ATu_(ATu,u,data_);
-    evaluate_Au_(AATu,ATu,data_);
+    tmp_->zero();
+    evaluate_ATu_(tmp_,u,data_);
+    evaluate_Au_(AATu,tmp_,data_);
 }
 
 // liblbfgs routines:
