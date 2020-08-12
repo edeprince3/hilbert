@@ -435,9 +435,15 @@ double DualSDPSolver::evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatv
     //lagrangian += xz*xz/(2.0 * mu_xz_);
     lagrangian += xz*xz;
 
-    int off_nn = 0;
+    #pragma omp parallel for schedule (dynamic)
     for (int block = 0; block < primal_block_dim_.size(); block++) {
         int n = primal_block_dim_[block];
+        if ( n == 0 ) continue;
+        int off_nn = 0;
+        for (int myblock = 0; myblock < block; myblock++) {
+            int myn = primal_block_dim_[myblock];
+            off_nn += myn*myn;
+        }
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 tmp_p[i*n+j + off_nn]  = ( ATu_p[i*n+j + off_nn] + ATu_p[j*n+i + off_nn] );
@@ -458,21 +464,25 @@ double DualSDPSolver::evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatv
 
             }
         }
-        off_nn += n*n;
     }
 
-    off_nn = 0;
-    int off_nm = 0;
+    #pragma omp parallel for schedule (dynamic)
     for (int block = 0; block < primal_block_dim_.size(); block++) {
         int n = primal_block_dim_[block];
         int m = primal_block_rank_[block];
         if ( n == 0 ) continue;
+        int off_nn = 0;
+        int off_nm = 0;
+        for (int myblock = 0; myblock < block; myblock++) {
+            int myn = primal_block_dim_[myblock];
+            int mym = primal_block_rank_[myblock];
+            off_nn += myn*myn;
+            off_nm += myn*mym;
+        }
         F_DGEMM('n', 'n', n, m, n, 2.0, tmp_p + off_nn, n, r_p + off_nm, n, 0.0, g + off_nm, n);
-        off_nn += n*n;
-        off_nm += n*m;
     }
 
-//printf("||g|| %20.12lf\n",C_DNRM2(n_primal_,g,1));
+    // subtract z from ATy - c + z so we don't need to construct ATy - c on the next iteration
     ATu_->subtract(z_);
 
     return lagrangian;
@@ -566,15 +576,20 @@ void DualSDPSolver::build_z(double * r){
 
     double * z_p = z_->pointer();
 
-    int off_nn = 0;
-    int off_nm = 0;
+    #pragma omp parallel for schedule (dynamic)
     for (int block = 0; block < primal_block_dim_.size(); block++) {
         int n = primal_block_dim_[block];
         int m = primal_block_rank_[block];
         if ( n == 0 ) continue;
+        int off_nn = 0;
+        int off_nm = 0;
+        for (int myblock = 0; myblock < block; myblock++) {
+            int myn = primal_block_dim_[myblock];
+            int mym = primal_block_rank_[myblock];
+            off_nn += myn*myn;
+            off_nm += myn*mym;
+        }
         F_DGEMM('n', 't', n, n, m, 1.0, r + off_nm, n, r + off_nm, n, 0.0, z_p + off_nn, n);
-        off_nm += n*m;
-        off_nn += n*n;
     }
 
 }
