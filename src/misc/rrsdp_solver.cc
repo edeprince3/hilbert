@@ -166,6 +166,14 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
         // initial objective function value default parameters
         lbfgsfloatval_t lagrangian = evaluate_gradient_x(lbfgs_vars_x_,tmp->pointer());
 
+        if (oiter_ == 0) {
+            param.epsilon = 0.01;
+        }else {
+            param.epsilon = 0.01 * primal_error_;
+        }
+        if ( param.epsilon < r_convergence_ ) {
+            param.epsilon = r_convergence_;
+        }
         int status = lbfgs(n_primal_,lbfgs_vars_x_,&lagrangian,lbfgs_evaluate,monitor_lbfgs_progress,(void*)this,&param);
         lbfgs_error_check(status);
 
