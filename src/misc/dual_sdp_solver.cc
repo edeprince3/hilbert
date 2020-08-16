@@ -282,8 +282,13 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
         evaluate_ATu_(ATu_, y_, data_);
         ATu_->subtract(c_);
 
-        if ( oiter_ > 0 ) {
-            param.epsilon = dual_error_ * 0.01; 
+        if (oiter_ == 0) {
+            param.epsilon = 0.01;
+        }else {
+            param.epsilon = 0.01 * dual_error_;
+        }
+        if ( param.epsilon < r_convergence_ ) {
+            param.epsilon = r_convergence_;
         }
         lbfgsfloatval_t lag_z = evaluate_gradient_z(lbfgs_vars_z_,tmp_->pointer());
         int status = lbfgs(n_primal_,lbfgs_vars_z_,&lag_z,lbfgs_evaluate_z,monitor_lbfgs_progress,(void*)this,&param);
