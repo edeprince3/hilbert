@@ -32,12 +32,11 @@
 #include <psi4/libqt/qt.h>
 #include <psi4/libpsi4util/PsiOutStream.h>
 
-#include <lbfgs.h>
-
 #include "rrsdp_solver.h"
 
 #include <misc/omp.h>
 #include <misc/blas.h>
+#include <misc/lbfgs_helper.h>
 
 using namespace psi;
 using namespace fnocc;
@@ -52,7 +51,7 @@ static lbfgsfloatval_t lbfgs_evaluate(void * instance,
     const lbfgsfloatval_t step) {
 
     RRSDPSolver * sdp = reinterpret_cast<RRSDPSolver*>(instance);
-    double f = sdp->evaluate_gradient(x,g);
+    double f = sdp->evaluate_gradient_x(x,g);
 
     return f;
 }
@@ -79,9 +78,21 @@ RRSDPSolver::RRSDPSolver(long int n_primal, long int n_dual, Options & options)
     : SDPSolver(n_primal,n_dual,options) {
 
     iiter_ = 0;
+
+    // lbfgs container auxiliary variables that define x
+    lbfgs_vars_x_ = lbfgs_malloc(n_primal_);
+
+    // seed auxiliary variables
+    srand(0);
+    for (int i = 0; i < n_primal_; i++) {
+        lbfgs_vars_x_[i] = 2.0 * ( (double)rand()/RAND_MAX - 0.5 ) / 1000.0;
+    }
 }
 
 RRSDPSolver::~RRSDPSolver(){
+
+    free(lbfgs_vars_x_);
+
 }
 
 void RRSDPSolver::solve(std::shared_ptr<Vector> x,   
@@ -97,7 +108,7 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
     data_ = data;
 
     // class pointers to callback functions
-    evaluate_Au_ = evaluate_Au;
+    evaluate_Au_  = evaluate_Au;
     evaluate_ATu_ = evaluate_ATu;
 
     // copy block sizes
@@ -105,10 +116,12 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
     for (int block = 0; block < primal_block_dim.size(); block++) {
         primal_block_dim_.push_back(primal_block_dim[block]);
     }
-    // copy block ranks (same as dimension for now)
-    primal_block_rank_.clear();
-    for (int block = 0; block < primal_block_dim.size(); block++) {
-        primal_block_rank_.push_back(primal_block_dim[block]);
+    // if block ranks are not set, assign rank = dim
+    if ( primal_block_rank_.size() != primal_block_dim_.size() ) {
+        primal_block_rank_.clear();
+        for (int block = 0; block < primal_block_dim.size(); block++) {
+            primal_block_rank_.push_back(primal_block_dim[block]);
+        }
     }
 
     // class pointers to input c,x,b
@@ -116,9 +129,7 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
     x_ = x;
     b_ = b;
 
-    // lbfgs container for primal solution vector, x
-    lbfgsfloatval_t * lbfgs_vars  = lbfgs_malloc(n_primal_);
-    C_DCOPY(n_primal_,x_->pointer(),1,lbfgs_vars,1);
+    build_x(lbfgs_vars_x_);
 
     // initial energy   
     double energy =  x_->vector_dot(c_);
@@ -140,40 +151,31 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
     int oiter_local = 0;
 
     double max_err = -999;
+
+    std::shared_ptr<Vector> tmp (new Vector(n_primal_));
+
+    lbfgs_parameter_t param;
+    lbfgs_parameter_init(&param);
+    param.max_iterations = options_.get_int("MAXITER");
+    //param.epsilon        = options_.get_double("LBFGS_CONVERGENCE");
+
     do {
 
         // minimize lagrangian
 
         // initial objective function value default parameters
-        lbfgsfloatval_t lagrangian = evaluate_gradient(lbfgs_vars,ATu_->pointer());
-        lbfgs_parameter_t param;
-        lbfgs_parameter_init(&param);
+        lbfgsfloatval_t lagrangian = evaluate_gradient_x(lbfgs_vars_x_,tmp->pointer());
 
-        // adjust default parameters
-        param.max_iterations = options_.get_int("MAXITER");
-        //param.epsilon        = options_.get_double("LBFGS_CONVERGENCE");
-
-        lbfgs(n_primal_,lbfgs_vars,&lagrangian,lbfgs_evaluate,monitor_lbfgs_progress,(void*)this,&param);
+        int status = lbfgs(n_primal_,lbfgs_vars_x_,&lagrangian,lbfgs_evaluate,monitor_lbfgs_progress,(void*)this,&param);
+        lbfgs_error_check(status);
 
         // update lagrange multipliers and penalty parameter
 
         // build x = r.rT
-        double * x_p = x_->pointer();
-        double * r_p = lbfgs_vars;
-
-        int off_nn = 0;
-        int off_nm = 0;
-        for (int block = 0; block < primal_block_dim_.size(); block++) {
-            int n = primal_block_dim_[block];
-            int m = primal_block_rank_[block];
-            if ( n == 0 ) continue; 
-            F_DGEMM('n', 't', n, n, m, 1.0, r_p + off_nm, n, r_p + off_nm, n, 0.0, x_p + off_nn, n);
-            off_nm += n*m;
-            off_nn += n*n;
-        }
+        build_x(lbfgs_vars_x_);
 
         // evaluate x^T.c
-        double energy_primal =  x_->vector_dot(c_);
+        double energy_primal = x_->vector_dot(c_);
 
         // evaluate (Ax-b)
         evaluate_Au_(Au_,x_,data_);
@@ -184,19 +186,19 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
         int imax = -1;
         double * Au_p = Au_->pointer();
         double * y_p  = y_->pointer();
-        for (int i = 0; i < n_dual_; i++) {
-            if ( fabs(Au_p[i]) > new_max_err ) {
-                new_max_err = fabs(Au_p[i]);
-                imax = i;
-             }
-        }
-        if ( new_max_err < 0.25 * max_err ){
+        //for (int i = 0; i < n_dual_; i++) {
+        //    if ( fabs(Au_p[i]) > new_max_err ) {
+        //        new_max_err = fabs(Au_p[i]);
+        //        imax = i;
+        //     }
+        //}
+        //if ( new_max_err < 0.25 * max_err ){
             for (int i = 0; i < n_dual_; i++) {
                 y_p[i] -= Au_p[i] / mu_;
             }
-        }else{
+        //}else{
             mu_ *= 0.1;
-        }
+        //}
         max_err = new_max_err;
 
         outfile->Printf("    %12i %12i %12.6lf %12.6lf %12.2le %12.3le\n",
@@ -220,11 +222,27 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
 
     }while( !is_converged_ );
 
-    free(lbfgs_vars);
+}
+
+// build x = r.rT
+void RRSDPSolver::build_x(double * r){
+
+    double * x_p = x_->pointer();
+
+    int off_nn = 0;
+    int off_nm = 0;
+    for (int block = 0; block < primal_block_dim_.size(); block++) {
+        int n = primal_block_dim_[block];
+        int m = primal_block_rank_[block];
+        if ( n == 0 ) continue;
+        F_DGEMM('n', 't', n, n, m, 1.0, r + off_nm, n, r + off_nm, n, 0.0, x_p + off_nn, n);
+        off_nm += n*m;
+        off_nn += n*n;
+    }
 
 }
 
-double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t * g) {
+double RRSDPSolver::evaluate_gradient_x(const lbfgsfloatval_t * r, lbfgsfloatval_t * g) {
 
     // L = x^Tc - y^T (Ax - b) + 1/mu || Ax - b ||
 
@@ -234,16 +252,7 @@ double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t
     double * c_p   = c_->pointer();
 
     // build x = r.rT
-    int off_nn = 0;
-    int off_nm = 0;
-    for (int block = 0; block < primal_block_dim_.size(); block++) {
-        int n = primal_block_dim_[block];
-        int m = primal_block_rank_[block];
-        if ( n == 0 ) continue;
-        F_DGEMM('n', 't', n, n, m, 1.0, r_p + off_nm, n, r_p + off_nm, n, 0.0, x_p + off_nn, n);
-        off_nm += n*m;
-        off_nn += n*n;
-    }
+    build_x(r_p);
 
     // evaluate primal energy
     double energy = x_->vector_dot(c_);
@@ -256,11 +265,11 @@ double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t
     double nrm = Au_->norm();
 
     // evaluate lagrangian
-    double lagrangian = energy - y_->vector_dot(Au_) + nrm*nrm/2.0 * mu_;
+    double lagrangian = energy - y_->vector_dot(Au_) + nrm*nrm/(2.0 * mu_);
 
     // dL/dR = 2( A^T [ 2/mu(Ax-b) - y] + c) . r
 
-    // evaluate A^T (2/mu[Ax-b] - y)
+    // evaluate A^T (1/mu[Ax-b] - y)
     Au_->scale(1.0/mu_);
     Au_->subtract(y_);
     evaluate_ATu_(ATu_,Au_,data_);
@@ -269,7 +278,7 @@ double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t
     ATu_->add(c_);
 
     double * ATu_p = ATu_->pointer();
-    off_nn = 0;
+    int off_nn = 0;
     for (int block = 0; block < primal_block_dim_.size(); block++) {
         int n = primal_block_dim_[block];
         for (int i = 0; i < n; i++) {
@@ -285,7 +294,7 @@ double RRSDPSolver::evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t
 
     // evaluate gradient of lagrangian
     off_nn = 0;
-    off_nm = 0;
+    int off_nm = 0;
     for (int block = 0; block < primal_block_dim_.size(); block++) {
         int n = primal_block_dim_[block];
         int m = primal_block_rank_[block];

@@ -38,7 +38,7 @@
 #include <misc/omp.h>
 #include <misc/blas.h>
 
-#include <lbfgs.h>
+#include <misc/lbfgs_helper.h>
 
 using namespace psi;
 using namespace fnocc;
@@ -163,7 +163,7 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
     data_ = data;
 
     // class pointers to callback functions
-    evaluate_Au_ = evaluate_Au;
+    evaluate_Au_  = evaluate_Au;
     evaluate_ATu_ = evaluate_ATu;
 
     // copy block sizes
@@ -286,7 +286,8 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
             param.epsilon = dual_error_ * 0.01; 
         }
         lbfgsfloatval_t lag_z = evaluate_gradient_z(lbfgs_vars_z_,tmp_->pointer());
-        lbfgs(n_primal_,lbfgs_vars_z_,&lag_z,lbfgs_evaluate_z,monitor_lbfgs_progress,(void*)this,&param);
+        int status = lbfgs(n_primal_,lbfgs_vars_z_,&lag_z,lbfgs_evaluate_z,monitor_lbfgs_progress,(void*)this,&param);
+        lbfgs_error_check(status);
         int z_iter = iiter_;
 
         // build z = r.rT

@@ -58,7 +58,7 @@ class RRSDPSolver: public SDPSolver {
                SDPCallbackFunction evaluate_ATu,
                void * data);
 
-    double evaluate_gradient(const lbfgsfloatval_t * r, lbfgsfloatval_t * g);
+    double evaluate_gradient_x(const lbfgsfloatval_t * r, lbfgsfloatval_t * g);
 
     void set_iiter(int iiter) { iiter_ = iiter; }
 
@@ -66,6 +66,9 @@ class RRSDPSolver: public SDPSolver {
 
     /// pointer to input data
     void * data_;
+
+    /// container for auxiliary variables
+    lbfgsfloatval_t * lbfgs_vars_x_;
 
     /// copy of Au callback function
     SDPCallbackFunction evaluate_Au_;
@@ -90,6 +93,9 @@ class RRSDPSolver: public SDPSolver {
 
     /// pointer to the input b vector
     std::shared_ptr<Vector> b_;
+
+    /// build x from auxiliary parameters
+    void build_x(double * r);
 
 };
 
