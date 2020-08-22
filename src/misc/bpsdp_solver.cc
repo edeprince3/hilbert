@@ -236,7 +236,6 @@ void BPSDPSolver::solve(std::shared_ptr<Vector> x,
         }
 
         if ( oiter_local == maxiter ) break;
-
     }while( !is_converged_ );
 
 }

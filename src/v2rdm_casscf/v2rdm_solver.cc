@@ -56,8 +56,8 @@
 
 #include <focas/focas_c_interface.h>
 #include <misc/blas.h>
-#include <misc/diis.h>
 #include <misc/bpsdp_solver.h>
+#include <misc/rrsdp_solver.h>
 #include <misc/threeindexintegrals.h>
 #include <misc/omp.h>
 
@@ -141,28 +141,14 @@ v2RDMSolver::~v2RDMSolver()
     free(q1aoff);
     free(q1boff);
     if ( constrain_q2_ ) {
-        if ( !spin_adapt_q2_ ) {
-            free(q2aboff);
-            free(q2aaoff);
-            free(q2bboff);
-        }else {
-            free(q2soff);
-            free(q2toff);
-            free(q2toff_p1);
-            free(q2toff_m1);
-        }
+        free(q2aboff);
+        free(q2aaoff);
+        free(q2bboff);
     }
     if ( constrain_g2_ ) {
-        if ( ! spin_adapt_g2_ ) {
-            free(g2aboff);
-            free(g2baoff);
-            free(g2aaoff);
-        }else {
-            free(g2soff);
-            free(g2toff);
-            free(g2toff_p1);
-            free(g2toff_m1);
-        }
+        free(g2aboff);
+        free(g2baoff);
+        free(g2aaoff);
     }
     if ( constrain_t1_ ) {
         free(t1aaboff);
@@ -461,789 +447,27 @@ void  v2RDMSolver::common_init(){
     // set the wavefunction name
     name_ = "V2RDM CASSCF";
 
-    // pick conditions.  default is dqg
-    constrain_q2_ = true;
-    constrain_g2_ = true;
-    constrain_t1_ = false;
-    constrain_t2_ = false;
-    constrain_d3_ = false;
-    constrain_d4_ = false;
-    if (options_.get_str("POSITIVITY")=="D") {
-        constrain_q2_ = false;
-        constrain_g2_ = false;
-    }else if (options_.get_str("POSITIVITY")=="DQ") {
-        constrain_q2_ = true;
-        constrain_g2_ = false;
-    }else if (options_.get_str("POSITIVITY")=="DG") {
-        constrain_q2_ = false;
-        constrain_g2_ = true;
-    }else if (options_.get_str("POSITIVITY")=="DQGT1") {
-        constrain_q2_ = true;
-        constrain_g2_ = true;
-        constrain_t1_ = true;
-    }else if (options_.get_str("POSITIVITY")=="DQGT2") {
-        constrain_q2_ = true;
-        constrain_g2_ = true;
-        constrain_t2_ = true;
-    }else if (options_.get_str("POSITIVITY")=="DQGT1T2") {
-        constrain_q2_ = true;
-        constrain_g2_ = true;
-        constrain_t1_ = true;
-        constrain_t2_ = true;
-    }else if (options_.get_str("POSITIVITY")=="DQGT") {
-        constrain_q2_ = true;
-        constrain_g2_ = true;
-        constrain_t1_ = true;
-        constrain_t2_ = true;
-    }
+    // NOTE! the following functions must be modified when coding new constraints
 
-    if ( options_.get_bool("CONSTRAIN_D3") ) {
-        constrain_d3_ = true;
-    }
-    if ( options_.get_bool("CONSTRAIN_D4") ) {
-        constrain_d4_ = true;
-        if ( !constrain_d3_ ) {
-            constrain_d3_ = true;
-        }
-    }
+    // set_constraints():     determine applied constraints from options object
+    // determine_n_primal():  determine primal variable dimension associated with applied constraints
+    // determine_n_dual():    determine dual variable dimension associated with applied constraints
+    // determine_n_primal_offsets(): set block dimenssions and offsets in primal vector for each rdm block
 
-    spin_adapt_g2_  = options_.get_bool("SPIN_ADAPT_G2");
-    spin_adapt_q2_  = options_.get_bool("SPIN_ADAPT_Q2");
-    constrain_spin_ = options_.get_bool("CONSTRAIN_SPIN");
+    // set constraints
+    set_constraints();
 
-    if ( constrain_t1_ || constrain_t2_ ) {
-        if (spin_adapt_g2_) {
-            throw PsiException("If constraining T1/T2, G2 cannot currently be spin adapted.",__FILE__,__LINE__);
-        }
-        if (spin_adapt_q2_) {
-            throw PsiException("If constraining T1/T2, Q2 cannot currently be spin adapted.",__FILE__,__LINE__);
-        }
-    }
+    // build mapping arrays and determine the number of geminals per block. constraints must be set before calling
+    build_mapping_arrays();
 
-    // build mapping arrays and determine the number of geminals per block
-    BuildBasis();
+    // number of primal variables (dimension of x)
+    determine_n_primal();
 
-    double ms = (multiplicity_ - 1.0)/2.0;
-    if ( ms > 0 ) {
-        if (spin_adapt_g2_) {
-            throw PsiException("G2 not spin adapted for S = M != 0",__FILE__,__LINE__);
-        }
-        if (spin_adapt_q2_) {
-            throw PsiException("Q2 not spin adapted for S = M != 0",__FILE__,__LINE__);
-        }
-    }
+    // number of constraints (dimension of y)
+    determine_n_dual();
 
-    // dimension of variable buffer (x)
-    dimx_ = 0;
-    for ( int h = 0; h < nirrep_; h++) {
-        dimx_ += gems_ab[h]*gems_ab[h]; // D2ab
-    }
-    for ( int h = 0; h < nirrep_; h++) {
-        dimx_ += gems_aa[h]*gems_aa[h]; // D2aa
-    }
-    for ( int h = 0; h < nirrep_; h++) {
-        dimx_ += gems_aa[h]*gems_aa[h]; // D2bb
-    }
-    for ( int h = 0; h < nirrep_; h++) {
-        dimx_ += amopi_[h]*amopi_[h]; // D1a
-        dimx_ += amopi_[h]*amopi_[h]; // D1b
-        dimx_ += amopi_[h]*amopi_[h]; // Q1b
-        dimx_ += amopi_[h]*amopi_[h]; // Q1a
-    }
-    if ( constrain_spin_ && nalpha_ == nbeta_ ) {
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += gems_ab[h] * gems_ab[h]; // D200
-        }
-    }else if ( constrain_spin_ ) {
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += 4 * gems_ab[h] * gems_ab[h]; // D200
-        }
-    }
-    if ( constrain_q2_ ) {
-        if ( !spin_adapt_q2_ ) {
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_ab[h]*gems_ab[h]; // Q2ab
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_aa[h]*gems_aa[h]; // Q2aa
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_aa[h]*gems_aa[h]; // Q2bb
-            }
-        }else {
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_00[h]*gems_00[h]; // Q2s
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_aa[h]*gems_aa[h]; // Q2t
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_aa[h]*gems_aa[h]; // Q2t_p1
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_aa[h]*gems_aa[h]; // Q2t_m1
-            }
-        }
-    }
-    if ( constrain_g2_ ) {
-        if ( !spin_adapt_g2_ ) {
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_ab[h]*gems_ab[h]; // G2ab
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_ab[h]*gems_ab[h]; // G2ba
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += 2*gems_ab[h]*2*gems_ab[h]; // G2aa/bb
-            }
-        }else {
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_ab[h]*gems_ab[h]; // G2s
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_ab[h]*gems_ab[h]; // G2t
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_ab[h]*gems_ab[h]; // G2t_p1
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                dimx_ += gems_ab[h]*gems_ab[h]; // G2t_m1
-            }
-        }
-    }
-    if ( constrain_t1_ ) {
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += trip_aaa[h]*trip_aaa[h]; // T1aaa
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += trip_aaa[h]*trip_aaa[h]; // T1bbb
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += trip_aab[h]*trip_aab[h]; // T1aab
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += trip_aab[h]*trip_aab[h]; // T1bba
-        }
-    }
-    if ( constrain_t2_ ) {
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += (trip_aba[h]+trip_aab[h])*(trip_aab[h]+trip_aba[h]); // T2aaa
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += (trip_aba[h]+trip_aab[h])*(trip_aab[h]+trip_aba[h]); // T2bbb
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += trip_aab[h]*trip_aab[h]; // T2aab
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += trip_aab[h]*trip_aab[h]; // T2bba
-        }
-    }
-    if ( constrain_d3_ ) {
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += trip_aaa[h] * trip_aaa[h]; // D3aaa
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += trip_aaa[h] * trip_aaa[h]; // D3bbb
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += trip_aab[h]*trip_aab[h]; // D3aab
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += trip_aab[h]*trip_aab[h]; // D3bba
-        }
-    }
-    if ( constrain_d4_ ) {
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += quartet_aaaa[h] * quartet_aaaa[h]; // D4aaaa
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += quartet_aaab[h] * quartet_aaab[h]; // D4aaab
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += quartet_aabb[h] * quartet_aabb[h]; // D4aabb
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += quartet_aaab[h] * quartet_aaab[h]; // D4bbba
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            dimx_ += quartet_aaaa[h] * quartet_aaaa[h]; // D4bbbb
-        }
-    }
-
-    // offsets in x
-    offset = 0;
-
-    d2aboff = (int*)malloc(nirrep_*sizeof(int));
-    d2aaoff = (int*)malloc(nirrep_*sizeof(int));
-    d2bboff = (int*)malloc(nirrep_*sizeof(int));
-    d200off = (int*)malloc(nirrep_*sizeof(int));
-    for (int h = 0; h < nirrep_; h++) {
-        d2aboff[h] = offset; offset += gems_ab[h]*gems_ab[h];
-    }
-    for (int h = 0; h < nirrep_; h++) {
-        d2aaoff[h] = offset; offset += gems_aa[h]*gems_aa[h];
-    }
-    for (int h = 0; h < nirrep_; h++) {
-        d2bboff[h] = offset; offset += gems_aa[h]*gems_aa[h];
-    }
-    if ( constrain_spin_ && nalpha_ == nbeta_ ) {
-        for (int h = 0; h < nirrep_; h++) {
-            d200off[h] = offset; offset += gems_ab[h]*gems_ab[h];
-        }
-    } else if ( constrain_spin_ ) {
-        for (int h = 0; h < nirrep_; h++) {
-            d200off[h] = offset; offset += 4*gems_ab[h]*gems_ab[h];
-        }
-    }
-
-    d1aoff = (int*)malloc(nirrep_*sizeof(int));
-    d1boff = (int*)malloc(nirrep_*sizeof(int));
-    q1aoff = (int*)malloc(nirrep_*sizeof(int));
-    q1boff = (int*)malloc(nirrep_*sizeof(int));
-    for (int h = 0; h < nirrep_; h++) {
-        d1aoff[h] = offset; offset += amopi_[h]*amopi_[h];
-    }
-    for (int h = 0; h < nirrep_; h++) {
-        d1boff[h] = offset; offset += amopi_[h]*amopi_[h];
-    }
-    for (int h = 0; h < nirrep_; h++) {
-        q1aoff[h] = offset; offset += amopi_[h]*amopi_[h];
-    }
-    for (int h = 0; h < nirrep_; h++) {
-        q1boff[h] = offset; offset += amopi_[h]*amopi_[h];
-    }
-
-    if ( constrain_q2_ ) {
-        if ( !spin_adapt_q2_ ) {
-            q2aboff = (int*)malloc(nirrep_*sizeof(int));
-            q2aaoff = (int*)malloc(nirrep_*sizeof(int));
-            q2bboff = (int*)malloc(nirrep_*sizeof(int));
-            for (int h = 0; h < nirrep_; h++) {
-                q2aboff[h] = offset; offset += gems_ab[h]*gems_ab[h];
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                q2aaoff[h] = offset; offset += gems_aa[h]*gems_aa[h];
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                q2bboff[h] = offset; offset += gems_aa[h]*gems_aa[h];
-            }
-        }else {
-            q2soff = (int*)malloc(nirrep_*sizeof(int));
-            q2toff = (int*)malloc(nirrep_*sizeof(int));
-            q2toff_p1 = (int*)malloc(nirrep_*sizeof(int));
-            q2toff_m1 = (int*)malloc(nirrep_*sizeof(int));
-            for (int h = 0; h < nirrep_; h++) {
-                q2soff[h] = offset; offset += gems_00[h]*gems_00[h];
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                q2toff[h] = offset; offset += gems_aa[h]*gems_aa[h];
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                q2toff_p1[h] = offset; offset += gems_aa[h]*gems_aa[h];
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                q2toff_m1[h] = offset; offset += gems_aa[h]*gems_aa[h];
-            }
-        }
-    }
-
-    if ( constrain_g2_ ) {
-        if ( ! spin_adapt_g2_ ) {
-            g2aboff = (int*)malloc(nirrep_*sizeof(int));
-            g2baoff = (int*)malloc(nirrep_*sizeof(int));
-            g2aaoff = (int*)malloc(nirrep_*sizeof(int));
-            for (int h = 0; h < nirrep_; h++) {
-                g2aboff[h] = offset; offset += gems_ab[h]*gems_ab[h];
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                g2baoff[h] = offset; offset += gems_ab[h]*gems_ab[h];
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                g2aaoff[h] = offset; offset += 2*gems_ab[h]*2*gems_ab[h];
-            }
-        }else {
-            g2soff = (int*)malloc(nirrep_*sizeof(int));
-            g2toff = (int*)malloc(nirrep_*sizeof(int));
-            g2toff_p1 = (int*)malloc(nirrep_*sizeof(int));
-            g2toff_m1 = (int*)malloc(nirrep_*sizeof(int));
-            for (int h = 0; h < nirrep_; h++) {
-                g2soff[h] = offset; offset += gems_ab[h]*gems_ab[h];
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                g2toff[h] = offset; offset += gems_ab[h]*gems_ab[h];
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                g2toff_p1[h] = offset; offset += gems_ab[h]*gems_ab[h];
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                g2toff_m1[h] = offset; offset += gems_ab[h]*gems_ab[h];
-            }
-        }
-    }
-
-    if ( constrain_t1_ ) {
-        t1aaboff = (int*)malloc(nirrep_*sizeof(int));
-        t1bbaoff = (int*)malloc(nirrep_*sizeof(int));
-        t1aaaoff = (int*)malloc(nirrep_*sizeof(int));
-        t1bbboff = (int*)malloc(nirrep_*sizeof(int));
-        for (int h = 0; h < nirrep_; h++) {
-            t1aaaoff[h] = offset; offset += trip_aaa[h]*trip_aaa[h]; // T1aaa
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            t1bbboff[h] = offset; offset += trip_aaa[h]*trip_aaa[h]; // T1bbb
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            t1aaboff[h] = offset; offset += trip_aab[h]*trip_aab[h]; // T1aab
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            t1bbaoff[h] = offset; offset += trip_aab[h]*trip_aab[h]; // T1bba
-        }
-    }
-
-    if ( constrain_t2_ ) {
-        t2aaboff = (int*)malloc(nirrep_*sizeof(int));
-        t2bbaoff = (int*)malloc(nirrep_*sizeof(int));
-        t2aaaoff = (int*)malloc(nirrep_*sizeof(int));
-        t2bbboff = (int*)malloc(nirrep_*sizeof(int));
-        for (int h = 0; h < nirrep_; h++) {
-            t2aaaoff[h] = offset; offset += (trip_aab[h]+trip_aba[h])*(trip_aab[h]+trip_aba[h]); // T2aaa
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            t2bbboff[h] = offset; offset += (trip_aab[h]+trip_aba[h])*(trip_aab[h]+trip_aba[h]); // T2bbb
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            t2aaboff[h] = offset; offset += trip_aab[h]*trip_aab[h]; // T2aab
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            t2bbaoff[h] = offset; offset += trip_aab[h]*trip_aab[h]; // T2bba
-        }
-    }
-    if ( constrain_d3_ ) {
-        d3aaaoff = (int*)malloc(nirrep_*sizeof(int));
-        d3bbboff = (int*)malloc(nirrep_*sizeof(int));
-        d3aaboff = (int*)malloc(nirrep_*sizeof(int));
-        d3bbaoff = (int*)malloc(nirrep_*sizeof(int));
-        for (int h = 0; h < nirrep_; h++) {
-            d3aaaoff[h] = offset; offset += trip_aaa[h]*trip_aaa[h]; // D3aaa
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            d3bbboff[h] = offset; offset += trip_aaa[h]*trip_aaa[h]; // D3bbb
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            d3aaboff[h] = offset; offset += trip_aab[h]*trip_aab[h]; // D3aab
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            d3bbaoff[h] = offset; offset += trip_aab[h]*trip_aab[h]; // D3bba
-        }
-    }
-    if ( constrain_d4_ ) {
-        d4aaaaoff = (int*)malloc(nirrep_*sizeof(int));
-        d4aaaboff = (int*)malloc(nirrep_*sizeof(int));
-        d4aabboff = (int*)malloc(nirrep_*sizeof(int));
-        d4bbbaoff = (int*)malloc(nirrep_*sizeof(int));
-        d4bbbboff = (int*)malloc(nirrep_*sizeof(int));
-        for (int h = 0; h < nirrep_; h++) {
-            d4aaaaoff[h] = offset; offset += quartet_aaaa[h]*quartet_aaaa[h]; // D4aaaa
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            d4aaaboff[h] = offset; offset += quartet_aaab[h]*quartet_aaab[h]; // D4aaab
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            d4aabboff[h] = offset; offset += quartet_aabb[h]*quartet_aabb[h]; // D4aabb
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            d4bbbaoff[h] = offset; offset += quartet_aaab[h]*quartet_aaab[h]; // D4bbba
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            d4bbbboff[h] = offset; offset += quartet_aaaa[h]*quartet_aaaa[h]; // D4bbbb
-        }
-    }
-
-    // constraints:
-    nconstraints_ = 0;
-
-    constrain_sz_ = options_.get_bool("CONSTRAIN_SZ");
-
-    if ( constrain_sz_ ) {
-        nconstraints_ += 1;                   // Tr(D2ab)
-        nconstraints_ += 1;                   // Tr(D2aa)
-        nconstraints_ += 1;                   // Tr(D2bb)
-    }else{
-        nconstraints_ += 1;                   // Tr(D2ab + D2aa + D2bb)
-    }
-
-    //for ( int h = 0; h < nirrep_; h++) {
-    //    nconstraints_ += gems_ab[h]*gems_ab[h]; // D2ab hermiticity
-    //    nconstraints_ += gems_aa[h]*gems_aa[h]; // D2aa hermiticity
-    //    nconstraints_ += gems_aa[h]*gems_aa[h]; // D2bb hermiticity
-    //}
-
-    for ( int h = 0; h < nirrep_; h++) {
-        nconstraints_ += amopi_[h]*amopi_[h]; // D1a <-> Q1a
-    }
-    for ( int h = 0; h < nirrep_; h++) {
-        nconstraints_ += amopi_[h]*amopi_[h]; // D1b <-> Q1b
-    }
-    if ( constrain_sz_ ) {
-        for ( int h = 0; h < nirrep_; h++) {
-            nconstraints_ += amopi_[h]*amopi_[h]; // contract D2ab        -> D1 a
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            nconstraints_ += amopi_[h]*amopi_[h]; // contract D2ab        -> D1 b
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            nconstraints_ += amopi_[h]*amopi_[h]; // contract D2aa        -> D1 a
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            nconstraints_ += amopi_[h]*amopi_[h]; // contract D2bb        -> D1 b
-        }
-    }else {
-        for ( int h = 0; h < nirrep_; h++) {
-            nconstraints_ += amopi_[h]*amopi_[h]; // contract D2aa + D2ab        -> D1 a
-        }
-        for ( int h = 0; h < nirrep_; h++) {
-            nconstraints_ += amopi_[h]*amopi_[h]; // contract D2bb + D2ab        -> D1 b
-        }
-    }
-
-    if ( constrain_spin_ ) {
-        nconstraints_ += 1;               // spin
-        // additional spin constraints for singlets:
-        if ( nalpha_ == nbeta_ ) {
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += amopi_[h]*amopi_[h]; // D1a = D1b
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_aa[h]*gems_aa[h]; // D2aa = D2bb
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_aa[h]*gems_aa[h]; // D2aa[pq][rs] = 1/2(D2ab[pq][rs] - D2ab[pq][sr] - D2ab[qp][rs] + D2ab[qp][sr])
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_aa[h]*gems_aa[h]; // D2bb[pq][rs] = 1/2(D2ab[pq][rs] - D2ab[pq][sr] - D2ab[qp][rs] + D2ab[qp][sr])
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_ab[h]*gems_ab[h];  // D200[pq][rs] = 1/(2 sqrt(1+dpq)sqrt(1+drs))(D2ab[pq][rs] + D2ab[pq][sr] + D2ab[qp][rs] + D2ab[qp][sr])
-            }
-        }else { // nonsinglets
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += 4*gems_ab[h]*gems_ab[h]; // D200_0, D210_0, D201_0, D211_0
-            }
-        }
-        // maximal spin constraints:
-        if ( constrain_g2_ ) {
-            nconstraints_ += gems_ab[0];
-            nconstraints_ += gems_ab[0];
-        }
-    }
-
-    if ( constrain_q2_ ) {
-        if ( ! spin_adapt_q2_ ) {
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_ab[h]*gems_ab[h]; // Q2ab
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_aa[h]*gems_aa[h]; // Q2aa
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_aa[h]*gems_aa[h]; // Q2bb
-            }
-        }else {
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_00[h]*gems_00[h]; // Q2s
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_aa[h]*gems_aa[h]; // Q2t
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_aa[h]*gems_aa[h]; // Q2t_p1
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_aa[h]*gems_aa[h]; // Q2t_m1
-            }
-        }
-
-    }
-    if ( constrain_g2_ ) {
-        if ( ! spin_adapt_g2_ ) {
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_ab[h]*gems_ab[h]; // G2ab
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_ab[h]*gems_ab[h]; // G2ba
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += 2*gems_ab[h]*2*gems_ab[h]; // G2aa
-            }
-        }else {
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_ab[h]*gems_ab[h]; // G2s
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_ab[h]*gems_ab[h]; // G2t
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_ab[h]*gems_ab[h]; // G2t_p1
-            }
-            for ( int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_ab[h]*gems_ab[h]; // G2t_m1
-            }
-        }
-    }
-    if ( constrain_t1_ ) {
-        for (int h = 0; h < nirrep_; h++) {
-            nconstraints_ += trip_aaa[h]*trip_aaa[h]; // T1aaa
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            nconstraints_ += trip_aaa[h]*trip_aaa[h]; // T1bbb
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            nconstraints_ += trip_aab[h]*trip_aab[h]; // T1aab
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            nconstraints_ += trip_aab[h]*trip_aab[h]; // T1bba
-        }
-    }
-    if ( constrain_t2_ ) {
-        for (int h = 0; h < nirrep_; h++) {
-            nconstraints_ += (trip_aab[h]+trip_aba[h])*(trip_aab[h]+trip_aba[h]); // T2aaa
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            nconstraints_ += (trip_aab[h]+trip_aba[h])*(trip_aab[h]+trip_aba[h]); // T2bbb
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            nconstraints_ += trip_aab[h]*trip_aab[h]; // T2aab
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            nconstraints_ += trip_aab[h]*trip_aab[h]; // T2bba
-        }
-    }
-    if ( constrain_d3_ ) {
-        if ( nalpha_ - nrstc_ - nfrzc_ > 2 ) {
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_aa[h]*gems_aa[h]; // D3aaa -> D2aa
-            }
-        }
-        if ( nbeta_ - nrstc_ - nfrzc_ > 2 ) {
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_aa[h]*gems_aa[h]; // D3bbb -> D2bb
-            }
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            nconstraints_ += gems_aa[h]*gems_aa[h]; // D3aab -> D2aa
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            nconstraints_ += gems_aa[h]*gems_aa[h]; // D3bba -> D2bb
-        }
-        if ( nalpha_ - nrstc_ - nfrzc_ > 1 ) {
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_ab[h]*gems_ab[h]; // D3aab -> D2ab
-            }
-        }
-        if ( nbeta_ - nrstc_ - nfrzc_ > 1 ) {
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += gems_ab[h]*gems_ab[h]; // D3bba -> D2ab
-            }
-        }
-        // additional spin constraints for singlets:
-        if ( constrain_spin_ && nalpha_ == nbeta_ ) {
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += trip_aab[h]*trip_aab[h]; // D3aab = D3bba
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += trip_aaa[h]*trip_aaa[h]; // D3aab -> D3aaa
-                nconstraints_ += trip_aaa[h]*trip_aaa[h]; // D3bba -> D3bbb
-            }
-        }
-    }
-    if ( constrain_d4_ ) {
-        if ( nalpha_ - nrstc_ - nfrzc_ > 3 ) {
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += trip_aaa[h]*trip_aaa[h]; // D4aaaa -> D3aaa
-            }
-        }
-        if ( nalpha_ - nrstc_ - nfrzc_ > 2 && nbeta_ - nrstc_ - nfrzc_ > 0 ) {
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += trip_aaa[h]*trip_aaa[h]; // D4aaab -> D3aaa
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += trip_aab[h]*trip_aab[h]; // D4aaab -> D3aab
-            }
-        }
-        if ( nalpha_ - nrstc_ - nfrzc_ > 1  && nbeta_ - nrstc_ - nfrzc_ > 1) {
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += trip_aab[h]*trip_aab[h]; // D4aabb -> D3aab
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += trip_aab[h]*trip_aab[h]; // D4aabb -> D3abb
-            }
-        }
-        if ( nalpha_ - nrstc_ - nfrzc_ > 1  && nbeta_ - nrstc_ - nfrzc_ > 1) {
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += trip_aab[h]*trip_aab[h]; // D4aabb -> D3aab
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += trip_aab[h]*trip_aab[h]; // D4aabb -> D3abb
-            }
-        }
-        if ( nalpha_ - nrstc_ - nfrzc_ > 0 && nbeta_ - nrstc_ - nfrzc_ > 2 ) {
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += trip_aab[h]*trip_aab[h]; // D4abbb -> D3abb
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += trip_aaa[h]*trip_aaa[h]; // D4abbb -> D3bbb
-            }
-        }
-        if ( nbeta_ - nrstc_ - nfrzc_ > 3 ) {
-            for (int h = 0; h < nirrep_; h++) {
-                nconstraints_ += trip_aaa[h]*trip_aaa[h]; // D4bbbb -> D3bbb
-            }
-        }
-    }
-
-    // list of dimensions_
-    for (int h = 0; h < nirrep_; h++) {
-        dimensions_.push_back(gems_ab[h]); // D2ab
-    }
-    for (int h = 0; h < nirrep_; h++) {
-        dimensions_.push_back(gems_aa[h]); // D2aa
-    }
-    for (int h = 0; h < nirrep_; h++) {
-        dimensions_.push_back(gems_aa[h]); // D2bb
-    }
-    if ( constrain_spin_ && nalpha_ == nbeta_ ) {
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(gems_ab[h]); // D200
-        }
-    }else if ( constrain_spin_ ) {
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(2*gems_ab[h]); // D200_0,D210_0,D201_0,D211_0
-        }
-    }
-    for (int h = 0; h < nirrep_; h++) {
-        dimensions_.push_back(amopi_[h]); // D1a
-    }
-    for (int h = 0; h < nirrep_; h++) {
-        dimensions_.push_back(amopi_[h]); // D1b
-    }
-    for (int h = 0; h < nirrep_; h++) {
-        dimensions_.push_back(amopi_[h]); // Q1a
-    }
-    for (int h = 0; h < nirrep_; h++) {
-        dimensions_.push_back(amopi_[h]); // Q1b
-    }
-    if ( constrain_q2_ ) {
-        if ( !spin_adapt_q2_ ) {
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_ab[h]); // Q2ab
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_aa[h]); // Q2aa
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_aa[h]); // Q2bb
-            }
-        }else {
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_00[h]); // Q2s
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_aa[h]); // Q2t
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_aa[h]); // Q2t_p1
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_aa[h]); // Q2t_m1
-            }
-        }
-    }
-    if ( constrain_g2_ ) {
-        if ( !spin_adapt_g2_ ) {
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_ab[h]); // G2ab
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_ab[h]); // G2ba
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(2*gems_ab[h]); // G2aa
-            }
-        }else {
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_ab[h]); // G2s
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_ab[h]); // G2t
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_ab[h]); // G2t_p1
-            }
-            for (int h = 0; h < nirrep_; h++) {
-                dimensions_.push_back(gems_ab[h]); // G2t_m1
-            }
-        }
-    }
-    if ( constrain_t1_ ) {
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(trip_aaa[h]); // T1aaa
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(trip_aaa[h]); // T1bbb
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(trip_aab[h]); // T1aab
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(trip_aab[h]); // T1bba
-        }
-    }
-    if ( constrain_t2_ ) {
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(trip_aab[h]+trip_aba[h]); // T2aaa
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(trip_aab[h]+trip_aba[h]); // T2bbb
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(trip_aab[h]); // T2aab
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(trip_aab[h]); // T2bba
-        }
-    }
-    if ( constrain_d3_ ) {
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(trip_aaa[h]); // D3aaa
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(trip_aaa[h]); // D3bbb
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(trip_aab[h]); // D3aab
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(trip_aab[h]); // D3bba
-        }
-    }
-    if ( constrain_d4_ ) {
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(quartet_aaaa[h]); // D4aaaa
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(quartet_aaab[h]); // D4aaab
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(quartet_aabb[h]); // D4aabb
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(quartet_aaab[h]); // D4bbba
-        }
-        for (int h = 0; h < nirrep_; h++) {
-            dimensions_.push_back(quartet_aaaa[h]); // D4bbbb
-        }
-    }
+    // set primal block dimensions and offsets in x for each spin/symmetry block of rdms
+    set_primal_offsets();
 
     // memory check happens here
 
@@ -1347,6 +571,11 @@ void  v2RDMSolver::common_init(){
     outfile->Printf(" ]\n");
     outfile->Printf("\n");
 
+    bool do_act_act = options_.get_bool("ORBOPT_ACTIVE_ACTIVE_ROTATIONS");
+    //if ( constrain_gpc_ ) {
+    //    do_act_act = true;
+    //}
+
     outfile->Printf("  ==> Orbital optimization parameters <==\n");
     outfile->Printf("\n");
     outfile->Printf("        1-step algorithm:                   %5s\n",options_.get_bool("ORBOPT_ONE_STEP") ? "true" : "false");
@@ -1354,7 +583,7 @@ void  v2RDMSolver::common_init(){
     outfile->Printf("        e_convergence:                      %5.3le\n",options_.get_double("ORBOPT_ENERGY_CONVERGENCE"));
     outfile->Printf("        maximum iterations:                 %5i\n",options_.get_int("ORBOPT_MAXITER"));
     outfile->Printf("        frequency:                          %5i\n",options_.get_int("ORBOPT_FREQUENCY"));
-    outfile->Printf("        active-active rotations:            %5s\n",options_.get_bool("ORBOPT_ACTIVE_ACTIVE_ROTATIONS") ? "true" : "false");
+    outfile->Printf("        active-active rotations:            %5s\n",do_act_act ? "true" : "false");
     outfile->Printf("        exact diagonal Hessian:             %5s\n",options_.get_bool("ORBOPT_EXACT_DIAGONAL_HESSIAN") ? "true" : "false");
     outfile->Printf("        number of DIIS vectors:             %5i\n",options_.get_int("ORBOPT_NUM_DIIS_VECTORS"));
     outfile->Printf("        print iteration info:               %5s\n",options_.get_bool("ORBOPT_WRITE") ? "true" : "false");
@@ -1437,7 +666,7 @@ void  v2RDMSolver::common_init(){
     //     4-index integrals (no permutational symmetry)
     //     3-index integrals
 
-    double tot = 4.0*dimx_ + 4.0*nconstraints_ + 3.0*maxgem*maxgem;
+    double tot = 4.0*n_primal_ + 4.0*n_dual_ + 3.0*maxgem*maxgem;
     tot += nd2; // for K2a, K2b
 
     // for casscf, need d2 and 3- or 4-index integrals
@@ -1467,8 +696,8 @@ void  v2RDMSolver::common_init(){
     // memory available after allocating all we need for v2RDM-CASSCF
     available_memory_ = memory_ - tot * 8L;
 
-    outfile->Printf("        Total number of variables:     %10i\n",dimx_);
-    outfile->Printf("        Total number of constraints:   %10i\n",nconstraints_);
+    outfile->Printf("        Total number of variables:     %10i\n",n_primal_);
+    outfile->Printf("        Total number of constraints:   %10i\n",n_dual_);
     outfile->Printf("        Total memory requirements:     %7.2lf mb\n",tot * 8.0 / 1024.0 / 1024.0);
     outfile->Printf("\n");
 
@@ -1553,9 +782,9 @@ void  v2RDMSolver::common_init(){
     }
 
     // allocate vectors
-    x      = SharedVector(new Vector("primal solution",dimx_));
-    c      = SharedVector(new Vector("OEI and TEI",dimx_));
-    b      = SharedVector(new Vector("constraints",nconstraints_));
+    x      = SharedVector(new Vector("primal solution",n_primal_));
+    c      = SharedVector(new Vector("OEI and TEI",n_primal_));
+    b      = SharedVector(new Vector("constraints",n_dual_));
 
     // input/output array for orbopt sweeps
 
@@ -1563,7 +792,7 @@ void  v2RDMSolver::common_init(){
 
     orbopt_data_    = (double*)malloc(15*sizeof(double));
     orbopt_data_[0] = (double)nthread;
-    orbopt_data_[1] = (double)(options_.get_bool("ORBOPT_ACTIVE_ACTIVE_ROTATIONS") ? 1.0 : 0.0 );
+    orbopt_data_[1] = (double)(do_act_act ? 1.0 : 0.0 );
     orbopt_data_[2] = (double)nfrzc_; //(double)options_.get_int("ORBOPT_FROZEN_CORE");
     orbopt_data_[3] = (double)options_.get_double("ORBOPT_GRADIENT_CONVERGENCE");
     orbopt_data_[4] = (double)options_.get_double("ORBOPT_ENERGY_CONVERGENCE");
@@ -1610,7 +839,7 @@ void  v2RDMSolver::common_init(){
     same_a_b_dens_ = false;
 
     // sdp solver
-    sdp_ = (std::shared_ptr<BPSDPSolver>)(new BPSDPSolver(dimx_,nconstraints_,options_));
+    sdp_ = (std::shared_ptr<BPSDPSolver>)(new BPSDPSolver(n_primal_,n_dual_,options_));
 }
 
 int v2RDMSolver::SymmetryPair(int i,int j) {
@@ -1666,19 +895,21 @@ double v2RDMSolver::compute_energy() {
     // generate constraint vector
     BuildConstraints();
 
-    //std::shared_ptr<DIIS> diis ( new DIIS(nconstraints_ + 2*dimx_) );
-
-    //bool do_diis = options_.get_bool("DIIS");
-    //double * tmp = (double*)malloc((nconstraints_ + 2*dimx_)*sizeof(double));
-
     // iterate
     int orbopt_iter = 0;
 
     int local_maxiter = options_.get_bool("OPTIMIZE_ORBITALS") ? options_.get_int("ORBOPT_FREQUENCY") : options_.get_int("MU_UPDATE_FREQUENCY");
 
+    //std::shared_ptr<RRSDPSolver> rrsdp (new RRSDPSolver(n_primal_,n_dual_,options_));
+
     do {
 
+        if ( constrain_gpc_ ) {
+            SortedNaturalOrbitals();
+        }
+
         sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
+        //rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
     
@@ -1689,44 +920,13 @@ double v2RDMSolver::compute_energy() {
             orbopt_time_  += end - start;
             orbopt_iter_total_++;
 
-            double energy_primal = C_DDOT(dimx_,c->pointer(),1,x->pointer(),1);
+            double energy_primal = C_DDOT(n_primal_,c->pointer(),1,x->pointer(),1);
             outfile->Printf("            Total energy: %20.12lf\n",energy_primal+enuc_+efzc_);
+
 
         }else {
             orbopt_converged_ = true;
         }
-
-/*
-        if ( do_diis ) {
-
-            // current solution
-            C_DCOPY(dimx_,x->pointer(),1,tmp,1);
-            C_DCOPY(dimx_,sdp_->get_z()->pointer(),1,tmp+dimx_,1);
-            C_DCOPY(nconstraints_,sdp_->get_y()->pointer(),1,tmp+2*dimx_,1);
-            diis->WriteVector(tmp);
-
-            // current error vectors
-            std::shared_ptr<Vector> primal_error_vector  = sdp_->ATAx_minus_ATb(x,b,evaluate_Au,evaluate_ATu,(void*)this);
-            std::shared_ptr<Vector> dual_error_vector    = sdp_->ATy_plus_z_minus_c(c,evaluate_ATu,(void*)this);
-            std::shared_ptr<Vector> dual_error_vector_y (new Vector(nconstraints_));
-            bpsdp_Au(dual_error_vector_y,dual_error_vector);
-
-            C_DCOPY(dimx_,primal_error_vector->pointer(),1,tmp,1);
-            C_DCOPY(dimx_,dual_error_vector->pointer(),1,tmp+dimx_,1);
-            C_DCOPY(nconstraints_,dual_error_vector_y->pointer(),1,tmp+2*dimx_,1);
-
-            diis->WriteErrorVector(tmp);
-
-            diis->Extrapolate(tmp);
-            C_DCOPY(dimx_,tmp+dimx_,1,x->pointer(),1);
-            sdp_->set_z(x);
-            C_DCOPY(dimx_,tmp,1,x->pointer(),1);
-
-            C_DCOPY(nconstraints_,tmp+2*dimx_,1,dual_error_vector_y->pointer(),1);
-            sdp_->set_y(dual_error_vector_y);
-            
-        }
-*/
 
         outfile->Printf("\n");
 
@@ -1754,13 +954,13 @@ double v2RDMSolver::compute_energy() {
     double ms = (multiplicity_ - 1.0)/2.0;
 
     // set energy for wavefunction
-    double energy_primal = C_DDOT(dimx_,c->pointer(),1,x->pointer(),1);
+    double energy_primal = C_DDOT(n_primal_,c->pointer(),1,x->pointer(),1);
     energy_ = energy_primal+enuc_+efzc_;
 
     // push final transformation matrix onto Ca_ and Cb_
     UpdateTransformationMatrix();
 
-    energy_primal = C_DDOT(dimx_,c->pointer(),1,x->pointer(),1);
+    energy_primal = C_DDOT(n_primal_,c->pointer(),1,x->pointer(),1);
 
     // break down energy into one- and two-electron components
 
@@ -2122,7 +1322,7 @@ void v2RDMSolver::FinalizeOPDM() {
 void v2RDMSolver::Guess(){
 
     double* x_p = x->pointer();
-    memset((void*)x_p,'\0',dimx_*sizeof(double));
+    memset((void*)x_p,'\0',n_primal_*sizeof(double));
 
     if ( options_.get_str("TPDM_GUESS") == "HF" ) {
 
@@ -2210,7 +1410,7 @@ void v2RDMSolver::Guess(){
     }else { // random guess
 
         srand(0);
-        for (int i = 0; i < dimx_; i++) {
+        for (int i = 0; i < n_primal_; i++) {
             x_p[i] = ( (double)rand()/RAND_MAX - 1.0 ) * 2.0;
         }
         return;
@@ -2218,19 +1418,11 @@ void v2RDMSolver::Guess(){
     }
 
     if ( constrain_q2_ ) {
-        if ( !spin_adapt_q2_) {
-            Q2_constraints_guess(x);
-        }else {
-            Q2_constraints_guess_spin_adapted(x);
-        }
+        Q2_constraints_guess(x);
     }
 
     if ( constrain_g2_ ) {
-        if ( ! spin_adapt_g2_ ) {
-            G2_constraints_guess(x);
-        }else {
-            G2_constraints_guess_spin_adapted(x);
-        }
+        G2_constraints_guess(x);
     }
 
     if ( constrain_t1_ ) {
@@ -2268,6 +1460,29 @@ void v2RDMSolver::BuildConstraints(){
         b_p[offset++] = trdbb;
     }else{
         b_p[offset++] = trd;
+    }
+
+    // hermiticity
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                b_p[offset++] = 0.0;
+            }
+        }
+    }
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                b_p[offset++] = 0.0;
+            }
+        }
+    }
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_ab[h]; ij++) {
+            for (int kl = 0; kl < gems_ab[h]; kl++) {
+                b_p[offset++] = 0.0;
+            }
+        }
     }
 
     // d1 / q1 a
@@ -2392,156 +1607,78 @@ void v2RDMSolver::BuildConstraints(){
     }
 
     if ( constrain_q2_ ) {
-        if ( !spin_adapt_q2_ ) {
-            // map d2ab to q2ab
-            for (int h = 0; h < nirrep_; h++) {
-                for(int ij = 0; ij < gems_ab[h]; ij++){
-                    int i = bas_ab_sym[h][ij][0];
-                    int j = bas_ab_sym[h][ij][1];
-                    for(int kl = 0; kl < gems_ab[h]; kl++){
-                        int k = bas_ab_sym[h][kl][0];
-                        int l = bas_ab_sym[h][kl][1];
-                        b_p[offset + ij*gems_ab[h]+kl] = -(i==k)*(j==l);
-                    }
+        // map d2ab to q2ab
+        for (int h = 0; h < nirrep_; h++) {
+            for(int ij = 0; ij < gems_ab[h]; ij++){
+                int i = bas_ab_sym[h][ij][0];
+                int j = bas_ab_sym[h][ij][1];
+                for(int kl = 0; kl < gems_ab[h]; kl++){
+                    int k = bas_ab_sym[h][kl][0];
+                    int l = bas_ab_sym[h][kl][1];
+                    b_p[offset + ij*gems_ab[h]+kl] = -(i==k)*(j==l);
                 }
-                offset += gems_ab[h]*gems_ab[h];
             }
+            offset += gems_ab[h]*gems_ab[h];
+        }
 
-            // map d2aa to q2aa
-            for (int h = 0; h < nirrep_; h++) {
-                for(int ij = 0; ij < gems_aa[h]; ij++){
-                    int i = bas_aa_sym[h][ij][0];
-                    int j = bas_aa_sym[h][ij][1];
-                    for(int kl = 0; kl < gems_aa[h]; kl++){
-                        int k = bas_aa_sym[h][kl][0];
-                        int l = bas_aa_sym[h][kl][1];
-                        b_p[offset + ij*gems_aa[h]+kl] = -(i==k)*(j==l) + (i==l)*(j==k);
-                    }
+        // map d2aa to q2aa
+        for (int h = 0; h < nirrep_; h++) {
+            for(int ij = 0; ij < gems_aa[h]; ij++){
+                int i = bas_aa_sym[h][ij][0];
+                int j = bas_aa_sym[h][ij][1];
+                for(int kl = 0; kl < gems_aa[h]; kl++){
+                    int k = bas_aa_sym[h][kl][0];
+                    int l = bas_aa_sym[h][kl][1];
+                    b_p[offset + ij*gems_aa[h]+kl] = -(i==k)*(j==l) + (i==l)*(j==k);
                 }
-                offset += gems_aa[h]*gems_aa[h];
             }
+            offset += gems_aa[h]*gems_aa[h];
+        }
 
-            // map d2bb to q2bb
-            for (int h = 0; h < nirrep_; h++) {
-                for(int ij = 0; ij < gems_aa[h]; ij++){
-                    int i = bas_aa_sym[h][ij][0];
-                    int j = bas_aa_sym[h][ij][1];
-                    for(int kl = 0; kl < gems_aa[h]; kl++){
-                        int k = bas_aa_sym[h][kl][0];
-                        int l = bas_aa_sym[h][kl][1];
-                        b_p[offset + ij*gems_aa[h]+kl] = -(i==k)*(j==l) + (i==l)*(j==k);
-                    }
+        // map d2bb to q2bb
+        for (int h = 0; h < nirrep_; h++) {
+            for(int ij = 0; ij < gems_aa[h]; ij++){
+                int i = bas_aa_sym[h][ij][0];
+                int j = bas_aa_sym[h][ij][1];
+                for(int kl = 0; kl < gems_aa[h]; kl++){
+                    int k = bas_aa_sym[h][kl][0];
+                    int l = bas_aa_sym[h][kl][1];
+                    b_p[offset + ij*gems_aa[h]+kl] = -(i==k)*(j==l) + (i==l)*(j==k);
                 }
-                offset += gems_aa[h]*gems_aa[h];
             }
-        }else {
-            // map d2ab to q2s
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_00[h]; i++){
-                    for(int j = 0; j < gems_00[h]; j++){
-                        b_p[offset + INDEX(i,j)] = 0.0;
-                    }
-                }
-                offset += gems_00[h]*gems_00[h];
-            }
-            // map d2ab to q2t
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_aa[h]; i++){
-                    for(int j = 0; j < gems_aa[h]; j++){
-                        b_p[offset + INDEX(i,j)] = 0.0;
-                    }
-                }
-                offset += gems_aa[h]*gems_aa[h];
-            }
-            // map d2aa to q2t_p1
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_aa[h]; i++){
-                    for(int j = 0; j < gems_aa[h]; j++){
-                        b_p[offset + INDEX(i,j)] = 0.0;
-                    }
-                }
-                offset += gems_aa[h]*gems_aa[h];
-            }
-            // map d2bb to q2t_m1
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_aa[h]; i++){
-                    for(int j = 0; j < gems_aa[h]; j++){
-                        b_p[offset + INDEX(i,j)] = 0.0;
-                    }
-                }
-                offset += gems_aa[h]*gems_aa[h];
-            }
+            offset += gems_aa[h]*gems_aa[h];
         }
     }
 
     if ( constrain_g2_ ) {
-        if ( ! spin_adapt_g2_ ) {
-            // map d2 and d1 to g2ab
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_ab[h]; i++){
-                    for(int j = 0; j < gems_ab[h]; j++){
-                        b_p[offset + i*gems_ab[h]+j] = 0.0;
-                    }
+        // map d2 and d1 to g2ab
+        for (int h = 0; h < nirrep_; h++) {
+            for(int i = 0; i < gems_ab[h]; i++){
+                for(int j = 0; j < gems_ab[h]; j++){
+                    b_p[offset + i*gems_ab[h]+j] = 0.0;
                 }
-                offset += gems_ab[h]*gems_ab[h];
             }
+            offset += gems_ab[h]*gems_ab[h];
+        }
 
-            // map d2 and d1 to g2ba
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_ab[h]; i++){
-                    for(int j = 0; j < gems_ab[h]; j++){
-                        b_p[offset + i*gems_ab[h]+j] = 0.0;
-                    }
+        // map d2 and d1 to g2ba
+        for (int h = 0; h < nirrep_; h++) {
+            for(int i = 0; i < gems_ab[h]; i++){
+                for(int j = 0; j < gems_ab[h]; j++){
+                    b_p[offset + i*gems_ab[h]+j] = 0.0;
                 }
-                offset += gems_ab[h]*gems_ab[h];
             }
+            offset += gems_ab[h]*gems_ab[h];
+        }
 
-            // map d2 and d1 to g2aa
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < 2*gems_ab[h]; i++){
-                    for(int j = 0; j < 2*gems_ab[h]; j++){
-                        b_p[offset + i*2*gems_ab[h]+j] = 0.0;
-                    }
+        // map d2 and d1 to g2aa
+        for (int h = 0; h < nirrep_; h++) {
+            for(int i = 0; i < 2*gems_ab[h]; i++){
+                for(int j = 0; j < 2*gems_ab[h]; j++){
+                    b_p[offset + i*2*gems_ab[h]+j] = 0.0;
                 }
-                offset += 2*gems_ab[h]*2*gems_ab[h];
             }
-        }else {
-            // map d2 and d1 to g2s
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_ab[h]; i++){
-                    for(int j = 0; j < gems_ab[h]; j++){
-                        b_p[offset + i*gems_ab[h]+j] = 0.0;
-                    }
-                }
-                offset += gems_ab[h]*gems_ab[h];
-            }
-            // map d2 and d1 to g2t
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_ab[h]; i++){
-                    for(int j = 0; j < gems_ab[h]; j++){
-                        b_p[offset + i*gems_ab[h]+j] = 0.0;
-                    }
-                }
-                offset += gems_ab[h]*gems_ab[h];
-            }
-            // map d2 and d1 to g2t_p1
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_ab[h]; i++){
-                    for(int j = 0; j < gems_ab[h]; j++){
-                        b_p[offset + i*gems_ab[h]+j] = 0.0;
-                    }
-                }
-                offset += gems_ab[h]*gems_ab[h];
-            }
-            // map d2 and d1 to g2t_m1
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_ab[h]; i++){
-                    for(int j = 0; j < gems_ab[h]; j++){
-                        b_p[offset + i*gems_ab[h]+j] = 0.0;
-                    }
-                }
-                offset += gems_ab[h]*gems_ab[h];
-            }
+            offset += 2*gems_ab[h]*2*gems_ab[h];
         }
     }
 
@@ -2741,13 +1878,573 @@ void v2RDMSolver::BuildConstraints(){
         }
     }
 
+    // generalized pauli constraints
+
+    if ( constrain_gpc_ ) {
+
+        if ( gpconstraint_ == GeneralizedPauli_3_8 || gpconstraint_ == GeneralizedPauli_5_8 ) {
+
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 3.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 5.0;
+            b_p[offset++] = 5.0;
+            b_p[offset++] = 5.0;
+            b_p[offset++] = 5.0;
+            b_p[offset++] = 5.0;
+            b_p[offset++] = 5.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+
+/*
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+
+            b_p[offset++] = 1.0;
+
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+*/
+        }else if ( gpconstraint_ == GeneralizedPauli_4_8 ) {
+
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 1.0;
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 0.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+
+/*
+            //b_p[offset++] = 1.0;
+
+            double small = 0.0;//r_convergence_;
+            double scale = 1.0;
+
+            b_p[offset++] = 0.0 + small;
+            b_p[offset++] = 0.0 + small;
+            b_p[offset++] = 0.0 + small;
+            b_p[offset++] = 0.0 + small;
+            b_p[offset++] = 0.0 + small;
+            b_p[offset++] = 0.0 + small;
+            b_p[offset++] = 0.0 + small;
+
+            b_p[offset++] = 2.0 + small;
+            b_p[offset++] = 2.0 + small;
+            b_p[offset++] = 2.0 + small;
+            b_p[offset++] = 2.0 + small;
+            b_p[offset++] = 2.0 + small;
+            b_p[offset++] = 2.0 + small;
+            b_p[offset++] = 2.0 + small;
+*/
+
+        }else if ( gpconstraint_ == GeneralizedPauli_3_6 ) {
+
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 1.0;
+
+            b_p[offset++] = 0.0;
+
+        }else if ( gpconstraint_ == GeneralizedPauli_4_10 || gpconstraint_ == GeneralizedPauli_6_10 ) {
+
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 4.0;
+            //b_p[offset++] = 6.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 4.0;
+            b_p[offset++] = 4.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 8.0;
+            b_p[offset++] = 8.0;
+            b_p[offset++] = 8.0;
+            b_p[offset++] = 8.0;
+            b_p[offset++] = 8.0;
+            b_p[offset++] = 8.0;
+            b_p[offset++] = 8.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 11.0;
+            b_p[offset++] = 11.0;
+            b_p[offset++] = 11.0;
+            b_p[offset++] = 11.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 24.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 36.0;
+            b_p[offset++] = 42.0;
+            b_p[offset++] = 42.0;
+            b_p[offset++] = 42.0;
+            b_p[offset++] = 42.0;
+            b_p[offset++] = 42.0;
+        }else if ( gpconstraint_ == GeneralizedPauli_5_10 ) {
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 5.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 2.0;
+            //b_p[offset++] = 5.0;
+            b_p[offset++] = 5.0;
+            b_p[offset++] = 5.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 13.0;
+            b_p[offset++] = 13.0;
+            b_p[offset++] = 13.0;
+            b_p[offset++] = 13.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 15.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 20.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 25.0;
+            b_p[offset++] = 35.0;
+            b_p[offset++] = 35.0;
+            b_p[offset++] = 35.0;
+            b_p[offset++] = 35.0;
+            b_p[offset++] = 45.0;
+            b_p[offset++] = 45.0;
+            b_p[offset++] = 45.0;
+            b_p[offset++] = 45.0;
+        }else if ( gpconstraint_ == GeneralizedPauli_3_10 || gpconstraint_ == GeneralizedPauli_7_10 ) {
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 0.0;
+            //b_p[offset++] = 3.0;
+            b_p[offset++] = 1.0;
+            b_p[offset++] = 2.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 3.0;
+            b_p[offset++] = 4.0;
+            b_p[offset++] = 4.0;
+            b_p[offset++] = 4.0;
+            b_p[offset++] = 4.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 6.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 7.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 9.0;
+            b_p[offset++] = 11.0;
+            b_p[offset++] = 11.0;
+            b_p[offset++] = 11.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 12.0;
+            b_p[offset++] = 13.0;
+            b_p[offset++] = 13.0;
+            b_p[offset++] = 13.0;
+            b_p[offset++] = 13.0;
+            b_p[offset++] = 13.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 19.0;
+            b_p[offset++] = 21.0;
+            b_p[offset++] = 21.0;
+        }
+
+    }
+
 }
 
 ///Build A dot u where u =[z,c]
 void v2RDMSolver::bpsdp_Au(SharedVector A, SharedVector u){
 
     //A->zero();
-    memset((void*)A->pointer(),'\0',nconstraints_*sizeof(double));
+    memset((void*)A->pointer(),'\0',n_dual_*sizeof(double));
 
     offset = 0;
     D2_constraints_Au(A,u);
@@ -2757,19 +2454,11 @@ void v2RDMSolver::bpsdp_Au(SharedVector A, SharedVector u){
     }
 
     if ( constrain_q2_ ) {
-        if ( !spin_adapt_q2_ ) {
-            Q2_constraints_Au(A,u);
-        }else {
-            Q2_constraints_Au_spin_adapted(A,u);
-        }
+        Q2_constraints_Au(A,u);
     }
 
     if ( constrain_g2_ ) {
-        if ( ! spin_adapt_g2_ ) {
-            G2_constraints_Au(A,u);
-        }else {
-            G2_constraints_Au_spin_adapted(A,u);
-        }
+        G2_constraints_Au(A,u);
     }
 
     if ( constrain_t1_ ) {
@@ -2789,13 +2478,17 @@ void v2RDMSolver::bpsdp_Au(SharedVector A, SharedVector u){
         D4_constraints_Au(A,u);
     }
 
+    if ( constrain_gpc_ ) {
+        Generalized_Pauli_constraints_Au(A,u);
+    }
+
 } // end Au
 
 ///Build AT dot u where u =[z,c]
 void v2RDMSolver::bpsdp_ATu(SharedVector A, SharedVector u){
 
     //A->zero();
-    memset((void*)A->pointer(),'\0',dimx_*sizeof(double));
+    memset((void*)A->pointer(),'\0',n_primal_*sizeof(double));
 
     offset = 0;
     D2_constraints_ATu(A,u);
@@ -2805,19 +2498,11 @@ void v2RDMSolver::bpsdp_ATu(SharedVector A, SharedVector u){
     }
 
     if ( constrain_q2_ ) {
-        if ( !spin_adapt_q2_ ) {
-            Q2_constraints_ATu(A,u);
-        }else {
-            Q2_constraints_ATu_spin_adapted(A,u);
-        }
+        Q2_constraints_ATu(A,u);
     }
 
     if ( constrain_g2_ ) {
-        if ( ! spin_adapt_g2_ ) {
-            G2_constraints_ATu(A,u);
-        }else {
-            G2_constraints_ATu_spin_adapted(A,u);
-        }
+        G2_constraints_ATu(A,u);
     }
 
     if ( constrain_t1_ ) {
@@ -2834,6 +2519,10 @@ void v2RDMSolver::bpsdp_ATu(SharedVector A, SharedVector u){
 
     if ( constrain_d4_ ) {
         D4_constraints_ATu(A,u);
+    }
+
+    if ( constrain_gpc_ ) {
+        Generalized_Pauli_constraints_ATu(A,u);
     }
 
 }//end ATu
@@ -2996,6 +2685,711 @@ void v2RDMSolver::RotateOrbitals(){
     }
 
     RepackIntegrals();
+}
+
+void v2RDMSolver::determine_n_primal() {
+
+    n_primal_ = 0;
+    for ( int h = 0; h < nirrep_; h++) {
+        n_primal_ += gems_ab[h]*gems_ab[h]; // D2ab
+    }
+    for ( int h = 0; h < nirrep_; h++) {
+        n_primal_ += gems_aa[h]*gems_aa[h]; // D2aa
+    }
+    for ( int h = 0; h < nirrep_; h++) {
+        n_primal_ += gems_aa[h]*gems_aa[h]; // D2bb
+    }
+    for ( int h = 0; h < nirrep_; h++) {
+        n_primal_ += amopi_[h]*amopi_[h]; // D1a
+        n_primal_ += amopi_[h]*amopi_[h]; // D1b
+        n_primal_ += amopi_[h]*amopi_[h]; // Q1b
+        n_primal_ += amopi_[h]*amopi_[h]; // Q1a
+    }
+    if ( constrain_spin_ && nalpha_ == nbeta_ ) {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += gems_ab[h] * gems_ab[h]; // D200
+        }
+    }else if ( constrain_spin_ ) {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += 4 * gems_ab[h] * gems_ab[h]; // D200
+        }
+    }
+    if ( constrain_q2_ ) {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += gems_ab[h]*gems_ab[h]; // Q2ab
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += gems_aa[h]*gems_aa[h]; // Q2aa
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += gems_aa[h]*gems_aa[h]; // Q2bb
+        }
+    }
+    if ( constrain_g2_ ) {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += gems_ab[h]*gems_ab[h]; // G2ab
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += gems_ab[h]*gems_ab[h]; // G2ba
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += 2*gems_ab[h]*2*gems_ab[h]; // G2aa/bb
+        }
+    }
+    if ( constrain_t1_ ) {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += trip_aaa[h]*trip_aaa[h]; // T1aaa
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += trip_aaa[h]*trip_aaa[h]; // T1bbb
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += trip_aab[h]*trip_aab[h]; // T1aab
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += trip_aab[h]*trip_aab[h]; // T1bba
+        }
+    }
+    if ( constrain_t2_ ) {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += (trip_aba[h]+trip_aab[h])*(trip_aab[h]+trip_aba[h]); // T2aaa
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += (trip_aba[h]+trip_aab[h])*(trip_aab[h]+trip_aba[h]); // T2bbb
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += trip_aab[h]*trip_aab[h]; // T2aab
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += trip_aab[h]*trip_aab[h]; // T2bba
+        }
+    }
+    if ( constrain_d3_ ) {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += trip_aaa[h] * trip_aaa[h]; // D3aaa
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += trip_aaa[h] * trip_aaa[h]; // D3bbb
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += trip_aab[h]*trip_aab[h]; // D3aab
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += trip_aab[h]*trip_aab[h]; // D3bba
+        }
+    }
+    if ( constrain_d4_ ) {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += quartet_aaaa[h] * quartet_aaaa[h]; // D4aaaa
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += quartet_aaab[h] * quartet_aaab[h]; // D4aaab
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += quartet_aabb[h] * quartet_aabb[h]; // D4aabb
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += quartet_aaab[h] * quartet_aaab[h]; // D4bbba
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_primal_ += quartet_aaaa[h] * quartet_aaaa[h]; // D4bbbb
+        }
+    }
+    if ( constrain_gpc_ ) {
+        n_primal_ += ngpconstraints_;
+    }
+
+}
+
+void v2RDMSolver::determine_n_dual() {
+
+    n_dual_ = 0;
+
+    if ( constrain_sz_ ) {
+        n_dual_ += 1;                   // Tr(D2ab)
+        n_dual_ += 1;                   // Tr(D2aa)
+        n_dual_ += 1;                   // Tr(D2bb)
+    }else{
+        n_dual_ += 1;                   // Tr(D2ab + D2aa + D2bb)
+    }
+
+    for ( int h = 0; h < nirrep_; h++) {
+        n_dual_ += gems_aa[h]*gems_aa[h]; // D2aa hermiticity
+        n_dual_ += gems_aa[h]*gems_aa[h]; // D2bb hermiticity
+        n_dual_ += gems_ab[h]*gems_ab[h]; // D2ab hermiticity
+    }
+
+    for ( int h = 0; h < nirrep_; h++) {
+        n_dual_ += amopi_[h]*amopi_[h]; // D1a <-> Q1a
+    }
+    for ( int h = 0; h < nirrep_; h++) {
+        n_dual_ += amopi_[h]*amopi_[h]; // D1b <-> Q1b
+    }
+    if ( constrain_sz_ ) {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += amopi_[h]*amopi_[h]; // contract D2ab        -> D1 a
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += amopi_[h]*amopi_[h]; // contract D2ab        -> D1 b
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += amopi_[h]*amopi_[h]; // contract D2aa        -> D1 a
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += amopi_[h]*amopi_[h]; // contract D2bb        -> D1 b
+        }
+    }else {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += amopi_[h]*amopi_[h]; // contract D2aa + D2ab        -> D1 a
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += amopi_[h]*amopi_[h]; // contract D2bb + D2ab        -> D1 b
+        }
+    }
+
+    if ( constrain_spin_ ) {
+        n_dual_ += 1;               // spin
+        // additional spin constraints for singlets:
+        if ( nalpha_ == nbeta_ ) {
+            for ( int h = 0; h < nirrep_; h++) {
+                n_dual_ += amopi_[h]*amopi_[h]; // D1a = D1b
+            }
+            for ( int h = 0; h < nirrep_; h++) {
+                n_dual_ += gems_aa[h]*gems_aa[h]; // D2aa = D2bb
+            }
+            for ( int h = 0; h < nirrep_; h++) {
+                n_dual_ += gems_aa[h]*gems_aa[h]; // D2aa[pq][rs] = 1/2(D2ab[pq][rs] - D2ab[pq][sr] - D2ab[qp][rs] + D2ab[qp][sr])
+            }
+            for ( int h = 0; h < nirrep_; h++) {
+                n_dual_ += gems_aa[h]*gems_aa[h]; // D2bb[pq][rs] = 1/2(D2ab[pq][rs] - D2ab[pq][sr] - D2ab[qp][rs] + D2ab[qp][sr])
+            }
+            for ( int h = 0; h < nirrep_; h++) {
+                n_dual_ += gems_ab[h]*gems_ab[h];  // D200[pq][rs] = 1/(2 sqrt(1+dpq)sqrt(1+drs))(D2ab[pq][rs] + D2ab[pq][sr] + D2ab[qp][rs] + D2ab[qp][sr])
+            }
+        }else { // nonsinglets
+            for ( int h = 0; h < nirrep_; h++) {
+                n_dual_ += 4*gems_ab[h]*gems_ab[h]; // D200_0, D210_0, D201_0, D211_0
+            }
+        }
+        // maximal spin constraints:
+        if ( constrain_g2_ ) {
+            n_dual_ += gems_ab[0];
+            n_dual_ += gems_ab[0];
+        }
+    }
+
+    if ( constrain_q2_ ) {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += gems_ab[h]*gems_ab[h]; // Q2ab
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += gems_aa[h]*gems_aa[h]; // Q2aa
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += gems_aa[h]*gems_aa[h]; // Q2bb
+        }
+    }
+    if ( constrain_g2_ ) {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += gems_ab[h]*gems_ab[h]; // G2ab
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += gems_ab[h]*gems_ab[h]; // G2ba
+        }
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += 2*gems_ab[h]*2*gems_ab[h]; // G2aa
+        }
+    }
+    if ( constrain_t1_ ) {
+        for (int h = 0; h < nirrep_; h++) {
+            n_dual_ += trip_aaa[h]*trip_aaa[h]; // T1aaa
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            n_dual_ += trip_aaa[h]*trip_aaa[h]; // T1bbb
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            n_dual_ += trip_aab[h]*trip_aab[h]; // T1aab
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            n_dual_ += trip_aab[h]*trip_aab[h]; // T1bba
+        }
+    }
+    if ( constrain_t2_ ) {
+        for (int h = 0; h < nirrep_; h++) {
+            n_dual_ += (trip_aab[h]+trip_aba[h])*(trip_aab[h]+trip_aba[h]); // T2aaa
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            n_dual_ += (trip_aab[h]+trip_aba[h])*(trip_aab[h]+trip_aba[h]); // T2bbb
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            n_dual_ += trip_aab[h]*trip_aab[h]; // T2aab
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            n_dual_ += trip_aab[h]*trip_aab[h]; // T2bba
+        }
+    }
+    if ( constrain_d3_ ) {
+        if ( nalpha_ - nrstc_ - nfrzc_ > 2 ) {
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += gems_aa[h]*gems_aa[h]; // D3aaa -> D2aa
+            }
+        }
+        if ( nbeta_ - nrstc_ - nfrzc_ > 2 ) {
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += gems_aa[h]*gems_aa[h]; // D3bbb -> D2bb
+            }
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            n_dual_ += gems_aa[h]*gems_aa[h]; // D3aab -> D2aa
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            n_dual_ += gems_aa[h]*gems_aa[h]; // D3bba -> D2bb
+        }
+        if ( nalpha_ - nrstc_ - nfrzc_ > 1 ) {
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += gems_ab[h]*gems_ab[h]; // D3aab -> D2ab
+            }
+        }
+        if ( nbeta_ - nrstc_ - nfrzc_ > 1 ) {
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += gems_ab[h]*gems_ab[h]; // D3bba -> D2ab
+            }
+        }
+        // additional spin constraints for singlets:
+        if ( constrain_spin_ && nalpha_ == nbeta_ ) {
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += trip_aab[h]*trip_aab[h]; // D3aab = D3bba
+            }
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += trip_aaa[h]*trip_aaa[h]; // D3aab -> D3aaa
+                n_dual_ += trip_aaa[h]*trip_aaa[h]; // D3bba -> D3bbb
+            }
+        }
+    }
+    if ( constrain_d4_ ) {
+        if ( nalpha_ - nrstc_ - nfrzc_ > 3 ) {
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += trip_aaa[h]*trip_aaa[h]; // D4aaaa -> D3aaa
+            }
+        }
+        if ( nalpha_ - nrstc_ - nfrzc_ > 2 && nbeta_ - nrstc_ - nfrzc_ > 0 ) {
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += trip_aaa[h]*trip_aaa[h]; // D4aaab -> D3aaa
+            }
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += trip_aab[h]*trip_aab[h]; // D4aaab -> D3aab
+            }
+        }
+        if ( nalpha_ - nrstc_ - nfrzc_ > 1  && nbeta_ - nrstc_ - nfrzc_ > 1) {
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += trip_aab[h]*trip_aab[h]; // D4aabb -> D3aab
+            }
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += trip_aab[h]*trip_aab[h]; // D4aabb -> D3abb
+            }
+        }
+        if ( nalpha_ - nrstc_ - nfrzc_ > 1  && nbeta_ - nrstc_ - nfrzc_ > 1) {
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += trip_aab[h]*trip_aab[h]; // D4aabb -> D3aab
+            }
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += trip_aab[h]*trip_aab[h]; // D4aabb -> D3abb
+            }
+        }
+        if ( nalpha_ - nrstc_ - nfrzc_ > 0 && nbeta_ - nrstc_ - nfrzc_ > 2 ) {
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += trip_aab[h]*trip_aab[h]; // D4abbb -> D3abb
+            }
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += trip_aaa[h]*trip_aaa[h]; // D4abbb -> D3bbb
+            }
+        }
+        if ( nbeta_ - nrstc_ - nfrzc_ > 3 ) {
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += trip_aaa[h]*trip_aaa[h]; // D4bbbb -> D3bbb
+            }
+        }
+    }
+    if ( constrain_gpc_ ) {
+        n_dual_ += ngpconstraints_;
+    }
+}
+
+void v2RDMSolver::set_primal_offsets() {
+
+    offset = 0;
+
+    d2aboff = (int*)malloc(nirrep_*sizeof(int));
+    d2aaoff = (int*)malloc(nirrep_*sizeof(int));
+    d2bboff = (int*)malloc(nirrep_*sizeof(int));
+    d200off = (int*)malloc(nirrep_*sizeof(int));
+    for (int h = 0; h < nirrep_; h++) {
+        d2aboff[h] = offset; 
+        offset += gems_ab[h]*gems_ab[h];
+        dimensions_.push_back(gems_ab[h]);
+        rank_.push_back(gems_ab[h]);
+    }
+    for (int h = 0; h < nirrep_; h++) {
+        d2aaoff[h] = offset;    
+        offset += gems_aa[h]*gems_aa[h];
+        dimensions_.push_back(gems_aa[h]);
+        rank_.push_back(gems_aa[h]);
+    }
+    for (int h = 0; h < nirrep_; h++) {
+        d2bboff[h] = offset; 
+        offset += gems_aa[h]*gems_aa[h];
+        dimensions_.push_back(gems_aa[h]);
+        rank_.push_back(gems_aa[h]);
+    }
+    if ( constrain_spin_ && nalpha_ == nbeta_ ) {
+        for (int h = 0; h < nirrep_; h++) {
+            d200off[h] = offset; 
+            offset += gems_ab[h]*gems_ab[h];
+            dimensions_.push_back(gems_ab[h]);
+            rank_.push_back(gems_ab[h]);
+        }
+    } else if ( constrain_spin_ ) {
+        for (int h = 0; h < nirrep_; h++) {
+            d200off[h] = offset; 
+            offset += 4*gems_ab[h]*gems_ab[h];
+            dimensions_.push_back(2*gems_ab[h]);
+            rank_.push_back(2*gems_ab[h]);
+        }
+    }
+
+    d1aoff = (int*)malloc(nirrep_*sizeof(int));
+    d1boff = (int*)malloc(nirrep_*sizeof(int));
+    q1aoff = (int*)malloc(nirrep_*sizeof(int));
+    q1boff = (int*)malloc(nirrep_*sizeof(int));
+    for (int h = 0; h < nirrep_; h++) {
+        d1aoff[h] = offset; 
+        offset += amopi_[h]*amopi_[h];
+        dimensions_.push_back(amopi_[h]);
+        rank_.push_back(amopi_[h]);
+    }
+    for (int h = 0; h < nirrep_; h++) {
+        d1boff[h] = offset; 
+        offset += amopi_[h]*amopi_[h];
+        dimensions_.push_back(amopi_[h]);
+        rank_.push_back(amopi_[h]);
+    }
+    for (int h = 0; h < nirrep_; h++) {
+        q1aoff[h] = offset; 
+        offset += amopi_[h]*amopi_[h];
+        dimensions_.push_back(amopi_[h]);
+        rank_.push_back(amopi_[h]);
+    }
+    for (int h = 0; h < nirrep_; h++) {
+        q1boff[h] = offset; 
+        offset += amopi_[h]*amopi_[h];
+        dimensions_.push_back(amopi_[h]);
+        rank_.push_back(amopi_[h]);
+    }
+
+    if ( constrain_q2_ ) {
+        q2aboff = (int*)malloc(nirrep_*sizeof(int));
+        q2aaoff = (int*)malloc(nirrep_*sizeof(int));
+        q2bboff = (int*)malloc(nirrep_*sizeof(int));
+        for (int h = 0; h < nirrep_; h++) {
+            q2aboff[h] = offset; 
+            offset += gems_ab[h]*gems_ab[h];
+            dimensions_.push_back(gems_ab[h]);
+            rank_.push_back(gems_ab[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            q2aaoff[h] = offset; 
+            offset += gems_aa[h]*gems_aa[h];
+            dimensions_.push_back(gems_aa[h]);
+            rank_.push_back(gems_aa[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            q2bboff[h] = offset; 
+            offset += gems_aa[h]*gems_aa[h];
+            dimensions_.push_back(gems_aa[h]);
+            rank_.push_back(gems_aa[h]);
+        }
+    }
+
+    if ( constrain_g2_ ) {
+        g2aboff = (int*)malloc(nirrep_*sizeof(int));
+        g2baoff = (int*)malloc(nirrep_*sizeof(int));
+        g2aaoff = (int*)malloc(nirrep_*sizeof(int));
+        for (int h = 0; h < nirrep_; h++) {
+            g2aboff[h] = offset; 
+            offset += gems_ab[h]*gems_ab[h];
+            dimensions_.push_back(gems_ab[h]);
+            rank_.push_back(gems_ab[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            g2baoff[h] = offset; 
+            offset += gems_ab[h]*gems_ab[h];
+            dimensions_.push_back(gems_ab[h]);
+            rank_.push_back(gems_ab[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            g2aaoff[h] = offset; 
+            offset += 2*gems_ab[h]*2*gems_ab[h];
+            dimensions_.push_back(2*gems_ab[h]);
+            rank_.push_back(2*gems_ab[h]);
+        }
+    }
+
+    if ( constrain_t1_ ) {
+        t1aaboff = (int*)malloc(nirrep_*sizeof(int));
+        t1bbaoff = (int*)malloc(nirrep_*sizeof(int));
+        t1aaaoff = (int*)malloc(nirrep_*sizeof(int));
+        t1bbboff = (int*)malloc(nirrep_*sizeof(int));
+        for (int h = 0; h < nirrep_; h++) {
+            t1aaaoff[h] = offset; 
+            offset += trip_aaa[h]*trip_aaa[h]; // T1aaa
+            dimensions_.push_back(trip_aaa[h]);
+            rank_.push_back(trip_aaa[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            t1bbboff[h] = offset; 
+            offset += trip_aaa[h]*trip_aaa[h]; // T1bbb
+            dimensions_.push_back(trip_aaa[h]);
+            rank_.push_back(trip_aaa[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            t1aaboff[h] = offset; 
+            offset += trip_aab[h]*trip_aab[h]; // T1aab
+            dimensions_.push_back(trip_aab[h]);
+            rank_.push_back(trip_aab[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            t1bbaoff[h] = offset; 
+            offset += trip_aab[h]*trip_aab[h]; // T1bba
+            dimensions_.push_back(trip_aab[h]);
+            rank_.push_back(trip_aab[h]);
+        }
+    }
+
+    if ( constrain_t2_ ) {
+        t2aaboff = (int*)malloc(nirrep_*sizeof(int));
+        t2bbaoff = (int*)malloc(nirrep_*sizeof(int));
+        t2aaaoff = (int*)malloc(nirrep_*sizeof(int));
+        t2bbboff = (int*)malloc(nirrep_*sizeof(int));
+        for (int h = 0; h < nirrep_; h++) {
+            t2aaaoff[h] = offset; 
+            offset += (trip_aab[h]+trip_aba[h])*(trip_aab[h]+trip_aba[h]); // T2aaa
+            dimensions_.push_back(trip_aab[h]+trip_aba[h]);
+            rank_.push_back(trip_aab[h]+trip_aba[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            t2bbboff[h] = offset; 
+            offset += (trip_aab[h]+trip_aba[h])*(trip_aab[h]+trip_aba[h]); // T2bbb
+            dimensions_.push_back(trip_aab[h]+trip_aba[h]);
+            rank_.push_back(trip_aab[h]+trip_aba[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            t2aaboff[h] = offset; 
+            offset += trip_aab[h]*trip_aab[h]; // T2aab
+            dimensions_.push_back(trip_aab[h]);
+            rank_.push_back(trip_aab[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            t2bbaoff[h] = offset; 
+            offset += trip_aab[h]*trip_aab[h]; // T2bba
+            dimensions_.push_back(trip_aab[h]);
+            rank_.push_back(trip_aab[h]);
+        }
+    }
+    if ( constrain_d3_ ) {
+        d3aaaoff = (int*)malloc(nirrep_*sizeof(int));
+        d3bbboff = (int*)malloc(nirrep_*sizeof(int));
+        d3aaboff = (int*)malloc(nirrep_*sizeof(int));
+        d3bbaoff = (int*)malloc(nirrep_*sizeof(int));
+        for (int h = 0; h < nirrep_; h++) {
+            d3aaaoff[h] = offset; 
+            offset += trip_aaa[h]*trip_aaa[h]; // D3aaa
+            dimensions_.push_back(trip_aaa[h]);
+            rank_.push_back(trip_aaa[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            d3bbboff[h] = offset; 
+            offset += trip_aaa[h]*trip_aaa[h]; // D3bbb
+            dimensions_.push_back(trip_aaa[h]);
+            rank_.push_back(trip_aaa[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            d3aaboff[h] = offset; 
+            offset += trip_aab[h]*trip_aab[h]; // D3aab
+            dimensions_.push_back(trip_aab[h]);
+            rank_.push_back(trip_aab[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            d3bbaoff[h] = offset; 
+            offset += trip_aab[h]*trip_aab[h]; // D3bba
+            dimensions_.push_back(trip_aab[h]);
+            rank_.push_back(trip_aab[h]);
+        }
+    }
+    if ( constrain_d4_ ) {
+        d4aaaaoff = (int*)malloc(nirrep_*sizeof(int));
+        d4aaaboff = (int*)malloc(nirrep_*sizeof(int));
+        d4aabboff = (int*)malloc(nirrep_*sizeof(int));
+        d4bbbaoff = (int*)malloc(nirrep_*sizeof(int));
+        d4bbbboff = (int*)malloc(nirrep_*sizeof(int));
+        for (int h = 0; h < nirrep_; h++) {
+            d4aaaaoff[h] = offset; 
+            offset += quartet_aaaa[h]*quartet_aaaa[h]; // D4aaaa
+            dimensions_.push_back(quartet_aaaa[h]);
+            rank_.push_back(quartet_aaaa[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            d4aaaboff[h] = offset; 
+            offset += quartet_aaab[h]*quartet_aaab[h]; // D4aaab
+            dimensions_.push_back(quartet_aaab[h]);
+            rank_.push_back(quartet_aaab[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            d4aabboff[h] = offset; 
+            offset += quartet_aabb[h]*quartet_aabb[h]; // D4aabb
+            dimensions_.push_back(quartet_aabb[h]);
+            rank_.push_back(quartet_aabb[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            d4bbbaoff[h] = offset; offset += quartet_aaab[h]*quartet_aaab[h]; // D4bbba
+            dimensions_.push_back(quartet_aaab[h]);
+            rank_.push_back(quartet_aaab[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            d4bbbboff[h] = offset; offset += quartet_aaaa[h]*quartet_aaaa[h]; // D4bbbb
+            dimensions_.push_back(quartet_aaaa[h]);
+            rank_.push_back(quartet_aaaa[h]);
+        }
+    }
+    if ( constrain_gpc_ ) {
+        gpcoff = (int*)malloc(ngpconstraints_*sizeof(int));
+        for (int i = 0; i < ngpconstraints_; i++) {
+            gpcoff[i] = offset++;
+            dimensions_.push_back(1);
+            rank_.push_back(1);
+        }
+    }
+}
+
+void v2RDMSolver::set_constraints() {
+
+    // pick conditions.  default is dqg
+    constrain_q2_ = true;
+    constrain_g2_ = true;
+    constrain_t1_ = false;
+    constrain_t2_ = false;
+    constrain_d3_ = false;
+    constrain_d4_ = false;
+    if (options_.get_str("POSITIVITY")=="D") {
+        constrain_q2_ = false;
+        constrain_g2_ = false;
+    }else if (options_.get_str("POSITIVITY")=="DQ") {
+        constrain_q2_ = true;
+        constrain_g2_ = false;
+    }else if (options_.get_str("POSITIVITY")=="DG") {
+        constrain_q2_ = false;
+        constrain_g2_ = true;
+    }else if (options_.get_str("POSITIVITY")=="DQGT1") {
+        constrain_q2_ = true;
+        constrain_g2_ = true;
+        constrain_t1_ = true;
+    }else if (options_.get_str("POSITIVITY")=="DQGT2") {
+        constrain_q2_ = true;
+        constrain_g2_ = true;
+        constrain_t2_ = true;
+    }else if (options_.get_str("POSITIVITY")=="DQGT1T2") {
+        constrain_q2_ = true;
+        constrain_g2_ = true;
+        constrain_t1_ = true;
+        constrain_t2_ = true;
+    }else if (options_.get_str("POSITIVITY")=="DQGT") {
+        constrain_q2_ = true;
+        constrain_g2_ = true;
+        constrain_t1_ = true;
+        constrain_t2_ = true;
+    }
+
+    if ( options_.get_bool("CONSTRAIN_D3") ) {
+        constrain_d3_ = true;
+    }
+    if ( options_.get_bool("CONSTRAIN_D4") ) {
+        constrain_d4_ = true;
+        if ( !constrain_d3_ ) {
+            constrain_d3_ = true;
+        }
+    }
+
+    constrain_spin_ = options_.get_bool("CONSTRAIN_SPIN");
+
+    print_gpc_error_ = false;
+    constrain_gpc_ = false;
+    if (options_.get_bool("ENFORCE_GPC")) {
+        constrain_gpc_ = true;
+        NatOrbs_ = (std::shared_ptr<Matrix>)(new Matrix(2*amo_,2*amo_));
+    }
+
+    constrain_sz_ = options_.get_bool("CONSTRAIN_SZ");
+
+    if ( constrain_gpc_ ) {
+
+        int na = nalpha_ - nrstc_ - nfrzc_;
+        int nb = nbeta_ - nrstc_ - nfrzc_;
+
+        if ( na + nb == 3 && amo_ == 4 ) {
+
+            gpconstraint_   = GeneralizedPauli_3_8;
+            ngpconstraints_ = 31;
+
+        }else if ( na + nb == 4 && amo_ == 4 ) {
+
+            gpconstraint_ = GeneralizedPauli_4_8;
+            ngpconstraints_ = 14;
+
+        }else if ( na + nb == 5 && amo_ == 4 ) {
+
+            gpconstraint_ = GeneralizedPauli_5_8;
+            ngpconstraints_ = 31;
+
+        }else if ( na + nb == 3 && amo_ == 3 ) {
+
+            gpconstraint_ = GeneralizedPauli_3_6;
+            ngpconstraints_ = 4;
+
+        }else if ( na + nb == 4 && amo_ == 5 ) {
+
+            gpconstraint_ = GeneralizedPauli_4_10;
+            ngpconstraints_ = 124;
+
+        }else if ( na + nb == 6 && amo_ == 5 ) {
+
+            gpconstraint_ = GeneralizedPauli_6_10;
+            ngpconstraints_ = 124;
+
+        }else if ( na + nb == 5 && amo_ == 5 ) {
+
+            gpconstraint_ = GeneralizedPauli_5_10;
+            ngpconstraints_ = 160;
+
+        }else if ( na + nb == 3 && amo_ == 5 ) {
+
+            gpconstraint_ = GeneralizedPauli_3_10;
+            ngpconstraints_ = 93;
+
+        }else if ( na + nb == 7 && amo_ == 5 ) {
+
+            gpconstraint_ = GeneralizedPauli_7_10;
+            ngpconstraints_ = 93;
+
+        }else {
+            outfile->Printf("    <<< Error >>> Generalized Pauli Constraints not implemented for this case:\n");
+            outfile->Printf("        nfrzc  = %5i\n",nfrzc_);
+            outfile->Printf("        nrstc  = %5i\n",nrstc_);
+            outfile->Printf("        na     = %5i\n",na);
+            outfile->Printf("        nb     = %5i\n",nb);
+            outfile->Printf("        amo    = %5i\n",amo_);
+            outfile->Printf("        nmo    = %5i\n",nmo_);
+            throw PsiException("Generalized Pauli Constraints not implemented for this case.",__FILE__,__LINE__);
+        }
+    }
 }
 
 } //end namespaces

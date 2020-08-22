@@ -39,6 +39,7 @@
 #include <misc/blas.h>
 
 #include <misc/lbfgs_helper.h>
+#include <misc/diis.h>
 
 using namespace psi;
 using namespace fnocc;
@@ -74,18 +75,6 @@ static lbfgsfloatval_t lbfgs_evaluate_z(void * instance,
     return f;
 }
 
-static lbfgsfloatval_t lbfgs_evaluate_x(void * instance,
-    const lbfgsfloatval_t *x,
-    lbfgsfloatval_t *g,
-    const int n,
-    const lbfgsfloatval_t step) {
-
-    DualSDPSolver * sdp = reinterpret_cast<DualSDPSolver*>(instance);
-    double f = sdp->evaluate_gradient_x(x,g);
-
-    return f;
-}
-
 static int monitor_lbfgs_progress(
     void *instance,
     const lbfgsfloatval_t *x,
@@ -107,10 +96,12 @@ static int monitor_lbfgs_progress(
 DualSDPSolver::DualSDPSolver(long int n_primal, long int n_dual, Options & options)
     : SDPSolver(n_primal,n_dual,options){
 
-    mu_primal_    = 0.1;
-    mu_xz_        = 0.1;
-    iiter_        = 0;
+    mu_primal_ = 0.1;
+    mu_xz_     = 0.1;
+    mu_        = 0.1;
+    iiter_     = 0;
 
+    xz_     = (std::shared_ptr<Vector>)(new Vector(n_primal_));
     tmp_    = (std::shared_ptr<Vector>)(new Vector(n_primal_));
     cg_rhs_ = (std::shared_ptr<Vector>)(new Vector(n_dual_));
 
@@ -190,7 +181,7 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
     // this function can be called many times. don't forget to reset penalty parameter
     mu_primal_ = 0.1;
     mu_        = 0.1;
-    mu_xz_     = 0.1;
+    //mu_xz_     = 0.1;
     lag_xz_    = 1.0;
 
     // cg solver
@@ -208,7 +199,6 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
     outfile->Printf("\n");
     outfile->Printf("           oiter");
     outfile->Printf("       y iter");
-    //outfile->Printf("       x iter");
     outfile->Printf("       z iter");
     outfile->Printf("        <x|z>");
     outfile->Printf("         E(p)");
@@ -219,16 +209,13 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
 
     int oiter_local = 0;
 
-    double max_err_primal = -999;
-    double max_err_dual   = -999;
-    double max_err_xz     = -999;
+    std::shared_ptr<Vector> dy (new Vector(n_dual_));
+    std::shared_ptr<Vector> dz (new Vector(n_primal_));
+    std::shared_ptr<Vector> solution (new Vector(n_dual_ + 2 * n_primal_));
+    std::shared_ptr<Vector> error    (new Vector(n_dual_ + 2 * n_primal_));
+    std::shared_ptr<DIIS> diis (new DIIS(n_dual_ + 2 * n_primal_));
 
-    lbfgs_parameter_t param;
-    lbfgs_parameter_init(&param);
-
-    // adjust default lbfgs parameters
-    param.max_iterations = options_.get_int("MAXITER");
-    //param.epsilon        = 1e-10; //options_.get_double("LBFGS_CONVERGENCE");
+    double energy_primal = x_->vector_dot(c_);
 
     do {
 
@@ -260,8 +247,13 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
         }
         cg->set_convergence(cg_conv_i);
 
+        dy->copy(y_.get());
+
         // solve CG problem (solve dL/dy = 0)
         cg->solve(Au_,y_,cg_rhs_,evaluate_cg_AATu,(void*)this);
+
+        dy->subtract(y_);
+        dy->scale(-1.0);
 
         int cg_iter = cg->total_iterations();
 
@@ -282,28 +274,42 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
         evaluate_ATu_(ATu_, y_, data_);
         ATu_->subtract(c_);
 
+        // update z = r.rT by min ||A^Ty-c+z||^2 + |x^T z|^2
+
+        lbfgs_parameter_t param;
+        lbfgs_parameter_init(&param);
+
+        // adjust default lbfgs parameters
+        param.max_iterations = 100;//options_.get_int("MAXITER");
+
         if (oiter_ == 0) {
             param.epsilon = 0.01;
         }else {
             param.epsilon = 0.01 * dual_error_;
         }
-        if ( param.epsilon < r_convergence_ ) {
-            param.epsilon = r_convergence_;
+        if ( param.epsilon < 0.01*r_convergence_ ) {
+            param.epsilon = 0.01*r_convergence_;
         }
+
+        C_DCOPY(n_primal_,(double*)lbfgs_vars_z_,1,dz->pointer(),1);
+
         lbfgsfloatval_t lag_z = evaluate_gradient_z(lbfgs_vars_z_,tmp_->pointer());
         int status = lbfgs(n_primal_,lbfgs_vars_z_,&lag_z,lbfgs_evaluate_z,monitor_lbfgs_progress,(void*)this,&param);
         lbfgs_error_check(status);
         int z_iter = iiter_;
 
-        // build z = r.rT
-        build_z(lbfgs_vars_z_);
+        C_DAXPY(n_primal_,-1.0,(double*)lbfgs_vars_z_,1,dz->pointer(),1);
+        dz->scale(-1.0);
+
+        // build z = r.rT ... should have been built in lbfgs
+        //build_z(lbfgs_vars_z_);
 
         // evaluate dual error
 
-        // evaluate || A^T y - c + z||
-        evaluate_ATu_(ATu_, y_, data_);
+        // evaluate || A^T y - c + z||  ... A^Ty - c should already be precomputed
+        //evaluate_ATu_(ATu_, y_, data_);
+        //ATu_->subtract(c_);
         ATu_->add(z_);
-        ATu_->subtract(c_);
         dual_error_ = ATu_->norm();
 
         end = omp_get_wtime();
@@ -312,70 +318,33 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
 
         // update penalty parameter (dual) and lagrange multipliers (x)
 
-        double * err_p = ATu_->pointer();
+        double * ATu_p = ATu_->pointer();
         double * x_p = x_->pointer();
-        if ( oiter_ % 20 == 0 && oiter_ > 0 ) {
 
-/*
-            if ( oiter_ % 1000 == 0 ) {
-
-                mu_primal_ = 1e-2;
-
-                // lbfgs container auxiliary variables that define x
-                lbfgsfloatval_t * lbfgs_vars_x = lbfgs_malloc(n_primal_);
-
-                // seed auxiliary variables
-                for (int i = 0; i < n_primal_; i++) {
-                    lbfgs_vars_x[i] = 2.0 * ( (double)rand()/RAND_MAX - 0.5 ) / 1000.0;
-                }
-
-                // solve for x, given y, z, and mu
-                lbfgsfloatval_t lag_x = evaluate_gradient_x(lbfgs_vars_x,ATu_->pointer());
-                lbfgs(n_primal_,lbfgs_vars_x,&lag_x,lbfgs_evaluate_x,monitor_lbfgs_progress,(void*)this,&param);
-
-                // build x = r.rT
-                build_x(lbfgs_vars_x);
-
-                free(lbfgs_vars_z_);
-
-                // evaluate primal energy
-                double energy_primal = x_->vector_dot(c_);
-
-                // evaluate primal energy: ||Ax - b||
-                evaluate_Au_(Au_,x_,data_);
-                Au_->subtract(b_);
-                primal_error_ = Au_->norm();
-                printf("%20.12lf %20.12lf\n",energy_primal,primal_error_);
-
-                return;
-
-                mu_primal_ *= 0.1;
-            }
-*/
+        if ( oiter_ % 1 == 0 && oiter_ > 0 ) {
 
             // update lagrange multipliers, x
-            for (int i = 0; i < n_primal_; i++) {
-                x_p[i] += err_p[i] / mu_;
-            }
-            //mu_ *= primal_error_ / dual_error_;
+            ATu_->scale(1.0/mu_);
+            x_->add(ATu_);
 
-            double overlap = x_->vector_dot(z_);
-            lag_xz_  += overlap / mu_xz_;
-            mu_xz_ *= 0.9;
+            //mu_ *= 0.98;
+
+            // evaluate primal energy
+            energy_primal = x_->vector_dot(c_);
+
+            // evaluate primal energy: ||Ax - b||
+            evaluate_Au_(Au_,x_,data_);
+            Au_->subtract(b_);
+            primal_error_ = Au_->norm();
 
         }
 
-        // evaluate primal energy
-        double energy_primal = x_->vector_dot(c_);
-
-        // evaluate primal energy: ||Ax - b||
-        evaluate_Au_(Au_,x_,data_);
-        Au_->subtract(b_);
-        primal_error_ = Au_->norm();
-
-        //if ( oiter_ % 500 == 0 && oiter_ > 0 ) {
+        //if ( oiter_ % 20 == 0 && oiter_ > 0 ) {
         //    mu_ *= primal_error_ / dual_error_;
         //}
+
+        //build_xz(lbfgs_vars_z_);
+        //double xz = xz_->norm();
 
         outfile->Printf("    %12i %12i %12i %12.6lf %12.6lf %12.6lf %12.2le %12.3le %12.3le\n",
                     oiter_,cg_iter, z_iter, x_->vector_dot(z_),energy_primal,energy_dual,mu_,primal_error_,dual_error_);
@@ -398,11 +367,11 @@ void DualSDPSolver::solve(std::shared_ptr<Vector> x,
 
 }
 
-double DualSDPSolver::evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatval_t * g) {
+double DualSDPSolver::evaluate_gradient_z_new(const lbfgsfloatval_t * r, lbfgsfloatval_t * g) {
+
+    double lagrangian = 0.0;
 
     // L = || ATy - c + z ||^2 + (x.z)^2, fixed y and z
-    //std::shared_ptr<Vector> dual_error_vector (new Vector(n_primal_));
-    //double * dual_p     = dual_error_vector->pointer();
 
     // pointers
     double * r_p   = (double*)r;
@@ -414,32 +383,13 @@ double DualSDPSolver::evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatv
     // build z = r.rT
     build_z(r_p);
 
-    // evaluate || A^T y - c + z||
-    //evaluate_ATu_(ATu_, y_, data_);
-    //ATu_->subtract(c_);
+    // gradient contribution from ||ATy - c + z||
+
+    // evaluate || A^T y - c + z|| ... A^t - c has been precomputed in ATu
     ATu_->add(z_);
     double dual_error = ATu_->norm();
 
-    // evaluate || A^T y - c + z||
-    //dual_error_vector->copy(ATu_.get());
-    //dual_error_vector->add(z_);
-    //double dual_error = dual_error_vector->norm();
-
-    // z.x = 0
-    double xz = x_->vector_dot(z_);
-
-    // evaluate lagrangian
-    //double lagrangian = dual_error*dual_error/(2.0*mu_) + overlap*overlap/(2.0*mu_xz_);
-    //double lagrangian = dual_error*dual_error + overlap*overlap;
-    double lagrangian = 0.0;
-
-    //lagrangian -= x_->vector_dot(ATu_);
-    //lagrangian += dual_error*dual_error/(2.0 * mu_);
     lagrangian += dual_error*dual_error;
-
-    //lagrangian -= xz * lag_xz_;
-    //lagrangian += xz*xz/(2.0 * mu_xz_);
-    lagrangian += xz*xz;
 
     #pragma omp parallel for schedule (dynamic)
     for (int block = 0; block < primal_block_dim_.size(); block++) {
@@ -453,24 +403,88 @@ double DualSDPSolver::evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatv
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 tmp_p[i*n+j + off_nn]  = ( ATu_p[i*n+j + off_nn] + ATu_p[j*n+i + off_nn] );
-                //tmp_p[i*n+j + off_nn]  = ( dual_p[i*n+j + off_nn] + dual_p[j*n+i + off_nn] );
-                tmp_p[i*n+j + off_nn] += (  x_p[i*n+j + off_nn] +  x_p[j*n+i + off_nn] ) * xz;
-
-                // ||ATy - c + z||^2
-                //tmp_p[i*n+j + off_nn]  = ( ATu_p[i*n+j + off_nn] + ATu_p[j*n+i + off_nn] ) / (2.0 * mu_);
-
-                // -x (ATy - c + z)
-                //tmp_p[i*n+j + off_nn] -= 0.5 * (  x_p[i*n+j + off_nn] +  x_p[j*n+i + off_nn] );
-
-                // (xT.z)^2 
-                //tmp_p[i*n+j + off_nn] += (  x_p[i*n+j + off_nn] +  x_p[j*n+i + off_nn] ) * xz / (2.0 * mu_xz_);
-
-                // -lag xT.z
-                //tmp_p[i*n+j + off_nn] -= 0.5 * (  x_p[i*n+j + off_nn] +  x_p[j*n+i + off_nn] ) * lag_xz_ ;
-
             }
         }
     }
+
+    // subtract z from ATy - c + z so we don't need to construct ATy - c on the next iteration
+    ATu_->subtract(z_);
+
+    gradient_contribution(2.0,0.0,tmp_p, r_p, g);
+
+/*
+    // now contributions to gradient from sum [ (x.z)_ij ]^2 
+
+    // build x.z = x.r.rT
+    build_xz(r_p);
+    double xz = xz_->norm();
+
+    lagrangian += xz*xz;
+
+    // build x.r
+    double * xr = tmp_->pointer();
+    build_xr(xr,x_p,r_p);
+
+    // use dr = x.z.x.r
+    gradient_contribution(2.0,1.0,xz_->pointer(), xr, g);
+
+    // build z.r
+    double * zr = tmp_->pointer();
+    build_xr(zr,z_p,r_p);
+
+    // build x.z.r
+    double * xzr = xz_->pointer();
+    build_xr(xzr,x_p,zr);
+
+    // use dr = x.z.r.x
+    gradient_contribution(2.0,1.0,x_p, xzr, g);
+*/
+
+    // now contributions to gradient from sum [ (x.z)_ij - mu dij ]^2 
+
+    // build x.z = x.r.rT
+    build_xz(r_p);
+
+    double * xz_p = xz_->pointer();
+    for (int block = 0; block < primal_block_dim_.size(); block++) {
+        int n = primal_block_dim_[block];
+        if ( n == 0 ) continue;
+        int off_nn = 0;
+        for (int myblock = 0; myblock < block; myblock++) {
+            int myn = primal_block_dim_[myblock];
+            off_nn += myn*myn;
+        }
+        for (int i = 0; i < n; i++) {
+            xz_p[i*n+i + off_nn] -= mu_xz_;
+        }
+    }
+    double xz = xz_->norm();
+    lagrangian += xz * xz;
+
+    // build x.r
+    double * xr = tmp_->pointer();
+    build_xr(xr,x_p,r_p);
+
+    // use dr = (x.z - mu I).x.r
+    gradient_contribution(2.0,1.0,xz_->pointer(), xr, g);
+
+    // build z.r
+    double * zr = tmp_->pointer();
+    build_xr(zr,z_p,r_p);
+
+    // build x.z.r
+    double * xzr = xz_->pointer();
+    build_xr(xzr,x_p,zr);
+
+    C_DAXPY(n_primal_,-mu_xz_,r_p,1,xzr,1);
+
+    // use dr = (x.z.r - mu r).x
+    gradient_contribution(2.0,1.0,x_p, xzr, g);
+
+    return lagrangian;
+}
+
+void DualSDPSolver::gradient_contribution(double alpha, double beta, double * mat1, double * mat2, double * gradient) {
 
     #pragma omp parallel for schedule (dynamic)
     for (int block = 0; block < primal_block_dim_.size(); block++) {
@@ -485,96 +499,164 @@ double DualSDPSolver::evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatv
             off_nn += myn*myn;
             off_nm += myn*mym;
         }
-        F_DGEMM('n', 'n', n, m, n, 2.0, tmp_p + off_nn, n, r_p + off_nm, n, 0.0, g + off_nm, n);
+        F_DGEMM('n', 'n', n, m, n, alpha, mat1 + off_nn, n, mat2 + off_nm, n, beta, gradient + off_nm, n);
     }
+}
+
+int DualSDPSolver::update_z(double * r) {
+
+    // min || ATy - c + z ||^2 + (x.z)^2, fixed y and z
+
+    // pointers
+    double * r_p   = (double*)r;
+    double * x_p   = x_->pointer();
+    double * z_p   = z_->pointer();
+    double * ATu_p = ATu_->pointer();
+    double * tmp_p = tmp_->pointer();
+
+    std::shared_ptr<Vector> denom (new Vector(n_primal_));
+    std::shared_ptr<Vector> gradient (new Vector(n_primal_));
+
+    int iter = 0;
+    do {
+
+        // build z = r.rT
+        build_z(r_p);
+
+        // evaluate || A^T y - c + z|| ... A^t - c has been precomputed in ATu
+        ATu_->add(z_);
+        double dual_error = ATu_->norm();
+
+        // x^T.z = 0
+        double xz = x_->vector_dot(z_);
+
+        double lagrangian = 0.0;
+
+        lagrangian += dual_error*dual_error;
+        lagrangian += xz*xz;
+
+        // d (x^T.z)^2 / dr = (x^T.z) (x + x^T).r 
+        // +
+        // d ATy... term
+        double * d_p = denom->pointer();
+        #pragma omp parallel for schedule (dynamic)
+        for (int block = 0; block < primal_block_dim_.size(); block++) {
+            int n = primal_block_dim_[block];
+            if ( n == 0 ) continue;
+            int off_nn = 0;
+            for (int myblock = 0; myblock < block; myblock++) {
+                int myn = primal_block_dim_[myblock];
+                off_nn += myn*myn;
+            }
+            C_DCOPY(n*n,ATu_p + off_nn,1,tmp_p + off_nn,1);
+            C_DAXPY(n*n,xz,x_p + off_nn,1,tmp_p + off_nn,1);
+            for (int i = 0; i < n; i++) {
+                C_DAXPY(n, 1.0, ATu_p + off_nn + i, n, tmp_p + off_nn + i*n, 1);
+                C_DAXPY(n, xz,    x_p + off_nn + i, n, tmp_p + off_nn + i*n, 1);
+                //for (int j = 0; j < n; j++) {
+                //    //tmp_p[i*n+j + off_nn]  = ( ATu_p[i*n+j + off_nn] + ATu_p[j*n+i + off_nn] );
+                //    //tmp_p[i*n+j + off_nn] += (  x_p[i*n+j + off_nn] +  x_p[j*n+i + off_nn] ) * xz;
+                //    tmp_p[i*n+j + off_nn] += ATu_p[j*n+i + off_nn];
+                //    tmp_p[i*n+j + off_nn] += x_p[j*n+i + off_nn] * xz;
+                //}
+                d_p[off_nn + i * n + i ] = tmp_p[off_nn + i * n + i ];
+                tmp_p[off_nn + i * n + i ] = 0.0;
+            }
+        }
+
+        double * g_p = gradient->pointer();
+        gradient_contribution(1.0,0.0,tmp_p, r_p, g_p);
+
+        C_DCOPY(n_primal_,g_p,1,r_p,1);
+
+        #pragma omp parallel for schedule (dynamic)
+        for (int block = 0; block < primal_block_dim_.size(); block++) {
+            int n = primal_block_dim_[block];
+            int m = primal_block_rank_[block];
+            if ( n == 0 ) continue;
+            int off_nn = 0;
+            int off_nm = 0;
+            for (int myblock = 0; myblock < block; myblock++) {
+                int myn = primal_block_dim_[myblock];
+                int mym = primal_block_rank_[myblock];
+                off_nn += myn*myn;
+                off_nm += myn*mym;
+            }
+            for (int i = 0; i < m; i++) {
+                for (int j = 0; j < n; j++) {
+                    r_p[i*n+j + off_nm] *= - 1.0 / d_p[j*n+j + off_nn];
+                }
+            }
+        }
+
+        // subtract z from ATy - c + z so we don't need to construct ATy - c on the next iteration
+        ATu_->subtract(z_);
+
+        iter++;
+
+    }while(iter < 10);
+
+    return iter;
+}
+
+double DualSDPSolver::evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatval_t * g) {
+
+    // min || ATy - c + z ||^2 + (x.z)^2, fixed y and z
+
+    // pointers
+    double * r_p   = (double*)r;
+    double * x_p   = x_->pointer();
+    double * z_p   = z_->pointer();
+    double * ATu_p = ATu_->pointer();
+    double * tmp_p = tmp_->pointer();
+
+    // build z = r.rT
+    build_z(r_p);
+
+    // evaluate || A^T y - c + z|| ... A^t - c has been precomputed in ATu
+    ATu_->add(z_);
+    double dual_error = ATu_->norm();
+
+    // x^T.z = 0
+    double xz = x_->vector_dot(z_);
+
+    double lagrangian = 0.0;
+
+    lagrangian += dual_error*dual_error;
+    lagrangian += xz*xz;
+
+    // d (x^T.z)^2 / dr = (x^T.z) (x + x^T).r 
+    // +
+    // d ATy... term
+    #pragma omp parallel for schedule (dynamic)
+    for (int block = 0; block < primal_block_dim_.size(); block++) {
+        int n = primal_block_dim_[block];
+        if ( n == 0 ) continue;
+        int off_nn = 0;
+        for (int myblock = 0; myblock < block; myblock++) {
+            int myn = primal_block_dim_[myblock];
+            off_nn += myn*myn;
+        }
+        C_DCOPY(n*n,ATu_p + off_nn,1,tmp_p + off_nn,1);
+        C_DAXPY(n*n,xz,x_p + off_nn,1,tmp_p + off_nn,1);
+        for (int i = 0; i < n; i++) {
+            C_DAXPY(n, 1.0, ATu_p + off_nn + i, n, tmp_p + off_nn + i*n, 1);
+            C_DAXPY(n, xz,    x_p + off_nn + i, n, tmp_p + off_nn + i*n, 1);
+            //for (int j = 0; j < n; j++) {
+            //    //tmp_p[i*n+j + off_nn]  = ( ATu_p[i*n+j + off_nn] + ATu_p[j*n+i + off_nn] );
+            //    //tmp_p[i*n+j + off_nn] += (  x_p[i*n+j + off_nn] +  x_p[j*n+i + off_nn] ) * xz;
+            //    tmp_p[i*n+j + off_nn] += ATu_p[j*n+i + off_nn];
+            //    tmp_p[i*n+j + off_nn] += x_p[j*n+i + off_nn] * xz;
+            //}
+        }
+    }
+
+    gradient_contribution(2.0,0.0,tmp_p, r_p, g);
 
     // subtract z from ATy - c + z so we don't need to construct ATy - c on the next iteration
     ATu_->subtract(z_);
 
     return lagrangian;
-}
-
-double DualSDPSolver::evaluate_gradient_x(const lbfgsfloatval_t * r, lbfgsfloatval_t * g) {
-
-    // L = x^Tc - y^T (Ax - b) + 1/mu || Ax - b ||
-
-    // pointers
-    double * r_p   = (double*)r;
-    double * x_p   = x_->pointer();
-    double * c_p   = c_->pointer();
-
-    // build x = r.rT
-    build_x(r_p);
-
-    // evaluate primal energy
-    double energy = x_->vector_dot(c_);
-
-    // evaluate (Ax-b)
-    evaluate_Au_(Au_,x_,data_);
-    Au_->subtract(b_);
-
-    // evaluate sqrt(||Ax-b||)
-    double nrm = Au_->norm();
-
-    // evaluate lagrangian
-    double lagrangian = energy - y_->vector_dot(Au_) + nrm*nrm/(2.0 * mu_primal_);
-
-    // dL/dR = 2( A^T [ 2/mu(Ax-b) - y] + c) . r
-
-    // evaluate A^T (1/mu[Ax-b] - y)
-    Au_->scale(1.0/mu_primal_);
-    Au_->subtract(y_);
-    evaluate_ATu_(ATu_,Au_,data_);
-
-    // add integrals for derivative of energy
-    ATu_->add(c_);
-
-    double * ATu_p = ATu_->pointer();
-    int off_nn = 0;
-    for (int block = 0; block < primal_block_dim_.size(); block++) {
-        int n = primal_block_dim_[block];
-        for (int i = 0; i < n; i++) {
-            for (int j = i; j < n; j++) {
-                double dum_ij = ATu_p[i*n+j + off_nn];
-                double dum_ji = ATu_p[j*n+i + off_nn];
-                ATu_p[i*n+j + off_nn] = dum_ij + dum_ji;
-                ATu_p[j*n+i + off_nn] = dum_ij + dum_ji;
-            }
-        }
-        off_nn += n*n;
-    }
-
-    // evaluate gradient of lagrangian
-    off_nn = 0;
-    int off_nm = 0;
-    for (int block = 0; block < primal_block_dim_.size(); block++) {
-        int n = primal_block_dim_[block];
-        int m = primal_block_rank_[block];
-        if ( n == 0 ) continue;
-        F_DGEMM('n', 'n', n, m, n, 1.0, ATu_->pointer() + off_nn, n, r_p + off_nm, n, 0.0, g + off_nm, n);
-        off_nn += n*n;
-        off_nm += n*m;
-    }
-
-    return lagrangian;
-}
-
-// build x = r.rT
-void DualSDPSolver::build_x(double * r){
-
-    double * x_p = x_->pointer();
-
-    int off_nn = 0;
-    int off_nm = 0;
-    for (int block = 0; block < primal_block_dim_.size(); block++) {
-        int n = primal_block_dim_[block];
-        int m = primal_block_rank_[block];
-        if ( n == 0 ) continue;
-        F_DGEMM('n', 't', n, n, m, 1.0, r + off_nm, n, r + off_nm, n, 0.0, x_p + off_nn, n);
-        off_nm += n*m;
-        off_nn += n*n;
-    }
-
 }
 
 // build z = r.rT
@@ -596,6 +678,58 @@ void DualSDPSolver::build_z(double * r){
             off_nm += myn*mym;
         }
         F_DGEMM('n', 't', n, n, m, 1.0, r + off_nm, n, r + off_nm, n, 0.0, z_p + off_nn, n);
+    }
+
+}
+
+// build xz = x.(r.rT)
+void DualSDPSolver::build_xz(double * r) {
+
+    double * xr = tmp_->pointer();
+
+    build_xr(xr, x_->pointer(), r);
+
+    double * xz_p = xz_->pointer();
+
+    #pragma omp parallel for schedule (dynamic)
+    for (int block = 0; block < primal_block_dim_.size(); block++) {
+        int n = primal_block_dim_[block];
+        int m = primal_block_rank_[block];
+        if ( n == 0 ) continue;
+        int off_nn = 0;
+        int off_nm = 0;
+        for (int myblock = 0; myblock < block; myblock++) {
+            int myn = primal_block_dim_[myblock];
+            int mym = primal_block_rank_[myblock];
+            off_nn += myn*myn;
+            off_nm += myn*mym;
+        }
+
+        // (x.z)^i_j = sum_a (x.R)^a_i R^a_j
+        F_DGEMM('n', 't', n, n, m, 1.0, r + off_nm, n, xr + off_nm, n, 0.0, xz_p + off_nn, n);
+    }
+
+}
+
+// build xr = x.r
+void DualSDPSolver::build_xr(double * xr, double * x, double * r) {
+
+    #pragma omp parallel for schedule (dynamic)
+    for (int block = 0; block < primal_block_dim_.size(); block++) {
+        int n = primal_block_dim_[block];
+        int m = primal_block_rank_[block];
+        if ( n == 0 ) continue;
+        int off_nn = 0;
+        int off_nm = 0;
+        for (int myblock = 0; myblock < block; myblock++) {
+            int myn = primal_block_dim_[myblock];
+            int mym = primal_block_rank_[myblock];
+            off_nn += myn*myn;
+            off_nm += myn*mym;
+        }
+
+        // (x.R)^a_i = sum_k x^i_k R^a_k
+        F_DGEMM('t', 'n', n, m, n, 1.0, x + off_nn, n, r + off_nm, n, 0.0, xr + off_nm, n);
     }
 
 }

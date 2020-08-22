@@ -260,12 +260,6 @@ void DIIS::DIISCoefficients(int nvec){
     C_DGESV(nvec+1,nrhs,A,lda,ipiv,B,ldb);
     C_DCOPY(nvec,B,1,diisvec_,1);
 
-    //outfile->Printf("\n");
-    //outfile->Printf("    ==> DIIS Expansion Coefficients <==\n");
-    //outfile->Printf("\n");
-    //for (int i = 0; i < nvec; i++) outfile->Printf("        c[%i] %20.12lf\n",i,diisvec_[i]);
-    //outfile->Printf("\n");
-
     free(A);
     free(B);
     free(ipiv);

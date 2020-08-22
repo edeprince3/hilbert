@@ -42,8 +42,7 @@ using namespace psi;
 
 namespace hilbert{
 
-
-void v2RDMSolver::BuildBasis() {
+void v2RDMSolver::build_mapping_arrays() {
 
     // product table:
     table = (int*)malloc(64*sizeof(int));

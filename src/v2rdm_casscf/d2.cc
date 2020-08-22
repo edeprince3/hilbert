@@ -103,6 +103,38 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
         offset++;
     }
 
+    // hermiticity (necessary for dual SDP?)
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                double dum = u_p[offset];
+                A_p[d2aaoff[h] + ij*gems_aa[h] + kl] += dum;
+                A_p[d2aaoff[h] + kl*gems_aa[h] + ij] -= dum;
+                offset++;
+            }
+        }
+    }
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                double dum = u_p[offset];
+                A_p[d2bboff[h] + ij*gems_aa[h] + kl] += dum;
+                A_p[d2bboff[h] + kl*gems_aa[h] + ij] -= dum;
+                offset++;
+            }
+        }
+    }
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_ab[h]; ij++) {
+            for (int kl = 0; kl < gems_ab[h]; kl++) {
+                double dum = u_p[offset];
+                A_p[d2aboff[h] + ij*gems_ab[h] + kl] += dum;
+                A_p[d2aboff[h] + kl*gems_ab[h] + ij] -= dum;
+                offset++;
+            }
+        }
+    }
+
     // d1 / q1 a
     for (int h = 0; h < nirrep_; h++) {
         for(int i = 0; i < amopi_[h]; i++){
@@ -353,6 +385,38 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
         }
         A_p[offset] = sum;
         offset++;
+    }
+
+    // hermiticity (necessary for dual SDP?)
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                double dum = u_p[d2aaoff[h] + ij*gems_aa[h] + kl];
+                dum       -= u_p[d2aaoff[h] + kl*gems_aa[h] + ij];
+                A_p[offset] = dum;
+                offset++;
+            }
+        }
+    }
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                double dum = u_p[d2bboff[h] + ij*gems_aa[h] + kl];
+                dum       -= u_p[d2bboff[h] + kl*gems_aa[h] + ij];
+                A_p[offset] = dum;
+                offset++;
+            }
+        }
+    }
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_ab[h]; ij++) {
+            for (int kl = 0; kl < gems_ab[h]; kl++) {
+                double dum = u_p[d2aboff[h] + ij*gems_ab[h] + kl];
+                dum       -= u_p[d2aboff[h] + kl*gems_ab[h] + ij];
+                A_p[offset] = dum;
+                offset++;
+            }
+        }
     }
 
     // d1 / q1 a

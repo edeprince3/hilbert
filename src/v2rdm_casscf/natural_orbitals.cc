@@ -148,7 +148,7 @@ void v2RDMSolver::ComputeNaturalOrbitals() {
 
 
     // transform the ab block of the 2-RDM to natural orbital basis
-    std::shared_ptr<Vector> tempx (new Vector(dimx_));
+    std::shared_ptr<Vector> tempx (new Vector(n_primal_));
 
     // D2ab(ij,kl): transform index 4
     for (int h = 0; h < nirrep_; h++) {
@@ -313,7 +313,7 @@ void v2RDMSolver::ComputeNaturalOrbitals() {
     // now transform the aa and bb blocks of the 2-RDM to natural orbital basis
 
     // first, unpack D2aa/bb into full antisymmetrized D2aa/D2bb
-    std::shared_ptr<Vector> tempx2 (new Vector(dimx_));
+    std::shared_ptr<Vector> tempx2 (new Vector(n_primal_));
     for (int h = 0; h < nirrep_; h++) {
         for (int ij = 0; ij < gems_aa[h]; ij++) {
             int i = bas_aa_sym[h][ij][0];

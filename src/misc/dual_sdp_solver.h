@@ -69,8 +69,8 @@ class DualSDPSolver: public SDPSolver {
                         SDPCallbackFunction evaluate_ATu,
                         void * data);
 
-    double evaluate_gradient_x(const lbfgsfloatval_t * r, lbfgsfloatval_t * g);
     double evaluate_gradient_z(const lbfgsfloatval_t * r, lbfgsfloatval_t * g);
+    double evaluate_gradient_z_new(const lbfgsfloatval_t * r, lbfgsfloatval_t * g);
 
     void evaluate_AATu(std::shared_ptr<Vector> AATu,std::shared_ptr<Vector> u);
 
@@ -111,6 +111,9 @@ class DualSDPSolver: public SDPSolver {
     /// the right-hand side of AATy = A(c - z) + mu(b - Ax) 
     std::shared_ptr<Vector> cg_rhs_;
 
+    /// matrix product (x.z)
+    std::shared_ptr<Vector> xz_;
+
     /// temporary container 
     std::shared_ptr<Vector> tmp_;
 
@@ -126,11 +129,22 @@ class DualSDPSolver: public SDPSolver {
     /// copy of list of block ranks
     std::vector<int> primal_block_rank_;
 
-    /// build x from auxiliary parameters
-    void build_x(double * r);
-
     /// build z from auxiliary parameters
     void build_z(double * r);
+
+    /// build (x.z) from auxiliary parameters
+    void build_xz(double * r);
+
+    /// build (x.r) from auxiliary parameters
+    void build_xr(double * xr, double * x, double * r);
+
+    /// contribute to gradient dL/dr
+    void gradient_contribution(double alpha, double beta, double * mat1, double * mat2, double * gradient);
+
+    /// update z 
+    int update_z(double * r);
+
+
 
 };
 

@@ -59,13 +59,13 @@ void v2RDMSolver::WriteCheckpointFile() {
     psio->write_entry(PSIF_V2RDM_CHECKPOINT,"MU",(char*)(&mu),sizeof(double));
 
     // x
-    psio->write_entry(PSIF_V2RDM_CHECKPOINT,"PRIMAL",(char*)x->pointer(),dimx_*sizeof(double));
+    psio->write_entry(PSIF_V2RDM_CHECKPOINT,"PRIMAL",(char*)x->pointer(),n_primal_*sizeof(double));
 
     // y
-    psio->write_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 1",(char*)sdp_->get_y()->pointer(),nconstraints_*sizeof(double));
+    psio->write_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 1",(char*)sdp_->get_y()->pointer(),n_dual_*sizeof(double));
 
     // z
-    psio->write_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 2",(char*)sdp_->get_z()->pointer(),dimx_*sizeof(double));
+    psio->write_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 2",(char*)sdp_->get_z()->pointer(),n_primal_*sizeof(double));
 
     // mo/mo' transformation matrix
     psio_address addr = PSIO_ZERO;
@@ -104,17 +104,17 @@ void v2RDMSolver::ReadFromCheckpointFile() {
     sdp_->set_mu(mu);
 
     // x
-    psio->read_entry(PSIF_V2RDM_CHECKPOINT,"PRIMAL",(char*)x->pointer(),dimx_*sizeof(double));
+    psio->read_entry(PSIF_V2RDM_CHECKPOINT,"PRIMAL",(char*)x->pointer(),n_primal_*sizeof(double));
 
     // y
-    std::shared_ptr<Vector> y (new Vector(nconstraints_));
-    psio->read_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 1",(char*)y->pointer(),nconstraints_*sizeof(double));
+    std::shared_ptr<Vector> y (new Vector(n_dual_));
+    psio->read_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 1",(char*)y->pointer(),n_dual_*sizeof(double));
     sdp_->set_y(y);
     y.reset();
 
     // z
-    std::shared_ptr<Vector> z (new Vector(dimx_));
-    psio->read_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 2",(char*)z->pointer(),dimx_*sizeof(double));
+    std::shared_ptr<Vector> z (new Vector(n_primal_));
+    psio->read_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 2",(char*)z->pointer(),n_primal_*sizeof(double));
     sdp_->set_z(z);
     z.reset();
 

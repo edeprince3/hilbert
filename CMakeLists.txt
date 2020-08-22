@@ -100,6 +100,13 @@ add_psi4_plugin(hilbert
     src/v2rdm_casscf/extended_koopmans.cc
     src/v2rdm_casscf/fcidump.cc
     src/v2rdm_casscf/g2.cc
+    src/v2rdm_casscf/generalized_pauli.cc
+    src/v2rdm_casscf/generalized_pauli_3_10.cc
+    src/v2rdm_casscf/generalized_pauli_3_6.cc
+    src/v2rdm_casscf/generalized_pauli_3_8.cc
+    src/v2rdm_casscf/generalized_pauli_4_10.cc
+    src/v2rdm_casscf/generalized_pauli_4_8.cc
+    src/v2rdm_casscf/generalized_pauli_5_10.cc
     src/v2rdm_casscf/natural_orbitals.cc
     src/v2rdm_casscf/oei.cc
     src/v2rdm_casscf/orbital_lagrangian.cc
