@@ -87,6 +87,10 @@ RRSDPSolver::RRSDPSolver(long int n_primal, long int n_dual, Options & options)
     for (int i = 0; i < n_primal_; i++) {
         lbfgs_vars_x_[i] = 2.0 * ( (double)rand()/RAND_MAX - 0.5 ) / 1000.0;
     }
+
+    mu_ = 0.1;
+    mu_reset_ = true;
+    mu_scale_factor_ = 0.1;
 }
 
 RRSDPSolver::~RRSDPSolver(){
@@ -135,7 +139,9 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
     double energy =  x_->vector_dot(c_);
 
     // this function can be called many times. don't forget to reset penalty parameter
-    mu_ = 0.1;
+    if ( mu_reset_ ) {
+        mu_ = 0.1;
+    }
 
     // the iterations
     outfile->Printf("\n");
@@ -205,7 +211,7 @@ void RRSDPSolver::solve(std::shared_ptr<Vector> x,
                 y_p[i] -= Au_p[i] / mu_;
             }
         //}else{
-            mu_ *= 0.1;
+            mu_ *= mu_scale_factor_;
         //}
         max_err = new_max_err;
 

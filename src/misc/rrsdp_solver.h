@@ -62,7 +62,17 @@ class RRSDPSolver: public SDPSolver {
 
     void set_iiter(int iiter) { iiter_ = iiter; }
 
+    void set_mu_scale_factor(double mu_scale_factor) { mu_scale_factor_ = mu_scale_factor; }
+
+    void set_mu_reset(bool mu_reset) { mu_reset_ = mu_reset; }
+
   protected:
+
+    /// do reset penalty parameter each time solve() is called?
+    bool mu_reset_;
+
+    /// scaling factor for updating penalty parameter
+    double mu_scale_factor_;
 
     /// pointer to input data
     void * data_;
