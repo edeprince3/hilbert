@@ -34,16 +34,16 @@ using namespace psi;
 namespace hilbert{
 
 // portion of A^T.y corresponding to generalized paulit constraints
-void v2RDMSolver::Generalized_Pauli_5_10_constraints_ATu(SharedVector A,SharedVector u){
+void v2RDMSolver::Generalized_Pauli_5_10_constraints_ATu(SharedVector A,SharedVector u, int state){
 
     double* A_p = A->pointer();
     double* u_p = u->pointer();
-    double ** orb_p = NatOrbs_->pointer();
+    double ** orb_p = NatOrbs_[state]->pointer();
 
     int * x1aoff = d1aoff;
     int * x1boff = d1boff;
 
-    int off = gpcoff[0];
+    int off = gpcoff[state][0];
 
     //GP_N_10_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,-1,1,0,0,0,0,0,0,0,0);//<=0,    #################
     //GP_N_10_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,-1,1,0,0,0,0,0,0,0);//<=0,    ##             ##
@@ -242,13 +242,13 @@ void v2RDMSolver::Generalized_Pauli_5_10_constraints_ATu(SharedVector A,SharedVe
 }
 
 // portion of A.x corresponding to generalized paulit constraints
-void v2RDMSolver::Generalized_Pauli_5_10_constraints_Au(SharedVector A,SharedVector u){
+void v2RDMSolver::Generalized_Pauli_5_10_constraints_Au(SharedVector A,SharedVector u, int state){
 
     int saveoff = offset;
 
     double* A_p = A->pointer();
     double* u_p = u->pointer();
-    double ** orb_p = NatOrbs_->pointer();
+    double ** orb_p = NatOrbs_[state]->pointer();
 
     int * x1aoff = d1aoff;
     int * x1boff = d1boff;
@@ -258,7 +258,7 @@ void v2RDMSolver::Generalized_Pauli_5_10_constraints_Au(SharedVector A,SharedVec
         eigvals[i] = Generalized_Pauli_Au_term(orb_p,u_p,x1aoff,x1boff,i+1);
     }
 
-    int off = gpcoff[0];
+    int off = gpcoff[state][0];
     //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,-1,1,0,0,0,0,0,0,0,0);//<=0,    #################
     //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,-1,1,0,0,0,0,0,0,0);//<=0,    ##             ##
     //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,-1,1,0,0,0,0,0,0);//<=0,    ##             ##
@@ -456,7 +456,7 @@ void v2RDMSolver::Generalized_Pauli_5_10_constraints_Au(SharedVector A,SharedVec
     if ( print_gpc_error_ ) {
         outfile->Printf("\n");        outfile->Printf("    ==> Generalized Pauli Constraint Errors <===\n");
         outfile->Printf("\n");
-        for (int i = saveoff; i < saveoff+ngpconstraints_; i++) {
+        for (int i = saveoff; i < saveoff+n_gpc_/n_gpc_states_; i++) {
             outfile->Printf("    %5i %20.12lf %20.12lf %5s\n",i,A_p[i],b->pointer()[i],A_p[i] <= b->pointer()[i] ? "" : "XXX");
         }
     }

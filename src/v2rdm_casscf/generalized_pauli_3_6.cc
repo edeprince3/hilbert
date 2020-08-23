@@ -35,11 +35,11 @@ namespace hilbert{
 
 
 // portion of A^T.y corresponding to generalized paulit constraints
-void v2RDMSolver::Generalized_Pauli_3_6_constraints_ATu(SharedVector A,SharedVector u){
+void v2RDMSolver::Generalized_Pauli_3_6_constraints_ATu(SharedVector A,SharedVector u, int state){
 
     double* A_p = A->pointer();
     double* u_p = u->pointer();
-    double ** orb_p = NatOrbs_->pointer();
+    double ** orb_p = NatOrbs_[state]->pointer();
 
     // l1 + l6 = 1
     double dum1 = u_p[ offset++ ];
@@ -62,21 +62,21 @@ void v2RDMSolver::Generalized_Pauli_3_6_constraints_ATu(SharedVector A,SharedVec
     Generalized_Pauli_ATu_term(dum2-dum4,orb_p,A_p,d1aoff,d1boff,5);
     Generalized_Pauli_ATu_term(dum1-dum4,orb_p,A_p,d1aoff,d1boff,6);
 
-    A_p[ gpcoff[0] ]  = 0.0;
-    A_p[ gpcoff[1] ]  = 0.0;
-    A_p[ gpcoff[2] ]  = 0.0;
-    A_p[ gpcoff[3] ] += dum4;
+    A_p[ gpcoff[state][0] ]  = 0.0;
+    A_p[ gpcoff[state][1] ]  = 0.0;
+    A_p[ gpcoff[state][2] ]  = 0.0;
+    A_p[ gpcoff[state][3] ] += dum4;
 
 }
 
 // portion of A.x corresponding to generalized paulit constraints
-void v2RDMSolver::Generalized_Pauli_3_6_constraints_Au(SharedVector A,SharedVector u){
+void v2RDMSolver::Generalized_Pauli_3_6_constraints_Au(SharedVector A,SharedVector u, int state){
 
     int saveoff = offset;
 
     double* A_p = A->pointer();
     double* u_p = u->pointer();
-    double ** orb_p = NatOrbs_->pointer();
+    double ** orb_p = NatOrbs_[state]->pointer();
 
     double l1 = Generalized_Pauli_Au_term(orb_p,u_p,d1aoff,d1boff,1);
     double l2 = Generalized_Pauli_Au_term(orb_p,u_p,d1aoff,d1boff,2);
@@ -95,17 +95,15 @@ void v2RDMSolver::Generalized_Pauli_3_6_constraints_Au(SharedVector A,SharedVect
     A_p[offset++] = l3 + l4;
 
     // l4 - l5 - l6 <= 0
-    A_p[offset++] = u_p[ gpcoff[3] ] + l4 - l5 - l6;
+    A_p[offset++] = u_p[ gpcoff[state][3] ] + l4 - l5 - l6;
 
     if ( print_gpc_error_ ) {
         outfile->Printf("\n");        outfile->Printf("    ==> Generalized Pauli Constraint Errors <===\n");
         outfile->Printf("\n");
-        for (int i = saveoff; i < saveoff+ngpconstraints_; i++) {
+        for (int i = saveoff; i < saveoff+n_gpc_/n_gpc_states_; i++) {
             outfile->Printf("    %5i %20.12lf %20.12lf %5s\n",i,A_p[i],b->pointer()[i],A_p[i] <= b->pointer()[i] ? "" : "XXX");
         }
     }
-
-
 }
 
 }

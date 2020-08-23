@@ -572,9 +572,6 @@ void  v2RDMSolver::common_init(){
     outfile->Printf("\n");
 
     bool do_act_act = options_.get_bool("ORBOPT_ACTIVE_ACTIVE_ROTATIONS");
-    //if ( constrain_gpc_ ) {
-    //    do_act_act = true;
-    //}
 
     outfile->Printf("  ==> Orbital optimization parameters <==\n");
     outfile->Printf("\n");
@@ -900,16 +897,31 @@ double v2RDMSolver::compute_energy() {
 
     int local_maxiter = options_.get_bool("OPTIMIZE_ORBITALS") ? options_.get_int("ORBOPT_FREQUENCY") : options_.get_int("MU_UPDATE_FREQUENCY");
 
-    //std::shared_ptr<RRSDPSolver> rrsdp (new RRSDPSolver(n_primal_,n_dual_,options_));
+    std::shared_ptr<RRSDPSolver> rrsdp (new RRSDPSolver(n_primal_,n_dual_,options_));
+
+    // for GPC, start with partially solved ensemble problem first, then modify penalty update protocol
+    if ( constrain_gpc_ ) {
+        constrain_gpc_ = false;
+        BuildConstraints();
+        rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
+        constrain_gpc_ = true;
+        BuildConstraints();
+
+        rrsdp->set_mu(1.0);
+        rrsdp->set_mu_reset(false);
+        rrsdp->set_mu_scale_factor(0.99);
+    }
 
     do {
 
         if ( constrain_gpc_ ) {
-            SortedNaturalOrbitals();
+            for (int i = 0; i < n_gpc_states_; i++) {
+                SortedNaturalOrbitals(i);
+            }
         }
 
-        sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
-        //rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
+        //sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
+        rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
     
@@ -930,7 +942,7 @@ double v2RDMSolver::compute_energy() {
 
         outfile->Printf("\n");
 
-    }while( !orbopt_converged_ || !sdp_->is_converged() );
+    }while( !orbopt_converged_ || !rrsdp->is_converged() );
 
     //free(tmp);
 
@@ -1882,560 +1894,564 @@ void v2RDMSolver::BuildConstraints(){
 
     if ( constrain_gpc_ ) {
 
-        if ( gpconstraint_ == GeneralizedPauli_3_8 || gpconstraint_ == GeneralizedPauli_5_8 ) {
+        // set constraints for every state to which gpc are applied
+        for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
 
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 3.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 5.0;
-            b_p[offset++] = 5.0;
-            b_p[offset++] = 5.0;
-            b_p[offset++] = 5.0;
-            b_p[offset++] = 5.0;
-            b_p[offset++] = 5.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
+            if ( gpc_[my_state] == GeneralizedPauli_3_8 || gpc_[my_state] == GeneralizedPauli_5_8 ) {
 
-/*
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-
-            b_p[offset++] = 1.0;
-
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-*/
-        }else if ( gpconstraint_ == GeneralizedPauli_4_8 ) {
-
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 1.0;
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 0.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 3.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 5.0;
+                b_p[offset++] = 5.0;
+                b_p[offset++] = 5.0;
+                b_p[offset++] = 5.0;
+                b_p[offset++] = 5.0;
+                b_p[offset++] = 5.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
 
 /*
-            //b_p[offset++] = 1.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
 
-            double small = 0.0;//r_convergence_;
-            double scale = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
 
-            b_p[offset++] = 0.0 + small;
-            b_p[offset++] = 0.0 + small;
-            b_p[offset++] = 0.0 + small;
-            b_p[offset++] = 0.0 + small;
-            b_p[offset++] = 0.0 + small;
-            b_p[offset++] = 0.0 + small;
-            b_p[offset++] = 0.0 + small;
+                b_p[offset++] = 1.0;
 
-            b_p[offset++] = 2.0 + small;
-            b_p[offset++] = 2.0 + small;
-            b_p[offset++] = 2.0 + small;
-            b_p[offset++] = 2.0 + small;
-            b_p[offset++] = 2.0 + small;
-            b_p[offset++] = 2.0 + small;
-            b_p[offset++] = 2.0 + small;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+*/
+            }else if ( gpc_[my_state] == GeneralizedPauli_4_8 ) {
+
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 1.0;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+
+/*
+                //b_p[offset++] = 1.0;
+
+                double small = 0.0;//r_convergence_;
+                double scale = 1.0;
+
+                b_p[offset++] = 0.0 + small;
+                b_p[offset++] = 0.0 + small;
+                b_p[offset++] = 0.0 + small;
+                b_p[offset++] = 0.0 + small;
+                b_p[offset++] = 0.0 + small;
+                b_p[offset++] = 0.0 + small;
+                b_p[offset++] = 0.0 + small;
+
+                b_p[offset++] = 2.0 + small;
+                b_p[offset++] = 2.0 + small;
+                b_p[offset++] = 2.0 + small;
+                b_p[offset++] = 2.0 + small;
+                b_p[offset++] = 2.0 + small;
+                b_p[offset++] = 2.0 + small;
+                b_p[offset++] = 2.0 + small;
 */
 
-        }else if ( gpconstraint_ == GeneralizedPauli_3_6 ) {
+            }else if ( gpc_[my_state] == GeneralizedPauli_3_6 ) {
 
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 1.0;
 
-            b_p[offset++] = 0.0;
+                b_p[offset++] = 0.0;
 
-        }else if ( gpconstraint_ == GeneralizedPauli_4_10 || gpconstraint_ == GeneralizedPauli_6_10 ) {
+            }else if ( gpc_[my_state] == GeneralizedPauli_4_10 || gpc_[my_state] == GeneralizedPauli_6_10 ) {
 
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 4.0;
-            //b_p[offset++] = 6.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 4.0;
-            b_p[offset++] = 4.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 8.0;
-            b_p[offset++] = 8.0;
-            b_p[offset++] = 8.0;
-            b_p[offset++] = 8.0;
-            b_p[offset++] = 8.0;
-            b_p[offset++] = 8.0;
-            b_p[offset++] = 8.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 11.0;
-            b_p[offset++] = 11.0;
-            b_p[offset++] = 11.0;
-            b_p[offset++] = 11.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 24.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 36.0;
-            b_p[offset++] = 42.0;
-            b_p[offset++] = 42.0;
-            b_p[offset++] = 42.0;
-            b_p[offset++] = 42.0;
-            b_p[offset++] = 42.0;
-        }else if ( gpconstraint_ == GeneralizedPauli_5_10 ) {
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 5.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 2.0;
-            //b_p[offset++] = 5.0;
-            b_p[offset++] = 5.0;
-            b_p[offset++] = 5.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 13.0;
-            b_p[offset++] = 13.0;
-            b_p[offset++] = 13.0;
-            b_p[offset++] = 13.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 15.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 20.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 25.0;
-            b_p[offset++] = 35.0;
-            b_p[offset++] = 35.0;
-            b_p[offset++] = 35.0;
-            b_p[offset++] = 35.0;
-            b_p[offset++] = 45.0;
-            b_p[offset++] = 45.0;
-            b_p[offset++] = 45.0;
-            b_p[offset++] = 45.0;
-        }else if ( gpconstraint_ == GeneralizedPauli_3_10 || gpconstraint_ == GeneralizedPauli_7_10 ) {
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 0.0;
-            //b_p[offset++] = 3.0;
-            b_p[offset++] = 1.0;
-            b_p[offset++] = 2.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 3.0;
-            b_p[offset++] = 4.0;
-            b_p[offset++] = 4.0;
-            b_p[offset++] = 4.0;
-            b_p[offset++] = 4.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 6.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 7.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 9.0;
-            b_p[offset++] = 11.0;
-            b_p[offset++] = 11.0;
-            b_p[offset++] = 11.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 12.0;
-            b_p[offset++] = 13.0;
-            b_p[offset++] = 13.0;
-            b_p[offset++] = 13.0;
-            b_p[offset++] = 13.0;
-            b_p[offset++] = 13.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 19.0;
-            b_p[offset++] = 21.0;
-            b_p[offset++] = 21.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 4.0;
+                //b_p[offset++] = 6.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 4.0;
+                b_p[offset++] = 4.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 8.0;
+                b_p[offset++] = 8.0;
+                b_p[offset++] = 8.0;
+                b_p[offset++] = 8.0;
+                b_p[offset++] = 8.0;
+                b_p[offset++] = 8.0;
+                b_p[offset++] = 8.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 11.0;
+                b_p[offset++] = 11.0;
+                b_p[offset++] = 11.0;
+                b_p[offset++] = 11.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 24.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 36.0;
+                b_p[offset++] = 42.0;
+                b_p[offset++] = 42.0;
+                b_p[offset++] = 42.0;
+                b_p[offset++] = 42.0;
+                b_p[offset++] = 42.0;
+            }else if ( gpc_[my_state] == GeneralizedPauli_5_10 ) {
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 5.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 2.0;
+                //b_p[offset++] = 5.0;
+                b_p[offset++] = 5.0;
+                b_p[offset++] = 5.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 13.0;
+                b_p[offset++] = 13.0;
+                b_p[offset++] = 13.0;
+                b_p[offset++] = 13.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 15.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 20.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 25.0;
+                b_p[offset++] = 35.0;
+                b_p[offset++] = 35.0;
+                b_p[offset++] = 35.0;
+                b_p[offset++] = 35.0;
+                b_p[offset++] = 45.0;
+                b_p[offset++] = 45.0;
+                b_p[offset++] = 45.0;
+                b_p[offset++] = 45.0;
+            }else if ( gpc_[my_state] == GeneralizedPauli_3_10 || gpc_[my_state] == GeneralizedPauli_7_10 ) {
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 0.0;
+                //b_p[offset++] = 3.0;
+                b_p[offset++] = 1.0;
+                b_p[offset++] = 2.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 3.0;
+                b_p[offset++] = 4.0;
+                b_p[offset++] = 4.0;
+                b_p[offset++] = 4.0;
+                b_p[offset++] = 4.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 6.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 7.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 9.0;
+                b_p[offset++] = 11.0;
+                b_p[offset++] = 11.0;
+                b_p[offset++] = 11.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 12.0;
+                b_p[offset++] = 13.0;
+                b_p[offset++] = 13.0;
+                b_p[offset++] = 13.0;
+                b_p[offset++] = 13.0;
+                b_p[offset++] = 13.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 19.0;
+                b_p[offset++] = 21.0;
+                b_p[offset++] = 21.0;
+            }
+
         }
-
     }
 
 }
@@ -2479,7 +2495,9 @@ void v2RDMSolver::bpsdp_Au(SharedVector A, SharedVector u){
     }
 
     if ( constrain_gpc_ ) {
-        Generalized_Pauli_constraints_Au(A,u);
+        for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
+            Generalized_Pauli_constraints_Au(A,u,my_state);
+        }
     }
 
 } // end Au
@@ -2522,7 +2540,9 @@ void v2RDMSolver::bpsdp_ATu(SharedVector A, SharedVector u){
     }
 
     if ( constrain_gpc_ ) {
-        Generalized_Pauli_constraints_ATu(A,u);
+        for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
+            Generalized_Pauli_constraints_ATu(A,u,my_state);
+        }
     }
 
 }//end ATu
@@ -2796,7 +2816,7 @@ void v2RDMSolver::determine_n_primal() {
         }
     }
     if ( constrain_gpc_ ) {
-        n_primal_ += ngpconstraints_;
+        n_primal_ += n_gpc_;
     }
 
 }
@@ -3011,7 +3031,7 @@ void v2RDMSolver::determine_n_dual() {
         }
     }
     if ( constrain_gpc_ ) {
-        n_dual_ += ngpconstraints_;
+        n_dual_ += n_gpc_;
     }
 }
 
@@ -3260,12 +3280,16 @@ void v2RDMSolver::set_primal_offsets() {
             rank_.push_back(quartet_aaaa[h]);
         }
     }
+
     if ( constrain_gpc_ ) {
-        gpcoff = (int*)malloc(ngpconstraints_*sizeof(int));
-        for (int i = 0; i < ngpconstraints_; i++) {
-            gpcoff[i] = offset++;
-            dimensions_.push_back(1);
-            rank_.push_back(1);
+        for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
+            int * my_gpcoff = (int*)malloc(n_gpc_*sizeof(int));
+            for (int i = 0; i < n_gpc_; i++) {
+                my_gpcoff[i] = offset++;
+                dimensions_.push_back(1);
+                rank_.push_back(1);
+            }
+            gpcoff.push_back(my_gpcoff);
         }
     }
 }
@@ -3321,75 +3345,118 @@ void v2RDMSolver::set_constraints() {
     constrain_spin_ = options_.get_bool("CONSTRAIN_SPIN");
 
     print_gpc_error_ = false;
-    constrain_gpc_ = false;
-    if (options_.get_bool("ENFORCE_GPC")) {
-        constrain_gpc_ = true;
-        NatOrbs_ = (std::shared_ptr<Matrix>)(new Matrix(2*amo_,2*amo_));
+    constrain_gpc_   = false;
+    n_gpc_states_    = 1;
+
+    if ( options_.get_str("GPC_CONSTRAINTS") == "NONE") {
+        constrain_gpc_ = false;
+    }else if ( options_.get_str("GPC_CONSTRAINTS") == "1RDM") {
+        constrain_gpc_      = true;
+        constrain_gpc_1rdm_ = true;
+        constrain_gpc_2rdm_ = false;
+        n_gpc_states_        = 1;
+    }else if ( options_.get_str("GPC_CONSTRAINTS") == "2RDM") {
+        constrain_gpc_      = true;
+        constrain_gpc_1rdm_ = false;
+        constrain_gpc_2rdm_ = true;
+        n_gpc_states_        = 2 * amo_;
+    }
+
+    if ( constrain_gpc_ ) {
+        //NatOrbs_ = (std::shared_ptr<Matrix>)(new Matrix(2*amo_,2*amo_));
+        for (int i = 0; i < n_gpc_states_; i++) {
+            NatOrbs_.push_back((std::shared_ptr<Matrix>)(new Matrix(2*amo_,2*amo_)));
+        }
+
     }
 
     constrain_sz_ = options_.get_bool("CONSTRAIN_SZ");
 
     if ( constrain_gpc_ ) {
 
-        int na = nalpha_ - nrstc_ - nfrzc_;
-        int nb = nbeta_ - nrstc_ - nfrzc_;
+        n_gpc_ = 0;
 
-        if ( na + nb == 3 && amo_ == 4 ) {
+        if ( constrain_gpc_1rdm_ ) {
 
-            gpconstraint_   = GeneralizedPauli_3_8;
-            ngpconstraints_ = 31;
+            int na = nalpha_ - nrstc_ - nfrzc_;
+            int nb = nbeta_ - nrstc_ - nfrzc_;
 
-        }else if ( na + nb == 4 && amo_ == 4 ) {
+            add_gpc_constraints(na,nb);
 
-            gpconstraint_ = GeneralizedPauli_4_8;
-            ngpconstraints_ = 14;
+        }else if ( constrain_gpc_2rdm_ ) {
 
-        }else if ( na + nb == 5 && amo_ == 4 ) {
+            int na = nalpha_ - nrstc_ - nfrzc_;
+            int nb = nbeta_ - nrstc_ - nfrzc_;
 
-            gpconstraint_ = GeneralizedPauli_5_8;
-            ngpconstraints_ = 31;
+            for (int my_state = 0; my_state < amo_; my_state++) {
+                add_gpc_constraints(na-1,nb);
+            }
+            for (int my_state = 0; my_state < amo_; my_state++) {
+                add_gpc_constraints(na,nb-1);
+            }
 
-        }else if ( na + nb == 3 && amo_ == 3 ) {
-
-            gpconstraint_ = GeneralizedPauli_3_6;
-            ngpconstraints_ = 4;
-
-        }else if ( na + nb == 4 && amo_ == 5 ) {
-
-            gpconstraint_ = GeneralizedPauli_4_10;
-            ngpconstraints_ = 124;
-
-        }else if ( na + nb == 6 && amo_ == 5 ) {
-
-            gpconstraint_ = GeneralizedPauli_6_10;
-            ngpconstraints_ = 124;
-
-        }else if ( na + nb == 5 && amo_ == 5 ) {
-
-            gpconstraint_ = GeneralizedPauli_5_10;
-            ngpconstraints_ = 160;
-
-        }else if ( na + nb == 3 && amo_ == 5 ) {
-
-            gpconstraint_ = GeneralizedPauli_3_10;
-            ngpconstraints_ = 93;
-
-        }else if ( na + nb == 7 && amo_ == 5 ) {
-
-            gpconstraint_ = GeneralizedPauli_7_10;
-            ngpconstraints_ = 93;
-
-        }else {
-            outfile->Printf("    <<< Error >>> Generalized Pauli Constraints not implemented for this case:\n");
-            outfile->Printf("        nfrzc  = %5i\n",nfrzc_);
-            outfile->Printf("        nrstc  = %5i\n",nrstc_);
-            outfile->Printf("        na     = %5i\n",na);
-            outfile->Printf("        nb     = %5i\n",nb);
-            outfile->Printf("        amo    = %5i\n",amo_);
-            outfile->Printf("        nmo    = %5i\n",nmo_);
-            throw PsiException("Generalized Pauli Constraints not implemented for this case.",__FILE__,__LINE__);
         }
     }
+}
+
+void v2RDMSolver::add_gpc_constraints(int na, int nb) {
+
+    if ( na + nb == 3 && amo_ == 4 ) {
+    
+        gpc_.push_back(GeneralizedPauli_3_8);
+        n_gpc_ += 31;
+    
+    }else if ( na + nb == 4 && amo_ == 4 ) {
+    
+        gpc_.push_back(GeneralizedPauli_4_8);
+        n_gpc_ += 14;
+    
+    }else if ( na + nb == 5 && amo_ == 4 ) {
+    
+        gpc_.push_back(GeneralizedPauli_5_8);
+        n_gpc_ += 31;
+    
+    }else if ( na + nb == 3 && amo_ == 3 ) {
+    
+        gpc_.push_back(GeneralizedPauli_3_6);
+        n_gpc_ += 4;
+    
+    }else if ( na + nb == 4 && amo_ == 5 ) {
+    
+        gpc_.push_back(GeneralizedPauli_4_10);
+        n_gpc_ += 124;
+    
+    }else if ( na + nb == 6 && amo_ == 5 ) {
+    
+        gpc_.push_back(GeneralizedPauli_6_10);
+        n_gpc_ += 124;
+    
+    }else if ( na + nb == 5 && amo_ == 5 ) {
+    
+        gpc_.push_back(GeneralizedPauli_5_10);
+        n_gpc_ += 160;
+    
+    }else if ( na + nb == 3 && amo_ == 5 ) {
+    
+        gpc_.push_back(GeneralizedPauli_3_10);
+        n_gpc_ += 93;
+    
+    }else if ( na + nb == 7 && amo_ == 5 ) {
+    
+        gpc_.push_back(GeneralizedPauli_7_10);
+        n_gpc_ += 93;
+    
+    }else {
+        outfile->Printf("    <<< Error >>> Generalized Pauli Constraints not implemented for this case:\n");
+        outfile->Printf("        nfrzc  = %5i\n",nfrzc_);
+        outfile->Printf("        nrstc  = %5i\n",nrstc_);
+        outfile->Printf("        na     = %5i\n",na);
+        outfile->Printf("        nb     = %5i\n",nb);
+        outfile->Printf("        amo    = %5i\n",amo_);
+        outfile->Printf("        nmo    = %5i\n",nmo_);
+        throw PsiException("Generalized Pauli Constraints not implemented for this case.",__FILE__,__LINE__);
+    }
+    
 }
 
 } //end namespaces

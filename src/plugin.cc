@@ -198,7 +198,7 @@ int read_options(std::string name, Options& options)
         options.add_str("POSITIVITY", "DQG", "DQG D DQ DG DQGT1 DQGT2 DQGT1T2");
 
         /*- Do enforce generalized pauli constraints -*/ 
-        options.add_bool("ENFORCE_GPC",false);
+        options.add_str("GPC_CONSTRAINTS","NONE", "NONE 1RDM 2RDM");
 
         /*- Do constrain D3/D2 mapping? -*/
         options.add_bool("CONSTRAIN_D3",false);

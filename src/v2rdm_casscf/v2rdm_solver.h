@@ -362,30 +362,37 @@ class v2RDMSolver: public Wavefunction{
     void D4_constraints_ATu(SharedVector A,SharedVector u);
 
 
-// generalized pauli constraints
+    // do enforce gpcs?
     bool constrain_gpc_;
 
+    /// do enforce gpcs on 1rdm?
+    bool constrain_gpc_1rdm_;
+
+    /// do enforce gpcs on 2rdm?
+    bool constrain_gpc_2rdm_;
+
+    /// pick a set of gpcs based on na, nb, and amo
+    void add_gpc_constraints(int na, int nb);
+
     /// generalized Pauli constraints
-    void Generalized_Pauli_constraints_Au(SharedVector A,SharedVector u);
-    void Generalized_Pauli_3_8_constraints_Au(SharedVector A,SharedVector u);
-    void Generalized_Pauli_4_8_constraints_Au(SharedVector A,SharedVector u);
-    void Generalized_Pauli_3_6_constraints_Au(SharedVector A,SharedVector u);
-    void Generalized_Pauli_3_10_constraints_Au(SharedVector A,SharedVector u);
-    void Generalized_Pauli_4_10_constraints_Au(SharedVector A,SharedVector u);
-    void Generalized_Pauli_5_10_constraints_Au(SharedVector A,SharedVector u);
-    void Generalized_Pauli_even_constraints_Au(SharedVector A,SharedVector u);
+    void Generalized_Pauli_constraints_Au(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_3_8_constraints_Au(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_4_8_constraints_Au(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_3_6_constraints_Au(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_3_10_constraints_Au(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_4_10_constraints_Au(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_5_10_constraints_Au(SharedVector A,SharedVector u, int state);
 
-    void Generalized_Pauli_constraints_ATu(SharedVector A,SharedVector u);
-    void Generalized_Pauli_3_8_constraints_ATu(SharedVector A,SharedVector u);
-    void Generalized_Pauli_4_8_constraints_ATu(SharedVector A,SharedVector u);
-    void Generalized_Pauli_3_6_constraints_ATu(SharedVector A,SharedVector u);
-    void Generalized_Pauli_3_10_constraints_ATu(SharedVector A,SharedVector u);
-    void Generalized_Pauli_4_10_constraints_ATu(SharedVector A,SharedVector u);
-    void Generalized_Pauli_5_10_constraints_ATu(SharedVector A,SharedVector u);
-    void Generalized_Pauli_even_constraints_ATu(SharedVector A,SharedVector u);
+    void Generalized_Pauli_constraints_ATu(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_3_8_constraints_ATu(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_4_8_constraints_ATu(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_3_6_constraints_ATu(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_3_10_constraints_ATu(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_4_10_constraints_ATu(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_5_10_constraints_ATu(SharedVector A,SharedVector u, int state);
 
-    std::shared_ptr<Matrix> NatOrbs_;
-    void SortedNaturalOrbitals();
+    std::vector<std::shared_ptr<Matrix> > NatOrbs_;
+    void SortedNaturalOrbitals(int state);
 
     double Generalized_Pauli_Au_term(double ** orbs,double * u,int * offa, int * offb,int index);
     void Generalized_Pauli_ATu_term(double val, double ** orbs,double * A,int * offa, int * offb,int index);
@@ -404,9 +411,19 @@ class v2RDMSolver: public Wavefunction{
         double ** orbs, int d1, int d2, int d3, int d4, int d5,
         int d6, int d7,int d8, int d9, int d10);
 
-    int * gpcoff;
-    int ngpconstraints_;
-    GeneralizedPauliConstraint gpconstraint_;
+    /// offsets to gpc auxiliary variables in the primal vector
+    std::vector<int * > gpcoff;
+
+    /// the number of generalized pauli constraints
+    int n_gpc_;
+
+    /// the number of states to which gpcs are applied
+    int n_gpc_states_; 
+
+    /// which constraint will be applied
+    std::vector<GeneralizedPauliConstraint> gpc_;
+
+    /// do print gpc errors?
     bool print_gpc_error_;
 
 // end of gpc

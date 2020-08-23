@@ -34,86 +34,87 @@ namespace hilbert {
 
 
 // portion of A^T.y corresponding to generalized pauli constraints
-void v2RDMSolver::Generalized_Pauli_constraints_ATu(SharedVector A,SharedVector u){
+void v2RDMSolver::Generalized_Pauli_constraints_ATu(SharedVector A,SharedVector u, int state){
 
-    if ( gpconstraint_ == GeneralizedPauli_3_8 ) {
+    if ( gpc_[state] == GeneralizedPauli_3_8 ) {
 
-        Generalized_Pauli_3_8_constraints_ATu(A,u);
 
-    }else if ( gpconstraint_ == GeneralizedPauli_4_8 ) {
+        Generalized_Pauli_3_8_constraints_ATu(A,u,state);
 
-        Generalized_Pauli_4_8_constraints_ATu(A,u);
+    }else if ( gpc_[state] == GeneralizedPauli_4_8 ) {
 
-    }else if ( gpconstraint_ == GeneralizedPauli_5_8 ) {
+        Generalized_Pauli_4_8_constraints_ATu(A,u,state);
 
-        Generalized_Pauli_3_8_constraints_ATu(A,u);
+    }else if ( gpc_[state] == GeneralizedPauli_5_8 ) {
 
-    }else if ( gpconstraint_ == GeneralizedPauli_3_6 ) {
+        Generalized_Pauli_3_8_constraints_ATu(A,u,state);
 
-        Generalized_Pauli_3_6_constraints_ATu(A,u);
+    }else if ( gpc_[state] == GeneralizedPauli_3_6 ) {
 
-    }else if ( gpconstraint_ == GeneralizedPauli_4_10 ) {
+        Generalized_Pauli_3_6_constraints_ATu(A,u,state);
 
-        Generalized_Pauli_4_10_constraints_ATu(A,u);
+    }else if ( gpc_[state] == GeneralizedPauli_4_10 ) {
 
-    }else if ( gpconstraint_ == GeneralizedPauli_6_10 ) {
+        Generalized_Pauli_4_10_constraints_ATu(A,u,state);
 
-        Generalized_Pauli_4_10_constraints_ATu(A,u);
+    }else if ( gpc_[state] == GeneralizedPauli_6_10 ) {
 
-    }else if ( gpconstraint_ == GeneralizedPauli_5_10 ) {
+        Generalized_Pauli_4_10_constraints_ATu(A,u,state);
 
-        Generalized_Pauli_5_10_constraints_ATu(A,u);
+    }else if ( gpc_[state] == GeneralizedPauli_5_10 ) {
 
-    }else if ( gpconstraint_ == GeneralizedPauli_3_10 ) {
+        Generalized_Pauli_5_10_constraints_ATu(A,u,state);
 
-        Generalized_Pauli_3_10_constraints_ATu(A,u);
+    }else if ( gpc_[state] == GeneralizedPauli_3_10 ) {
 
-    }else if ( gpconstraint_ == GeneralizedPauli_7_10 ) {
+        Generalized_Pauli_3_10_constraints_ATu(A,u,state);
 
-        Generalized_Pauli_3_10_constraints_ATu(A,u);
+    }else if ( gpc_[state] == GeneralizedPauli_7_10 ) {
+
+        Generalized_Pauli_3_10_constraints_ATu(A,u,state);
 
     }
 
 }
 
 // portion of A.x corresponding to generalized pauli constraints
-void v2RDMSolver::Generalized_Pauli_constraints_Au(SharedVector A,SharedVector u){
+void v2RDMSolver::Generalized_Pauli_constraints_Au(SharedVector A,SharedVector u, int state){
 
-    if ( gpconstraint_ == GeneralizedPauli_3_8 ) {
+    if ( gpc_[state] == GeneralizedPauli_3_8 ) {
 
-        Generalized_Pauli_3_8_constraints_Au(A,u);
+        Generalized_Pauli_3_8_constraints_Au(A,u,state);
 
-    }else if ( gpconstraint_ == GeneralizedPauli_4_8 ) {
+    }else if ( gpc_[state] == GeneralizedPauli_4_8 ) {
 
-        Generalized_Pauli_4_8_constraints_Au(A,u);
+        Generalized_Pauli_4_8_constraints_Au(A,u,state);
 
-    }else if ( gpconstraint_ == GeneralizedPauli_5_8 ) {
+    }else if ( gpc_[state] == GeneralizedPauli_5_8 ) {
 
-        Generalized_Pauli_3_8_constraints_Au(A,u);
+        Generalized_Pauli_3_8_constraints_Au(A,u,state);
 
-    }else if ( gpconstraint_ == GeneralizedPauli_3_6 ) {
+    }else if ( gpc_[state] == GeneralizedPauli_3_6 ) {
 
-        Generalized_Pauli_3_6_constraints_Au(A,u);
+        Generalized_Pauli_3_6_constraints_Au(A,u,state);
 
-    }else if ( gpconstraint_ == GeneralizedPauli_4_10 ) {
+    }else if ( gpc_[state] == GeneralizedPauli_4_10 ) {
 
-        Generalized_Pauli_4_10_constraints_Au(A,u);
+        Generalized_Pauli_4_10_constraints_Au(A,u,state);
 
-    }else if ( gpconstraint_ == GeneralizedPauli_6_10 ) {
+    }else if ( gpc_[state] == GeneralizedPauli_6_10 ) {
 
-        Generalized_Pauli_4_10_constraints_Au(A,u);
+        Generalized_Pauli_4_10_constraints_Au(A,u,state);
 
-    }else if ( gpconstraint_ == GeneralizedPauli_5_10 ) {
+    }else if ( gpc_[state] == GeneralizedPauli_5_10 ) {
 
-        Generalized_Pauli_5_10_constraints_Au(A,u);
+        Generalized_Pauli_5_10_constraints_Au(A,u,state);
 
-    }else if ( gpconstraint_ == GeneralizedPauli_3_10 ) {
+    }else if ( gpc_[state] == GeneralizedPauli_3_10 ) {
 
-        Generalized_Pauli_3_10_constraints_Au(A,u);
+        Generalized_Pauli_3_10_constraints_Au(A,u,state);
 
-    }else if ( gpconstraint_ == GeneralizedPauli_7_10 ) {
+    }else if ( gpc_[state] == GeneralizedPauli_7_10 ) {
 
-        Generalized_Pauli_3_10_constraints_Au(A,u);
+        Generalized_Pauli_3_10_constraints_Au(A,u,state);
 
     }
 
@@ -151,7 +152,7 @@ double v2RDMSolver::Generalized_Pauli_Au_term(double ** orbs,double * u,int * of
     return dum;
 }
 
-void v2RDMSolver::SortedNaturalOrbitals() {
+void v2RDMSolver::SortedNaturalOrbitals(int state) {
 
     //NatOrbs_->zero();
     std::shared_ptr<Matrix> temp (new Matrix(2*amo_,2*amo_));
@@ -159,7 +160,7 @@ void v2RDMSolver::SortedNaturalOrbitals() {
     int * x1aoff;
     int * x1boff;
 
-    if ( gpconstraint_ == GeneralizedPauli_5_8 || gpconstraint_ == GeneralizedPauli_6_10 || gpconstraint_ == GeneralizedPauli_7_10 ) {
+    if ( gpc_[state] == GeneralizedPauli_5_8 || gpc_[state] == GeneralizedPauli_6_10 || gpc_[state] == GeneralizedPauli_7_10 ) {
         x1aoff = q1aoff;
         x1boff = q1boff;
     }else {
@@ -248,7 +249,7 @@ void v2RDMSolver::SortedNaturalOrbitals() {
     free(skipb);
 
     // check phase:
-    double **old = NatOrbs_->pointer();
+    double **old = NatOrbs_[state]->pointer();
     for (int i = 0; i < 2*amo_; i++) {
         double max = -999;
         int jmax   = 0;
