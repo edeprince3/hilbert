@@ -3356,6 +3356,7 @@ void v2RDMSolver::set_constraints() {
         constrain_gpc_2rdm_ = false;
         n_gpc_states_        = 1;
     }else if ( options_.get_str("GPC_CONSTRAINTS") == "2RDM") {
+        throw PsiException("GPCs can only be applied to the 1rdm at this time.",__FILE__,__LINE__);
         constrain_gpc_      = true;
         constrain_gpc_1rdm_ = false;
         constrain_gpc_2rdm_ = true;
