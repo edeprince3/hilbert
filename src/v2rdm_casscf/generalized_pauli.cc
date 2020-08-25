@@ -120,7 +120,7 @@ void v2RDMSolver::Generalized_Pauli_constraints_Au(SharedVector A,SharedVector u
 
 }
 
-void v2RDMSolver::Generalized_Pauli_ATu_term(double val, double ** orbs,double * A,int * offa, int * offb,int index) {
+void v2RDMSolver::Generalized_Pauli_ATu_term(double val, double ** orbs,double * A,int *** map_a, int *** map_b,int index) {
     for (int i = 0; i < amo_; i++) {
         int hi = symmetry[i];
         int ii = i - pitzer_offset[hi];
@@ -129,14 +129,17 @@ void v2RDMSolver::Generalized_Pauli_ATu_term(double val, double ** orbs,double *
             if ( hi != hj ) continue;
             int jj = j - pitzer_offset[hj];
 
-            A[offa[hi] + ii*amopi_[hi] + jj] += val * orbs[i     ][index - 1] * orbs[j     ][index - 1];
-            A[offb[hi] + ii*amopi_[hi] + jj] += val * orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1];
+            //A[offa[hi] + ii*amopi_[hi] + jj] += val * orbs[i     ][index - 1] * orbs[j     ][index - 1];
+            //A[offb[hi] + ii*amopi_[hi] + jj] += val * orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1];
+
+            A[ map_a[hi][ii][jj] ] += val * orbs[i     ][index - 1] * orbs[j     ][index - 1];
+            A[ map_b[hi][ii][jj] ] += val * orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1];
 
         }
     }
 }
 
-double v2RDMSolver::Generalized_Pauli_Au_term(double ** orbs,double * u,int * offa, int * offb,int index) {
+double v2RDMSolver::Generalized_Pauli_Au_term(double ** orbs,double * u,int *** map_a, int *** map_b,int index) {
     double dum = 0.0;
     for (int i = 0; i < amo_; i++) {
         int hi = symmetry[i];
@@ -145,8 +148,10 @@ double v2RDMSolver::Generalized_Pauli_Au_term(double ** orbs,double * u,int * of
             int hj = symmetry[j];
             if ( hi != hj ) continue;
             int jj = j - pitzer_offset[hj];
-            dum += orbs[i     ][index - 1] * orbs[j     ][index - 1] * u[offa[hi] + ii*amopi_[hi] + jj];
-            dum += orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1] * u[offb[hi] + ii*amopi_[hi] + jj];
+            //dum += orbs[i     ][index - 1] * orbs[j     ][index - 1] * u[offa[hi] + ii*amopi_[hi] + jj];
+            //dum += orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1] * u[offb[hi] + ii*amopi_[hi] + jj];
+            dum += orbs[i     ][index - 1] * orbs[j     ][index - 1] * u[ map_a[hi][ii][jj] ];
+            dum += orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1] * u[ map_b[hi][ii][jj] ];
         }
     }
     return dum;
@@ -157,16 +162,16 @@ void v2RDMSolver::SortedNaturalOrbitals(int state) {
     //NatOrbs_->zero();
     std::shared_ptr<Matrix> temp (new Matrix(2*amo_,2*amo_));
 
-    int * x1aoff;
-    int * x1boff;
+    //int * x1aoff;
+    //int * x1boff;
 
-    if ( gpc_[state] == GeneralizedPauli_5_8 || gpc_[state] == GeneralizedPauli_6_10 || gpc_[state] == GeneralizedPauli_7_10 ) {
-        x1aoff = q1aoff;
-        x1boff = q1boff;
-    }else {
-        x1aoff = d1aoff;
-        x1boff = d1boff;
-    }
+    //if ( gpc_[state] == GeneralizedPauli_5_8 || gpc_[state] == GeneralizedPauli_6_10 || gpc_[state] == GeneralizedPauli_7_10 ) {
+    //    x1aoff = q1aoff;
+    //    x1boff = q1boff;
+    //}else {
+    //    x1aoff = d1aoff;
+    //    x1boff = d1boff;
+    //}
 
     std::shared_ptr<Matrix> Da (new Matrix(nirrep_,amopi_,amopi_));
     std::shared_ptr<Matrix> eigveca (new Matrix(nirrep_,amopi_,amopi_));
@@ -174,7 +179,8 @@ void v2RDMSolver::SortedNaturalOrbitals(int state) {
     for (int h = 0; h < nirrep_; h++) {
         for (int i = 0; i < amopi_[h] ; i++) {
             for (int j = 0; j < amopi_[h]; j++) {
-                Da->pointer(h)[i][j] = x->pointer()[x1aoff[h]+i*amopi_[h]+j];
+                //Da->pointer(h)[i][j] = x->pointer()[x1aoff[h]+i*amopi_[h]+j];
+                Da->pointer(h)[i][j] = x->pointer()[gpc_rdm_map_a_[state][h][i][j]];
             }
         }
     }
@@ -186,7 +192,8 @@ void v2RDMSolver::SortedNaturalOrbitals(int state) {
     for (int h = 0; h < nirrep_; h++) {
         for (int i = 0; i < amopi_[h] ; i++) {
             for (int j = 0; j < amopi_[h]; j++) {
-                Db->pointer(h)[i][j] = x->pointer()[x1boff[h]+i*amopi_[h]+j];
+                //Db->pointer(h)[i][j] = x->pointer()[x1boff[h]+i*amopi_[h]+j];
+                Db->pointer(h)[i][j] = x->pointer()[gpc_rdm_map_b_[state][h][i][j]];
             }
         }
     }

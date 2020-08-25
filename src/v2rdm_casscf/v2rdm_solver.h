@@ -374,6 +374,15 @@ class v2RDMSolver: public Wavefunction{
     /// pick a set of gpcs based on na, nb, and amo
     void add_gpc_constraints(int na, int nb);
 
+    /// map rdm elements onto d1a-like object
+    std::vector< int *** > gpc_rdm_map_a_;
+
+    /// map rdm elements onto d1b-like object
+    std::vector< int *** > gpc_rdm_map_b_;
+
+    /// set maps of rdm elements onto d1-like objects
+    void set_gpc_maps();
+
     /// generalized Pauli constraints
     void Generalized_Pauli_constraints_Au(SharedVector A,SharedVector u, int state);
     void Generalized_Pauli_3_8_constraints_Au(SharedVector A,SharedVector u, int state);
@@ -394,20 +403,23 @@ class v2RDMSolver: public Wavefunction{
     std::vector<std::shared_ptr<Matrix> > NatOrbs_;
     void SortedNaturalOrbitals(int state);
 
-    double Generalized_Pauli_Au_term(double ** orbs,double * u,int * offa, int * offb,int index);
-    void Generalized_Pauli_ATu_term(double val, double ** orbs,double * A,int * offa, int * offb,int index);
+    //double Generalized_Pauli_Au_term(double ** orbs,double * u,int * offa, int * offb,int index);
+    //void Generalized_Pauli_ATu_term(double val, double ** orbs,double * A,int * offa, int * offb,int index);
 
-    double GP_N_8_Au(int & off, double * u, int * offa, int * offb, double ** orbs,
+    double Generalized_Pauli_Au_term(double ** orbs,double * u,int *** map_a, int *** map_b,int index);
+    void Generalized_Pauli_ATu_term(double val, double ** orbs,double * A,int *** map_a, int *** map_b,int index);
+
+    double GP_N_8_Au(int & off, double * u, double ** orbs,
         double * eigvals, int d1, int d2, int d3, int d4, int d5, int d6, int d7,
         int d8);
-    void GP_N_8_ATu(double dum,int & off, double * A, int * offa, int * offb,
+    void GP_N_8_ATu(double dum,int & off, double * A, int *** map_a, int *** map_b,
         double ** orbs, int d1, int d2, int d3, int d4, int d5,
         int d6, int d7,int d8);
 
-    double GP_N_10_Au(int & off, double * u, int * offa, int * offb, double ** orbs,
+    double GP_N_10_Au(int & off, double * u, double ** orbs,
         double * eigvals, int d1, int d2, int d3, int d4, int d5, int d6, int d7,
         int d8, int d9, int d10);
-    void GP_N_10_ATu(double dum,int & off, double * A, int * offa, int * offb,
+    void GP_N_10_ATu(double dum,int & off, double * A, int *** map_a, int *** map_b,
         double ** orbs, int d1, int d2, int d3, int d4, int d5,
         int d6, int d7,int d8, int d9, int d10);
 

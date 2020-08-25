@@ -453,6 +453,7 @@ void  v2RDMSolver::common_init(){
     // determine_n_primal():  determine primal variable dimension associated with applied constraints
     // determine_n_dual():    determine dual variable dimension associated with applied constraints
     // determine_n_primal_offsets(): set block dimenssions and offsets in primal vector for each rdm block
+    // set_gpc_maps(): set maps between rdm elements and d1-like gpc objects. only relevent if constrain_gpc = true
 
     // set constraints
     set_constraints();
@@ -468,6 +469,10 @@ void  v2RDMSolver::common_init(){
 
     // set primal block dimensions and offsets in x for each spin/symmetry block of rdms
     set_primal_offsets();
+
+    if ( constrain_gpc_ ) {
+       set_gpc_maps();
+    }
 
     // memory check happens here
 
@@ -3361,6 +3366,8 @@ void v2RDMSolver::set_constraints() {
         constrain_gpc_1rdm_ = false;
         constrain_gpc_2rdm_ = true;
         n_gpc_states_        = 2 * amo_;
+    }else {
+        throw PsiException("invalid choice of GPC_CONSTRAINTS",__FILE__,__LINE__);
     }
 
     if ( constrain_gpc_ ) {
@@ -3406,6 +3413,7 @@ void v2RDMSolver::add_gpc_constraints(int na, int nb) {
     
         gpc_.push_back(GeneralizedPauli_3_8);
         n_gpc_ += 31;
+
     
     }else if ( na + nb == 4 && amo_ == 4 ) {
     
@@ -3457,7 +3465,55 @@ void v2RDMSolver::add_gpc_constraints(int na, int nb) {
         outfile->Printf("        nmo    = %5i\n",nmo_);
         throw PsiException("Generalized Pauli Constraints not implemented for this case.",__FILE__,__LINE__);
     }
+
+}
+
+void v2RDMSolver::set_gpc_maps() {
+
+    // map 1/2rdm onto d1-like object
+    int *** my_map_a = (int***)malloc(nirrep_*sizeof(int **));
+    int *** my_map_b = (int***)malloc(nirrep_*sizeof(int **));
+    for (int h = 0; h < nirrep_; h++) {
+        my_map_a[h] = (int**)malloc(amopi_[h] * sizeof(int*));
+        my_map_b[h] = (int**)malloc(amopi_[h] * sizeof(int*));
+        for (int i = 0; i < amopi_[h]; i++) {
+            my_map_a[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
+            my_map_b[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
+        }
+    }
+
+    if ( constrain_gpc_1rdm_ ) {
+
+        int state = gpc_.size() - 1;
+
+        if ( gpc_[state] == GeneralizedPauli_5_8 || gpc_[state] == GeneralizedPauli_6_10 || gpc_[state] == GeneralizedPauli_7_10 ) {
+            // q1
+            for (int h = 0; h < nirrep_; h++) {
+                for (int i = 0; i < amopi_[h]; i++) {
+                    for (int j = 0; j < amopi_[h]; j++) {
+                        my_map_a[h][i][j] = q1aoff[h] + i * amopi_[h] + j;
+                        my_map_b[h][i][j] = q1boff[h] + i * amopi_[h] + j;
+                    }
+                }
+            }
+        }else {
+            // d1
+            for (int h = 0; h < nirrep_; h++) {
+                for (int i = 0; i < amopi_[h]; i++) {
+                    for (int j = 0; j < amopi_[h]; j++) {
+                        my_map_a[h][i][j] = d1aoff[h] + i * amopi_[h] + j;
+                        my_map_b[h][i][j] = d1boff[h] + i * amopi_[h] + j;
+                    }
+                }
+            }
+        }
+    }else if ( constrain_gpc_2rdm_ ) {
+        throw PsiException("GPCs can only be applied to the 1RDM at this time",__FILE__,__LINE__);
+    }
     
+    gpc_rdm_map_a_.push_back(my_map_a);
+    gpc_rdm_map_b_.push_back(my_map_b);
+
 }
 
 } //end namespaces

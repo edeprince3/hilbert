@@ -54,13 +54,13 @@ void v2RDMSolver::Generalized_Pauli_3_6_constraints_ATu(SharedVector A,SharedVec
     double dum4 = u_p[ offset++ ];
 
 
-    Generalized_Pauli_ATu_term(dum1,orb_p,A_p,d1aoff,d1boff,1);
-    Generalized_Pauli_ATu_term(dum2,orb_p,A_p,d1aoff,d1boff,2);
-    Generalized_Pauli_ATu_term(dum3,orb_p,A_p,d1aoff,d1boff,3);
+    Generalized_Pauli_ATu_term(dum1,orb_p,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],1);
+    Generalized_Pauli_ATu_term(dum2,orb_p,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],2);
+    Generalized_Pauli_ATu_term(dum3,orb_p,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],3);
 
-    Generalized_Pauli_ATu_term(dum3+dum4,orb_p,A_p,d1aoff,d1boff,4);
-    Generalized_Pauli_ATu_term(dum2-dum4,orb_p,A_p,d1aoff,d1boff,5);
-    Generalized_Pauli_ATu_term(dum1-dum4,orb_p,A_p,d1aoff,d1boff,6);
+    Generalized_Pauli_ATu_term(dum3+dum4,orb_p,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],4);
+    Generalized_Pauli_ATu_term(dum2-dum4,orb_p,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],5);
+    Generalized_Pauli_ATu_term(dum1-dum4,orb_p,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],6);
 
     A_p[ gpcoff[state][0] ]  = 0.0;
     A_p[ gpcoff[state][1] ]  = 0.0;
@@ -78,12 +78,12 @@ void v2RDMSolver::Generalized_Pauli_3_6_constraints_Au(SharedVector A,SharedVect
     double* u_p = u->pointer();
     double ** orb_p = NatOrbs_[state]->pointer();
 
-    double l1 = Generalized_Pauli_Au_term(orb_p,u_p,d1aoff,d1boff,1);
-    double l2 = Generalized_Pauli_Au_term(orb_p,u_p,d1aoff,d1boff,2);
-    double l3 = Generalized_Pauli_Au_term(orb_p,u_p,d1aoff,d1boff,3);
-    double l4 = Generalized_Pauli_Au_term(orb_p,u_p,d1aoff,d1boff,4);
-    double l5 = Generalized_Pauli_Au_term(orb_p,u_p,d1aoff,d1boff,5);
-    double l6 = Generalized_Pauli_Au_term(orb_p,u_p,d1aoff,d1boff,6);
+    double l1 = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],1);
+    double l2 = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],2);
+    double l3 = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],3);
+    double l4 = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],4);
+    double l5 = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],5);
+    double l6 = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],6);
 
     // l1 + l6 = 1
     A_p[offset++] = l1 + l6;
