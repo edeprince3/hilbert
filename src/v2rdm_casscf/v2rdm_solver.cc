@@ -471,7 +471,7 @@ void  v2RDMSolver::common_init(){
     set_primal_offsets();
 
     if ( constrain_gpc_ ) {
-       set_gpc_maps();
+        set_gpc_maps();
     }
 
     // memory check happens here
@@ -894,6 +894,8 @@ double v2RDMSolver::compute_energy() {
     // get integrals
     GetIntegrals();
 
+// TEST
+//constrain_gpc_ = false;
     // generate constraint vector
     BuildConstraints();
 
@@ -920,6 +922,7 @@ double v2RDMSolver::compute_energy() {
     do {
 
         if ( constrain_gpc_ ) {
+            set_gpc_rdm_nrm();
             for (int i = 0; i < n_gpc_states_; i++) {
                 SortedNaturalOrbitals(i);
             }
@@ -997,6 +1000,23 @@ double v2RDMSolver::compute_energy() {
     outfile->Printf("\n");
     outfile->Printf("    * v2RDM total energy:                %20.12lf\n",energy_primal+enuc_+efzc_);
     outfile->Printf("\n");
+
+// TEST
+    // print errors in generalized pauli constraints:
+    print_gpc_error_ = true;
+    constrain_gpc_ = true;
+    BuildConstraints();
+    std::shared_ptr<Vector> Ax (new Vector(n_dual_));
+    set_gpc_rdm_nrm();
+    for (int state = 0; state < n_gpc_states_; state++) {
+        SortedNaturalOrbitals(state);
+        for (int i = 0; i < n_gpc_ / n_gpc_states_; i++) {
+            x->pointer()[gpcoff[state][i]] = 0.0;
+        }
+    }
+    offset = 0;
+    bpsdp_Au(Ax,x);
+    print_gpc_error_ = false;
 
     Process::environment.globals["CURRENT ENERGY"]     = energy_primal+enuc_+efzc_;
     Process::environment.globals["v2RDM TOTAL ENERGY"] = energy_primal+enuc_+efzc_;
@@ -3289,7 +3309,7 @@ void v2RDMSolver::set_primal_offsets() {
     if ( constrain_gpc_ ) {
         for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
             int * my_gpcoff = (int*)malloc(n_gpc_*sizeof(int));
-            for (int i = 0; i < n_gpc_; i++) {
+            for (int i = 0; i < n_gpc_ / n_gpc_states_; i++) {
                 my_gpcoff[i] = offset++;
                 dimensions_.push_back(1);
                 rank_.push_back(1);
@@ -3361,7 +3381,7 @@ void v2RDMSolver::set_constraints() {
         constrain_gpc_2rdm_ = false;
         n_gpc_states_        = 1;
     }else if ( options_.get_str("GPC_CONSTRAINTS") == "2RDM") {
-        throw PsiException("GPCs can only be applied to the 1rdm at this time.",__FILE__,__LINE__);
+        //throw PsiException("GPCs can only be applied to the 1rdm at this time.",__FILE__,__LINE__);
         constrain_gpc_      = true;
         constrain_gpc_1rdm_ = false;
         constrain_gpc_2rdm_ = true;
@@ -3468,25 +3488,23 @@ void v2RDMSolver::add_gpc_constraints(int na, int nb) {
 
 }
 
-void v2RDMSolver::set_gpc_maps() {
-
-    // map 1/2rdm onto d1-like object
-    int *** my_map_a = (int***)malloc(nirrep_*sizeof(int **));
-    int *** my_map_b = (int***)malloc(nirrep_*sizeof(int **));
-    for (int h = 0; h < nirrep_; h++) {
-        my_map_a[h] = (int**)malloc(amopi_[h] * sizeof(int*));
-        my_map_b[h] = (int**)malloc(amopi_[h] * sizeof(int*));
-        for (int i = 0; i < amopi_[h]; i++) {
-            my_map_a[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
-            my_map_b[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
-        }
-    }
+void v2RDMSolver::set_gpc_maps(){
 
     if ( constrain_gpc_1rdm_ ) {
 
-        int state = gpc_.size() - 1;
+        // map 1/2rdm onto d1-like object
+        int *** my_map_a = (int***)malloc(nirrep_*sizeof(int **));
+        int *** my_map_b = (int***)malloc(nirrep_*sizeof(int **));
+        for (int h = 0; h < nirrep_; h++) {
+            my_map_a[h] = (int**)malloc(amopi_[h] * sizeof(int*));
+            my_map_b[h] = (int**)malloc(amopi_[h] * sizeof(int*));
+            for (int i = 0; i < amopi_[h]; i++) {
+                my_map_a[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
+                my_map_b[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
+            }
+        }
 
-        if ( gpc_[state] == GeneralizedPauli_5_8 || gpc_[state] == GeneralizedPauli_6_10 || gpc_[state] == GeneralizedPauli_7_10 ) {
+        if ( gpc_[0] == GeneralizedPauli_5_8 || gpc_[0] == GeneralizedPauli_6_10 || gpc_[0] == GeneralizedPauli_7_10 ) {
             // q1
             for (int h = 0; h < nirrep_; h++) {
                 for (int i = 0; i < amopi_[h]; i++) {
@@ -3507,12 +3525,93 @@ void v2RDMSolver::set_gpc_maps() {
                 }
             }
         }
+
+        gpc_rdm_map_a_.push_back(my_map_a);
+        gpc_rdm_map_b_.push_back(my_map_b);
+
     }else if ( constrain_gpc_2rdm_ ) {
-        throw PsiException("GPCs can only be applied to the 1RDM at this time",__FILE__,__LINE__);
+
+        //throw PsiException("GPCs can only be applied to the 1RDM at this time",__FILE__,__LINE__);
+        for (int state = 0; state < 2 * amo_; state++) {
+
+            // map 1/2rdm onto d1-like object
+            int *** my_map_a = (int***)malloc(nirrep_*sizeof(int **));
+            int *** my_map_b = (int***)malloc(nirrep_*sizeof(int **));
+            for (int h = 0; h < nirrep_; h++) {
+                my_map_a[h] = (int**)malloc(amopi_[h] * sizeof(int*));
+                my_map_b[h] = (int**)malloc(amopi_[h] * sizeof(int*));
+                for (int i = 0; i < amopi_[h]; i++) {
+                    my_map_a[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
+                    my_map_b[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
+                }
+            }
+
+            if ( gpc_[state] == GeneralizedPauli_5_8 || gpc_[state] == GeneralizedPauli_6_10 || gpc_[state] == GeneralizedPauli_7_10 ) {
+
+                throw PsiException("^5H8, ^6H10, and ^7H10 GPCs cannot yet be applied to the 2RDM",__FILE__,__LINE__);
+
+            }else {
+
+                if ( state < amo_ ) {
+                    // r = alpha: D(ij) = <0|r*i*jr|0> / <0|r*r|0>
+                    int rr = state;
+                    int hr = symmetry[rr];
+                    int r = rr - pitzer_offset[hr];
+                    for (int hi = 0; hi < nirrep_; hi++) {
+                        int hri = hr ^ hi;
+                        for (int i = 0; i < amopi_[hi]; i++) {
+                            int ii = i + pitzer_offset[hi];
+                            int ri_aa = ibas_aa_sym[hri][rr][ii];
+                            int ri_ab = ibas_ab_sym[hri][rr][ii];
+                            for (int j = 0; j < amopi_[hi]; j++) {
+                                int jj = j + pitzer_offset[hi];
+                                int rj_aa = ibas_aa_sym[hri][rr][jj];
+                                int rj_ab = ibas_ab_sym[hri][rr][jj];
+
+                                // D2(ri,rj)
+                                if ( rr == ii || rr == jj ) {
+                                    my_map_a[hi][i][j] = -999;
+                                }else {
+                                    my_map_a[hi][i][j] = d2aaoff[hri] + ri_aa * gems_aa[hri] + rj_aa;
+                                }
+                                my_map_b[hi][i][j] = d2aboff[hri] + ri_ab * gems_ab[hri] + rj_ab;
+                            }
+                        }
+                    }
+                }else {
+                    // r = beta: D(ij) = <0|r*i*jr|0> / <0|r*r|0>,
+                    int rr = state - amo_;
+                    int hr = symmetry[rr];
+                    int r = rr - pitzer_offset[hr];
+                    for (int hi = 0; hi < nirrep_; hi++) {
+                        int hri = hr ^ hi;
+                        for (int i = 0; i < amopi_[hi]; i++) {
+                            int ii = i + pitzer_offset[hi];
+                            int ri_bb = ibas_aa_sym[hri][rr][ii];
+                            int ir_ab = ibas_ab_sym[hri][ii][rr];
+                            for (int j = 0; j < amopi_[hi]; j++) {
+                                int jj = j + pitzer_offset[hi];
+                                int rj_bb = ibas_aa_sym[hri][rr][jj];
+                                int jr_ab = ibas_ab_sym[hri][jj][rr];
+
+                                // D2(ri,rj)
+                                if ( rr == ii || rr == jj ) {
+                                    my_map_b[hi][i][j] = -999;
+                                }else {
+                                    my_map_b[hi][i][j] = d2bboff[hri] + ri_bb * gems_aa[hri] + rj_bb;
+                                }
+                                my_map_a[hi][i][j] = d2aboff[hri] + ir_ab * gems_ab[hri] + jr_ab;
+                            }
+                        }
+                    }
+                }
+            }
+            gpc_rdm_map_a_.push_back(my_map_a);
+            gpc_rdm_map_b_.push_back(my_map_b);
+        }
+
     }
     
-    gpc_rdm_map_a_.push_back(my_map_a);
-    gpc_rdm_map_b_.push_back(my_map_b);
 
 }
 

@@ -380,8 +380,14 @@ class v2RDMSolver: public Wavefunction{
     /// map rdm elements onto d1b-like object
     std::vector< int *** > gpc_rdm_map_b_;
 
+    /// normalization for d1-like objects
+    std::vector< double > gpc_rdm_nrm_;
+
     /// set maps of rdm elements onto d1-like objects
     void set_gpc_maps();
+
+    /// set normalization for d1-objects to which gpcs are applied
+    void set_gpc_rdm_nrm();
 
     /// generalized Pauli constraints
     void Generalized_Pauli_constraints_Au(SharedVector A,SharedVector u, int state);
@@ -406,20 +412,20 @@ class v2RDMSolver: public Wavefunction{
     //double Generalized_Pauli_Au_term(double ** orbs,double * u,int * offa, int * offb,int index);
     //void Generalized_Pauli_ATu_term(double val, double ** orbs,double * A,int * offa, int * offb,int index);
 
-    double Generalized_Pauli_Au_term(double ** orbs,double * u,int *** map_a, int *** map_b,int index);
+    double Generalized_Pauli_Au_term(double ** orbs,double * u,int *** map_a, int *** map_b,int index, double rdm_nrm);
     void Generalized_Pauli_ATu_term(double val, double ** orbs,double * A,int *** map_a, int *** map_b,int index);
 
     double GP_N_8_Au(int & off, double * u, double ** orbs,
         double * eigvals, int d1, int d2, int d3, int d4, int d5, int d6, int d7,
         int d8);
-    void GP_N_8_ATu(double dum,int & off, double * A, int *** map_a, int *** map_b,
+    void GP_N_8_ATu(double rdm_nrm, double dum,int & off, double * A, int *** map_a, int *** map_b,
         double ** orbs, int d1, int d2, int d3, int d4, int d5,
         int d6, int d7,int d8);
 
     double GP_N_10_Au(int & off, double * u, double ** orbs,
         double * eigvals, int d1, int d2, int d3, int d4, int d5, int d6, int d7,
         int d8, int d9, int d10);
-    void GP_N_10_ATu(double dum,int & off, double * A, int *** map_a, int *** map_b,
+    void GP_N_10_ATu(double rdm_nrm, double dum,int & off, double * A, int *** map_a, int *** map_b,
         double ** orbs, int d1, int d2, int d3, int d4, int d5,
         int d6, int d7,int d8, int d9, int d10);
 

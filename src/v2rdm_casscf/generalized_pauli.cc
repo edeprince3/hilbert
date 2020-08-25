@@ -132,14 +132,22 @@ void v2RDMSolver::Generalized_Pauli_ATu_term(double val, double ** orbs,double *
             //A[offa[hi] + ii*amopi_[hi] + jj] += val * orbs[i     ][index - 1] * orbs[j     ][index - 1];
             //A[offb[hi] + ii*amopi_[hi] + jj] += val * orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1];
 
-            A[ map_a[hi][ii][jj] ] += val * orbs[i     ][index - 1] * orbs[j     ][index - 1];
-            A[ map_b[hi][ii][jj] ] += val * orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1];
+            int id_a = map_a[hi][ii][jj];
+            int id_b = map_b[hi][ii][jj];
+
+            if ( id_a >= 0 ) {
+                A[ id_a ] += val * orbs[i     ][index - 1] * orbs[j     ][index - 1];
+            }
+            if ( id_b >= 0 ) {
+                A[ id_b ] += val * orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1];
+            }
 
         }
     }
 }
 
-double v2RDMSolver::Generalized_Pauli_Au_term(double ** orbs,double * u,int *** map_a, int *** map_b,int index) {
+double v2RDMSolver::Generalized_Pauli_Au_term(double ** orbs,double * u,int *** map_a, int *** map_b,int index, double rdm_nrm) {
+
     double dum = 0.0;
     for (int i = 0; i < amo_; i++) {
         int hi = symmetry[i];
@@ -150,15 +158,44 @@ double v2RDMSolver::Generalized_Pauli_Au_term(double ** orbs,double * u,int *** 
             int jj = j - pitzer_offset[hj];
             //dum += orbs[i     ][index - 1] * orbs[j     ][index - 1] * u[offa[hi] + ii*amopi_[hi] + jj];
             //dum += orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1] * u[offb[hi] + ii*amopi_[hi] + jj];
-            dum += orbs[i     ][index - 1] * orbs[j     ][index - 1] * u[ map_a[hi][ii][jj] ];
-            dum += orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1] * u[ map_b[hi][ii][jj] ];
+
+            int id_a = map_a[hi][ii][jj];
+            int id_b = map_b[hi][ii][jj];
+
+            if ( id_a >= 0 ) {
+                dum += orbs[i     ][index - 1] * orbs[j     ][index - 1] * u[ id_a ];
+            }
+            if ( id_b >= 0 ) {
+                dum += orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1] * u[ id_b ];
+            }
         }
     }
-    return dum;
+    return dum / rdm_nrm;
+}
+
+void v2RDMSolver::set_gpc_rdm_nrm() {
+
+    gpc_rdm_nrm_.clear();
+
+    if ( constrain_gpc_1rdm_ ) {
+        gpc_rdm_nrm_.push_back(1.0);
+    }else if ( constrain_gpc_2rdm_ ) {
+        // alpha
+        for (int h = 0; h < nirrep_; h++) {
+            for (int i = 0; i < amopi_[h]; i++) {
+                gpc_rdm_nrm_.push_back(x->pointer()[d1aoff[h] + i * amopi_[h] + i]);
+            }
+        }
+        // beta
+        for (int h = 0; h < nirrep_; h++) {
+            for (int i = 0; i < amopi_[h]; i++) {
+                gpc_rdm_nrm_.push_back(x->pointer()[d1boff[h] + i * amopi_[h] + i]);
+            }
+        }
+    }
 }
 
 void v2RDMSolver::SortedNaturalOrbitals(int state) {
-
     //NatOrbs_->zero();
     std::shared_ptr<Matrix> temp (new Matrix(2*amo_,2*amo_));
 
@@ -180,7 +217,14 @@ void v2RDMSolver::SortedNaturalOrbitals(int state) {
         for (int i = 0; i < amopi_[h] ; i++) {
             for (int j = 0; j < amopi_[h]; j++) {
                 //Da->pointer(h)[i][j] = x->pointer()[x1aoff[h]+i*amopi_[h]+j];
-                Da->pointer(h)[i][j] = x->pointer()[gpc_rdm_map_a_[state][h][i][j]];
+
+                int id_a = gpc_rdm_map_a_[state][h][i][j];
+                if ( id_a < 0 ) {
+                    Da->pointer(h)[i][j] = 0.0;
+                }else {
+                    Da->pointer(h)[i][j] = x->pointer()[id_a] / gpc_rdm_nrm_[state];
+                }
+
             }
         }
     }
@@ -193,11 +237,22 @@ void v2RDMSolver::SortedNaturalOrbitals(int state) {
         for (int i = 0; i < amopi_[h] ; i++) {
             for (int j = 0; j < amopi_[h]; j++) {
                 //Db->pointer(h)[i][j] = x->pointer()[x1boff[h]+i*amopi_[h]+j];
-                Db->pointer(h)[i][j] = x->pointer()[gpc_rdm_map_b_[state][h][i][j]];
+
+                int id_b = gpc_rdm_map_b_[state][h][i][j];
+                if ( id_b < 0 ) {
+                    Db->pointer(h)[i][j] = 0.0;
+                }else {
+                    Db->pointer(h)[i][j] = x->pointer()[id_b]/ gpc_rdm_nrm_[state];
+                }
+
             }
         }
     }
     Db->diagonalize(eigvecb,eigvalb,descending);
+
+    // TEST
+    //eigvala->print();
+    //eigvalb->print();
 
     // sort!
     int * skipa = (int*)malloc(amo_*sizeof(int));
@@ -276,6 +331,7 @@ void v2RDMSolver::SortedNaturalOrbitals(int state) {
     }
 
     //NatOrbs_->print();
+
 }
 
 }
