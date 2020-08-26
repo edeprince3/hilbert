@@ -914,10 +914,11 @@ double v2RDMSolver::compute_energy() {
         constrain_gpc_ = true;
         BuildConstraints();
 
-        rrsdp->set_mu(1.0);
+        rrsdp->set_mu(10.0);
         rrsdp->set_mu_reset(false);
         rrsdp->set_mu_scale_factor(0.99);
     }
+        rrsdp->set_mu_reset(false);
 
     do {
 
@@ -1010,7 +1011,7 @@ double v2RDMSolver::compute_energy() {
     set_gpc_rdm_nrm();
     for (int state = 0; state < n_gpc_states_; state++) {
         SortedNaturalOrbitals(state);
-        for (int i = 0; i < n_gpc_ / n_gpc_states_; i++) {
+        for (int i = 0; i < n_gpc_[state]; i++) {
             x->pointer()[gpcoff[state][i]] = 0.0;
         }
     }
@@ -2841,7 +2842,9 @@ void v2RDMSolver::determine_n_primal() {
         }
     }
     if ( constrain_gpc_ ) {
-        n_primal_ += n_gpc_;
+        for (int state = 0; state < n_gpc_states_; state++) {
+            n_primal_ += n_gpc_[state];
+        }
     }
 
 }
@@ -3056,7 +3059,9 @@ void v2RDMSolver::determine_n_dual() {
         }
     }
     if ( constrain_gpc_ ) {
-        n_dual_ += n_gpc_;
+        for (int state = 0; state < n_gpc_states_; state++) {
+            n_dual_ += n_gpc_[state];
+        }
     }
 }
 
@@ -3307,9 +3312,9 @@ void v2RDMSolver::set_primal_offsets() {
     }
 
     if ( constrain_gpc_ ) {
-        for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
-            int * my_gpcoff = (int*)malloc(n_gpc_*sizeof(int));
-            for (int i = 0; i < n_gpc_ / n_gpc_states_; i++) {
+        for (int state = 0; state < n_gpc_states_; state++) {
+            int * my_gpcoff = (int*)malloc(n_gpc_[state]*sizeof(int));
+            for (int i = 0; i < n_gpc_[state]; i++) {
                 my_gpcoff[i] = offset++;
                 dimensions_.push_back(1);
                 rank_.push_back(1);
@@ -3402,7 +3407,7 @@ void v2RDMSolver::set_constraints() {
 
     if ( constrain_gpc_ ) {
 
-        n_gpc_ = 0;
+        n_gpc_.clear();
 
         if ( constrain_gpc_1rdm_ ) {
 
@@ -3429,51 +3434,53 @@ void v2RDMSolver::set_constraints() {
 
 void v2RDMSolver::add_gpc_constraints(int na, int nb) {
 
+    int n = 0;
+
     if ( na + nb == 3 && amo_ == 4 ) {
     
         gpc_.push_back(GeneralizedPauli_3_8);
-        n_gpc_ += 31;
+        n += 31;
 
     
     }else if ( na + nb == 4 && amo_ == 4 ) {
     
         gpc_.push_back(GeneralizedPauli_4_8);
-        n_gpc_ += 14;
+        n += 14;
     
     }else if ( na + nb == 5 && amo_ == 4 ) {
     
         gpc_.push_back(GeneralizedPauli_5_8);
-        n_gpc_ += 31;
+        n += 31;
     
     }else if ( na + nb == 3 && amo_ == 3 ) {
     
         gpc_.push_back(GeneralizedPauli_3_6);
-        n_gpc_ += 4;
+        n += 4;
     
     }else if ( na + nb == 4 && amo_ == 5 ) {
     
         gpc_.push_back(GeneralizedPauli_4_10);
-        n_gpc_ += 124;
+        n += 124;
     
     }else if ( na + nb == 6 && amo_ == 5 ) {
     
         gpc_.push_back(GeneralizedPauli_6_10);
-        n_gpc_ += 124;
+        n += 124;
     
     }else if ( na + nb == 5 && amo_ == 5 ) {
     
         gpc_.push_back(GeneralizedPauli_5_10);
-        n_gpc_ += 160;
+        n += 160;
     
     }else if ( na + nb == 3 && amo_ == 5 ) {
     
         gpc_.push_back(GeneralizedPauli_3_10);
-        n_gpc_ += 93;
+        n += 93;
     
     }else if ( na + nb == 7 && amo_ == 5 ) {
     
         gpc_.push_back(GeneralizedPauli_7_10);
-        n_gpc_ += 93;
+        n += 93;
     
     }else {
         outfile->Printf("    <<< Error >>> Generalized Pauli Constraints not implemented for this case:\n");
@@ -3485,6 +3492,8 @@ void v2RDMSolver::add_gpc_constraints(int na, int nb) {
         outfile->Printf("        nmo    = %5i\n",nmo_);
         throw PsiException("Generalized Pauli Constraints not implemented for this case.",__FILE__,__LINE__);
     }
+
+    n_gpc_.push_back(n);
 
 }
 

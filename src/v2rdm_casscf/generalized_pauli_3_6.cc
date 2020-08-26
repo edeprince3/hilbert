@@ -100,7 +100,7 @@ void v2RDMSolver::Generalized_Pauli_3_6_constraints_Au(SharedVector A,SharedVect
     if ( print_gpc_error_ ) {
         outfile->Printf("\n");        outfile->Printf("    ==> Generalized Pauli Constraint Errors <===\n");
         outfile->Printf("\n");
-        for (int i = saveoff; i < saveoff+n_gpc_/n_gpc_states_; i++) {
+        for (int i = saveoff; i < saveoff+n_gpc_[state]; i++) {
             outfile->Printf("    %5i %20.12lf %20.12lf %5s\n",i,A_p[i],b->pointer()[i],A_p[i] <= b->pointer()[i] ? "" : "XXX");
         }
     }

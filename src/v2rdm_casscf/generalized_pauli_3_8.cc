@@ -128,7 +128,6 @@ void v2RDMSolver::Generalized_Pauli_3_8_constraints_Au(SharedVector A,SharedVect
     double * eigvals = (double*)malloc(8*sizeof(double));
     for (int i = 0; i < 8; i++) {
         eigvals[i] = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],i+1,gpc_rdm_nrm_[state]);
-//printf("%5i %5i %20.12lf\n",state,i,eigvals[i]);
     }
 
     int off = gpcoff[state][0];
@@ -185,7 +184,7 @@ void v2RDMSolver::Generalized_Pauli_3_8_constraints_Au(SharedVector A,SharedVect
     if ( print_gpc_error_ ) {
         outfile->Printf("\n");        outfile->Printf("    ==> Generalized Pauli Constraint Errors <===\n");
         outfile->Printf("\n");
-        for (int i = saveoff; i < saveoff+n_gpc_/n_gpc_states_; i++) {
+        for (int i = saveoff; i < saveoff+n_gpc_[state]; i++) {
             outfile->Printf("    %5i %20.12lf %20.12lf %5s\n",i,A_p[i],b->pointer()[i],A_p[i] <= b->pointer()[i] ? "" : "XXX");
         }
     }

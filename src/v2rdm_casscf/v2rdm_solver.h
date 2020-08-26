@@ -433,7 +433,7 @@ class v2RDMSolver: public Wavefunction{
     std::vector<int * > gpcoff;
 
     /// the number of generalized pauli constraints
-    int n_gpc_;
+    std::vector<int> n_gpc_;
 
     /// the number of states to which gpcs are applied
     int n_gpc_states_; 
