@@ -174,7 +174,9 @@ void v2RDMSolver::set_gpc_rdm_nrm() {
 
     if ( constrain_gpc_1rdm_ ) {
         gpc_rdm_nrm_.push_back(1.0);
-    }else if ( constrain_gpc_2rdm_ ) {
+    }
+
+    if ( constrain_gpc_2rdm_ ) {
         // alpha
         for (int h = 0; h < nirrep_; h++) {
             for (int i = 0; i < amopi_[h]; i++) {

@@ -3374,25 +3374,22 @@ void v2RDMSolver::set_constraints() {
 
     constrain_spin_ = options_.get_bool("CONSTRAIN_SPIN");
 
-    print_gpc_error_ = false;
-    constrain_gpc_   = false;
-    n_gpc_states_    = 1;
+    print_gpc_error_    = false;
+    constrain_gpc_      = false;
+    constrain_gpc_1rdm_ = false;
+    constrain_gpc_2rdm_ = false;
+    n_gpc_states_       = 0;
 
-    if ( options_.get_str("GPC_CONSTRAINTS") == "NONE") {
-        constrain_gpc_ = false;
-    }else if ( options_.get_str("GPC_CONSTRAINTS") == "1RDM") {
+    if ( options_.get_str("GPC_CONSTRAINTS") == "1RDM") {
         constrain_gpc_      = true;
         constrain_gpc_1rdm_ = true;
-        constrain_gpc_2rdm_ = false;
-        n_gpc_states_        = 1;
-    }else if ( options_.get_str("GPC_CONSTRAINTS") == "2RDM") {
-        //throw PsiException("GPCs can only be applied to the 1rdm at this time.",__FILE__,__LINE__);
+        n_gpc_states_      += 1;
+    }
+
+    if ( options_.get_str("GPC_CONSTRAINTS") == "2RDM") {
         constrain_gpc_      = true;
-        constrain_gpc_1rdm_ = false;
         constrain_gpc_2rdm_ = true;
-        n_gpc_states_        = 2 * amo_;
-    }else {
-        throw PsiException("invalid choice of GPC_CONSTRAINTS",__FILE__,__LINE__);
+        n_gpc_states_      += 2 * amo_;
     }
 
     if ( constrain_gpc_ ) {
@@ -3416,7 +3413,9 @@ void v2RDMSolver::set_constraints() {
 
             add_gpc_constraints(na,nb);
 
-        }else if ( constrain_gpc_2rdm_ ) {
+        }
+
+        if ( constrain_gpc_2rdm_ ) {
 
             int na = nalpha_ - nrstc_ - nfrzc_;
             int nb = nbeta_ - nrstc_ - nfrzc_;
@@ -3427,8 +3426,8 @@ void v2RDMSolver::set_constraints() {
             for (int my_state = 0; my_state < amo_; my_state++) {
                 add_gpc_constraints(na,nb-1);
             }
-
         }
+
     }
 }
 
@@ -3538,10 +3537,14 @@ void v2RDMSolver::set_gpc_maps(){
         gpc_rdm_map_a_.push_back(my_map_a);
         gpc_rdm_map_b_.push_back(my_map_b);
 
-    }else if ( constrain_gpc_2rdm_ ) {
+    }
+
+    if ( constrain_gpc_2rdm_ ) {
 
         //throw PsiException("GPCs can only be applied to the 1RDM at this time",__FILE__,__LINE__);
-        for (int state = 0; state < 2 * amo_; state++) {
+        int start = 0;
+        if ( constrain_gpc_1rdm_ ) start = 1;
+        for (int state = start; state < start + 2 * amo_; state++) {
 
             // map 1/2rdm onto d1-like object
             int *** my_map_a = (int***)malloc(nirrep_*sizeof(int **));
@@ -3561,9 +3564,9 @@ void v2RDMSolver::set_gpc_maps(){
 
             }else {
 
-                if ( state < amo_ ) {
+                if ( state - start < amo_ ) {
                     // r = alpha: D(ij) = <0|r*i*jr|0> / <0|r*r|0>
-                    int rr = state;
+                    int rr = state - start;
                     int hr = symmetry[rr];
                     int r = rr - pitzer_offset[hr];
                     for (int hi = 0; hi < nirrep_; hi++) {
@@ -3589,7 +3592,7 @@ void v2RDMSolver::set_gpc_maps(){
                     }
                 }else {
                     // r = beta: D(ij) = <0|r*i*jr|0> / <0|r*r|0>,
-                    int rr = state - amo_;
+                    int rr = state - start - amo_;
                     int hr = symmetry[rr];
                     int r = rr - pitzer_offset[hr];
                     for (int hi = 0; hi < nirrep_; hi++) {
