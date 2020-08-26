@@ -918,8 +918,8 @@ double v2RDMSolver::compute_energy() {
         rrsdp->set_mu_reset(false);
         rrsdp->set_mu_scale_factor(0.99);
     }
-        rrsdp->set_mu_reset(false);
 
+    bool is_converged = false;
     do {
 
         if ( constrain_gpc_ ) {
@@ -929,8 +929,11 @@ double v2RDMSolver::compute_energy() {
             }
         }
 
-        //sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
-        rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
+        if ( constrain_gpc_ ) {
+            rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
+        }else {
+            sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
+        }
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
     
@@ -951,7 +954,13 @@ double v2RDMSolver::compute_energy() {
 
         outfile->Printf("\n");
 
-    }while( !orbopt_converged_ || !rrsdp->is_converged() );
+        if ( constrain_gpc_ ) {
+            is_converged = rrsdp->is_converged();
+        }else {
+            is_converged = sdp_->is_converged();
+        }
+
+    }while( !orbopt_converged_ || !is_converged );
 
     //free(tmp);
 
