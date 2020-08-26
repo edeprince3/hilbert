@@ -914,7 +914,7 @@ double v2RDMSolver::compute_energy() {
         constrain_gpc_ = true;
         BuildConstraints();
 
-        rrsdp->set_mu(10.0);
+        rrsdp->set_mu(1.0);
         rrsdp->set_mu_reset(false);
         rrsdp->set_mu_scale_factor(0.99);
     }
