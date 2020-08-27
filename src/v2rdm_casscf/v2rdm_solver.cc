@@ -910,7 +910,7 @@ double v2RDMSolver::compute_energy() {
     if ( constrain_gpc_ ) {
         constrain_gpc_ = false;
         BuildConstraints();
-        rrsdp->solve(x, b, c, dimensions_, 3, evaluate_Au, evaluate_ATu, (void*)this);
+        rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
         constrain_gpc_ = true;
         BuildConstraints();
 
@@ -959,7 +959,6 @@ double v2RDMSolver::compute_energy() {
         }else {
             is_converged = sdp_->is_converged();
         }
-        is_converged = rrsdp->is_converged();
 
     }while( !orbopt_converged_ || !is_converged );
 
