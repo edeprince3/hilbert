@@ -910,7 +910,7 @@ double v2RDMSolver::compute_energy() {
     if ( constrain_gpc_ ) {
         constrain_gpc_ = false;
         BuildConstraints();
-        rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
+        rrsdp->solve(x, b, c, dimensions_, 3, evaluate_Au, evaluate_ATu, (void*)this);
         constrain_gpc_ = true;
         BuildConstraints();
 
@@ -924,8 +924,8 @@ double v2RDMSolver::compute_energy() {
 
         if ( constrain_gpc_ ) {
             set_gpc_rdm_nrm();
-            for (int i = 0; i < n_gpc_states_; i++) {
-                SortedNaturalOrbitals(i);
+            for (int state = 0; state < n_gpc_states_; state++) {
+                SortedNaturalOrbitals(state);
             }
         }
 
@@ -959,6 +959,7 @@ double v2RDMSolver::compute_energy() {
         }else {
             is_converged = sdp_->is_converged();
         }
+        is_converged = rrsdp->is_converged();
 
     }while( !orbopt_converged_ || !is_converged );
 
@@ -1010,23 +1011,6 @@ double v2RDMSolver::compute_energy() {
     outfile->Printf("\n");
     outfile->Printf("    * v2RDM total energy:                %20.12lf\n",energy_primal+enuc_+efzc_);
     outfile->Printf("\n");
-
-// TEST
-    // print errors in generalized pauli constraints:
-    print_gpc_error_ = true;
-    constrain_gpc_ = true;
-    BuildConstraints();
-    std::shared_ptr<Vector> Ax (new Vector(n_dual_));
-    set_gpc_rdm_nrm();
-    for (int state = 0; state < n_gpc_states_; state++) {
-        SortedNaturalOrbitals(state);
-        for (int i = 0; i < n_gpc_[state]; i++) {
-            x->pointer()[gpcoff[state][i]] = 0.0;
-        }
-    }
-    offset = 0;
-    bpsdp_Au(Ax,x);
-    print_gpc_error_ = false;
 
     Process::environment.globals["CURRENT ENERGY"]     = energy_primal+enuc_+efzc_;
     Process::environment.globals["v2RDM TOTAL ENERGY"] = energy_primal+enuc_+efzc_;
@@ -1115,6 +1099,24 @@ double v2RDMSolver::compute_energy() {
 
     }
 
+/*
+// TEST
+    // print errors in generalized pauli constraints:
+    print_gpc_error_ = true;
+    constrain_gpc_ = true;
+    BuildConstraints();
+    std::shared_ptr<Vector> Ax (new Vector(n_dual_));
+    set_gpc_rdm_nrm();
+    for (int state = 0; state < n_gpc_states_; state++) {
+        SortedNaturalOrbitals(state);
+        for (int i = 0; i < n_gpc_[state]; i++) {
+            x->pointer()[gpcoff[state][i]] = 0.0;
+        }
+    }
+    offset = 0;
+    bpsdp_Au(Ax,x);
+    print_gpc_error_ = false;
+*/
 
     double end_total_time = omp_get_wtime();
 
