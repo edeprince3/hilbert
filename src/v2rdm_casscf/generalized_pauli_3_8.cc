@@ -63,6 +63,8 @@ void v2RDMSolver::Generalized_Pauli_3_8_constraints_ATu(SharedVector A,SharedVec
     //GP_N_8_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0, 0, 0, 0, 0, 0, -1, 1); //= 0,    ##              ##
     //GP_N_8_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,1, 1, 1, 1, 1, 1, 1, -7); //= 3,    ##################
 
+    //GP_N_8_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0, 0, 0, 0, 0, 0, 0, 1); // force one orbital occupation to zero
+
     GP_N_8_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,3, -1, -1, -1, -1, -1, -1, 3); //= 1,  ## Extended Pauli inequality: lambda[1]+lambda[8]<=1 ##
 
     GP_N_8_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,-1, 1, 1, 1, 1, -1, -1, -1); //= 1, 
@@ -141,6 +143,8 @@ void v2RDMSolver::Generalized_Pauli_3_8_constraints_Au(SharedVector A,SharedVect
     //A_p[offset++] = GP_N_8_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0, 0, 0, 0, 0, 0, -1, 1); //= 0,    ##              ##
     //A_p[offset++] = GP_N_8_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,1, 1, 1, 1, 1, 1, 1, -7); //= 3,    ##################
                
+    //A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,0, 0, 0, 0, 0, 0, 0, 1); // force one orbital occupation to zero
+
     A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,3, -1, -1, -1, -1, -1, -1, 3); //= 1,  ## Extended Pauli inequality: lambda[1]+lambda[8]<=1 ##
                
     A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,-1, 1, 1, 1, 1, -1, -1, -1); //= 1, 

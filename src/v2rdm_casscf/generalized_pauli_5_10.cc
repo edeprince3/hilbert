@@ -45,16 +45,16 @@ void v2RDMSolver::Generalized_Pauli_5_10_constraints_ATu(SharedVector A,SharedVe
 
     int off = gpcoff[state][0];
 
-    //GP_N_10_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,-1,1,0,0,0,0,0,0,0,0);//<=0,    #################
-    //GP_N_10_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,-1,1,0,0,0,0,0,0,0);//<=0,    ##             ##
-    //GP_N_10_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,-1,1,0,0,0,0,0,0);//<=0,    ##             ##
-    //GP_N_10_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,0,-1,1,0,0,0,0,0);//<=0,    ##  ordering   ##
-    //GP_N_10_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,0,0,-1,1,0,0,0,0);//<=0,    ##     for     ##
-    //GP_N_10_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,0,0,0,-1,1,0,0,0);//<=0,    ## lambda[i]'s ##
-    //GP_N_10_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,0,0,0,0,-1,1,0,0);//<=0,    ##             ##
-    //GP_N_10_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,0,0,0,0,0,-1,1,0);//<=0,    ##             ##
-    //GP_N_10_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,0,0,0,0,0,0,-1,1);//<=0,    ##             ##
-    //GP_N_10_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,1,1,1,1,1,1,1,1,1,-9);//<=5,    #################
+    //GP_N_10_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,-1,1,0,0,0,0,0,0,0,0);//<=0,    #################
+    //GP_N_10_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,-1,1,0,0,0,0,0,0,0);//<=0,    ##             ##
+    //GP_N_10_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,0,-1,1,0,0,0,0,0,0);//<=0,    ##             ##
+    //GP_N_10_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,0,0,-1,1,0,0,0,0,0);//<=0,    ##  ordering   ##
+    //GP_N_10_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,0,0,0,-1,1,0,0,0,0);//<=0,    ##     for     ##
+    //GP_N_10_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,0,0,0,0,-1,1,0,0,0);//<=0,    ## lambda[i]'s ##
+    //GP_N_10_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,0,0,0,0,0,-1,1,0,0);//<=0,    ##             ##
+    //GP_N_10_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,0,0,0,0,0,0,-1,1,0);//<=0,    ##             ##
+    //GP_N_10_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,0,0,0,0,0,0,0,-1,1);//<=0,    ##             ##
+    //GP_N_10_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,1,1,1,1,1,1,1,-9);//<=5,    #################
 
     GP_N_10_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,1,1,1,-1,0,0,0,-1,-1);//<=2,
     GP_N_10_ATu(gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,0,0,0,1,-1,-1,-1,0);//<=2,
@@ -259,16 +259,17 @@ void v2RDMSolver::Generalized_Pauli_5_10_constraints_Au(SharedVector A,SharedVec
     }
 
     int off = gpcoff[state][0];
-    //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,-1,1,0,0,0,0,0,0,0,0);//<=0,    #################
-    //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,-1,1,0,0,0,0,0,0,0);//<=0,    ##             ##
-    //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,-1,1,0,0,0,0,0,0);//<=0,    ##             ##
-    //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,0,-1,1,0,0,0,0,0);//<=0,    ##  ordering   ##
-    //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,-1,1,0,0,0,0);//<=0,    ##     for     ##
-    //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,0,-1,1,0,0,0);//<=0,    ## lambda[i]'s ##
-    //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,0,0,-1,1,0,0);//<=0,    ##             ##
-    //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,0,0,0,-1,1,0);//<=0,    ##             ##
-    //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,0,0,0,0,-1,1);//<=0,    ##             ##
-    //A_p[offset++] = GP_N_10_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,1,1,1,1,1,1,1,1,1,-9);//<=5,    #################
+
+    //A_p[offset++] = GP_N_10_Au(off,u_p,orb_p,eigvals,-1,1,0,0,0,0,0,0,0,0);//<=0,    #################
+    //A_p[offset++] = GP_N_10_Au(off,u_p,orb_p,eigvals,0,-1,1,0,0,0,0,0,0,0);//<=0,    ##             ##
+    //A_p[offset++] = GP_N_10_Au(off,u_p,orb_p,eigvals,0,0,-1,1,0,0,0,0,0,0);//<=0,    ##             ##
+    //A_p[offset++] = GP_N_10_Au(off,u_p,orb_p,eigvals,0,0,0,-1,1,0,0,0,0,0);//<=0,    ##  ordering   ##
+    //A_p[offset++] = GP_N_10_Au(off,u_p,orb_p,eigvals,0,0,0,0,-1,1,0,0,0,0);//<=0,    ##     for     ##
+    //A_p[offset++] = GP_N_10_Au(off,u_p,orb_p,eigvals,0,0,0,0,0,-1,1,0,0,0);//<=0,    ## lambda[i]'s ##
+    //A_p[offset++] = GP_N_10_Au(off,u_p,orb_p,eigvals,0,0,0,0,0,0,-1,1,0,0);//<=0,    ##             ##
+    //A_p[offset++] = GP_N_10_Au(off,u_p,orb_p,eigvals,0,0,0,0,0,0,0,-1,1,0);//<=0,    ##             ##
+    //A_p[offset++] = GP_N_10_Au(off,u_p,orb_p,eigvals,0,0,0,0,0,0,0,0,-1,1);//<=0,    ##             ##
+    //A_p[offset++] = GP_N_10_Au(off,u_p,orb_p,eigvals,1,1,1,1,1,1,1,1,1,-9);//<=5,    #################
 
     A_p[offset++] = GP_N_10_Au(off,u_p,orb_p,eigvals,0,1,1,1,-1,0,0,0,-1,-1);//<=2,
     A_p[offset++] = GP_N_10_Au(off,u_p,orb_p,eigvals,1,1,0,0,0,1,-1,-1,-1,0);//<=2,

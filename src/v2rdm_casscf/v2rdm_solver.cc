@@ -910,7 +910,8 @@ double v2RDMSolver::compute_energy() {
     if ( constrain_gpc_ ) {
         constrain_gpc_ = false;
         BuildConstraints();
-        rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
+        //rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
+        sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
         constrain_gpc_ = true;
         BuildConstraints();
 
@@ -932,7 +933,7 @@ double v2RDMSolver::compute_energy() {
         if ( constrain_gpc_ ) {
             rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
         }else {
-            sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
+          sdp_->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
         }
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
@@ -1098,8 +1099,8 @@ double v2RDMSolver::compute_energy() {
 
     }
 
-/*
 // TEST
+/*
     // print errors in generalized pauli constraints:
     print_gpc_error_ = true;
     constrain_gpc_ = true;
@@ -1943,7 +1944,11 @@ void v2RDMSolver::BuildConstraints(){
                 //b_p[offset++] = 0.0;
                 //b_p[offset++] = 0.0;
                 //b_p[offset++] = 3.0;
-                b_p[offset++] = 1.0;
+
+                //b_p[offset++] = 0.0; // force one orbital occupation to zero
+
+                b_p[offset++] = 1.0; //  ## Extended Pauli inequality: lambda[1]+lambda[8]<=1 ##
+
                 b_p[offset++] = 1.0;
                 b_p[offset++] = 1.0;
                 b_p[offset++] = 1.0;
@@ -2210,6 +2215,7 @@ void v2RDMSolver::BuildConstraints(){
                 b_p[offset++] = 42.0;
                 b_p[offset++] = 42.0;
             }else if ( gpc_[my_state] == GeneralizedPauli_5_10 ) {
+                // n(i) < n(i+1)
                 //b_p[offset++] = 0.0;
                 //b_p[offset++] = 0.0;
                 //b_p[offset++] = 0.0;
@@ -2220,6 +2226,7 @@ void v2RDMSolver::BuildConstraints(){
                 //b_p[offset++] = 0.0;
                 //b_p[offset++] = 0.0;
                 //b_p[offset++] = 5.0;
+                // end n(i) < n(i+1)
                 b_p[offset++] = 2.0;
                 b_p[offset++] = 2.0;
                 b_p[offset++] = 2.0;
@@ -3449,7 +3456,7 @@ void v2RDMSolver::add_gpc_constraints(int na, int nb) {
     
         gpc_.push_back(GeneralizedPauli_3_8);
         n += 31;
-
+        //n += 1; // force one orbital occupation to zero
     
     }else if ( na + nb == 4 && amo_ == 4 ) {
     
@@ -3480,6 +3487,7 @@ void v2RDMSolver::add_gpc_constraints(int na, int nb) {
     
         gpc_.push_back(GeneralizedPauli_5_10);
         n += 160;
+        //n += 10;
     
     }else if ( na + nb == 3 && amo_ == 5 ) {
     
