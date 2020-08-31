@@ -933,7 +933,7 @@ double v2RDMSolver::compute_energy() {
         if ( constrain_gpc_ ) {
             rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
         }else {
-          sdp_->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
+          sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
         }
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
@@ -1100,23 +1100,23 @@ double v2RDMSolver::compute_energy() {
     }
 
 // TEST
-/*
-    // print errors in generalized pauli constraints:
-    print_gpc_error_ = true;
-    constrain_gpc_ = true;
-    BuildConstraints();
-    std::shared_ptr<Vector> Ax (new Vector(n_dual_));
-    set_gpc_rdm_nrm();
-    for (int state = 0; state < n_gpc_states_; state++) {
-        SortedNaturalOrbitals(state);
-        for (int i = 0; i < n_gpc_[state]; i++) {
-            x->pointer()[gpcoff[state][i]] = 0.0;
+    if ( constrain_gpc_ ) {
+        // print errors in generalized pauli constraints:
+        print_gpc_error_ = true;
+        constrain_gpc_ = true;
+        BuildConstraints();
+        std::shared_ptr<Vector> Ax (new Vector(n_dual_));
+        set_gpc_rdm_nrm();
+        for (int state = 0; state < n_gpc_states_; state++) {
+            SortedNaturalOrbitals(state);
+            for (int i = 0; i < n_gpc_[state]; i++) {
+                x->pointer()[gpcoff[state][i]] = 0.0;
+            }
         }
+        offset = 0;
+        bpsdp_Au(Ax,x);
+        print_gpc_error_ = false;
     }
-    offset = 0;
-    bpsdp_Au(Ax,x);
-    print_gpc_error_ = false;
-*/
 
     double end_total_time = omp_get_wtime();
 
