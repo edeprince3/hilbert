@@ -3516,6 +3516,9 @@ void v2RDMSolver::add_gpc_constraints(int na, int nb) {
 
 void v2RDMSolver::set_gpc_maps(){
 
+    gpc_rdm_map_a_.clear();
+    gpc_rdm_map_b_.clear();
+
     if ( constrain_gpc_1rdm_ ) {
 
         // map 1/2rdm onto d1-like object
