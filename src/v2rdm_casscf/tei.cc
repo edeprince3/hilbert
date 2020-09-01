@@ -46,7 +46,12 @@ void v2RDMSolver::GetIntegrals() {
 
     
     // one-electron integrals:  
-    SharedMatrix K1 = GetOEI();
+    SharedMatrix K1;
+    if ( is_hubbard_ ) {
+        K1 = GetOEI_hubbard();
+    }else {
+        K1 = GetOEI();
+    }
 
     // size of the tei buffer
     if ( is_df_ ) {
@@ -91,7 +96,6 @@ void v2RDMSolver::GetIntegrals() {
         oei_full_dim_ += ( nmopi_[h] - frzvpi_[h] ) * ( nmopi_[h] - frzvpi_[h] + 1 ) / 2;
     }
 
-
     // allocate memory for d1 tensor, blocked by symmetry, including the core orbitals
     //gg -- only active orbitals are stored now (old code below)
     d1_act_spatial_dim_ = 0;
@@ -122,7 +126,7 @@ void v2RDMSolver::GetIntegrals() {
         offset += ( nmopi_[h] - frzvpi_[h] ) * ( nmopi_[h] - frzvpi_[h] + 1 ) / 2;
     }
 
-    if ( !is_df_ ) {
+    if ( !is_df_ && !is_hubbard_ ) {
         // read tei's from disk
         GetTEIFromDisk();
     }
@@ -191,8 +195,8 @@ void v2RDMSolver::RepackIntegrals(){
             }
         }
     }
-
 }
+
 void v2RDMSolver::FrozenCoreEnergy() {
 
     // if frozen core, adjust oei's and compute frozen core energy:
@@ -276,6 +280,14 @@ double v2RDMSolver::TEI(int i, int j, int k, int l, int h) {
 
         //dum = C_DDOT(nQ_,Qmo_ + nQ_*INDEX(i,j),1,Qmo_+nQ_*INDEX(k,l),1);
         dum = C_DDOT(nQ_,Qmo_ + INDEX(i,j),(nmo_-nfrzv_)*(nmo_-nfrzv_+1)/2,Qmo_+INDEX(k,l),(nmo_-nfrzv_)*(nmo_-nfrzv_+1)/2);
+
+    }else if ( is_hubbard_ ) {
+
+        if ( i == j && k == l  && i == k ) {
+            dum = options_.get_double("HUBBARD_U");
+        }else {
+            dum = 0.0;
+        }
 
     }else {
 

@@ -83,18 +83,6 @@ class v2RDMSolver: public Wavefunction{
 
     double compute_energy();
 
-    /// set constraints
-    void set_constraints();
-
-    /// number of primal variables (dimension of x)
-    void determine_n_primal();
-
-    /// number of constraints (dimension of y)
-    void determine_n_dual();
-
-    /// set offsets in x for each spin/symmetry block of rdms
-    void set_primal_offsets();
-
     /// Au function for interfacing with bpsdp solver
     void bpsdp_Au(SharedVector A, SharedVector u);
 
@@ -140,6 +128,28 @@ class v2RDMSolver: public Wavefunction{
 
     virtual bool same_a_b_orbs() const { return same_a_b_orbs_; }
     virtual bool same_a_b_dens() const { return same_a_b_dens_; }
+
+    /// hubbard hamiltonian?
+    bool is_hubbard_;
+
+    /// set up problem for molecular hamiltonian
+    void initialize_with_molecular_hamiltonian();
+
+    /// set up problem for 1D hubbard hamiltonian
+    void initialize_with_hubbard_hamiltonian();
+
+    /// set constraints
+    void set_constraints();
+
+    /// number of primal variables (dimension of x)
+    void determine_n_primal();
+
+    /// number of constraints (dimension of y)
+    void determine_n_dual();
+
+    /// set offsets in x for each spin/symmetry block of rdms
+    void set_primal_offsets();
+
 
     /// the sdp solver
     std::shared_ptr<BPSDPSolver> sdp_;
@@ -228,8 +238,11 @@ class v2RDMSolver: public Wavefunction{
     /// three-index integral buffer
     double * Qmo_;
 
-    /// grab one-electron integrals (T+V) in MO basis
+    /// returns matrix of one-electron integrals (T+V) in MO basis
     SharedMatrix GetOEI();
+
+    /// returns matrix of one-electron hubbard parameter
+    SharedMatrix GetOEI_hubbard();
 
     /// offsets
     int * d1aoff;

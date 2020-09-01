@@ -52,18 +52,32 @@ SharedMatrix v2RDMSolver::GetOEI() {
     T_ = (std::shared_ptr<Matrix> ) (new Matrix(mints->so_kinetic()));
     V_ = (std::shared_ptr<Matrix> ) (new Matrix(mints->so_potential()));
 
-    //if (options_.get_str("RELATIVISTIC") == "X2C") {
-    //    X2CInt x2cint;
-    //    std::shared_ptr<BasisSet> basisset = reference_wavefunction_->get_basisset("ORBITAL"); 
-    //    std::shared_ptr<BasisSet> rel_basisset = reference_wavefunction_->get_basisset("BASIS_RELATIVISTIC");
-    //    x2cint.compute(basisset, rel_basisset, S_, T_, V_); 
-    //}
-
     std::shared_ptr<Matrix> K1 (new Matrix(T_));
     K1->add(V_);
     K1->transform(Ca_);
 
     return K1;
+}
+
+SharedMatrix v2RDMSolver::GetOEI_hubbard() {
+
+    std::shared_ptr<Matrix> h (new Matrix(amo_,amo_));
+    double ** h_p = h->pointer();
+    double t = options_.get_double("HUBBARD_T");
+    for (int i = 0; i < amo_; i++) {
+        for (int j = 0; j < amo_; j++) {
+            if ( abs(i-j) == 1 ) {
+                h_p[i][j] = -t;
+            }else if ( abs(i-j) == amo_ - 1 ) {
+                h_p[i][j] = -t;
+            }else {
+                h_p[i][j] = 0.0;
+            }
+        }
+    }
+
+    return h;
+
 }
 
 }

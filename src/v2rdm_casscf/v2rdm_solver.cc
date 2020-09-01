@@ -182,17 +182,137 @@ v2RDMSolver::~v2RDMSolver()
 
 void  v2RDMSolver::common_init(){
 
+    outfile->Printf("\n\n");
+    outfile->Printf( "        ****************************************************\n");
+    outfile->Printf( "        *                                                  *\n");
+    outfile->Printf( "        *    v2RDM-CASSCF                                  *\n");
+    outfile->Printf( "        *                                                  *\n");
+    outfile->Printf( "        *    A variational 2-RDM-driven approach to the    *\n");
+    outfile->Printf( "        *    active space self-consistent field method     *\n");
+    outfile->Printf( "        *                                                  *\n");
+    outfile->Printf( "        ****************************************************\n");
+
+    outfile->Printf("\n");
+    outfile->Printf("\n");
+    outfile->Printf("        The following papers should be cited when using v2RDM-CASSCF:\n");
+    outfile->Printf("\n");
+    outfile->Printf("        J. Fosso-Tande, D. R. Nascimento, and A. E. DePrince III,\n");
+    outfile->Printf("        Mol. Phys. 114, 423-430 (2015).\n");
+    outfile->Printf("\n");
+    outfile->Printf("            URL: http://dx.doi.org/10.1080/00268976.2015.1078008\n");
+    outfile->Printf("\n");
+    outfile->Printf("        J. Fosso-Tande, T.-S. Nguyen, G. Gidofalvi, and\n");
+    outfile->Printf("        A. E. DePrince III, J. Chem. Theory Comput. 12, 2260-2271 (2016).\n");
+    outfile->Printf("\n");
+    outfile->Printf("            URL: http://dx.doi.org/10.1021/acs.jctc.6b00190\n");
+    outfile->Printf("\n");
+    outfile->Printf("\n");
+
+    is_hubbard_ = options_.get_bool("HUBBARD_HAMILTONIAN");
+
+    outfile->Printf("\n");
+    outfile->Printf("  ==> Hamiltonian type <==\n");
+    outfile->Printf("\n");
+    outfile->Printf("        %s\n",is_hubbard_ ? "Hubbard" : "molecular");
+
+    outfile->Printf("\n");
+    outfile->Printf("  ==> Convergence parameters <==\n");
+    outfile->Printf("\n");
+    outfile->Printf("        r_convergence:                      %5.3le\n",options_.get_double("R_CONVERGENCE"));
+    outfile->Printf("        e_convergence:                      %5.3le\n",options_.get_double("E_CONVERGENCE"));
+    outfile->Printf("        cg_convergence:                     %5.3le\n",options_.get_double("CG_CONVERGENCE"));
+    outfile->Printf("        maxiter:                             %8i\n",options_.get_int("MAXITER"));
+    outfile->Printf("        cg_maxiter:                          %8i\n",options_.get_int("CG_MAXITER"));
+    outfile->Printf("\n");
+
     is_df_ = false;
     if ( options_.get_str("SCF_TYPE") == "DF" || options_.get_str("SCF_TYPE") == "CD" ) {
         is_df_ = true;
     }
 
+    // molecular hamiltonian
+    if ( !is_hubbard_ ) {
+
+        initialize_with_molecular_hamiltonian();
+
+    }else {
+
+        initialize_with_hubbard_hamiltonian();
+
+    }
+    
     //if ( options_.get_bool("EXTENDED_KOOPMANS") && options_.get_bool("NAT_ORBS") ) {
     //    throw PsiException("EKT does not work with natural orbitals",__FILE__,__LINE__);
     //}
     //if ( options_.get_bool("EXTENDED_KOOPMANS") && options_.get_bool("FCIDUMP") ) {
     //    throw PsiException("EKT does not work with natural orbitals (triggered by FCIDUMP=true)",__FILE__,__LINE__);
     //}
+
+    // allocate vectors
+    x      = SharedVector(new Vector("primal solution",n_primal_));
+    c      = SharedVector(new Vector("OEI and TEI",n_primal_));
+    b      = SharedVector(new Vector("constraints",n_dual_));
+
+    // input/output array for orbopt sweeps
+
+    int nthread = omp_get_max_threads();
+
+    bool do_act_act = options_.get_bool("ORBOPT_ACTIVE_ACTIVE_ROTATIONS");
+
+    orbopt_data_    = (double*)malloc(15*sizeof(double));
+    orbopt_data_[0] = (double)nthread;
+    orbopt_data_[1] = (double)(do_act_act ? 1.0 : 0.0 );
+    orbopt_data_[2] = (double)nfrzc_; //(double)options_.get_int("ORBOPT_FROZEN_CORE");
+    orbopt_data_[3] = (double)options_.get_double("ORBOPT_GRADIENT_CONVERGENCE");
+    orbopt_data_[4] = (double)options_.get_double("ORBOPT_ENERGY_CONVERGENCE");
+    orbopt_data_[5] = (double)(options_.get_bool("ORBOPT_WRITE") ? 1.0 : 0.0 );
+    orbopt_data_[6] = (double)(options_.get_bool("ORBOPT_EXACT_DIAGONAL_HESSIAN") ? 1.0 : 0.0 );
+    orbopt_data_[7] = (double)options_.get_int("ORBOPT_NUM_DIIS_VECTORS");
+    orbopt_data_[8] = (double)options_.get_int("ORBOPT_MAXITER");
+    orbopt_data_[9] = 0.0;
+    if ( is_df_ ) {
+      orbopt_data_[9] = 1.0;
+    }
+    orbopt_data_[10] = 0.0;  // number of iterations (output)
+    orbopt_data_[11] = 0.0;  // gradient norm (output)
+    orbopt_data_[12] = 0.0;  // change in energy (output)
+    orbopt_data_[13] = 0.0;  // converged?
+
+    // orbital optimizatoin algorithm
+    orbopt_data_[14] = 0.0;
+    if      ( options_.get_str("ORBOPT_ALGORITHM") == "QUASI_NEWTON" )       orbopt_data_[14] = 0.0;
+    else if ( options_.get_str("ORBOPT_ALGORITHM") == "CONJUGATE_GRADIENT" ) orbopt_data_[14] = 1.0;
+    else if ( options_.get_str("ORBOPT_ALGORITHM") == "NEWTON_RAPHSON" )     orbopt_data_[14] = 2.0;
+
+    orbopt_converged_ = false;
+
+    // don't change the length of this filename
+    orbopt_outfile_ = (char*)malloc(120*sizeof(char));
+    std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".orbopt";
+    strcpy(orbopt_outfile_,filename.c_str());
+    if ( options_.get_bool("ORBOPT_WRITE") ) {
+        FILE * fp = fopen(orbopt_outfile_,"w");
+        fclose(fp);
+    }
+
+    // initialize timers and iteration counters
+    orbopt_iter_total_ = 0;
+    orbopt_time_       = 0.0;
+
+    // allocate memory for orbital lagrangian (TODO: make these smaller)
+    X_               = (double*)malloc(nmo_*nmo_*sizeof(double));
+
+    // even if we use rhf/rohf reference, we need same_a_b_orbs_=false
+    // to trigger the correct integral transformations in deriv.cc
+    same_a_b_orbs_ = false;
+    same_a_b_dens_ = false;
+
+    // sdp solver
+    sdp_ = (std::shared_ptr<BPSDPSolver>)(new BPSDPSolver(n_primal_,n_dual_,options_));
+
+}
+
+void v2RDMSolver::initialize_with_molecular_hamiltonian() {
 
     shallow_copy(reference_wavefunction_);
 
@@ -474,44 +594,6 @@ void  v2RDMSolver::common_init(){
         set_gpc_maps();
     }
 
-    // memory check happens here
-
-    outfile->Printf("\n\n");
-    outfile->Printf( "        ****************************************************\n");
-    outfile->Printf( "        *                                                  *\n");
-    outfile->Printf( "        *    v2RDM-CASSCF                                  *\n");
-    outfile->Printf( "        *                                                  *\n");
-    outfile->Printf( "        *    A variational 2-RDM-driven approach to the    *\n");
-    outfile->Printf( "        *    active space self-consistent field method     *\n");
-    outfile->Printf( "        *                                                  *\n");
-    outfile->Printf( "        ****************************************************\n");
-
-    outfile->Printf("\n");
-    outfile->Printf("\n");
-    outfile->Printf("        The following papers should be cited when using v2RDM-CASSCF:\n");
-    outfile->Printf("\n");
-    outfile->Printf("        J. Fosso-Tande, D. R. Nascimento, and A. E. DePrince III,\n");
-    outfile->Printf("        Mol. Phys. 114, 423-430 (2015).\n");
-    outfile->Printf("\n");
-    outfile->Printf("            URL: http://dx.doi.org/10.1080/00268976.2015.1078008\n");
-    outfile->Printf("\n");
-    outfile->Printf("        J. Fosso-Tande, T.-S. Nguyen, G. Gidofalvi, and\n");
-    outfile->Printf("        A. E. DePrince III, J. Chem. Theory Comput. 12, 2260-2271 (2016).\n");
-    outfile->Printf("\n");
-    outfile->Printf("            URL: http://dx.doi.org/10.1021/acs.jctc.6b00190\n");
-    outfile->Printf("\n");
-    outfile->Printf("\n");
-
-    outfile->Printf("\n");
-    outfile->Printf("  ==> Convergence parameters <==\n");
-    outfile->Printf("\n");
-    outfile->Printf("        r_convergence:                      %5.3le\n",options_.get_double("R_CONVERGENCE"));
-    outfile->Printf("        e_convergence:                      %5.3le\n",options_.get_double("E_CONVERGENCE"));
-    outfile->Printf("        cg_convergence:                     %5.3le\n",options_.get_double("CG_CONVERGENCE"));
-    outfile->Printf("        maxiter:                             %8i\n",options_.get_int("MAXITER"));
-    outfile->Printf("        cg_maxiter:                          %8i\n",options_.get_int("CG_MAXITER"));
-    outfile->Printf("\n");
-
     // print orbitals per irrep in each space
     outfile->Printf("  ==> Active space details <==\n");
     outfile->Printf("\n");
@@ -739,6 +821,8 @@ void  v2RDMSolver::common_init(){
         ReadOrbitalsFromCheckpointFile();
     }
 
+    // one- and two-electron integrals
+
     // if using 3-index integrals, transform them before allocating any memory integrals, transform
     if ( is_df_ ) {
         outfile->Printf("    ==> Transform three-electron integrals <==\n");
@@ -783,65 +867,301 @@ void  v2RDMSolver::common_init(){
 
     }
 
-    // allocate vectors
-    x      = SharedVector(new Vector("primal solution",n_primal_));
-    c      = SharedVector(new Vector("OEI and TEI",n_primal_));
-    b      = SharedVector(new Vector("constraints",n_dual_));
+}
 
-    // input/output array for orbopt sweeps
+void v2RDMSolver::initialize_with_hubbard_hamiltonian() {
 
-    int nthread = omp_get_max_threads();
+    if ( ( options_.get_int("N_HUBBARD_SPINS") % 2 ) != 0 ) {
+        throw PsiException("Hubbard model only works for even numbers of electrons currently.",__FILE__,__LINE__);
+    }
 
-    orbopt_data_    = (double*)malloc(15*sizeof(double));
-    orbopt_data_[0] = (double)nthread;
-    orbopt_data_[1] = (double)(do_act_act ? 1.0 : 0.0 );
-    orbopt_data_[2] = (double)nfrzc_; //(double)options_.get_int("ORBOPT_FROZEN_CORE");
-    orbopt_data_[3] = (double)options_.get_double("ORBOPT_GRADIENT_CONVERGENCE");
-    orbopt_data_[4] = (double)options_.get_double("ORBOPT_ENERGY_CONVERGENCE");
-    orbopt_data_[5] = (double)(options_.get_bool("ORBOPT_WRITE") ? 1.0 : 0.0 );
-    orbopt_data_[6] = (double)(options_.get_bool("ORBOPT_EXACT_DIAGONAL_HESSIAN") ? 1.0 : 0.0 );
-    orbopt_data_[7] = (double)options_.get_int("ORBOPT_NUM_DIIS_VECTORS");
-    orbopt_data_[8] = (double)options_.get_int("ORBOPT_MAXITER");
-    orbopt_data_[9] = 0.0;
+    is_df_        = false;
+
+    nalpha_       = options_.get_int("N_HUBBARD_SPINS") / 2;
+    nbeta_        = options_.get_int("N_HUBBARD_SPINS") / 2;
+
+    enuc_         = 0.0;
+    escf_         = 0.0;
+    efzc_         = 0.0;
+
+    nso_          = options_.get_int("N_HUBBARD_SITES");
+    nmo_          = options_.get_int("N_HUBBARD_SITES");
+    amo_          = nmo_;
+    nfrzc_        = 0;
+    nfrzv_        = 0;
+    nrstc_        = 0;
+    nrstv_        = 0;
+
+    int ms = (int)nalpha_ - (int)nbeta_;
+    multiplicity_ = 2 * ms + 1;
+
+    nirrep_       = 1;
+
+    nalphapi_ = Dimension(nirrep_,"Number of alpha electrons per irrep");
+    nbetapi_  = Dimension(nirrep_,"Number of beta electrons per irrep");
+    doccpi_   = Dimension(nirrep_,"Number of doubly occupied orbitals per irrep");
+    soccpi_   = Dimension(nirrep_,"Number of singly occupied orbitals per irrep");
+    frzcpi_   = Dimension(nirrep_,"Number of frozen core orbitals per irrep");
+    frzvpi_   = Dimension(nirrep_,"Number of frozen virtual orbitals per irrep");
+    nmopi_    = Dimension(nirrep_,"Number of molecular orbitals per irrep");
+    nsopi_    = Dimension(nirrep_,"Number of symmetry orbitals per irrep");
+    rstcpi_   = (int*)malloc(nirrep_*sizeof(int));
+    rstvpi_   = (int*)malloc(nirrep_*sizeof(int));
+    amopi_    = (int*)malloc(nirrep_*sizeof(int));
+
+    nalphapi_[0] = (int)nalpha_;
+    nbetapi_[0]  = (int)nbeta_;
+    doccpi_[0]   = (int)nalpha_;
+    soccpi_[0]   = 0;
+    frzcpi_[0]   = 0;
+    frzvpi_[0]   = 0;
+    nmopi_[0]    = nmo_;
+    nsopi_[0]    = nso_;
+    rstcpi_[0]   = 0;
+    rstvpi_[0]   = 0;
+    amopi_[0]    = nmo_;
+
+    // molecule ... not sure what to do with this
+    molecule_ = reference_wavefunction_->molecule();
+
+    // need somewhere to store gradient, if required
+    gradient_ =  reference_wavefunction_->matrix_factory()->create_shared_matrix("Total gradient", molecule_->natom(), 3);
+
+    if (options_["FROZEN_DOCC"].has_changed()) {
+        throw PsiException("FROZEN_DOCC is incompatible with Hubbard Hamiltonian.",__FILE__,__LINE__);
+    }
+    if (options_["RESTRICTED_DOCC"].has_changed()) {
+        throw PsiException("RESTRICTED_DOCC is incompatible with Hubbard Hamiltonian.",__FILE__,__LINE__);
+    }
+    if (options_["RESTRICTED_UOCC"].has_changed()) {
+        throw PsiException("RESTRICTED_UOCC is incompatible with Hubbard Hamiltonian.",__FILE__,__LINE__);
+    }
+    if (options_["FROZEN_UOCC"].has_changed()) {
+        throw PsiException("FROZEN_UOCC is incompatible with Hubbard Hamiltonian.",__FILE__,__LINE__);
+    }
+    if ( options_["ACTIVE"].has_changed() ) {
+        throw PsiException("ACTIVE is incompatible with Hubbard Hamiltonian.",__FILE__,__LINE__);
+    }
+    if ( options_.get_bool("LOCALIZE_ORBITALS") ) {
+        throw PsiException("LOCALIZE_ORBITALS is incompatible with Hubbard Hamiltonian.",__FILE__,__LINE__);
+    }
+    if ( options_["FRACTIONAL_CHARGE"].has_changed() ) {
+        throw PsiException("FRACTIONAL_CHARGE is incompatible with Hubbard Hamiltonian.",__FILE__,__LINE__);
+    }
+
+    AO2SO_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
+
+    Ca_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
+    Cb_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
+
+    S_  = (SharedMatrix)(new Matrix(nmo_,nmo_));
+
+    Fa_  = (SharedMatrix)(new Matrix(nmo_,nmo_));
+    Fb_  = (SharedMatrix)(new Matrix(nmo_,nmo_));
+
+    Da_  = (SharedMatrix)(new Matrix(nmo_,nmo_));
+    Db_  = (SharedMatrix)(new Matrix(nmo_,nmo_));
+
+    // Lagrangian matrix
+    Lagrangian_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
+
+    epsilon_a_= SharedVector(new Vector(nirrep_, nmopi_));
+    epsilon_b_= SharedVector(new Vector(nirrep_, nmopi_));
+
+    // memory is from process::environment
+    memory_ = Process::environment.get_memory();
+
+    // set the wavefunction name
+    name_ = "V2RDM CASSCF";
+
+    // NOTE! the following functions must be modified when coding new constraints
+
+    // set_constraints():     determine applied constraints from options object
+    // determine_n_primal():  determine primal variable dimension associated with applied constraints
+    // determine_n_dual():    determine dual variable dimension associated with applied constraints
+    // determine_n_primal_offsets(): set block dimenssions and offsets in primal vector for each rdm block
+    // set_gpc_maps(): set maps between rdm elements and d1-like gpc objects. only relevent if constrain_gpc = true
+
+    // set constraints
+    set_constraints();
+
+    // build mapping arrays and determine the number of geminals per block. constraints must be set before calling
+    build_mapping_arrays();
+
+    // number of primal variables (dimension of x)
+    determine_n_primal();
+
+    // number of constraints (dimension of y)
+    determine_n_dual();
+
+    // set primal block dimensions and offsets in x for each spin/symmetry block of rdms
+    set_primal_offsets();
+
+    if ( constrain_gpc_ ) {
+        set_gpc_maps();
+    }
+
+    // print orbitals per irrep in each space
+    outfile->Printf("  ==> Active space details <==\n");
+    outfile->Printf("\n");
+    outfile->Printf("        Number of frozen core orbitals:         %5i\n",nfrzc_);
+    outfile->Printf("        Number of restricted occupied orbitals: %5i\n",nrstc_);
+    outfile->Printf("        Number of active occupied orbitals:     %5i\n",(int)nalpha_);
+    outfile->Printf("        Number of active virtual orbitals:      %5i\n",nmo_-(int)nalpha_);
+    outfile->Printf("        Number of restricted virtual orbitals:  %5i\n",nrstv_);
+    outfile->Printf("        Number of frozen virtual orbitals:      %5i\n",nfrzv_);
+    outfile->Printf("\n");
+
+    outfile->Printf("\n");
+    outfile->Printf("  ==> Memory requirements <==\n");
+    outfile->Printf("\n");
+    int nd2   = 0;
+    int ng2    = 0;
+    int nt1    = 0;
+    int nt2    = 0;
+    int maxgem = 0;
+    for (int h = 0; h < nirrep_; h++) {
+        nd2 +=     gems_ab[h]*gems_ab[h];
+        nd2 += 2 * gems_aa[h]*gems_aa[h];
+
+        ng2 +=     gems_ab[h] * gems_ab[h]; // G2ab
+        ng2 +=     gems_ab[h] * gems_ab[h]; // G2ba
+        ng2 += 4 * gems_ab[h] * gems_ab[h]; // G2aa
+
+        if ( gems_ab[h] > maxgem ) {
+            maxgem = gems_ab[h];
+        }
+        if ( constrain_g2_ ) {
+            if ( 2*gems_ab[h] > maxgem ) {
+                maxgem = 2*gems_ab[h];
+            }
+        }
+
+        if ( constrain_t1_ ) {
+            nt1 += trip_aaa[h] * trip_aaa[h]; // T1aaa
+            nt1 += trip_aaa[h] * trip_aaa[h]; // T1bbb
+            nt1 += trip_aab[h] * trip_aab[h]; // T1aab
+            nt1 += trip_aab[h] * trip_aab[h]; // T1bba
+            if ( trip_aab[h] > maxgem ) {
+                maxgem = trip_aab[h];
+            }
+        }
+
+        if ( constrain_t2_ ) {
+            nt2 += (trip_aab[h]+trip_aba[h]) * (trip_aab[h]+trip_aba[h]); // T2aaa
+            nt2 += (trip_aab[h]+trip_aba[h]) * (trip_aab[h]+trip_aba[h]); // T2bbb
+            nt2 += trip_aab[h] * trip_aab[h]; // T2aab
+            nt2 += trip_aab[h] * trip_aab[h]; // T2bba
+
+            if ( trip_aab[h]+trip_aaa[h] > maxgem ) {
+                maxgem = trip_aab[h]+trip_aaa[h];
+            }
+        }
+
+    }
+
+    outfile->Printf("        D2:                       %7.2lf mb\n",nd2 * 8.0 / 1024.0 / 1024.0);
+    if ( constrain_q2_ ) {
+        outfile->Printf("        Q2:                       %7.2lf mb\n",nd2 * 8.0 / 1024.0 / 1024.0);
+    }
+    if ( constrain_g2_ ) {
+        outfile->Printf("        G2:                       %7.2lf mb\n",ng2 * 8.0 / 1024.0 / 1024.0);
+    }
+    if ( constrain_d3_ ) {
+        outfile->Printf("        D3:                       %7.2lf mb\n",nt1 * 8.0 / 1024.0 / 1024.0);
+    }
+    if ( constrain_d4_ ) {
+        outfile->Printf("        D4:                       %7.2lf mb\n",nt1 * 8.0 / 1024.0 / 1024.0);
+    }
+    if ( constrain_t1_ ) {
+        outfile->Printf("        T1:                       %7.2lf mb\n",nt1 * 8.0 / 1024.0 / 1024.0);
+    }
+    if ( constrain_t2_ ) {
+        outfile->Printf("        T2:                       %7.2lf mb\n",nt2 * 8.0 / 1024.0 / 1024.0);
+    }
+    outfile->Printf("\n");
+
+    // we have 4 arrays the size of x and 4 the size of y
+    // in addition, we need to store 3 times whatever the largest
+    // block of x is for the diagonalization step
+    // integrals:
+    //     K2a, K2b
+    // casscf:
+    //     4-index integrals (no permutational symmetry)
+    //     3-index integrals
+
+    double tot = 4.0*n_primal_ + 4.0*n_dual_ + 3.0*maxgem*maxgem;
+    tot += nd2; // for K2a, K2b
+
+    // for casscf, need d2 and 3- or 4-index integrals
+
+    // storage requirements for full d2
+    for (int h = 0; h < nirrep_; h++) {
+        tot += gems_plus_core[h] * ( gems_plus_core[h] + 1 ) / 2;
+    }
+
     if ( is_df_ ) {
-      orbopt_data_[9] = 1.0;
-    }
-    orbopt_data_[10] = 0.0;  // number of iterations (output)
-    orbopt_data_[11] = 0.0;  // gradient norm (output)
-    orbopt_data_[12] = 0.0;  // change in energy (output)
-    orbopt_data_[13] = 0.0;  // converged?
+        // storage requirements for df integrals
+        nQ_ = Process::environment.globals["NAUX (SCF)"];
+        if ( options_.get_str("SCF_TYPE") == "DF" ) {
+            std::shared_ptr<BasisSet> primary = reference_wavefunction_->basisset();
+            std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
 
-    // orbital optimizatoin algorithm
-    orbopt_data_[14] = 0.0;
-    if      ( options_.get_str("ORBOPT_ALGORITHM") == "QUASI_NEWTON" )       orbopt_data_[14] = 0.0;
-    else if ( options_.get_str("ORBOPT_ALGORITHM") == "CONJUGATE_GRADIENT" ) orbopt_data_[14] = 1.0;
-    else if ( options_.get_str("ORBOPT_ALGORITHM") == "NEWTON_RAPHSON" )     orbopt_data_[14] = 2.0;
-
-    orbopt_converged_ = false;
-
-    // don't change the length of this filename
-    orbopt_outfile_ = (char*)malloc(120*sizeof(char));
-    std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".orbopt";
-    strcpy(orbopt_outfile_,filename.c_str());
-    if ( options_.get_bool("ORBOPT_WRITE") ) {
-        FILE * fp = fopen(orbopt_outfile_,"w");
-        fclose(fp);
+            nQ_ = auxiliary->nbf();
+            Process::environment.globals["NAUX (SCF)"] = nQ_;
+        }
+        tot += (long int)nQ_*(long int)nmo_*((long int)nmo_+1)/2;
+    }else {
+        // storage requirements for four-index integrals
+        for (int h = 0; h < nirrep_; h++) {
+            tot += (long int)gems_full[h] * ( (long int)gems_full[h] + 1L ) / 2L;
+        }
     }
 
-    // initialize timers and iteration counters
-    orbopt_iter_total_ = 0;
-    orbopt_time_       = 0.0;
+    // memory available after allocating all we need for v2RDM-CASSCF
+    available_memory_ = memory_ - tot * 8L;
 
-    // allocate memory for orbital lagrangian (TODO: make these smaller)
-    X_               = (double*)malloc(nmo_*nmo_*sizeof(double));
+    outfile->Printf("        Total number of variables:     %10i\n",n_primal_);
+    outfile->Printf("        Total number of constraints:   %10i\n",n_dual_);
+    outfile->Printf("        Total memory requirements:     %7.2lf mb\n",tot * 8.0 / 1024.0 / 1024.0);
+    outfile->Printf("\n");
 
-    // even if we use rhf/rohf reference, we need same_a_b_orbs_=false
-    // to trigger the correct integral transformations in deriv.cc
-    same_a_b_orbs_ = false;
-    same_a_b_dens_ = false;
+    if ( tot * 8.0 > (double)memory_ ) {
+        outfile->Printf("\n");
+        outfile->Printf("        Not enough memory!\n");
+        outfile->Printf("\n");
+        if ( !is_df_ ) {
+            outfile->Printf("        Either increase the available memory by %7.2lf mb\n",(8.0 * tot - memory_)/1024.0/1024.0);
+            outfile->Printf("        or try scf_type = df or scf_type = cd\n");
 
-    // sdp solver
-    sdp_ = (std::shared_ptr<BPSDPSolver>)(new BPSDPSolver(n_primal_,n_dual_,options_));
+        }else {
+            outfile->Printf("        Increase the available memory by %7.2lf mb.\n",(8.0 * tot - memory_)/1024.0/1024.0);
+        }
+        outfile->Printf("\n");
+        throw PsiException("Not enough memory",__FILE__,__LINE__);
+    }
+
+    // mo-mo transformation matrix
+    newMO_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
+    newMO_->zero();
+    for (int h = 0; h < nirrep_; h++) {
+        for (int i = 0; i < nmopi_[h]; i++) {
+            newMO_->pointer(h)[i][i] = 1.0;
+        }
+    }
+
+    orbopt_transformation_matrix_ = (double*)malloc((nmo_-nfrzc_-nfrzv_)*(nmo_-nfrzc_-nfrzv_)*sizeof(double));
+    memset((void*)orbopt_transformation_matrix_,'\0',(nmo_-nfrzc_-nfrzv_)*(nmo_-nfrzc_-nfrzv_)*sizeof(double));
+    for (int i = 0; i < nmo_-nfrzc_-nfrzv_; i++) {
+        orbopt_transformation_matrix_[i*(nmo_-nfrzc_-nfrzv_)+i] = 1.0;
+    }
+
+    //  if restarting, need to grab Ca_ from disk before integral transformation
+    // checkpoint file
+    if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
+        throw PsiException("RESTART_FROM_CHECKPOINT_FILE is incompatible with Hubbard Hamiltonian.",__FILE__,__LINE__);
+    }
+
 }
 
 int v2RDMSolver::SymmetryPair(int i,int j) {
@@ -857,7 +1177,7 @@ double v2RDMSolver::compute_energy() {
     double start_total_time = omp_get_wtime();
 
     // print guess orbitals in molden format
-    if ( options_.get_bool("GUESS_ORBITALS_WRITE") ) {
+    if ( options_.get_bool("GUESS_ORBITALS_WRITE") && !is_hubbard_ ) {
 
         std::shared_ptr<MoldenWriter> molden(new MoldenWriter(reference_wavefunction_));
         std::shared_ptr<Vector> zero (new Vector("",nirrep_,nmopi_));
@@ -887,7 +1207,7 @@ double v2RDMSolver::compute_energy() {
     Guess();
 
     // checkpoint file
-    if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
+    if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" && !is_hubbard_ ) {
         ReadFromCheckpointFile();
     }
 
@@ -903,6 +1223,9 @@ double v2RDMSolver::compute_energy() {
     int orbopt_iter = 0;
 
     int local_maxiter = options_.get_bool("OPTIMIZE_ORBITALS") ? options_.get_int("ORBOPT_FREQUENCY") : options_.get_int("MU_UPDATE_FREQUENCY");
+    if ( is_hubbard_ ) {
+        local_maxiter = options_.get_int("MU_UPDATE_FREQUENCY");
+    }
 
     std::shared_ptr<RRSDPSolver> rrsdp (new RRSDPSolver(n_primal_,n_dual_,options_));
 
@@ -934,9 +1257,10 @@ double v2RDMSolver::compute_energy() {
             rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
         }else {
           sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
+          //rrsdp->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
         }
 
-        if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
+        if ( options_.get_bool("OPTIMIZE_ORBITALS") && !is_hubbard_ ) {
     
             double start = omp_get_wtime();
             RotateOrbitals();
@@ -959,6 +1283,7 @@ double v2RDMSolver::compute_energy() {
             is_converged = rrsdp->is_converged();
         }else {
             is_converged = sdp_->is_converged();
+            //is_converged = rrsdp->is_converged();
         }
 
     }while( !orbopt_converged_ || !is_converged );
@@ -995,18 +1320,33 @@ double v2RDMSolver::compute_energy() {
 
     // break down energy into one- and two-electron components
 
-    double kinetic, potential, two_electron_energy;
-    EnergyByComponent(kinetic,potential,two_electron_energy);
-
     outfile->Printf("      na:                        %20.6lf\n", na);
     outfile->Printf("      nb:                        %20.6lf\n", nb);
     outfile->Printf("      v2RDM total spin [S(S+1)]: %20.6lf\n", 0.5 * (na + nb) + ms*ms - s2);
     outfile->Printf("\n");
-    outfile->Printf("      Nuclear Repulsion Energy:          %20.12lf\n",enuc_);
-    outfile->Printf("      Two-Electron Energy:               %20.12lf\n",two_electron_energy);
-    //outfile->Printf("      Two-Electron (active):             %20.12lf\n",active_two_electron_energy);
-    outfile->Printf("      Kinetic Energy:                    %20.12lf\n",kinetic);
-    outfile->Printf("      Electron-Nuclear Potential Energy: %20.12lf\n",potential);
+    if ( !is_hubbard_ ) {
+        double kinetic, potential, two_electron_energy;
+        EnergyByComponent(kinetic,potential,two_electron_energy);
+
+        outfile->Printf("      Nuclear Repulsion Energy:          %20.12lf\n",enuc_);
+        outfile->Printf("      Two-Electron Energy:               %20.12lf\n",two_electron_energy);
+        outfile->Printf("      Kinetic Energy:                    %20.12lf\n",kinetic);
+        outfile->Printf("      Electron-Nuclear Potential Energy: %20.12lf\n",potential);
+    }else {
+        double two_electron_energy = 0.0;
+        for (int h = 0; h < nirrep_; h++) {
+            two_electron_energy += C_DDOT(gems_ab[h] * gems_ab[h], x_p + d2aboff[h],1, c->pointer() + d2aboff[h], 1);
+            two_electron_energy += C_DDOT(gems_aa[h] * gems_aa[h], x_p + d2aaoff[h],1, c->pointer() + d2aaoff[h], 1);
+            two_electron_energy += C_DDOT(gems_aa[h] * gems_aa[h], x_p + d2bboff[h],1, c->pointer() + d2bboff[h], 1);
+        }
+        double one_electron_energy = 0.0;
+        for (int h = 0; h < nirrep_; h++) {
+            one_electron_energy += C_DDOT(amopi_[h] * amopi_[h], x_p + d1aoff[h],1, c->pointer() + d1aoff[h], 1);
+            one_electron_energy += C_DDOT(amopi_[h] * amopi_[h], x_p + d1boff[h],1, c->pointer() + d1boff[h], 1);
+        }
+        outfile->Printf("      Two-Electron Energy:               %20.12lf\n",two_electron_energy);
+        outfile->Printf("      One-Electron Energy:               %20.12lf\n",one_electron_energy);
+    }
 
     outfile->Printf("\n");
     outfile->Printf("    * v2RDM total energy:                %20.12lf\n",energy_primal+enuc_+efzc_);
