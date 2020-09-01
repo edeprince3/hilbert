@@ -522,7 +522,7 @@ void v2RDMSolver::build_mapping_arrays() {
             bas_ab_sym[h][n][1]  = j;
             count_ab++;
 
-            if ( i <= j ) continue;
+            if ( i >= j ) continue;
 
             ibas_aa_sym[h][i][j] = count_aa;
             ibas_aa_sym[h][j][i] = count_aa;

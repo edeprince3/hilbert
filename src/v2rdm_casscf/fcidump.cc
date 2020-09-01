@@ -272,5 +272,87 @@ void v2RDMSolver::FCIDUMP() {
 
 }
 
+void v2RDMSolver::print_rdms() {
+
+    double * x_p = x->pointer();
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> v2RDM @2RDM (aa) <==\n");
+    outfile->Printf("\n");
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            int i = bas_aa_sym[h][ij][0];
+            int j = bas_aa_sym[h][ij][1];
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                int k = bas_aa_sym[h][kl][0];
+                int l = bas_aa_sym[h][kl][1];
+                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
+            }
+        }
+    }
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> v2RDM @2RDM (bb) <==\n");
+    outfile->Printf("\n");
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            int i = bas_aa_sym[h][ij][0];
+            int j = bas_aa_sym[h][ij][1];
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                int k = bas_aa_sym[h][kl][0];
+                int l = bas_aa_sym[h][kl][1];
+                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
+            }
+        }
+    }
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> v2RDM @2RDM (ab) <==\n");
+    outfile->Printf("\n");
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_ab[h]; ij++) {
+            int i = bas_ab_sym[h][ij][0];
+            int j = bas_ab_sym[h][ij][1];
+            for (int kl = 0; kl < gems_ab[h]; kl++) {
+                int k = bas_ab_sym[h][kl][0];
+                int l = bas_ab_sym[h][kl][1];
+                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[d2aboff[h] + ij * gems_ab[h] + kl]);
+            }
+        }
+    }
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> v2RDM @1RDM (a) <==\n");
+    outfile->Printf("\n");
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int i = 0; i < amopi_[h]; i++) {
+            int ii = i + pitzer_offset[h];
+            for (int j = 0; j < amopi_[h]; j++) {
+                int jj = j + pitzer_offset[h];
+                outfile->Printf("%5i %5i %20.12lf\n",i,j,x_p[d1aoff[h] + i * amopi_[h] + j]);
+            }
+        }
+    }
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> v2RDM @1RDM (b) <==\n");
+    outfile->Printf("\n");
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int i = 0; i < amopi_[h]; i++) {
+            int ii = i + pitzer_offset[h];
+            for (int j = 0; j < amopi_[h]; j++) {
+                int jj = j + pitzer_offset[h];
+                outfile->Printf("%5i %5i %20.12lf\n",i,j,x_p[d1boff[h] + i * amopi_[h] + j]);
+            }
+        }
+    }
+    outfile->Printf("\n");
+
+}
 
 }

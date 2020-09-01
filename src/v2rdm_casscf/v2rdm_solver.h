@@ -591,6 +591,9 @@ class v2RDMSolver: public Wavefunction{
     /// FCIDUMP: dump integrals and RDMs to disk
     void FCIDUMP();
 
+    /// print spin blocks of RDMs in output file
+    void print_rdms();
+
     /// break down energy into components
     void EnergyByComponent(double &kinetic, double &potential, double &two_electron_energy);
 

@@ -1215,7 +1215,8 @@ double v2RDMSolver::compute_energy() {
     GetIntegrals();
 
 // TEST
-//constrain_gpc_ = false;
+    //constrain_gpc_ = false;
+
     // generate constraint vector
     BuildConstraints();
 
@@ -1248,8 +1249,8 @@ double v2RDMSolver::compute_energy() {
 
         if ( constrain_gpc_ ) {
             set_gpc_rdm_nrm();
-            for (int state = 0; state < n_gpc_states_; state++) {
-                SortedNaturalOrbitals(state);
+            for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
+                SortedNaturalOrbitals(my_state);
             }
         }
 
@@ -1385,6 +1386,9 @@ double v2RDMSolver::compute_energy() {
     if ( options_.get_bool("FCIDUMP") ) {
         FCIDUMP();
     }
+    if ( options_.get_bool("PRINT_RDMS") ) {
+        print_rdms();
+    }
 
     // compute and print natural orbital occupation numbers 
     PrintNaturalOrbitalOccupations();
@@ -1440,6 +1444,8 @@ double v2RDMSolver::compute_energy() {
     }
 
 // TEST
+    //constrain_gpc_ = true;
+
     if ( constrain_gpc_ ) {
         // print errors in generalized pauli constraints:
         print_gpc_error_ = true;
@@ -1447,10 +1453,10 @@ double v2RDMSolver::compute_energy() {
         BuildConstraints();
         std::shared_ptr<Vector> Ax (new Vector(n_dual_));
         set_gpc_rdm_nrm();
-        for (int state = 0; state < n_gpc_states_; state++) {
-            SortedNaturalOrbitals(state);
-            for (int i = 0; i < n_gpc_[state]; i++) {
-                x->pointer()[gpcoff[state][i]] = 0.0;
+        for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
+            SortedNaturalOrbitals(my_state);
+            for (int i = 0; i < n_gpc_[my_state]; i++) {
+                x->pointer()[gpcoff[my_state][i]] = 0.0;
             }
         }
         offset = 0;
@@ -3199,8 +3205,8 @@ void v2RDMSolver::determine_n_primal() {
         }
     }
     if ( constrain_gpc_ ) {
-        for (int state = 0; state < n_gpc_states_; state++) {
-            n_primal_ += n_gpc_[state];
+        for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
+            n_primal_ += n_gpc_[my_state];
         }
     }
 
@@ -3416,8 +3422,8 @@ void v2RDMSolver::determine_n_dual() {
         }
     }
     if ( constrain_gpc_ ) {
-        for (int state = 0; state < n_gpc_states_; state++) {
-            n_dual_ += n_gpc_[state];
+        for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
+            n_dual_ += n_gpc_[my_state];
         }
     }
 }
@@ -3669,9 +3675,9 @@ void v2RDMSolver::set_primal_offsets() {
     }
 
     if ( constrain_gpc_ ) {
-        for (int state = 0; state < n_gpc_states_; state++) {
-            int * my_gpcoff = (int*)malloc(n_gpc_[state]*sizeof(int));
-            for (int i = 0; i < n_gpc_[state]; i++) {
+        for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
+            int * my_gpcoff = (int*)malloc(n_gpc_[my_state]*sizeof(int));
+            for (int i = 0; i < n_gpc_[my_state]; i++) {
                 my_gpcoff[i] = offset++;
                 dimensions_.push_back(1);
                 rank_.push_back(1);
@@ -3751,7 +3757,7 @@ void v2RDMSolver::set_constraints() {
 
     if ( constrain_gpc_ ) {
         //NatOrbs_ = (std::shared_ptr<Matrix>)(new Matrix(2*amo_,2*amo_));
-        for (int i = 0; i < n_gpc_states_; i++) {
+        for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
             NatOrbs_.push_back((std::shared_ptr<Matrix>)(new Matrix(2*amo_,2*amo_)));
         }
 
