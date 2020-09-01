@@ -1,0 +1,33 @@
+#! cc-pvdz N2 (6,6) active space Test DQG
+
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule {
+0 1
+H 0.0 0.0 0.0
+H 0.0 0.0 1.0
+}
+
+set {
+  basis sto-3g
+}
+
+set hilbert {
+  maxiter 10000
+  orbopt_maxiter 20
+  positivity dqg
+  r_convergence  1e-4
+  e_convergence  1e-4
+  gpc_constraints none
+
+  hubbard_hamiltonian true
+  hubbard_t 1.0
+  hubbard_u 10.0
+  n_hubbard_sites 6
+  n_hubbard_spins 6
+
+  mu_update_frequency 500
+}
+
+energy('v2rdm-casscf')
