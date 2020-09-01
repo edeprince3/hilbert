@@ -211,6 +211,21 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION v2RDM-CASSCF -*/
 
+        /*- do use hubbard model? -*/
+        options.add_bool("HUBBARD_HAMILTONIAN",false);
+
+        /*- hubbard hopping integral -*/
+        options.add_double("HUBBARD_T",1.0);
+
+        /*- hubbard on-site repulsion -*/
+        options.add_double("HUBBARD_U",1.0);
+
+        /*- number of sites in hubbard model -*/
+        options.add_int("N_HUBBARD_SITES",4);
+
+        /*- total number of spins in hubbard model -*/
+        options.add_int("N_HUBBARD_SPINS",4);
+
         /*- fractional charge -*/
         options.add_double("FRACTIONAL_CHARGE", 0.0);
 
