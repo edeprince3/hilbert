@@ -75,8 +75,7 @@ int read_options(std::string name, Options& options)
         options.add_bool("PRINT_RDMS",false);
 
         /*- Do print t-and z-amplitudes to the output file? -*/
-        options.add_bool("PRINT_AMPS",false);
-
+        options.add_bool("PRINT_PCCD_AMPLITUDES",false);
 
         /*- Auxiliary basis set for SCF density fitting computations.
         :ref:`Defaults <apdx:basisFamily>` to a JKFIT basis. -*/

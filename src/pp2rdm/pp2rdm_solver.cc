@@ -577,7 +577,7 @@ double pp2RDMSolver::compute_energy() {
 
     // print t and z amplitudes to output file?
 
-    if ( options_.get_bool("PRINT_AMPS") && options_.get_str("P2RDM_TYPE") == "CCD" ){
+    if ( options_.get_bool("PRINT_PCCD_AMPLITUDES") && options_.get_str("P2RDM_TYPE") == "CCD" ){
         print_amplitudes();
     }
 
