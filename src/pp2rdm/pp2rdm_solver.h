@@ -245,6 +245,9 @@ class pp2RDMSolver: public Wavefunction{
     /// print 1- and 2-RDM elements
     void print_rdms();
 
+    /// print t- and z-ccd amplitudes
+    void print_amplitudes();
+
     /// print 1- and 2-electron integrals
     void print_integrals();
     ///Build hessian for HF (test)
