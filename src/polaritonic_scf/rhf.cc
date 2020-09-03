@@ -232,9 +232,18 @@ double PolaritonicRHF::compute_energy() {
 
             build_cavity_hamiltonian();
 
+/*
             std::shared_ptr<Matrix> Vx = (std::shared_ptr<Matrix>)(new Matrix(CavityDipolePotential_x_));
             std::shared_ptr<Matrix> Vy = (std::shared_ptr<Matrix>)(new Matrix(CavityDipolePotential_y_));
             std::shared_ptr<Matrix> Vz = (std::shared_ptr<Matrix>)(new Matrix(CavityDipolePotential_z_));
+
+            Vx->scale(-CavityDipole_x_->pointer()[0][0]);
+            Vy->scale(-CavityDipole_y_->pointer()[0][0]);
+            Vz->scale(-CavityDipole_z_->pointer()[0][0]);
+*/
+            std::shared_ptr<Matrix> Vx = (std::shared_ptr<Matrix>)(new Matrix(dipole_[0]));
+            std::shared_ptr<Matrix> Vy = (std::shared_ptr<Matrix>)(new Matrix(dipole_[1]));
+            std::shared_ptr<Matrix> Vz = (std::shared_ptr<Matrix>)(new Matrix(dipole_[2]));
 
             Vx->scale(-CavityDipole_x_->pointer()[0][0]);
             Vy->scale(-CavityDipole_y_->pointer()[0][0]);
@@ -243,6 +252,11 @@ double PolaritonicRHF::compute_energy() {
             Fa_->add(Vx);
             Fa_->add(Vy);
             Fa_->add(Vz);
+
+            // dipole self energy:
+
+            // e-e and e-n terms (assuming a complete basis)
+            Fa_->add(dipole_squared_);
 
         }
 
@@ -258,9 +272,19 @@ double PolaritonicRHF::compute_energy() {
 
             build_cavity_hamiltonian();
 
+/*
             std::shared_ptr<Matrix> Vx = (std::shared_ptr<Matrix>)(new Matrix(CavityDipolePotential_x_));
             std::shared_ptr<Matrix> Vy = (std::shared_ptr<Matrix>)(new Matrix(CavityDipolePotential_y_));
             std::shared_ptr<Matrix> Vz = (std::shared_ptr<Matrix>)(new Matrix(CavityDipolePotential_z_));
+
+            Vx->scale(-CavityDipole_x_->pointer()[0][0]);
+            Vy->scale(-CavityDipole_y_->pointer()[0][0]);
+            Vz->scale(-CavityDipole_z_->pointer()[0][0]);
+*/
+
+            std::shared_ptr<Matrix> Vx = (std::shared_ptr<Matrix>)(new Matrix(dipole_[0]));
+            std::shared_ptr<Matrix> Vy = (std::shared_ptr<Matrix>)(new Matrix(dipole_[1]));
+            std::shared_ptr<Matrix> Vz = (std::shared_ptr<Matrix>)(new Matrix(dipole_[2]));
 
             Vx->scale(-CavityDipole_x_->pointer()[0][0]);
             Vy->scale(-CavityDipole_y_->pointer()[0][0]);

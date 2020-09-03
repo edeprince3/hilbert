@@ -318,8 +318,8 @@ int read_options(std::string name, Options& options)
         options.add_int("N_PHOTON_STATES", 1);
         /*- cavity excitation energy for the modes along the x, y and z axis (a.u.) -*/
         options.add("CAVITY_FREQUENCY",new ArrayType());
-        /*- cavity transition dipole moment (a.u.) -*/
-        options.add("CAVITY_TDM",/* 2990.0/2.54175*/new ArrayType());
+        /*- cavity coupling strength (a.u.) -*/
+        options.add("CAVITY_COUPLING_STRENGTH",/* 2990.0/2.54175*/new ArrayType());
     }
 
     return true;
