@@ -37,6 +37,8 @@
 #include <pp2rdm/pp2rdm_solver.h>
 #include <p2rdm/p2rdm_solver.h>
 #include <jellium/jellium_scf_solver.h>
+#include <polaritonic_scf/rhf.h>
+
 #include <misc/backtransform_tpdm.h>
 
 using namespace psi;
@@ -271,7 +273,6 @@ int read_options(std::string name, Options& options)
         /*- Do constrain sz? -*/
         options.add_bool("CONSTRAIN_SZ", true);
 
-
         /*- SUBSECTION JELLIUM -*/
 
         /*- An array containing the number of doubly-occupied orbitals per irrep
@@ -306,6 +307,16 @@ int read_options(std::string name, Options& options)
         and could get expensive, default = false -*/
         options.add_bool("JELLIUM_CIS_SMART_GUESS", false);
 
+        /*- SUBSECTION POLARITONIC SCF -*/
+
+        /*- cavity coordinates (bohr)-*/
+        options.add("CAVITY_COORDINATES",new ArrayType());
+        /*- cavity number state -*/
+        options.add_int("N_PHOTON_STATES", 1);
+        /*- cavity excitation energy for the modes along the x, y and z axis (a.u.) -*/
+        options.add("CAVITY_FREQUENCY",new ArrayType());
+        /*- cavity transition dipole moment (a.u.) -*/
+        options.add("CAVITY_TDM",/* 2990.0/2.54175*/new ArrayType());
     }
 
     return true;
@@ -367,6 +378,12 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         }
 
         return (std::shared_ptr<Wavefunction>)v2rdm;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_SCF") {
+
+        std::shared_ptr<PolaritonicRHF> rhf (new PolaritonicRHF(ref_wfn,options));
+        double energy = rhf->compute_energy();
+        return (std::shared_ptr<Wavefunction>)rhf;
 
     }
 

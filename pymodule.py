@@ -38,6 +38,43 @@ from psi4.driver.procrouting import proc
 import qcelemental as qcel
 from psi4.driver import qcdb
 
+def run_polaritonic_scf(name, **kwargs):
+    r"""Function encoding sequence of PSI module and plugin calls so that
+    polaritonic scf can be called via :py:func:`~driver.energy`. For post-scf plugins.
+
+    >>> energy('polaritonic-rhf')
+
+    """
+    lowername = name.lower()
+    kwargs = p4util.kwargs_lower(kwargs)
+
+    optstash = p4util.OptionsState(
+        ['SCF', 'DF_INTS_IO'])
+
+    psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
+
+    psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_SCF')
+
+    # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
+    # Fock matrices, and more
+    #print('Attention! This SCF may be density-fitted.')
+    ref_wfn = kwargs.get('ref_wfn', None)
+    if ref_wfn is None:
+        ref_wfn = psi4.driver.scf_helper(name, **kwargs)
+
+    # Ensure IWL files have been written when not using DF/CD
+    scf_type = psi4.core.get_option('SCF', 'SCF_TYPE')
+    if ( scf_type == 'PK' or scf_type == 'DIRECT' ):
+        proc_util.check_iwl_file_from_scf_type(psi4.core.get_option('SCF', 'SCF_TYPE'), ref_wfn)
+
+    # Call the Psi4 plugin
+    # Please note that setting the reference wavefunction in this way is ONLY for plugins
+    rhf_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
+
+    optstash.restore()
+
+    return rhf_wfn
+
 def run_doci(name, **kwargs):
     r"""Function encoding sequence of PSI module and plugin calls so that
     doci can be called via :py:func:`~driver.energy`. For post-scf plugins.
@@ -63,7 +100,9 @@ def run_doci(name, **kwargs):
         ref_wfn = psi4.driver.scf_helper(name, **kwargs)
 
     # Ensure IWL files have been written when not using DF/CD
-    proc_util.check_iwl_file_from_scf_type(psi4.core.get_option('SCF', 'SCF_TYPE'), ref_wfn)
+    scf_type = psi4.core.get_option('SCF', 'SCF_TYPE')
+    if ( scf_type == 'PK' or scf_type == 'DIRECT' ):
+        proc_util.check_iwl_file_from_scf_type(psi4.core.get_option('SCF', 'SCF_TYPE'), ref_wfn)
 
     # Call the Psi4 plugin
     # Please note that setting the reference wavefunction in this way is ONLY for plugins
@@ -113,7 +152,9 @@ def run_pp2rdm(name, **kwargs):
         ref_wfn = psi4.driver.scf_helper(name, **kwargs)
 
     # Ensure IWL files have been written when not using DF/CD
-    proc_util.check_iwl_file_from_scf_type(psi4.core.get_option('SCF', 'SCF_TYPE'), ref_wfn)
+    scf_type = psi4.core.get_option('SCF', 'SCF_TYPE')
+    if ( scf_type == 'PK' or scf_type == 'DIRECT' ):
+        proc_util.check_iwl_file_from_scf_type(psi4.core.get_option('SCF', 'SCF_TYPE'), ref_wfn)
 
     # Call the Psi4 plugin
     # Please note that setting the reference wavefunction in this way is ONLY for plugins
@@ -321,7 +362,9 @@ def run_p2rdm(name, **kwargs):
         ref_wfn = psi4.driver.scf_helper(name, **kwargs)
 
     # Ensure IWL files have been written when not using DF/CD
-    proc_util.check_iwl_file_from_scf_type(psi4.core.get_option('SCF', 'SCF_TYPE'), ref_wfn)
+    scf_type = psi4.core.get_option('SCF', 'SCF_TYPE')
+    if ( scf_type == 'PK' or scf_type == 'DIRECT' ):
+        proc_util.check_iwl_file_from_scf_type(psi4.core.get_option('SCF', 'SCF_TYPE'), ref_wfn)
 
     # Call the Psi4 plugin
     # Please note that setting the reference wavefunction in this way is ONLY for plugins
@@ -383,4 +426,8 @@ psi4.driver.procedures['energy']['v2rdm-doci'] = run_v2rdm_doci
 # v2rdm-casscf
 psi4.driver.procedures['energy']['v2rdm-casscf'] = run_v2rdm_casscf
 psi4.driver.procedures['gradient']['v2rdm-casscf'] = run_v2rdm_casscf_gradient
+
+# polaritonic scf
+psi4.driver.procedures['energy']['polaritonic-rhf'] = run_polaritonic_scf
+#psi4.driver.procedures['energy']['polaritonic-uhf'] = run_polaritonic_scf
 

@@ -28,6 +28,9 @@ add_psi4_plugin(hilbert
 
     src/python_api/python_helpers.cc
 
+    src/polaritonic_scf/hf.cc
+    src/polaritonic_scf/rhf.cc
+
     src/jellium/jellium_scf_solver.cc
     src/jellium/jellium_integrals.cc
     src/jellium/legendre.cc
