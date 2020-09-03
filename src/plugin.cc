@@ -76,6 +76,9 @@ int read_options(std::string name, Options& options)
         /*- Do print 2-RDM and 1-RDM to the output file? All nonzero elements of the RDMs will be written.  -*/
         options.add_bool("PRINT_RDMS",false);
 
+        /*- Do print t-and z-amplitudes to the output file? -*/
+        options.add_bool("PRINT_PCCD_AMPLITUDES",false);
+
         /*- Auxiliary basis set for SCF density fitting computations.
         :ref:`Defaults <apdx:basisFamily>` to a JKFIT basis. -*/
         options.add_str("DF_BASIS_SCF", "");

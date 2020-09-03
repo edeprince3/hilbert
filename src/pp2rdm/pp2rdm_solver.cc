@@ -575,6 +575,12 @@ double pp2RDMSolver::compute_energy() {
         print_integrals();
     }
 
+    // print t and z amplitudes to output file?
+
+    if ( options_.get_bool("PRINT_PCCD_AMPLITUDES") && options_.get_str("P2RDM_TYPE") == "CCD" ){
+        print_amplitudes();
+    }
+
     return energy + enuc_;
 
 }
@@ -657,6 +663,41 @@ void pp2RDMSolver::print_integrals() {
     outfile->Printf("\n");
 
     //printf("%20.12lf %20.12lf %20.12lf\n",e1,e2,e1+e2+enuc_);
+
+}
+
+void pp2RDMSolver::print_amplitudes() {
+    int o = nalpha_;
+    int v = nmo_ - nalpha_;
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> p%s @T-amps <==\n",name_.c_str());
+    outfile->Printf("\n");
+
+    for (int i = 0; i < o; i++) {
+        for (int a = 0; a < v; a++) {
+            outfile->Printf("%5i %5i %20.12lf\n",i,a + o, t2_[i * v + a]);
+        }
+    }
+
+    outfile->Printf("\n");
+    outfile->Printf("    @END\n");
+    outfile->Printf("\n");
+
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> p%s @Z-amps <==\n",name_.c_str());
+    outfile->Printf("\n");
+
+    for (int i = 0; i < o; i++) {
+        for (int a = 0; a < v; a++) {
+            outfile->Printf("%5i %5i %20.12lf\n",i,a + o, z2_[i * v + a]);
+        }
+    }
+
+    outfile->Printf("\n");
+    outfile->Printf("    @END\n");
+    outfile->Printf("\n");
 
 }
 
@@ -1220,7 +1261,7 @@ void pp2RDMSolver::evaluate_residual(double * residual) {
         double * VxT_v  = (double*)malloc(v * sizeof(double)); 
         double * VxT_o  = (double*)malloc(o * sizeof(double)); 
         double * VxT_oo = (double*)malloc(o * o * sizeof(double)); 
-        
+
         for (int a = 0; a < v; a++) {
             VxT_v[a] = -2.0 * C_DDOT(o, v_iaia_ + a, v, t2_ + a, v);
         }
