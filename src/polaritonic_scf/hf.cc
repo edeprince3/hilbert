@@ -230,7 +230,36 @@ void PolaritonicHF::initialize_cavity() {
     }
 
     std::shared_ptr<MintsHelper> mints (new MintsHelper(reference_wavefunction_));
+
     dipole_ = mints->so_dipole();
+    std::vector< std::shared_ptr<Matrix> > quadrupole = mints->so_quadrupole();
+
+    double factor_x = cavity_coupling_strength_[0] * cavity_coupling_strength_[0] * cavity_frequency_[0];
+    double factor_y = cavity_coupling_strength_[1] * cavity_coupling_strength_[1] * cavity_frequency_[1];
+    double factor_z = cavity_coupling_strength_[2] * cavity_coupling_strength_[2] * cavity_frequency_[2];
+
+    // for one-electron part of d^2
+
+    quadrupole[0]->scale(0.5 * factor_x * factor_x);
+    quadrupole[1]->scale(0.5 * factor_x * factor_y);
+    quadrupole[2]->scale(0.5 * factor_x * factor_z);
+    quadrupole[3]->scale(0.5 * factor_y * factor_y);
+    quadrupole[4]->scale(0.5 * factor_y * factor_z);
+    quadrupole[5]->scale(0.5 * factor_z * factor_z);
+
+    quadrupole_scaled_sum_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
+    quadrupole_scaled_sum_->zero();
+    for (int i = 0; i < 6; i++) {
+        quadrupole_scaled_sum_->add(quadrupole[i]);
+    }
+
+    // for two-electron part of d^2 (1/2 picked up in rhf.cc)
+
+    dipole_scaled_sum_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
+    dipole_scaled_sum_->zero();
+    dipole_scaled_sum_->axpy(factor_x, dipole_[0]);
+    dipole_scaled_sum_->axpy(factor_y, dipole_[1]);
+    dipole_scaled_sum_->axpy(factor_z, dipole_[2]);
 
     // dipole moment squared (assuming a complete basis for now)
     dipole_squared_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
@@ -239,24 +268,25 @@ void PolaritonicHF::initialize_cavity() {
     // e-e contribution  0.5 * (lambda . de)(lambda . de)
     std::shared_ptr<Matrix> dipdot (new Matrix(nso_,nso_));
     dipdot->zero();
- 
-    for (int i = 0; i < 3; i++) {
-
-        double factor = cavity_coupling_strength_[i] * cavity_coupling_strength_[i] * cavity_frequency_[i];
-
-        dipdot->axpy(factor,dipole_[i]);
-
-    }
+    dipdot->axpy(factor_x,dipole_[0]);
+    dipdot->axpy(factor_y,dipole_[1]);
+    dipdot->axpy(factor_z,dipole_[2]);
 
     double ** dp = dipdot->pointer();
     C_DGEMM('n','n',nso_,nso_,nso_,0.5,&(dp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(dipole_squared_->pointer()[0][0]),nso_);
 
     // e-n contribution 0.5 * 2 (lambda . de) (lambda . dn)
     double nuc_dipdot = 0.0;
-    nuc_dipdot += cavity_coupling_strength_[0] * cavity_coupling_strength_[0] * cavity_frequency_[0] * nuc_dip_x_;
-    nuc_dipdot += cavity_coupling_strength_[1] * cavity_coupling_strength_[1] * cavity_frequency_[1] * nuc_dip_y_;
-    nuc_dipdot += cavity_coupling_strength_[2] * cavity_coupling_strength_[2] * cavity_frequency_[2] * nuc_dip_z_;
-    dipole_squared_->axpy(1.0 * nuc_dipdot,dipdot);
+    nuc_dipdot += factor_x * nuc_dip_x_;
+    nuc_dipdot += factor_y * nuc_dip_y_;
+    nuc_dipdot += factor_z * nuc_dip_z_;
+
+    //dipole_squared_->axpy(1.0 * nuc_dipdot,dipdot);
+
+    // e-n contribution 0.5 * 2 (lambda . de) (lambda . dn)
+    scaled_e_n_dipole_squared_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
+    scaled_e_n_dipole_squared_->copy(dipdot);
+    scaled_e_n_dipole_squared_->scale(nuc_dipdot);
 
     printf("nuc: %20.12lf\n",nuc_dipdot*nuc_dipdot);
 

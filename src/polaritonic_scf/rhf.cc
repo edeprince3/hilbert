@@ -255,8 +255,42 @@ double PolaritonicRHF::compute_energy() {
 
             // dipole self energy:
 
-            // e-e and e-n terms (assuming a complete basis)
-            Fa_->add(dipole_squared_);
+            // e-e term (assuming a complete basis)
+            //Fa_->add(dipole_squared_);
+
+            // e-n term 
+            Fa_->add(scaled_e_n_dipole_squared_);
+
+            // one-electron part of e-e term 
+            Fa_->add(quadrupole_scaled_sum_);
+
+            // two-electron part of e-e term (J)
+            double scaled_mu = Da_->vector_dot(dipole_scaled_sum_);
+            Fa_->axpy(0.5 * 2.0 * scaled_mu,dipole_scaled_sum_);
+
+            // two-electron part of e-e term (K)
+
+            // Kpq += mu_pr * mu_qs * Drs
+            double ** dp  = dipole_scaled_sum_->pointer();
+            double ** dap = Da_->pointer();
+            double ** fap = Fa_->pointer();
+
+            std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
+            double ** tp = tmp->pointer();
+            C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+            C_DGEMM('n','t',nso_,nso_,nso_,-0.5,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(fap[0][0]),nso_);
+
+            //for (int p = 0; p < nso_; p++) {
+            //    for (int q = 0; q < nso_; q++) {
+            //        double dum = 0.0;
+            //        for (int r = 0; r < nso_; r++) {
+            //            for (int s = 0; s < nso_; s++) {
+            //                dum += dp[p][r] * dp[q][s] * dap[r][s];
+            //            }
+            //        }
+            //        fap[p][q] -= 0.5 * dum;
+            //    }
+            //}
 
         }
 
@@ -282,17 +316,7 @@ double PolaritonicRHF::compute_energy() {
             Vz->scale(-CavityDipole_z_->pointer()[0][0]);
 */
 
-            std::shared_ptr<Matrix> Vx = (std::shared_ptr<Matrix>)(new Matrix(dipole_[0]));
-            std::shared_ptr<Matrix> Vy = (std::shared_ptr<Matrix>)(new Matrix(dipole_[1]));
-            std::shared_ptr<Matrix> Vz = (std::shared_ptr<Matrix>)(new Matrix(dipole_[2]));
-
-            Vx->scale(-CavityDipole_x_->pointer()[0][0]);
-            Vy->scale(-CavityDipole_y_->pointer()[0][0]);
-            Vz->scale(-CavityDipole_z_->pointer()[0][0]);
-
-            energy_ += 2.0 * Da_->vector_dot(Vx);
-            energy_ += 2.0 * Da_->vector_dot(Vy);
-            energy_ += 2.0 * Da_->vector_dot(Vz);
+            energy_ += Da_->vector_dot(scaled_e_n_dipole_squared_);
 
         }
 
