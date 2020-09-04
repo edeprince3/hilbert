@@ -64,10 +64,10 @@ class PolaritonicHF: public Wavefunction {
     int multiplicity_;
 
     std::vector< std::shared_ptr<Matrix> > dipole_;
-    std::shared_ptr<Matrix> dipole_squared_;
     std::shared_ptr<Matrix> dipole_scaled_sum_;
     std::shared_ptr<Matrix> quadrupole_scaled_sum_;
     std::shared_ptr<Matrix> scaled_e_n_dipole_squared_;
+    std::shared_ptr<Matrix> scaled_e_e_dipole_squared_;
 
     // cavity related quantities: 
 
@@ -94,8 +94,6 @@ class PolaritonicHF: public Wavefunction {
 
     double * cavity_frequency_; 
     double * cavity_coupling_strength_; 
-    double * cavity_coordinates_; 
-    double * center_of_mass_;
 
     long int n_photon_states_;
 

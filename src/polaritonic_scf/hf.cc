@@ -156,20 +156,6 @@ void PolaritonicHF::initialize_cavity() {
        cavity_frequency_[2] = 2.042/27.21138;
     }
 
-/*
-    // Read in the cavity transition dipole moment
-    cavity_tdm_ = (double*)malloc(sizeof(double)*3);
-    memset((void*)cavity_tdm_,'\0',3*sizeof(double));
-    if (options_["CAVITY_TDM"].has_changed()){
-       if (options_["CAVITY_TDM"].size() != 3)
-          throw PsiException("The CAVITY TDM array has the wrong dimensions",__FILE__,__LINE__);
-       for (int i = 0; i < 3; i++) cavity_tdm_[i] = options_["CAVITY_TDM"][i].to_double();
-    }else{
-       cavity_tdm_[0] = 2990.0/2.54175;
-       cavity_tdm_[1] = 2990.0/2.54175;
-       cavity_tdm_[2] = 2990.0/2.54175;
-    }
-*/
     // Read in the cavity coupling stregth
     cavity_coupling_strength_ = (double*)malloc(sizeof(double)*3);
     memset((void*)cavity_coupling_strength_,'\0',3*sizeof(double));
@@ -183,69 +169,37 @@ void PolaritonicHF::initialize_cavity() {
        cavity_coupling_strength_[2] = 2990.0/2.54175;
     }
 
-    // Read in the cavity coordinates
-
-    cavity_coordinates_ = (double*)malloc(sizeof(double)*3);
-    memset((void*)cavity_coordinates_,'\0',3*sizeof(double));
-    if (options_["CAVITY_COORDINATES"].has_changed()){
-       if (options_["CAVITY_COORDINATES"].size() != 3)
-          throw PsiException("The CAVITY COORDINATES array has the wrong dimensions",__FILE__,__LINE__);
-       for (int i = 0; i < 3; i++) cavity_coordinates_[i] = options_["CAVITY_COORDINATES"][i].to_double();
-    }else{
-       cavity_coordinates_[0] =  0.0;
-       cavity_coordinates_[1] =  0.0;
-       cavity_coordinates_[2] = 40.0;
-    }
-
-    // compute molecule center-of-mass
-
-    std::shared_ptr<Molecule>mol=Process::environment.molecule();
-    int natom = mol->natom();
-    center_of_mass_ = (double*)malloc(sizeof(double)*3);
-    memset((void*)center_of_mass_,'\0',3*sizeof(double));
-
-    double temp_x = 0.0;
-    double temp_y = 0.0;
-    double temp_z = 0.0;
-    double temp_m = 0.0;
-    for (int i = 0; i < natom; i++){
-       temp_x += mol->mass(i) * mol->x(i);
-       temp_y += mol->mass(i) * mol->y(i);
-       temp_z += mol->mass(i) * mol->z(i);
-       temp_m += mol->mass(i);
-    }
-    center_of_mass_[0] = temp_x/temp_m;
-    center_of_mass_[1] = temp_y/temp_m;
-    center_of_mass_[2] = temp_z/temp_m;
-
     // Get Nuclear contribution to the molecular total dipole moment
 
     nuc_dip_x_ = 0.0;
     nuc_dip_y_ = 0.0;
     nuc_dip_z_ = 0.0;
-    for (int i = 0; i < natom; i++) {
-        nuc_dip_x_ += mol->Z(i) * mol->x(i);
-        nuc_dip_y_ += mol->Z(i) * mol->y(i);
-        nuc_dip_z_ += mol->Z(i) * mol->z(i);
+    for (int i = 0; i < molecule_->natom(); i++) {
+        nuc_dip_x_ += molecule_->Z(i) * molecule_->x(i);
+        nuc_dip_y_ += molecule_->Z(i) * molecule_->y(i);
+        nuc_dip_z_ += molecule_->Z(i) * molecule_->z(i);
     }
+
+    // integrals
 
     std::shared_ptr<MintsHelper> mints (new MintsHelper(reference_wavefunction_));
 
+    // dipole integrals
     dipole_ = mints->so_dipole();
+
+    // quadrupole integrals
     std::vector< std::shared_ptr<Matrix> > quadrupole = mints->so_quadrupole();
 
-    double factor_x = cavity_coupling_strength_[0] * cavity_coupling_strength_[0] * cavity_frequency_[0];
-    double factor_y = cavity_coupling_strength_[1] * cavity_coupling_strength_[1] * cavity_frequency_[1];
-    double factor_z = cavity_coupling_strength_[2] * cavity_coupling_strength_[2] * cavity_frequency_[2];
+    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
+    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
 
-    // for one-electron part of d^2
-
-    quadrupole[0]->scale(0.5 * factor_x * factor_x);
-    quadrupole[1]->scale(0.5 * factor_x * factor_y);
-    quadrupole[2]->scale(0.5 * factor_x * factor_z);
-    quadrupole[3]->scale(0.5 * factor_y * factor_y);
-    quadrupole[4]->scale(0.5 * factor_y * factor_z);
-    quadrupole[5]->scale(0.5 * factor_z * factor_z);
+    quadrupole[0]->scale(0.5 * lambda_x * lambda_x);
+    quadrupole[1]->scale(0.5 * lambda_x * lambda_y);
+    quadrupole[2]->scale(0.5 * lambda_x * lambda_z);
+    quadrupole[3]->scale(0.5 * lambda_y * lambda_y);
+    quadrupole[4]->scale(0.5 * lambda_y * lambda_z);
+    quadrupole[5]->scale(0.5 * lambda_z * lambda_z);
 
     quadrupole_scaled_sum_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
     quadrupole_scaled_sum_->zero();
@@ -253,42 +207,42 @@ void PolaritonicHF::initialize_cavity() {
         quadrupole_scaled_sum_->add(quadrupole[i]);
     }
 
-    // for two-electron part of d^2 (1/2 picked up in rhf.cc)
+    // for two-electron part of 1/2 (lambda.d)^2 (1/2 picked up in rhf.cc)
 
     dipole_scaled_sum_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
     dipole_scaled_sum_->zero();
-    dipole_scaled_sum_->axpy(factor_x, dipole_[0]);
-    dipole_scaled_sum_->axpy(factor_y, dipole_[1]);
-    dipole_scaled_sum_->axpy(factor_z, dipole_[2]);
+    dipole_scaled_sum_->axpy(lambda_x, dipole_[0]);
+    dipole_scaled_sum_->axpy(lambda_y, dipole_[1]);
+    dipole_scaled_sum_->axpy(lambda_z, dipole_[2]);
 
     // dipole moment squared (assuming a complete basis for now)
-    dipole_squared_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
-    dipole_squared_->zero();
+    scaled_e_e_dipole_squared_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
+    scaled_e_e_dipole_squared_->zero();
 
     // e-e contribution  0.5 * (lambda . de)(lambda . de)
-    std::shared_ptr<Matrix> dipdot (new Matrix(nso_,nso_));
-    dipdot->zero();
-    dipdot->axpy(factor_x,dipole_[0]);
-    dipdot->axpy(factor_y,dipole_[1]);
-    dipdot->axpy(factor_z,dipole_[2]);
+    std::shared_ptr<Matrix> el_dipdot (new Matrix(nso_,nso_));
+    el_dipdot->zero();
+    el_dipdot->axpy(lambda_x,dipole_[0]);
+    el_dipdot->axpy(lambda_y,dipole_[1]);
+    el_dipdot->axpy(lambda_z,dipole_[2]);
 
-    double ** dp = dipdot->pointer();
-    C_DGEMM('n','n',nso_,nso_,nso_,0.5,&(dp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(dipole_squared_->pointer()[0][0]),nso_);
+    double ** dp = el_dipdot->pointer();
+    C_DGEMM('n','n',nso_,nso_,nso_,0.5,&(dp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(scaled_e_e_dipole_squared_->pointer()[0][0]),nso_);
 
     // e-n contribution 0.5 * 2 (lambda . de) (lambda . dn)
     double nuc_dipdot = 0.0;
-    nuc_dipdot += factor_x * nuc_dip_x_;
-    nuc_dipdot += factor_y * nuc_dip_y_;
-    nuc_dipdot += factor_z * nuc_dip_z_;
+    nuc_dipdot += lambda_x * nuc_dip_x_;
+    nuc_dipdot += lambda_y * nuc_dip_y_;
+    nuc_dipdot += lambda_z * nuc_dip_z_;
 
     //dipole_squared_->axpy(1.0 * nuc_dipdot,dipdot);
 
     // e-n contribution 0.5 * 2 (lambda . de) (lambda . dn)
     scaled_e_n_dipole_squared_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
-    scaled_e_n_dipole_squared_->copy(dipdot);
+    scaled_e_n_dipole_squared_->copy(el_dipdot);
     scaled_e_n_dipole_squared_->scale(nuc_dipdot);
 
-    printf("nuc: %20.12lf\n",nuc_dipdot*nuc_dipdot);
+    //printf("nuc: %20.12lf\n",nuc_dipdot*nuc_dipdot);
 
     // Build dipole potential integrals that represent the influence of the
     // cavity dipole moment on the molecule ... actually this is only for general 
@@ -318,17 +272,6 @@ void PolaritonicHF::build_cavity_hamiltonian(){
     CavityDipole_y_->zero();
     CavityDipole_z_->zero();
 
-/*
-    for (int A=0; A<nS-1; A++){
-        CavityDipole_x_->pointer()[A+1][A] += cavity_tdm_[0]*sqrt(A+1);
-        CavityDipole_x_->pointer()[A][A+1] += cavity_tdm_[0]*sqrt(A+1);
-        CavityDipole_y_->pointer()[A+1][A] += cavity_tdm_[1]*sqrt(A+1);
-        CavityDipole_y_->pointer()[A][A+1] += cavity_tdm_[1]*sqrt(A+1);
-        CavityDipole_z_->pointer()[A+1][A] += cavity_tdm_[2]*sqrt(A+1);
-        CavityDipole_z_->pointer()[A][A+1] += cavity_tdm_[2]*sqrt(A+1);
-    }
-*/
-
     for (int A=0; A<nS-1; A++){
         CavityDipole_x_->pointer()[A+1][A] += cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A+1);
         CavityDipole_x_->pointer()[A][A+1] += cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A+1);
@@ -351,28 +294,6 @@ void PolaritonicHF::build_cavity_hamiltonian(){
         HCavity_z_->pointer()[A][A] = A*cavity_frequency_[2];
     }
 
-    // Evaluate the distance from the center of mass of the molecule to cavity
-
-    double r = (center_of_mass_[0]-cavity_coordinates_[0])*(center_of_mass_[0]-cavity_coordinates_[0])
-             + (center_of_mass_[1]-cavity_coordinates_[1])*(center_of_mass_[1]-cavity_coordinates_[1])
-             + (center_of_mass_[2]-cavity_coordinates_[2])*(center_of_mass_[2]-cavity_coordinates_[2]);
-    r = sqrt(r);
-
-    double delta_x = cavity_coordinates_[0] - center_of_mass_[0];
-    double delta_y = cavity_coordinates_[1] - center_of_mass_[1];
-    double delta_z = cavity_coordinates_[2] - center_of_mass_[2];
-
-    double * r_vector;
-
-    r_vector = (double*)malloc(sizeof(double)*3);
-    memset((void*)r_vector,'\0',3*sizeof(double));
-
-    r_vector[0] = delta_x;
-    r_vector[1] = delta_y;
-    r_vector[2] = delta_z;
-
-    double oer3 = 1.0 /(r*r*r);
-
     // Evaluate the electronic contribute to the molecule's dipole moment
 
     double e_dip_x = 2.0*C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
@@ -386,73 +307,20 @@ void PolaritonicHF::build_cavity_hamiltonian(){
     HCavityInteraction_y_->zero();
     HCavityInteraction_z_->zero();
 
-/*
     for (int A = 0; A<nS; A++) {
         if (A < nS - 1) {
 
-            HCavityInteraction_x_->pointer()[A][A+1] += (e_dip_x + nuc_dip_x_)*cavity_tdm_[0];
-            HCavityInteraction_x_->pointer()[A][A+1] -= 3.0*cavity_tdm_[0]*delta_x
-                                                       * ( r_vector[0]*(nuc_dip_x_ + e_dip_x)
-                                                         + r_vector[1]*(nuc_dip_y_ + e_dip_y)
-                                                         + r_vector[2]*(nuc_dip_z_ + e_dip_z) ) / (r*r);
-            HCavityInteraction_x_->pointer()[A][A+1] *= oer3*sqrt(A+1);
-
-            HCavityInteraction_y_->pointer()[A][A+1] += (e_dip_y + nuc_dip_y_)*cavity_tdm_[1];
-            HCavityInteraction_y_->pointer()[A][A+1] -= 3.0*cavity_tdm_[1]*delta_y
-                                                       * ( r_vector[0]*(nuc_dip_x_ + e_dip_x)
-                                                         + r_vector[1]*(nuc_dip_y_ + e_dip_y)
-                                                         + r_vector[2]*(nuc_dip_z_ + e_dip_z) ) / (r*r);
-            HCavityInteraction_y_->pointer()[A][A+1] *= oer3*sqrt(A+1);
-
-            HCavityInteraction_z_->pointer()[A][A+1] += (e_dip_z + nuc_dip_z_)*cavity_tdm_[2];
-            HCavityInteraction_z_->pointer()[A][A+1] -= 3.0*cavity_tdm_[2]*delta_z
-                                                       * ( r_vector[0]*(nuc_dip_x_ + e_dip_x)
-                                                         + r_vector[1]*(nuc_dip_y_ + e_dip_y)
-                                                         + r_vector[2]*(nuc_dip_z_ + e_dip_z) ) / (r*r);
-            HCavityInteraction_z_->pointer()[A][A+1] *= oer3*sqrt(A+1);
+            HCavityInteraction_x_->pointer()[A][A+1] = -(e_dip_x + nuc_dip_x_) * cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A+1);
+            HCavityInteraction_y_->pointer()[A][A+1] = -(e_dip_y + nuc_dip_y_) * cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A+1);
+            HCavityInteraction_z_->pointer()[A][A+1] = -(e_dip_z + nuc_dip_z_) * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
 
         }
 
         if (A > 0) {
 
-            HCavityInteraction_x_->pointer()[A][A-1] += (e_dip_x + nuc_dip_x_)*cavity_tdm_[0];
-            HCavityInteraction_x_->pointer()[A][A-1] -= 3.0*cavity_tdm_[0]*delta_x
-                                                       * ( r_vector[0]*(nuc_dip_x_ + e_dip_x)
-                                                         + r_vector[1]*(nuc_dip_y_ + e_dip_y)
-                                                         + r_vector[2]*(nuc_dip_z_ + e_dip_z) ) / (r*r);
-            HCavityInteraction_x_->pointer()[A][A-1] *= oer3*sqrt(A);
-
-            HCavityInteraction_y_->pointer()[A][A-1] += (e_dip_y + nuc_dip_y_)*cavity_tdm_[1];
-            HCavityInteraction_y_->pointer()[A][A-1] -= 3.0*cavity_tdm_[1]*delta_y
-                                                       * ( r_vector[0]*(nuc_dip_x_ + e_dip_x)
-                                                         + r_vector[1]*(nuc_dip_y_ + e_dip_y)
-                                                         + r_vector[2]*(nuc_dip_z_ + e_dip_z)) / (r*r);
-            HCavityInteraction_y_->pointer()[A][A-1] *= oer3*sqrt(A);
-
-            HCavityInteraction_z_->pointer()[A][A-1] += (e_dip_z + nuc_dip_z_)*cavity_tdm_[2];
-            HCavityInteraction_z_->pointer()[A][A-1] -= 3.0*cavity_tdm_[2]*delta_z
-                                                       * ( r_vector[0]*(nuc_dip_x_ + e_dip_x)
-                                                         + r_vector[1]*(nuc_dip_y_ + e_dip_y)
-                                                         + r_vector[2]*(nuc_dip_z_ + e_dip_z) ) / (r*r);
-            HCavityInteraction_z_->pointer()[A][A-1] *= oer3*sqrt(A);
-        }
-    }
-*/
-
-    for (int A = 0; A<nS; A++) {
-        if (A < nS - 1) {
-
-            HCavityInteraction_x_->pointer()[A][A+1] += (e_dip_x + nuc_dip_x_) * cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A+1);
-            HCavityInteraction_y_->pointer()[A][A+1] += (e_dip_y + nuc_dip_y_) * cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A+1);
-            HCavityInteraction_z_->pointer()[A][A+1] += (e_dip_z + nuc_dip_z_) * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
-
-        }
-
-        if (A > 0) {
-
-            HCavityInteraction_x_->pointer()[A][A-1] += (e_dip_x + nuc_dip_x_) * cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A);
-            HCavityInteraction_y_->pointer()[A][A-1] += (e_dip_y + nuc_dip_y_) * cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A);
-            HCavityInteraction_z_->pointer()[A][A-1] += (e_dip_z + nuc_dip_z_) * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A);
+            HCavityInteraction_x_->pointer()[A][A-1] = (e_dip_x + nuc_dip_x_) * cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A);
+            HCavityInteraction_y_->pointer()[A][A-1] = (e_dip_y + nuc_dip_y_) * cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A);
+            HCavityInteraction_z_->pointer()[A][A-1] = (e_dip_z + nuc_dip_z_) * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A);
         }
     }
 

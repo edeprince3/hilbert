@@ -154,7 +154,6 @@ double PolaritonicRHF::compute_energy() {
 
     // allocate memory for F' and its eigenvectors and eigenvalues
     std::shared_ptr<Matrix> Fevec ( new Matrix(nso_,nso_) );
-    std::shared_ptr<Vector> Feval ( new Vector("Orbital Energies",nso_) );
     std::shared_ptr<Matrix> Fprime ( new Matrix(Fa_) );
 
 /*
@@ -228,19 +227,11 @@ double PolaritonicRHF::compute_energy() {
         Fa_->subtract(jk->K()[0]);
         Fa_->add(h);
 
-        if ( options_.get_int("N_PHOTON_STATES") > 1 ) {
+        if ( n_photon_states_ > 1 ) {
 
             build_cavity_hamiltonian();
 
 /*
-            std::shared_ptr<Matrix> Vx = (std::shared_ptr<Matrix>)(new Matrix(CavityDipolePotential_x_));
-            std::shared_ptr<Matrix> Vy = (std::shared_ptr<Matrix>)(new Matrix(CavityDipolePotential_y_));
-            std::shared_ptr<Matrix> Vz = (std::shared_ptr<Matrix>)(new Matrix(CavityDipolePotential_z_));
-
-            Vx->scale(-CavityDipole_x_->pointer()[0][0]);
-            Vy->scale(-CavityDipole_y_->pointer()[0][0]);
-            Vz->scale(-CavityDipole_z_->pointer()[0][0]);
-*/
             std::shared_ptr<Matrix> Vx = (std::shared_ptr<Matrix>)(new Matrix(dipole_[0]));
             std::shared_ptr<Matrix> Vy = (std::shared_ptr<Matrix>)(new Matrix(dipole_[1]));
             std::shared_ptr<Matrix> Vz = (std::shared_ptr<Matrix>)(new Matrix(dipole_[2]));
@@ -252,15 +243,20 @@ double PolaritonicRHF::compute_energy() {
             Fa_->add(Vx);
             Fa_->add(Vy);
             Fa_->add(Vz);
+*/
+            std::shared_ptr<Matrix> V = (std::shared_ptr<Matrix>)(new Matrix(dipole_scaled_sum_));
+            V->scale(-CavityDipole_z_->pointer()[0][0]);
+            Fa_->add(V);
 
             // dipole self energy:
-
-            // e-e term (assuming a complete basis)
-            //Fa_->add(dipole_squared_);
 
             // e-n term 
             Fa_->add(scaled_e_n_dipole_squared_);
 
+            // e-e term (assuming a complete basis)
+            Fa_->add(scaled_e_e_dipole_squared_);
+
+/*
             // one-electron part of e-e term 
             Fa_->add(quadrupole_scaled_sum_);
 
@@ -291,6 +287,7 @@ double PolaritonicRHF::compute_energy() {
             //        fap[p][q] -= 0.5 * dum;
             //    }
             //}
+*/
 
         }
 
@@ -302,21 +299,32 @@ double PolaritonicRHF::compute_energy() {
         energy_ += Da_->vector_dot(h);
         energy_ += Da_->vector_dot(Fa_);
 
-        if (options_.get_int("N_PHOTON_STATES") > 1) {
+        if ( n_photon_states_ > 1 ) {
 
             build_cavity_hamiltonian();
 
 /*
-            std::shared_ptr<Matrix> Vx = (std::shared_ptr<Matrix>)(new Matrix(CavityDipolePotential_x_));
-            std::shared_ptr<Matrix> Vy = (std::shared_ptr<Matrix>)(new Matrix(CavityDipolePotential_y_));
-            std::shared_ptr<Matrix> Vz = (std::shared_ptr<Matrix>)(new Matrix(CavityDipolePotential_z_));
+            std::shared_ptr<Matrix> Vx = (std::shared_ptr<Matrix>)(new Matrix(dipole_[0]));
+            std::shared_ptr<Matrix> Vy = (std::shared_ptr<Matrix>)(new Matrix(dipole_[1]));
+            std::shared_ptr<Matrix> Vz = (std::shared_ptr<Matrix>)(new Matrix(dipole_[2]));
 
             Vx->scale(-CavityDipole_x_->pointer()[0][0]);
             Vy->scale(-CavityDipole_y_->pointer()[0][0]);
             Vz->scale(-CavityDipole_z_->pointer()[0][0]);
+
+            energy_ += Da_->vector_dot(Vx);
+            energy_ += Da_->vector_dot(Vy);
+            energy_ += Da_->vector_dot(Vz);
 */
 
+            std::shared_ptr<Matrix> V = (std::shared_ptr<Matrix>)(new Matrix(dipole_scaled_sum_));
+            V->scale(-CavityDipole_z_->pointer()[0][0]);
+            energy_ += Da_->vector_dot(V);
+
+            // self energy contributions
             energy_ += Da_->vector_dot(scaled_e_n_dipole_squared_);
+            energy_ += Da_->vector_dot(scaled_e_e_dipole_squared_);
+            //energy_ += Da_->vector_dot(quadrupole_scaled_sum_);
 
         }
 
@@ -364,7 +372,7 @@ double PolaritonicRHF::compute_energy() {
         diis->Extrapolate(&(Fprime->pointer()[0][0]));
 
         // Diagonalize F' to obtain C'
-        Fprime->diagonalize(Fevec,Feval,ascending);
+        Fprime->diagonalize(Fevec,epsilon_a_,ascending);
 
         // Find C = S^(-1/2)C'
         Ca_->gemm(false,false,1.0,Shalf,Fevec,0.0);
@@ -387,14 +395,16 @@ double PolaritonicRHF::compute_energy() {
     outfile->Printf("    * Polaritonic RHF total energy: %20.12lf\n",energy_);
 
     // print cavity properties
-    print_cavity_properties_ = true;
-    build_cavity_hamiltonian();
-    print_cavity_properties_ = false;
+    if ( n_photon_states_ > 1 ) {
+        print_cavity_properties_ = true;
+        build_cavity_hamiltonian();
+        print_cavity_properties_ = false;
+    }
     
     Process::environment.globals["SCF TOTAL ENERGY"] = energy_;
 
     // print orbital energies
-    Feval->print();
+    epsilon_a_->print();
 
     return energy_;
 

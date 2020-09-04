@@ -38,6 +38,7 @@
 #include <p2rdm/p2rdm_solver.h>
 #include <jellium/jellium_scf_solver.h>
 #include <polaritonic_scf/rhf.h>
+#include <polaritonic_scf/rcis.h>
 
 #include <misc/backtransform_tpdm.h>
 
@@ -312,8 +313,6 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION POLARITONIC SCF -*/
 
-        /*- cavity coordinates (bohr)-*/
-        options.add("CAVITY_COORDINATES",new ArrayType());
         /*- cavity number state -*/
         options.add_int("N_PHOTON_STATES", 1);
         /*- cavity excitation energy for the modes along the x, y and z axis (a.u.) -*/
@@ -386,6 +385,9 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         std::shared_ptr<PolaritonicRHF> rhf (new PolaritonicRHF(ref_wfn,options));
         double energy = rhf->compute_energy();
+
+        std::shared_ptr<PolaritonicRCIS> rcis (new PolaritonicRCIS((std::shared_ptr<Wavefunction>)rhf,options));
+        double dum = rcis->compute_energy();
         return (std::shared_ptr<Wavefunction>)rhf;
 
     }
