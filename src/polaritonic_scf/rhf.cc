@@ -285,7 +285,7 @@ double PolaritonicRHF::compute_energy() {
         C_DGEMM('n','t',nso_,nso_,nalpha_,1.0,&(Ca_->pointer()[0][0]),nso_,&(Ca_->pointer()[0][0]),nso_,0.0,&(Da_->pointer()[0][0]),nso_);
 
         // evaluate the current energy, E = D(H+F) + Enuc
-        energy_  = enuc_;
+        energy_  = enuc_ + nuclear_dipole_self_energy_;
         energy_ += Da_->vector_dot(h);
         energy_ += Da_->vector_dot(Fa_);
 
