@@ -249,13 +249,16 @@ double PolaritonicRCIS::compute_energy() {
 
     eigval->print();
 
-    //printf("%5i %20.12lf",0,energy_);
-    //printf("0");
-    //for (int i = 0; i < o*v*n_photon_states_+1; i++) {
-    //    printf(" %20.12lf",energy_ + eigval->pointer()[i]);
-    //}
-    //printf("\n");
-    //fflush(stdout);
+    for (int i = 0; i < (o*v+1)*n_photon_states_; i++) {
+        double photon_weight = 0.0;
+        for (int j = off + 1; j < off + n_photon_states_; j++) {
+            double dum = eigvec->pointer()[j][i];
+            photon_weight += dum*dum;
+        }
+        printf(" %20.12lf %20.12lf",energy_ + eigval->pointer()[i],photon_weight);
+    }
+    printf("\n");
+    fflush(stdout);
     
     // print orbital energies
     //epsilon_a_->print();

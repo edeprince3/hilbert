@@ -257,8 +257,9 @@ double PolaritonicRHF::compute_energy() {
             Fa_->add(scaled_e_e_dipole_squared_);
 
 /*
+
             // one-electron part of e-e term 
-            Fa_->add(quadrupole_scaled_sum_);
+            Fa_->subtract(quadrupole_scaled_sum_);
 
             // two-electron part of e-e term (J)
             double scaled_mu = Da_->vector_dot(dipole_scaled_sum_);
@@ -324,7 +325,7 @@ double PolaritonicRHF::compute_energy() {
             // self energy contributions
             energy_ += Da_->vector_dot(scaled_e_n_dipole_squared_);
             energy_ += Da_->vector_dot(scaled_e_e_dipole_squared_);
-            //energy_ += Da_->vector_dot(quadrupole_scaled_sum_);
+            //energy_ -= Da_->vector_dot(quadrupole_scaled_sum_);
 
         }
 
