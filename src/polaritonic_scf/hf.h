@@ -60,6 +60,9 @@ class PolaritonicHF: public Wavefunction {
     /// nuclear repulsion energy
     double enuc_;
 
+    /// nuclear dipole self energy
+    double nuclear_dipole_self_energy_;
+
     /// the multiplicity
     int multiplicity_;
 

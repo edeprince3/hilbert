@@ -109,6 +109,8 @@ void PolaritonicHF::common_init() {
 
     print_cavity_properties_ = false;
 
+    nuclear_dipole_self_energy_ = 0.0;
+
     // initialize cavity parameters
     initialize_cavity();
 }
@@ -242,7 +244,8 @@ void PolaritonicHF::initialize_cavity() {
     scaled_e_n_dipole_squared_->copy(el_dipdot);
     scaled_e_n_dipole_squared_->scale(nuc_dipdot);
 
-    //printf("nuc: %20.12lf\n",nuc_dipdot*nuc_dipdot);
+    //printf("nuc: %20.12lf\n",0.5 * nuc_dipdot*nuc_dipdot);
+    nuclear_dipole_self_energy_ = 0.5 * nuc_dipdot*nuc_dipdot;
 
     // Build dipole potential integrals that represent the influence of the
     // cavity dipole moment on the molecule ... actually this is only for general 

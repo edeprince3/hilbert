@@ -174,7 +174,7 @@ double PolaritonicRHF::compute_energy() {
     Da_->copy(Fprime);
 */
 
-    energy_  = enuc_;
+    energy_  = enuc_ + nuclear_dipole_self_energy_;
     energy_ += Da_->vector_dot(h);
     energy_ += Da_->vector_dot(Fa_);
 
@@ -225,36 +225,24 @@ double PolaritonicRHF::compute_energy() {
         Fa_->copy(jk->J()[0]);
         Fa_->scale(2.0);
         Fa_->subtract(jk->K()[0]);
-        Fa_->add(h);
+
+        std::shared_ptr<Matrix> oei (new Matrix(h));
 
         if ( n_photon_states_ > 1 ) {
 
             build_cavity_hamiltonian();
 
-/*
-            std::shared_ptr<Matrix> Vx = (std::shared_ptr<Matrix>)(new Matrix(dipole_[0]));
-            std::shared_ptr<Matrix> Vy = (std::shared_ptr<Matrix>)(new Matrix(dipole_[1]));
-            std::shared_ptr<Matrix> Vz = (std::shared_ptr<Matrix>)(new Matrix(dipole_[2]));
-
-            Vx->scale(-CavityDipole_x_->pointer()[0][0]);
-            Vy->scale(-CavityDipole_y_->pointer()[0][0]);
-            Vz->scale(-CavityDipole_z_->pointer()[0][0]);
-
-            Fa_->add(Vx);
-            Fa_->add(Vy);
-            Fa_->add(Vz);
-*/
             std::shared_ptr<Matrix> V = (std::shared_ptr<Matrix>)(new Matrix(dipole_scaled_sum_));
             V->scale(-CavityDipole_z_->pointer()[0][0]);
-            Fa_->add(V);
+            oei->add(V);
 
             // dipole self energy:
 
             // e-n term 
-            Fa_->add(scaled_e_n_dipole_squared_);
+            oei->add(scaled_e_n_dipole_squared_);
 
             // e-e term (assuming a complete basis)
-            Fa_->add(scaled_e_e_dipole_squared_);
+            oei->add(scaled_e_e_dipole_squared_);
 
 /*
 
@@ -291,6 +279,7 @@ double PolaritonicRHF::compute_energy() {
 */
 
         }
+        Fa_->add(oei);
 
         // Construct density from C
         C_DGEMM('n','t',nso_,nso_,nalpha_,1.0,&(Ca_->pointer()[0][0]),nso_,&(Ca_->pointer()[0][0]),nso_,0.0,&(Da_->pointer()[0][0]),nso_);
@@ -300,23 +289,10 @@ double PolaritonicRHF::compute_energy() {
         energy_ += Da_->vector_dot(h);
         energy_ += Da_->vector_dot(Fa_);
 
+/*
         if ( n_photon_states_ > 1 ) {
 
             build_cavity_hamiltonian();
-
-/*
-            std::shared_ptr<Matrix> Vx = (std::shared_ptr<Matrix>)(new Matrix(dipole_[0]));
-            std::shared_ptr<Matrix> Vy = (std::shared_ptr<Matrix>)(new Matrix(dipole_[1]));
-            std::shared_ptr<Matrix> Vz = (std::shared_ptr<Matrix>)(new Matrix(dipole_[2]));
-
-            Vx->scale(-CavityDipole_x_->pointer()[0][0]);
-            Vy->scale(-CavityDipole_y_->pointer()[0][0]);
-            Vz->scale(-CavityDipole_z_->pointer()[0][0]);
-
-            energy_ += Da_->vector_dot(Vx);
-            energy_ += Da_->vector_dot(Vy);
-            energy_ += Da_->vector_dot(Vz);
-*/
 
             std::shared_ptr<Matrix> V = (std::shared_ptr<Matrix>)(new Matrix(dipole_scaled_sum_));
             V->scale(-CavityDipole_z_->pointer()[0][0]);
@@ -328,6 +304,7 @@ double PolaritonicRHF::compute_energy() {
             //energy_ -= Da_->vector_dot(quadrupole_scaled_sum_);
 
         }
+*/
 
         // dele
         dele = energy_ - e_last;
