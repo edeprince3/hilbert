@@ -12,7 +12,9 @@
 
     psi4 --plugin-compile > do-configure
     
-    add any additional cmake flags to do-configure you'd like. the orbital optimizer generates some temporary files, so consider compiling in a separate directory. in that case, you should also set the install directory (i.e., "cmake ... -Bobjdir -DCMAKE_INSTALL_PREFIX=path_to_hilbert/hilbert").
+    add any additional cmake flags to do-configure you'd like. the orbital optimizer generates some temporary files, so consider compiling in a separate directory. in that case, you should also set the install directory, i.e., 
+    
+        cmake ... -Bobjdir -DCMAKE_INSTALL_PREFIX=path_to_hilbert/hilbert
     
     chmod +x do-configure
     
