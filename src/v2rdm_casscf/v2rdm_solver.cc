@@ -3757,9 +3757,8 @@ void v2RDMSolver::set_constraints() {
     }
 
     if ( options_.get_str("GPC_CONSTRAINTS") == "2RDM") {
-        constrain_gpc_      = true;
         constrain_gpc_2rdm_ = true;
-        n_gpc_states_      += 2 * amo_;
+        throw PsiException("GPCs may not yet be applied to the 2RDM",__FILE__,__LINE__);
     }
 
     if ( constrain_gpc_ ) {
@@ -3786,16 +3785,7 @@ void v2RDMSolver::set_constraints() {
         }
 
         if ( constrain_gpc_2rdm_ ) {
-
-            int na = nalpha_ - nrstc_ - nfrzc_;
-            int nb = nbeta_ - nrstc_ - nfrzc_;
-
-            for (int my_state = 0; my_state < amo_; my_state++) {
-                add_gpc_constraints(na-1,nb);
-            }
-            for (int my_state = 0; my_state < amo_; my_state++) {
-                add_gpc_constraints(na,nb-1);
-            }
+            throw PsiException("GPCs may not yet be applied to the 2RDM",__FILE__,__LINE__);
         }
 
     }
@@ -3933,111 +3923,7 @@ void v2RDMSolver::set_gpc_maps(){
     }
 
     if ( constrain_gpc_2rdm_ ) {
-
-        //throw PsiException("GPCs can only be applied to the 1RDM at this time",__FILE__,__LINE__);
-        int start = 0;
-        if ( constrain_gpc_1rdm_ ) start = 1;
-        for (int state = start; state < start + 2 * amo_; state++) {
-
-            // map 1/2rdm onto d1-like object
-            int *** my_map_a = (int***)malloc(nirrep_*sizeof(int **));
-            int *** my_map_b = (int***)malloc(nirrep_*sizeof(int **));
-            for (int h = 0; h < nirrep_; h++) {
-                my_map_a[h] = (int**)malloc(amopi_[h] * sizeof(int*));
-                my_map_b[h] = (int**)malloc(amopi_[h] * sizeof(int*));
-                for (int i = 0; i < amopi_[h]; i++) {
-                    my_map_a[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
-                    my_map_b[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
-                }
-            }
-
-            int *** my_sign_a = (int***)malloc(nirrep_*sizeof(int **));
-            int *** my_sign_b = (int***)malloc(nirrep_*sizeof(int **));
-            for (int h = 0; h < nirrep_; h++) {
-                my_sign_a[h] = (int**)malloc(amopi_[h] * sizeof(int*));
-                my_sign_b[h] = (int**)malloc(amopi_[h] * sizeof(int*));
-                for (int i = 0; i < amopi_[h]; i++) {
-                    my_sign_a[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
-                    my_sign_b[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
-                }
-            }
-
-            if ( gpc_[state] == GeneralizedPauli_5_8 || gpc_[state] == GeneralizedPauli_6_10 || gpc_[state] == GeneralizedPauli_7_10 ) {
-
-                throw PsiException("^5H8, ^6H10, and ^7H10 GPCs cannot yet be applied to the 2RDM",__FILE__,__LINE__);
-
-            }else {
-
-                if ( state - start < amo_ ) {
-                    // r = alpha: D(ij) = <0|r*i*jr|0> / <0|r*r|0>
-                    int rr = state - start;
-                    int hr = symmetry[rr];
-                    int r = rr - pitzer_offset[hr];
-                    for (int hi = 0; hi < nirrep_; hi++) {
-                        int hri = hr ^ hi;
-                        for (int i = 0; i < amopi_[hi]; i++) {
-                            int ii = i + pitzer_offset[hi];
-                            int ri_aa = ibas_aa_sym[hri][rr][ii];
-                            int ri_ab = ibas_ab_sym[hri][rr][ii];
-                            for (int j = 0; j < amopi_[hi]; j++) {
-                                int jj = j + pitzer_offset[hi];
-                                int rj_aa = ibas_aa_sym[hri][rr][jj];
-                                int rj_ab = ibas_ab_sym[hri][rr][jj];
-
-                                // D2(ri,rj)
-                                if ( rr == ii || rr == jj ) {
-                                    my_map_a[hi][i][j] = -999;
-                                }else {
-                                    my_map_a[hi][i][j] = d2aaoff[hri] + ri_aa * gems_aa[hri] + rj_aa;
-                                    int s = 1;
-                                    if ( rr > ii ) s = -s;
-                                    if ( rr > jj ) s = -s;
-                                    my_sign_a[hi][i][j] = s;
-                                }
-                                my_map_b[hi][i][j] = d2aboff[hri] + ri_ab * gems_ab[hri] + rj_ab;
-                                my_sign_b[hi][i][j] = 1;
-                            }
-                        }
-                    }
-                }else {
-                    // r = beta: D(ij) = <0|r*i*jr|0> / <0|r*r|0>,
-                    int rr = state - start - amo_;
-                    int hr = symmetry[rr];
-                    int r = rr - pitzer_offset[hr];
-                    for (int hi = 0; hi < nirrep_; hi++) {
-                        int hri = hr ^ hi;
-                        for (int i = 0; i < amopi_[hi]; i++) {
-                            int ii = i + pitzer_offset[hi];
-                            int ri_bb = ibas_aa_sym[hri][rr][ii];
-                            int ir_ab = ibas_ab_sym[hri][ii][rr];
-                            for (int j = 0; j < amopi_[hi]; j++) {
-                                int jj = j + pitzer_offset[hi];
-                                int rj_bb = ibas_aa_sym[hri][rr][jj];
-                                int jr_ab = ibas_ab_sym[hri][jj][rr];
-
-                                // D2(ri,rj)
-                                if ( rr == ii || rr == jj ) {
-                                    my_map_b[hi][i][j] = -999;
-                                }else {
-                                    my_map_b[hi][i][j] = d2bboff[hri] + ri_bb * gems_aa[hri] + rj_bb;
-                                    int s = 1;
-                                    if ( rr > ii ) s = -s;
-                                    if ( rr > jj ) s = -s;
-                                    my_sign_b[hi][i][j] = s;
-                                }
-                                my_map_a[hi][i][j] = d2aboff[hri] + ir_ab * gems_ab[hri] + jr_ab;
-                                my_sign_a[hi][i][j] = 1;
-                            }
-                        }
-                    }
-                }
-            }
-            gpc_rdm_map_a_.push_back(my_map_a);
-            gpc_rdm_map_b_.push_back(my_map_b);
-            gpc_rdm_sign_a_.push_back(my_sign_a);
-            gpc_rdm_sign_b_.push_back(my_sign_b);
-        }
-
+        throw PsiException("GPCs may not yet be applied to the 2RDM",__FILE__,__LINE__);
     }
     
 

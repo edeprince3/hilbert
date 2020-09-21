@@ -183,18 +183,7 @@ void v2RDMSolver::set_gpc_rdm_nrm() {
     }
 
     if ( constrain_gpc_2rdm_ ) {
-        // alpha
-        for (int h = 0; h < nirrep_; h++) {
-            for (int i = 0; i < amopi_[h]; i++) {
-                gpc_rdm_nrm_.push_back(x->pointer()[d1aoff[h] + i * amopi_[h] + i]);
-            }
-        }
-        // beta
-        for (int h = 0; h < nirrep_; h++) {
-            for (int i = 0; i < amopi_[h]; i++) {
-                gpc_rdm_nrm_.push_back(x->pointer()[d1boff[h] + i * amopi_[h] + i]);
-            }
-        }
+        throw PsiException("GPCs may not yet be applied to the 2RDM",__FILE__,__LINE__);
     }
 
 }
