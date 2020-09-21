@@ -56,10 +56,11 @@
 
 #include <focas/focas_c_interface.h>
 #include <misc/blas.h>
-#include <misc/bpsdp_solver.h>
-#include <misc/rrsdp_solver.h>
 #include <misc/threeindexintegrals.h>
 #include <misc/omp.h>
+
+#include <libsdp/bpsdp_solver.h>
+#include <libsdp/rrsdp_solver.h>
 
 using namespace psi;
 using namespace fnocc;
@@ -1983,6 +1984,9 @@ void v2RDMSolver::BuildConstraints(){
             for ( int h = 0; h < nirrep_; h++) {
                 offset += gems_ab[h]*gems_ab[h]; // D200[pq][rs] = 1/(sqrt(1+dpq)sqrt(1+drs))(D2ab[pq][rs] + D2ab[pq][sr] + D2ab[qp][rs] + D2ab[qp][sr])
             }
+            for ( int h = 0; h < nirrep_; h++) {
+                offset += gems_ab[h]*gems_ab[h]; // D2ab[pq][rs] = D2ab[qp][sr]
+            }
         }else { // nonsinglets
             for ( int h = 0; h < nirrep_; h++) {
                 offset += 4*gems_ab[h]*gems_ab[h]; // D200_0, D210_0, D201_0, D211_0
@@ -3277,6 +3281,9 @@ void v2RDMSolver::determine_n_dual() {
             for ( int h = 0; h < nirrep_; h++) {
                 n_dual_ += gems_ab[h]*gems_ab[h];  // D200[pq][rs] = 1/(2 sqrt(1+dpq)sqrt(1+drs))(D2ab[pq][rs] + D2ab[pq][sr] + D2ab[qp][rs] + D2ab[qp][sr])
             }
+            for ( int h = 0; h < nirrep_; h++) {
+                n_dual_ += gems_ab[h]*gems_ab[h];  // D2ab[pq][rs] = D2ab[qp][sr]
+            }
         }else { // nonsinglets
             for ( int h = 0; h < nirrep_; h++) {
                 n_dual_ += 4*gems_ab[h]*gems_ab[h]; // D200_0, D210_0, D201_0, D211_0
@@ -3864,6 +3871,8 @@ void v2RDMSolver::set_gpc_maps(){
 
     gpc_rdm_map_a_.clear();
     gpc_rdm_map_b_.clear();
+    gpc_rdm_sign_a_.clear();
+    gpc_rdm_sign_b_.clear();
 
     if ( constrain_gpc_1rdm_ ) {
 
@@ -3879,6 +3888,17 @@ void v2RDMSolver::set_gpc_maps(){
             }
         }
 
+        int *** my_sign_a = (int***)malloc(nirrep_*sizeof(int **));
+        int *** my_sign_b = (int***)malloc(nirrep_*sizeof(int **));
+        for (int h = 0; h < nirrep_; h++) {
+            my_sign_a[h] = (int**)malloc(amopi_[h] * sizeof(int*));
+            my_sign_b[h] = (int**)malloc(amopi_[h] * sizeof(int*));
+            for (int i = 0; i < amopi_[h]; i++) {
+                my_sign_a[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
+                my_sign_b[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
+            }
+        }
+
         if ( gpc_[0] == GeneralizedPauli_5_8 || gpc_[0] == GeneralizedPauli_6_10 || gpc_[0] == GeneralizedPauli_7_10 ) {
             // q1
             for (int h = 0; h < nirrep_; h++) {
@@ -3886,6 +3906,8 @@ void v2RDMSolver::set_gpc_maps(){
                     for (int j = 0; j < amopi_[h]; j++) {
                         my_map_a[h][i][j] = q1aoff[h] + i * amopi_[h] + j;
                         my_map_b[h][i][j] = q1boff[h] + i * amopi_[h] + j;
+                        my_sign_a[h][i][j] = 1;
+                        my_sign_b[h][i][j] = 1;
                     }
                 }
             }
@@ -3896,6 +3918,8 @@ void v2RDMSolver::set_gpc_maps(){
                     for (int j = 0; j < amopi_[h]; j++) {
                         my_map_a[h][i][j] = d1aoff[h] + i * amopi_[h] + j;
                         my_map_b[h][i][j] = d1boff[h] + i * amopi_[h] + j;
+                        my_sign_a[h][i][j] = 1;
+                        my_sign_b[h][i][j] = 1;
                     }
                 }
             }
@@ -3903,6 +3927,8 @@ void v2RDMSolver::set_gpc_maps(){
 
         gpc_rdm_map_a_.push_back(my_map_a);
         gpc_rdm_map_b_.push_back(my_map_b);
+        gpc_rdm_sign_a_.push_back(my_sign_a);
+        gpc_rdm_sign_b_.push_back(my_sign_b);
 
     }
 
@@ -3922,6 +3948,17 @@ void v2RDMSolver::set_gpc_maps(){
                 for (int i = 0; i < amopi_[h]; i++) {
                     my_map_a[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
                     my_map_b[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
+                }
+            }
+
+            int *** my_sign_a = (int***)malloc(nirrep_*sizeof(int **));
+            int *** my_sign_b = (int***)malloc(nirrep_*sizeof(int **));
+            for (int h = 0; h < nirrep_; h++) {
+                my_sign_a[h] = (int**)malloc(amopi_[h] * sizeof(int*));
+                my_sign_b[h] = (int**)malloc(amopi_[h] * sizeof(int*));
+                for (int i = 0; i < amopi_[h]; i++) {
+                    my_sign_a[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
+                    my_sign_b[h][i] = (int*)malloc(amopi_[h] * sizeof(int));
                 }
             }
 
@@ -3952,8 +3989,13 @@ void v2RDMSolver::set_gpc_maps(){
                                     my_map_a[hi][i][j] = -999;
                                 }else {
                                     my_map_a[hi][i][j] = d2aaoff[hri] + ri_aa * gems_aa[hri] + rj_aa;
+                                    int s = 1;
+                                    if ( rr > ii ) s = -s;
+                                    if ( rr > jj ) s = -s;
+                                    my_sign_a[hi][i][j] = s;
                                 }
                                 my_map_b[hi][i][j] = d2aboff[hri] + ri_ab * gems_ab[hri] + rj_ab;
+                                my_sign_b[hi][i][j] = 1;
                             }
                         }
                     }
@@ -3978,8 +4020,13 @@ void v2RDMSolver::set_gpc_maps(){
                                     my_map_b[hi][i][j] = -999;
                                 }else {
                                     my_map_b[hi][i][j] = d2bboff[hri] + ri_bb * gems_aa[hri] + rj_bb;
+                                    int s = 1;
+                                    if ( rr > ii ) s = -s;
+                                    if ( rr > jj ) s = -s;
+                                    my_sign_b[hi][i][j] = s;
                                 }
                                 my_map_a[hi][i][j] = d2aboff[hri] + ir_ab * gems_ab[hri] + jr_ab;
+                                my_sign_a[hi][i][j] = 1;
                             }
                         }
                     }
@@ -3987,6 +4034,8 @@ void v2RDMSolver::set_gpc_maps(){
             }
             gpc_rdm_map_a_.push_back(my_map_a);
             gpc_rdm_map_b_.push_back(my_map_b);
+            gpc_rdm_sign_a_.push_back(my_sign_a);
+            gpc_rdm_sign_b_.push_back(my_sign_b);
         }
 
     }
