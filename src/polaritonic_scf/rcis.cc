@@ -249,6 +249,7 @@ double PolaritonicRCIS::compute_energy() {
 
     eigval->print();
 
+/*
     //for (int i = 0; i < (o*v+1)*n_photon_states_; i++) {
     for (int i = 0; i < 50; i++) {
         double photon_weight = 0.0;
@@ -260,6 +261,7 @@ double PolaritonicRCIS::compute_energy() {
     }
     printf("\n");
     fflush(stdout);
+*/
     
     // print orbital energies
     //epsilon_a_->print();
