@@ -8,7 +8,7 @@
 
         git clone git@github.com:edeprince3/hilbert.git
   
-3. use psi4 to generate an appropriate cmake configure line:
+3. configure and compile. first, use psi4 to generate an appropriate cmake configure line:
 
         psi4 --plugin-compile 
     
