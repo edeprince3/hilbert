@@ -28,4 +28,4 @@
         
 **Use**
 
-Your best bet in getting started is to simply follow the tests provided in edeprince3/hilbert/tests. Note that most methods are accessible through both standard psi4 input files and also the psi4 python API (see edeprince3/hilbert/tests/test_psiapi.py).
+Your best bet in getting started is to simply follow the tests provided in edeprince3/hilbert/tests. Note that most methods are accessible through both standard psi4 input files and also the psi4 python API (see edeprince3/hilbert/tests/test_psiapi.py). We haven't yet built documentation for options, so, for now, you can find the list of valid options in edeprince3/hilbert/src/plugin.cc.
