@@ -15,7 +15,7 @@
     
     add any additional cmake flags to the psi4-generated cmake line that you'd like. the orbital optimizer generates quite a few temporary files, so consider compiling in a separate directory. in that case, you should also set the install directory, i.e., 
     
-        cmake ... -Bobjdir -DCMAKE_INSTALL_PREFIX=path_to_hilbert/hilbert  
+        cmake {...psi4-generated-flags...} -Bobjdir -DCMAKE_INSTALL_PREFIX=path_to_hilbert/hilbert  
         cd objdir    
         make -j N   
         make install
