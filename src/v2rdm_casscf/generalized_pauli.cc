@@ -119,7 +119,7 @@ void v2RDMSolver::Generalized_Pauli_constraints_Au(SharedVector A,SharedVector u
 
 }
 
-void v2RDMSolver::Generalized_Pauli_ATu_term(double val, double ** orbs,double * A,int *** map_a, int *** map_b,int index) {
+void v2RDMSolver::Generalized_Pauli_ATu_term(int *** sign_a, int *** sign_b, double val, double ** orbs,double * A,int *** map_a, int *** map_b,int index) {
 
     for (int h = 0; h < nirrep_; h++) {
         for (int ii = 0; ii < amopi_[h]; ii++) {
@@ -130,11 +130,14 @@ void v2RDMSolver::Generalized_Pauli_ATu_term(double val, double ** orbs,double *
                 int id_a = map_a[h][ii][jj];
                 int id_b = map_b[h][ii][jj];
 
+                int sg_a = sign_a[h][ii][jj];
+                int sg_b = sign_b[h][ii][jj];
+
                 if ( id_a >= 0 ) {
-                    A[ id_a ] += val * orbs[i     ][index - 1] * orbs[j     ][index - 1];
+                    A[ id_a ] += val * orbs[i     ][index - 1] * orbs[j     ][index - 1] * sg_a;
                 }
                 if ( id_b >= 0 ) {
-                    A[ id_b ] += val * orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1];
+                    A[ id_b ] += val * orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1] * sg_b;
                 }
             }
         }
@@ -142,7 +145,7 @@ void v2RDMSolver::Generalized_Pauli_ATu_term(double val, double ** orbs,double *
 
 }
 
-double v2RDMSolver::Generalized_Pauli_Au_term(double ** orbs,double * u,int *** map_a, int *** map_b,int index, double rdm_nrm) {
+double v2RDMSolver::Generalized_Pauli_Au_term(double ** orbs,double * u,int *** map_a, int *** map_b,int index, double rdm_nrm, int *** sign_a, int *** sign_b) {
 
     double dum = 0.0;
     for (int h = 0; h < nirrep_; h++) {
@@ -154,11 +157,14 @@ double v2RDMSolver::Generalized_Pauli_Au_term(double ** orbs,double * u,int *** 
                 int id_a = map_a[h][ii][jj];
                 int id_b = map_b[h][ii][jj];
 
+                int sg_a = sign_a[h][ii][jj];
+                int sg_b = sign_b[h][ii][jj];
+
                 if ( id_a >= 0 ) {
-                    dum += orbs[i     ][index - 1] * orbs[j     ][index - 1] * u[ id_a ];
+                    dum += orbs[i     ][index - 1] * orbs[j     ][index - 1] * u[ id_a ] * sg_a;
                 }
                 if ( id_b >= 0 ) {
-                    dum += orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1] * u[ id_b ];
+                    dum += orbs[i+amo_][index - 1] * orbs[j+amo_][index - 1] * u[ id_b ] * sg_b;
                 }
 
             }
@@ -190,10 +196,11 @@ void v2RDMSolver::set_gpc_rdm_nrm() {
             }
         }
     }
+
 }
 
 void v2RDMSolver::SortedNaturalOrbitals(int state) {
-    //NatOrbs_->zero();
+
     std::shared_ptr<Matrix> temp (new Matrix(2*amo_,2*amo_));
 
     //int * x1aoff;
@@ -219,7 +226,7 @@ void v2RDMSolver::SortedNaturalOrbitals(int state) {
                 if ( id_a < 0 ) {
                     Da->pointer(h)[i][j] = 0.0;
                 }else {
-                    Da->pointer(h)[i][j] = x->pointer()[id_a] / gpc_rdm_nrm_[state];
+                    Da->pointer(h)[i][j] = x->pointer()[id_a] / gpc_rdm_nrm_[state] * gpc_rdm_sign_a_[state][h][i][j];
                 }
 
             }
@@ -239,7 +246,7 @@ void v2RDMSolver::SortedNaturalOrbitals(int state) {
                 if ( id_b < 0 ) {
                     Db->pointer(h)[i][j] = 0.0;
                 }else {
-                    Db->pointer(h)[i][j] = x->pointer()[id_b]/ gpc_rdm_nrm_[state];
+                    Db->pointer(h)[i][j] = x->pointer()[id_b] / gpc_rdm_nrm_[state] * gpc_rdm_sign_b_[state][h][i][j];
                 }
 
             }
@@ -248,8 +255,10 @@ void v2RDMSolver::SortedNaturalOrbitals(int state) {
     Db->diagonalize(eigvecb,eigvalb,descending);
 
     // TEST
-    //eigvala->print();
-    //eigvalb->print();
+    if ( print_gpc_error_ ) {
+        eigvala->print();
+        eigvalb->print();
+    }
 
     // sort!
     int * skipa = (int*)malloc(amo_*sizeof(int));
@@ -328,7 +337,6 @@ void v2RDMSolver::SortedNaturalOrbitals(int state) {
     }
 
     //NatOrbs_->print();
-
 }
 
 }

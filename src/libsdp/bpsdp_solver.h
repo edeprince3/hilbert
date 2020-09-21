@@ -30,7 +30,7 @@
 #include <psi4/libmints/vector.h>
 #include <psi4/liboptions/liboptions.h>
 
-#include <misc/sdp_solver.h>
+#include <libsdp/sdp_solver.h>
 
 using namespace psi;
 

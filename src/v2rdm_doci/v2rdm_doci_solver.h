@@ -42,7 +42,8 @@
 #include <psi4/libmints/vector.h>
 
 #include <misc/hilbert_psifiles.h>
-#include <misc/bpsdp_solver.h>
+
+#include <libsdp/bpsdp_solver.h>
 
 using namespace psi;
 

@@ -162,6 +162,22 @@ void v2RDMSolver::Spin_constraints_ATu(SharedVector A,SharedVector u){
             }
             offset += gems_ab[h]*gems_ab[h];
         }
+        // D2ab[pq][rs] = D2ab[qp][sr]
+        for ( int h = 0; h < nirrep_; h++) {
+            C_DAXPY(gems_ab[h]*gems_ab[h],1.0,u_p + offset,1,A_p + d2aboff[h],1);
+            for (int ij = 0; ij < gems_ab[h]; ij++) {
+                int i = bas_ab_sym[h][ij][0];
+                int j = bas_ab_sym[h][ij][1];
+                int ji = ibas_ab_sym[h][j][i];
+                for (int kl = 0; kl < gems_ab[h]; kl++) {
+                    int k = bas_ab_sym[h][kl][0];
+                    int l = bas_ab_sym[h][kl][1];
+                    int lk = ibas_ab_sym[h][l][k];
+                    A_p[d2aboff[h] + ji*gems_ab[h] + lk] -= u_p[offset + ij*gems_ab[h] + kl];
+                }
+            }
+            offset += gems_ab[h]*gems_ab[h];
+        }
     }else { // nonsinglets ... big block
 
         for ( int h = 0; h < nirrep_; h++) {
@@ -378,6 +394,22 @@ void v2RDMSolver::Spin_constraints_Au(SharedVector A,SharedVector u){
                     A_p[offset + ij*gems_ab[h] + kl] -= 0.5 / ( dij * dkl ) * u_p[d2aboff[h] + ji*gems_ab[h] + kl];
                     A_p[offset + ij*gems_ab[h] + kl] -= 0.5 / ( dij * dkl ) * u_p[d2aboff[h] + ij*gems_ab[h] + lk];
                     A_p[offset + ij*gems_ab[h] + kl] -= 0.5 / ( dij * dkl ) * u_p[d2aboff[h] + ji*gems_ab[h] + lk];
+                }
+            }
+            offset += gems_ab[h]*gems_ab[h];
+        }
+        // D2ab[pq][rs] = D2ab[qp][sr]
+        for ( int h = 0; h < nirrep_; h++) {
+            C_DAXPY(gems_ab[h]*gems_ab[h],1.0,u_p + d2aboff[h],1,A_p + offset,1);
+            for (int ij = 0; ij < gems_ab[h]; ij++) {
+                int i = bas_ab_sym[h][ij][0]; 
+                int j = bas_ab_sym[h][ij][1];
+                int ji = ibas_ab_sym[h][j][i];
+                for (int kl = 0; kl < gems_ab[h]; kl++) {
+                    int k = bas_ab_sym[h][kl][0]; 
+                    int l = bas_ab_sym[h][kl][1];
+                    int lk = ibas_ab_sym[h][l][k];
+                    A_p[offset + ij*gems_ab[h] + kl] -= u_p[d2aboff[h] + ji*gems_ab[h] + lk];
                 }
             }
             offset += gems_ab[h]*gems_ab[h];

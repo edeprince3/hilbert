@@ -384,6 +384,9 @@ double PolaritonicRHF::compute_energy() {
     // print orbital energies
     epsilon_a_->print();
 
+    double * ep = epsilon_a_->pointer();
+    printf("%20.12lf %20.12lf %20.12lf %20.12lf %20.12lf %20.12lf\n",ep[nalpha_-3],ep[nalpha_-2],ep[nalpha_-1],ep[nalpha_],ep[nalpha_+1],ep[nalpha_+2]);fflush(stdout);
+
     return energy_;
 
 }

@@ -34,7 +34,8 @@
 
 #include "bpsdp_solver.h"
 
-#include <misc/cg_solver.h>
+#include <libsdp/cg_solver.h>
+
 #include <misc/omp.h>
 #include <misc/blas.h>
 

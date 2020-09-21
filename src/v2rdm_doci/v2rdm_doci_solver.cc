@@ -56,8 +56,8 @@
 #include <misc/blas.h>
 #include <misc/threeindexintegrals.h>
 #include <misc/omp.h>
-#include <misc/cg_solver.h>
-#include <misc/bpsdp_solver.h>
+
+#include <libsdp/bpsdp_solver.h>
 
 using namespace psi;
 using namespace fnocc;

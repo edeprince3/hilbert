@@ -32,7 +32,7 @@
 
 #include <lbfgs.h>
 
-#include <misc/sdp_solver.h>
+#include <libsdp/sdp_solver.h>
 
 using namespace psi;
 

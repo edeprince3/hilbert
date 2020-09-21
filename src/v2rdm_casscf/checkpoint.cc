@@ -38,7 +38,8 @@
 #include"v2rdm_solver.h"
 
 #include <misc/omp.h>
-#include <misc/bpsdp_solver.h>
+
+#include <libsdp/bpsdp_solver.h>
 
 using namespace psi;
 
