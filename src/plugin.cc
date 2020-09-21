@@ -386,9 +386,21 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         std::shared_ptr<PolaritonicRHF> rhf (new PolaritonicRHF(ref_wfn,options));
         double energy = rhf->compute_energy();
 
-        //std::shared_ptr<PolaritonicRCIS> rcis (new PolaritonicRCIS((std::shared_ptr<Wavefunction>)rhf,options));
-        //double dum = rcis->compute_energy();
         return (std::shared_ptr<Wavefunction>)rhf;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_CIS") {
+
+        std::shared_ptr<PolaritonicRHF> rhf (new PolaritonicRHF(ref_wfn,options));
+        double energy = rhf->compute_energy();
+
+        std::shared_ptr<PolaritonicRCIS> rcis (new PolaritonicRCIS((std::shared_ptr<Wavefunction>)rhf,options));
+        double dum = rcis->compute_energy();
+
+        return (std::shared_ptr<Wavefunction>)rhf;
+
+    }else {
+
+        throw PsiException("unknown HILBERT_METHODS",__FILE__,__LINE__);
 
     }
 
