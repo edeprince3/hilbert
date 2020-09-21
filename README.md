@@ -10,11 +10,11 @@
   
 3. use psi4 to generate an appropriate cmake configure line:
 
-        conda activate p4dev
         psi4 --plugin-compile 
     
     add any additional cmake flags to the psi4-generated cmake line that you'd like. the orbital optimizer generates quite a few temporary files, so consider compiling in a separate directory. in that case, you should also set the install directory, i.e., 
-    
+
+        conda activate p4dev
         cmake {...psi4-generated stuff...} -Bobjdir -DCMAKE_INSTALL_PREFIX=path_to_hilbert/hilbert  
         cd objdir    
         make -j N   
