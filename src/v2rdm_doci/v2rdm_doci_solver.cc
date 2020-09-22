@@ -58,6 +58,7 @@
 #include <misc/omp.h>
 
 #include <libsdp/bpsdp_solver.h>
+#include <libsdp/rrsdp_solver.h>
 
 using namespace psi;
 using namespace fnocc;
@@ -1046,7 +1047,19 @@ double v2RDM_DOCISolver::compute_energy() {
     BuildConstraints();
 
     // sdp solver
-    sdp_ = (std::shared_ptr<BPSDPSolver>)(new BPSDPSolver(dimx_,nconstraints_,options_));
+    if ( options_.get_str("SDP_SOLVER") == "BPSDP" ) {
+
+        sdp_ = (std::shared_ptr<SDPSolver>)(new BPSDPSolver(dimx_,nconstraints_,options_));
+
+    }else if ( options_.get_str("SDP_SOLVER") == "RRSDP" ) {
+
+        sdp_ = (std::shared_ptr<SDPSolver>)(new RRSDPSolver(dimx_,nconstraints_,options_));
+
+    }else {
+
+        throw PsiException("unknown SDP_SOLVER",__FILE__,__LINE__);
+
+    }
 
     // iterate
     int orbopt_iter = 0;

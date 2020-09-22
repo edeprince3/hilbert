@@ -43,7 +43,7 @@
 
 #include <misc/hilbert_psifiles.h>
 
-#include <libsdp/bpsdp_solver.h>
+#include <libsdp/sdp_solver.h>
 
 using namespace psi;
 
@@ -66,7 +66,7 @@ class v2RDM_DOCISolver: public Wavefunction{
   protected:
 
     /// the sdp solver
-    std::shared_ptr<BPSDPSolver> sdp_;
+    std::shared_ptr<SDPSolver> sdp_;
 
     /// constrain T1 to be positive semidefinite?
     bool constrain_t1_;
