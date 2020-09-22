@@ -55,7 +55,7 @@ class SDPSolver{
                        SDPCallbackFunction evaluate_Au,
                        SDPCallbackFunction evaluate_ATu,
                        void * data){
-        throw PsiException("solve has not been implemented for this sdp solver",__FILE__,__LINE__);
+        throw PsiException("solve() has not been implemented for this sdp solver",__FILE__,__LINE__);
     }
 
     int iiter_total() { return iiter_total_; }
@@ -72,6 +72,14 @@ class SDPSolver{
     std::shared_ptr<Vector> get_z() { return z_; }
 
     bool is_converged(){ return is_converged_; }
+
+    virtual void set_mu_scale_factor(double mu_scale_factor) { 
+        throw PsiException("set_mu_scale_factor() has not been implemented for this sdp solver",__FILE__,__LINE__);
+    }
+
+    virtual void set_mu_reset(bool mu_reset) { 
+        throw PsiException("set_mu_reset() has not been implemented for this sdp solver",__FILE__,__LINE__);
+    }
 
   protected:
 

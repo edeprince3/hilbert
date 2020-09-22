@@ -217,6 +217,9 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION v2RDM-CASSCF -*/
 
+        /*- SDP solver -*/
+        options.add_str("SDP_SOLVER","BPSDP", "BPSDP RRSDP");
+
         /*- do use hubbard model? -*/
         options.add_bool("HUBBARD_HAMILTONIAN",false);
 

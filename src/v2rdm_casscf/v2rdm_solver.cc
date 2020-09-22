@@ -309,7 +309,19 @@ void  v2RDMSolver::common_init(){
     same_a_b_dens_ = false;
 
     // sdp solver
-    sdp_ = (std::shared_ptr<BPSDPSolver>)(new BPSDPSolver(n_primal_,n_dual_,options_));
+    if ( options_.get_str("SDP_SOLVER") == "BPSDP" ) {
+
+        sdp_ = (std::shared_ptr<SDPSolver>)(new BPSDPSolver(n_primal_,n_dual_,options_));
+
+    }else if ( options_.get_str("SDP_SOLVER") == "RRSDP" ) {
+
+        sdp_ = (std::shared_ptr<SDPSolver>)(new RRSDPSolver(n_primal_,n_dual_,options_));
+
+    }else {
+
+        throw PsiException("unknown SDP_SOLVER",__FILE__,__LINE__);
+
+    }
 
 }
 
@@ -1229,23 +1241,22 @@ double v2RDMSolver::compute_energy() {
         local_maxiter = options_.get_int("MU_UPDATE_FREQUENCY");
     }
 
-    std::shared_ptr<RRSDPSolver> rrsdp (new RRSDPSolver(n_primal_,n_dual_,options_));
-
     // for GPC, start with partially solved ensemble problem first, then modify penalty update protocol
     if ( constrain_gpc_ ) {
         constrain_gpc_ = false;
         BuildConstraints();
-        //rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
         sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
         constrain_gpc_ = true;
         BuildConstraints();
 
-        rrsdp->set_mu(1.0);
-        rrsdp->set_mu_reset(false);
-        rrsdp->set_mu_scale_factor(0.99);
+        // some of these are only valid for rrsdp ... for bpsdp we'll get an exception
+        sdp_->set_mu(1.0);
+        sdp_->set_mu_reset(false);
+        sdp_->set_mu_scale_factor(0.99);
+
+        local_maxiter = 1;
     }
 
-    bool is_converged = false;
     do {
 
         if ( constrain_gpc_ ) {
@@ -1255,12 +1266,7 @@ double v2RDMSolver::compute_energy() {
             }
         }
 
-        if ( constrain_gpc_ ) {
-            rrsdp->solve(x, b, c, dimensions_, 1, evaluate_Au, evaluate_ATu, (void*)this);
-        }else {
-          sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
-          //rrsdp->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
-        }
+        sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") && !is_hubbard_ ) {
     
@@ -1281,14 +1287,7 @@ double v2RDMSolver::compute_energy() {
 
         outfile->Printf("\n");
 
-        if ( constrain_gpc_ ) {
-            is_converged = rrsdp->is_converged();
-        }else {
-            is_converged = sdp_->is_converged();
-            //is_converged = rrsdp->is_converged();
-        }
-
-    }while( !orbopt_converged_ || !is_converged );
+    }while( !orbopt_converged_ || !sdp_->is_converged() );
 
     //free(tmp);
 
