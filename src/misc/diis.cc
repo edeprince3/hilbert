@@ -81,6 +81,34 @@ void DIIS::WriteVector(double * vector){
 
     free(oldvector);
 }
+void DIIS::WriteVector(double * vector1, double * vector2){
+
+    // Name the entry in PSIF_DCC_OVEC according to the current
+    // DIIS iteration.  If we already have maxdiis_ vectors, then
+    // replace one.
+    char * oldvector = (char*)malloc(1000*sizeof(char));
+    if ( diis_iter_ <= maxdiis_ ){
+       sprintf(oldvector,"oldvector%i",diis_iter_);
+    }
+    else{
+       sprintf(oldvector,"oldvector%i",replace_diis_iter_);
+    }
+
+    std::shared_ptr<PSIO> psio(new PSIO());
+    if ( diis_iter_ == 0 ) {
+       psio->open(PSIF_DCC_OVEC,PSIO_OPEN_NEW);
+    }else {
+       psio->open(PSIF_DCC_OVEC,PSIO_OPEN_OLD);
+    }
+
+    // Write the current solution vector.
+    psio_address addr = PSIO_ZERO;
+    psio->write(PSIF_DCC_OVEC,oldvector,(char*)vector1,dimdiis_/2*sizeof(double),addr,&addr);
+    psio->write(PSIF_DCC_OVEC,oldvector,(char*)vector2,dimdiis_/2*sizeof(double),addr,&addr);
+    psio->close(PSIF_DCC_OVEC,1);
+
+    free(oldvector);
+}
 
 // Write current error vector to disk (in file PSIF_DCC_EVEC).
 void DIIS::WriteErrorVector(double * vector){
@@ -116,6 +144,42 @@ void DIIS::WriteErrorVector(double * vector){
 
     free(evector);
 }
+// Write current error vector to disk (in file PSIF_DCC_EVEC).
+void DIIS::WriteErrorVector(double * vector1,double * vector2){
+
+    // Name the entry in PSIF_DCC_EVEC according to the current
+    // DIIS iteration.  If we already have maxdiis_ vectors, then
+    // replace one.
+    char * evector = (char*)malloc(1000*sizeof(char));
+    if ( diis_iter_ <= maxdiis_ ){
+       sprintf(evector,"evector%i",diis_iter_);
+    }
+    else{
+       sprintf(evector,"evector%i",replace_diis_iter_);
+    }
+
+    std::shared_ptr<PSIO> psio(new PSIO());
+    if ( diis_iter_ == 0 ) {
+       // On the first iteration, write an entry to PSIF_DCC_EVEC
+       // that will hold the error matrix.
+       psio->open(PSIF_DCC_EVEC,PSIO_OPEN_NEW);
+       double * temp = (double*)malloc(maxdiis_*maxdiis_*sizeof(double));
+       memset((void*)temp,'\0',maxdiis_*maxdiis_*sizeof(double));
+       psio->write_entry(PSIF_DCC_EVEC,"error matrix",(char*)&temp[0],maxdiis_*maxdiis_*sizeof(double));
+       free(temp);
+    }
+    else {
+       psio->open(PSIF_DCC_EVEC,PSIO_OPEN_OLD);
+    }
+
+    // Write current error vector.
+    psio_address addr = PSIO_ZERO;
+    psio->write(PSIF_DCC_EVEC,evector,(char*)vector1,dimdiis_/2*sizeof(double),addr,&addr);
+    psio->write(PSIF_DCC_EVEC,evector,(char*)vector2,dimdiis_/2*sizeof(double),addr,&addr);
+    psio->close(PSIF_DCC_EVEC,1);
+
+    free(evector);
+}
 
 // Perform DIIS extrapolation.
 void DIIS::Extrapolate(double * vector){
@@ -141,6 +205,72 @@ void DIIS::Extrapolate(double * vector){
             psio->read_entry(PSIF_DCC_OVEC,oldvector,(char*)&tmp1_[0],dimdiis_*sizeof(double));
             // Accumulate extrapolated vector.
             C_DAXPY(dimdiis_,diisvec_[j-1],tmp1_,1,vector,1);
+        }
+        psio->close(PSIF_DCC_OVEC,1);
+        free(oldvector);
+    }
+
+    if (diis_iter_ <= maxdiis_){
+        diis_iter_++;
+    }
+    else {
+        // If we already have maxdiis_ vectors, choose the one with
+        // the largest error as the one to replace.
+        std::shared_ptr<PSIO> psio(new PSIO());
+        psio->open(PSIF_DCC_EVEC,PSIO_OPEN_OLD);
+        int jmax   = 1;
+        double max = -1.0e99;
+        char * evector   = (char*)malloc(1000*sizeof(char));
+        for (int j = 1; j <= maxdiis_; j++){
+            sprintf(evector,"evector%i",j);
+            psio->read_entry(PSIF_DCC_EVEC,evector,(char*)tmp1_,dimdiis_*sizeof(double));
+            double nrm = C_DNRM2(dimdiis_,tmp1_,1);
+            if ( nrm > max ) {
+                max  = nrm;
+                jmax = j;
+            }
+        }
+        psio->close(PSIF_DCC_EVEC,1);
+        replace_diis_iter_ = jmax;
+        free(evector);
+    }
+    //else if (replace_diis_iter_ < maxdiis_) replace_diis_iter_++;
+    //else                                    replace_diis_iter_ = 1;
+}
+// Perform DIIS extrapolation.
+void DIIS::Extrapolate(double * vector1, double * vector2){
+
+    if ( diis_iter_ > 1 ) {
+
+        // Compute coefficients for the extrapolation
+        DIISCoefficients( diis_iter_ < maxdiis_ ? diis_iter_ : maxdiis_ );
+
+        memset((void*)vector1,'\0',dimdiis_/2*sizeof(double));
+        memset((void*)vector2,'\0',dimdiis_/2*sizeof(double));
+
+        char * oldvector = (char*)malloc(1000*sizeof(char));
+    
+        std::shared_ptr<PSIO> psio(new PSIO());
+        psio->open(PSIF_DCC_OVEC,PSIO_OPEN_OLD);
+    
+        int max = diis_iter_;
+        if (max > maxdiis_) max = maxdiis_;
+    
+        // Read each of the old vectors from disk.
+        for (int j = 1; j <= max; j++){
+
+            sprintf(oldvector,"oldvector%i",j);
+
+            psio_address addr = PSIO_ZERO;
+
+            // Accumulate extrapolated vector 1.
+            psio->read(PSIF_DCC_OVEC,oldvector,(char*)&tmp1_[0],dimdiis_/2*sizeof(double),addr,&addr);
+            C_DAXPY(dimdiis_/2,diisvec_[j-1],tmp1_,1,vector1,1);
+
+            // Accumulate extrapolated vector 2.
+            psio->read(PSIF_DCC_OVEC,oldvector,(char*)&tmp1_[0],dimdiis_/2*sizeof(double),addr,&addr);
+            C_DAXPY(dimdiis_/2,diisvec_[j-1],tmp1_,1,vector2,1);
+
         }
         psio->close(PSIF_DCC_OVEC,1);
         free(oldvector);

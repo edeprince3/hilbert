@@ -38,6 +38,7 @@
 #include <p2rdm/p2rdm_solver.h>
 #include <jellium/jellium_scf_solver.h>
 #include <polaritonic_scf/rhf.h>
+#include <polaritonic_scf/uhf.h>
 #include <polaritonic_scf/rcis.h>
 
 #include <misc/backtransform_tpdm.h>
@@ -54,7 +55,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF");
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_RCIS");
 
         /*- Do DIIS? -*/
         options.add_bool("DIIS", true);
@@ -384,14 +385,14 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         return (std::shared_ptr<Wavefunction>)v2rdm;
 
-    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_SCF") {
+    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_RHF") {
 
         std::shared_ptr<PolaritonicRHF> rhf (new PolaritonicRHF(ref_wfn,options));
         double energy = rhf->compute_energy();
 
         return (std::shared_ptr<Wavefunction>)rhf;
 
-    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_CIS") {
+    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_RCIS") {
 
         std::shared_ptr<PolaritonicRHF> rhf (new PolaritonicRHF(ref_wfn,options));
         double energy = rhf->compute_energy();
@@ -400,6 +401,13 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         double dum = rcis->compute_energy();
 
         return (std::shared_ptr<Wavefunction>)rhf;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_UHF") {
+
+        std::shared_ptr<PolaritonicUHF> uhf (new PolaritonicUHF(ref_wfn,options));
+        double energy = uhf->compute_energy();
+
+        return (std::shared_ptr<Wavefunction>)uhf;
 
     }else {
 

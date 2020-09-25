@@ -115,6 +115,36 @@ void PolaritonicHF::common_init() {
     initialize_cavity();
 }
 
+std::shared_ptr<Matrix> PolaritonicHF::OrbitalGradient(std::shared_ptr<Matrix> D,
+                                                       std::shared_ptr<Matrix> F,
+                                                       std::shared_ptr<Matrix> Shalf) {
+
+    std::shared_ptr<Matrix> ShalfGradShalf(new Matrix("ST^{-1/2}(FDS - SDF)S^{-1/2}", nso_, nso_));
+
+    std::shared_ptr<Matrix> FDSmSDF(new Matrix("FDS-SDF", nso_, nso_));
+    std::shared_ptr<Matrix> DS(new Matrix("DS", nso_, nso_));
+
+    DS->gemm(false,false,1.0,D,S_,0.0);
+    FDSmSDF->gemm(false,false,1.0,F,DS,0.0);
+
+    DS.reset();
+
+    std::shared_ptr<Matrix> SDF(FDSmSDF->transpose());
+    FDSmSDF->subtract(SDF);
+
+    SDF.reset();
+
+    std::shared_ptr<Matrix> ShalfGrad(new Matrix("ST^{-1/2}(FDS - SDF)", nso_, nso_));
+    ShalfGrad->gemm(true,false,1.0,Shalf,FDSmSDF,0.0);
+    FDSmSDF.reset();
+
+    ShalfGradShalf->gemm(false,false,1.0,ShalfGrad,Shalf,0.0);
+
+    ShalfGrad.reset();
+
+    return ShalfGradShalf;
+}
+
 void PolaritonicHF::initialize_cavity() {
 
     n_photon_states_ = options_.get_int("N_PHOTON_STATES");
@@ -299,9 +329,18 @@ void PolaritonicHF::build_cavity_hamiltonian(){
 
     // Evaluate the electronic contribute to the molecule's dipole moment
 
-    double e_dip_x = 2.0*C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
-    double e_dip_y = 2.0*C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
-    double e_dip_z = 2.0*C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+    double e_dip_x = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1); 
+    double e_dip_y = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1); 
+    double e_dip_z = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+    if ( same_a_b_dens_ ) {
+        e_dip_x *= 2.0;
+        e_dip_y *= 2.0;
+        e_dip_z *= 2.0;
+    }else {
+        e_dip_x += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1); 
+        e_dip_y += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1); 
+        e_dip_z += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+    }
 
     // Build the molecule->cavity interaction Hamiltonian operator 
     // in the basis of photon number states ( n_photon_states_ )

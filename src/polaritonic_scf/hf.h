@@ -57,6 +57,11 @@ class PolaritonicHF: public Wavefunction {
 
   protected:
 
+    /// evaluate orbital gradient
+    std::shared_ptr<Matrix> OrbitalGradient(std::shared_ptr<Matrix> D,
+                                            std::shared_ptr<Matrix> F,
+                                            std::shared_ptr<Matrix> Shalf);
+
     /// nuclear repulsion energy
     double enuc_;
 

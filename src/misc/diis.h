@@ -38,12 +38,15 @@ public:
 
     /// write Fock matrix disk
     void WriteVector(double * vector);
+    void WriteVector(double * vector1, double * vector2);
 
     /// write erro vector to disk
     void WriteErrorVector(double * vector);
+    void WriteErrorVector(double * vector1, double * vector2);
 
     /// perform diis extrapolation
     void Extrapolate(double * vector);
+    void Extrapolate(double * vector1, double * vector2);
 
 private:
 

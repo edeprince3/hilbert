@@ -42,50 +42,45 @@
 // diis solver
 #include <misc/diis.h>
 
-#include "rhf.h"
+#include "uhf.h"
 
 namespace hilbert{ 
 
-PolaritonicRHF::PolaritonicRHF(std::shared_ptr<Wavefunction> reference_wavefunction, Options& options_):
+PolaritonicUHF::PolaritonicUHF(std::shared_ptr<Wavefunction> reference_wavefunction, Options& options_):
     PolaritonicHF(reference_wavefunction,options_) {
     common_init();
 }
 
-PolaritonicRHF::~PolaritonicRHF() {
+PolaritonicUHF::~PolaritonicUHF() {
 }
 
-void PolaritonicRHF::common_init() {
+void PolaritonicUHF::common_init() {
 
     outfile->Printf("\n\n");
     outfile->Printf( "        *******************************************************\n");
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *                                                     *\n");
-    outfile->Printf( "        *    Polaritonic RHF                                  *\n");
+    outfile->Printf( "        *    Polaritonic UHF                                  *\n");
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *******************************************************\n");
 
-    same_a_b_orbs_ = true;
-    same_a_b_dens_ = true;
+    same_a_b_orbs_ = false;
+    same_a_b_dens_ = false;
 
     // ensure scf_type df
     if ( options_.get_str("SCF_TYPE") != "DF" ) {
-        throw PsiException("polaritonic rhf only works with scf_type df for now",__FILE__,__LINE__);
+        throw PsiException("polaritonic uhf only works with scf_type df for now",__FILE__,__LINE__);
     }
 
     // ensure running in c1 symmetry
     if ( reference_wavefunction_->nirrep() > 1 ) {
-        throw PsiException("polaritonic rhf only works with c1 symmetry for now.",__FILE__,__LINE__);
-    }
-
-    // ensure closed shell
-    if ( nalpha_ != nbeta_ ) {
-        throw PsiException("polaritonic rhf only works for closed shells",__FILE__,__LINE__);
+        throw PsiException("polaritonic uhf only works with c1 symmetry for now.",__FILE__,__LINE__);
     }
 
 }
 
-double PolaritonicRHF::compute_energy() {
+double PolaritonicUHF::compute_energy() {
 
     // grab the one-electron integrals from MintsHelper:
     std::shared_ptr<MintsHelper> mints (new MintsHelper(reference_wavefunction_));
@@ -133,7 +128,8 @@ double PolaritonicRHF::compute_energy() {
     outfile->Printf("\n");
     outfile->Printf("    No. basis functions:            %5i\n",nso_);
     outfile->Printf("    No. auxiliary basis functions:  %5i\n",nQ);
-    outfile->Printf("    No. electrons:                  %5i\n",nalpha_ + nbeta_);
+    outfile->Printf("    No. alpha electrons:            %5i\n",nalpha_);
+    outfile->Printf("    No. beta electrons:             %5i\n",nbeta_);
     outfile->Printf("    e_convergence:             %10.3le\n",e_convergence);
     outfile->Printf("    d_convergence:             %10.3le\n",d_convergence);
     outfile->Printf("    maxiter:                        %5i\n",maxiter);
@@ -156,8 +152,10 @@ double PolaritonicRHF::compute_energy() {
     Shalf->back_transform(Sevec);
 
     // allocate memory for F' and its eigenvectors and eigenvalues
-    std::shared_ptr<Matrix> Fevec ( new Matrix(nso_,nso_) );
-    std::shared_ptr<Matrix> Fprime ( new Matrix(Fa_) );
+    std::shared_ptr<Matrix> Fevec_a ( new Matrix(nso_,nso_) );
+    std::shared_ptr<Matrix> Fevec_b ( new Matrix(nso_,nso_) );
+    std::shared_ptr<Matrix> Fprime_a ( new Matrix(Fa_) );
+    std::shared_ptr<Matrix> Fprime_b ( new Matrix(Fb_) );
 
 /*
     // core guess ... shouldn't be necessary since we're starting from an existing reference
@@ -178,14 +176,17 @@ double PolaritonicRHF::compute_energy() {
 */
 
     energy_  = enuc_ + nuclear_dipole_self_energy_;
-    energy_ += Da_->vector_dot(h);
-    energy_ += Da_->vector_dot(Fa_);
+    energy_ += 0.5 * Da_->vector_dot(h);
+    energy_ += 0.5 * Db_->vector_dot(h);
+    energy_ += 0.5 * Da_->vector_dot(Fa_);
+    energy_ += 0.5 * Db_->vector_dot(Fb_);
 
     // SCF iterations
 
     double e_last    = 0.0;
     double dele      = 0.0;
-    double gnorm     = 0.0;
+    double gnorm_a   = 0.0;
+    double gnorm_b   = 0.0;
 
     outfile->Printf("\n");
     outfile->Printf("    Guess energy:  %20.12lf\n",energy_);
@@ -199,7 +200,7 @@ double PolaritonicRHF::compute_energy() {
     outfile->Printf("         RMS |[F,P]| ");
     outfile->Printf("\n");
 
-    std::shared_ptr<DIIS> diis (new DIIS(nso_*nso_));
+    std::shared_ptr<DIIS> diis (new DIIS(2*nso_*nso_));
 
     int iter = 0;
     do {
@@ -207,27 +208,39 @@ double PolaritonicRHF::compute_energy() {
         e_last = energy_;
 
         // grab occupied orbitals (the first nalpha)
-        std::shared_ptr<Matrix> myC (new Matrix(Ca_) );
-        myC->zero();
+        std::shared_ptr<Matrix> myCa (new Matrix(Ca_) );
+        myCa->zero();
+
+        // grab occupied orbitals (the first nbeta)
+        std::shared_ptr<Matrix> myCb (new Matrix(Cb_) );
+        myCb->zero();
 
         for (int mu = 0; mu < nso_; mu++) {
             for (int i = 0; i < nalpha_; i++) {
-                myC->pointer()[mu][i] = Ca_->pointer()[mu][i];
+                myCa->pointer()[mu][i] = Ca_->pointer()[mu][i];
+            }
+            for (int i = 0; i < nbeta_; i++) {
+                myCb->pointer()[mu][i] = Cb_->pointer()[mu][i];
             }
         }
 
         // push occupied orbitals onto JK object
         std::vector< std::shared_ptr<Matrix> >& C_left  = jk->C_left();
         C_left.clear();
-        C_left.push_back(myC);
+        C_left.push_back(myCa);
+        C_left.push_back(myCb);
 
         // form J/K
         jk->compute();
 
-        // form F = h + 2*J - K 
+        // form Fa = h + Ja + Jb - Ka
         Fa_->copy(jk->J()[0]);
-        Fa_->scale(2.0);
+        Fa_->add(jk->J()[1]);
         Fa_->subtract(jk->K()[0]);
+
+        Fb_->copy(jk->J()[0]);
+        Fb_->add(jk->J()[1]);
+        Fb_->subtract(jk->K()[1]);
 
         std::shared_ptr<Matrix> oei (new Matrix(h));
 
@@ -247,50 +260,27 @@ double PolaritonicRHF::compute_energy() {
             // e-e term (assuming a complete basis)
             oei->add(scaled_e_e_dipole_squared_);
 
-/*
-
-            // one-electron part of e-e term 
-            Fa_->subtract(quadrupole_scaled_sum_);
-
-            // two-electron part of e-e term (J)
-            double scaled_mu = Da_->vector_dot(dipole_scaled_sum_);
-            Fa_->axpy(0.5 * 2.0 * scaled_mu,dipole_scaled_sum_);
-
-            // two-electron part of e-e term (K)
-
-            // Kpq += mu_pr * mu_qs * Drs
-            double ** dp  = dipole_scaled_sum_->pointer();
-            double ** dap = Da_->pointer();
-            double ** fap = Fa_->pointer();
-
-            std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
-            double ** tp = tmp->pointer();
-            C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
-            C_DGEMM('n','t',nso_,nso_,nso_,-0.5,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(fap[0][0]),nso_);
-
-            //for (int p = 0; p < nso_; p++) {
-            //    for (int q = 0; q < nso_; q++) {
-            //        double dum = 0.0;
-            //        for (int r = 0; r < nso_; r++) {
-            //            for (int s = 0; s < nso_; s++) {
-            //                dum += dp[p][r] * dp[q][s] * dap[r][s];
-            //            }
-            //        }
-            //        fap[p][q] -= 0.5 * dum;
-            //    }
-            //}
-*/
-
         }
         Fa_->add(oei);
+        Fb_->add(oei);
 
         // Construct density from C
         C_DGEMM('n','t',nso_,nso_,nalpha_,1.0,&(Ca_->pointer()[0][0]),nso_,&(Ca_->pointer()[0][0]),nso_,0.0,&(Da_->pointer()[0][0]),nso_);
+        C_DGEMM('n','t',nso_,nso_,nbeta_,1.0,&(Cb_->pointer()[0][0]),nso_,&(Cb_->pointer()[0][0]),nso_,0.0,&(Db_->pointer()[0][0]),nso_);
 
         // evaluate the current energy, E = D(H+F) + Enuc
         energy_  = enuc_ + nuclear_dipole_self_energy_;
+
         energy_ += Da_->vector_dot(oei);
-        energy_ += Da_->vector_dot(Fa_);
+        energy_ += Db_->vector_dot(oei);
+
+        energy_ += 0.5 * Da_->vector_dot(jk->J()[0]);
+        energy_ += 0.5 * Da_->vector_dot(jk->J()[1]);
+        energy_ -= 0.5 * Da_->vector_dot(jk->K()[0]);
+
+        energy_ += 0.5 * Db_->vector_dot(jk->J()[0]);
+        energy_ += 0.5 * Db_->vector_dot(jk->J()[1]);
+        energy_ -= 0.5 * Db_->vector_dot(jk->K()[1]);
 
 /*
         if ( n_photon_states_ > 1 ) {
@@ -313,36 +303,44 @@ double PolaritonicRHF::compute_energy() {
         dele = energy_ - e_last;
 
         // form F' = ST^(-1/2) F S^(-1/2)
-        Fprime->copy(Fa_);
-        Fprime->transform(Shalf);
+        Fprime_a->copy(Fa_);
+        Fprime_a->transform(Shalf);
+
+        Fprime_b->copy(Fb_);
+        Fprime_b->transform(Shalf);
 
         // The error vector in DIIS for SCF is defined as 
         // the orbital gradient, in the orthonormal basis:
         // 
         // ST^{-1/2} [FDS - SDF] S^{-1/2}
-        std::shared_ptr<Matrix> grad = OrbitalGradient(Da_,Fa_,Shalf);
+
+        std::shared_ptr<Matrix> grad_a = OrbitalGradient(Da_,Fa_,Shalf);
+        std::shared_ptr<Matrix> grad_b = OrbitalGradient(Db_,Fb_,Shalf);
 
         // We will use the RMS of the orbital gradient 
         // to monitor convergence.
-        gnorm = grad->rms();
+        gnorm_a = grad_a->rms();
+        gnorm_b = grad_b->rms();
 
         // DIIS extrapolation
-        diis->WriteVector(&(Fprime->pointer()[0][0]));
-        diis->WriteErrorVector(&(grad->pointer()[0][0]));
-        diis->Extrapolate(&(Fprime->pointer()[0][0]));
+        diis->WriteVector(&(Fprime_a->pointer()[0][0]),&(Fprime_b->pointer()[0][0]));
+        diis->WriteErrorVector(&(grad_a->pointer()[0][0]),&(grad_b->pointer()[0][0]));
+        diis->Extrapolate(&(Fprime_a->pointer()[0][0]),&(Fprime_b->pointer()[0][0]));
 
         // Diagonalize F' to obtain C'
-        Fprime->diagonalize(Fevec,epsilon_a_,ascending);
+        Fprime_a->diagonalize(Fevec_a,epsilon_a_,ascending);
+        Fprime_b->diagonalize(Fevec_b,epsilon_b_,ascending);
 
         // Find C = S^(-1/2)C'
-        Ca_->gemm(false,false,1.0,Shalf,Fevec,0.0);
+        Ca_->gemm(false,false,1.0,Shalf,Fevec_a,0.0);
+        Cb_->gemm(false,false,1.0,Shalf,Fevec_b,0.0);
 
-        outfile->Printf("    %5i %20.12lf %20.12lf %20.12lf\n",iter,energy_,dele,gnorm); 
+        outfile->Printf("    %5i %20.12lf %20.12lf %20.12lf\n",iter,energy_,dele,0.5 * (gnorm_a + gnorm_b)); 
 
         iter++;
         if ( iter > maxiter ) break;
 
-    }while(fabs(dele) > e_convergence || gnorm > d_convergence );
+    }while(fabs(dele) > e_convergence || 0.5 * (gnorm_a + gnorm_b) > d_convergence );
 
     if ( iter > maxiter ) {
         throw PsiException("Maximum number of iterations exceeded!",__FILE__,__LINE__);
@@ -352,7 +350,7 @@ double PolaritonicRHF::compute_energy() {
     outfile->Printf("    SCF iterations converged!\n");
     outfile->Printf("\n");
 
-    outfile->Printf("    * Polaritonic RHF total energy: %20.12lf\n",energy_);
+    outfile->Printf("    * Polaritonic UHF total energy: %20.12lf\n",energy_);
 
     // print cavity properties
     if ( n_photon_states_ > 1 ) {
@@ -365,6 +363,7 @@ double PolaritonicRHF::compute_energy() {
 
     // print orbital energies
     epsilon_a_->print();
+    epsilon_b_->print();
 
     //double * ep = epsilon_a_->pointer();
     //printf("%20.12lf %20.12lf %20.12lf %20.12lf %20.12lf %20.12lf\n",ep[nalpha_-3],ep[nalpha_-2],ep[nalpha_-1],ep[nalpha_],ep[nalpha_+1],ep[nalpha_+2]);fflush(stdout);
