@@ -39,6 +39,7 @@
 #include <jellium/jellium_scf_solver.h>
 #include <polaritonic_scf/rhf.h>
 #include <polaritonic_scf/uhf.h>
+#include <polaritonic_scf/uks.h>
 #include <polaritonic_scf/rcis.h>
 
 #include <misc/backtransform_tpdm.h>
@@ -55,7 +56,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_RCIS");
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC UKS POLARITONIC_RCIS");
 
         /*- Do DIIS? -*/
         options.add_bool("DIIS", true);
@@ -408,6 +409,13 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         double energy = uhf->compute_energy();
 
         return (std::shared_ptr<Wavefunction>)uhf;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_UKS") {
+
+        std::shared_ptr<PolaritonicUKS> uks (new PolaritonicUKS(ref_wfn,options));
+        double energy = uks->compute_energy();
+
+        return (std::shared_ptr<Wavefunction>)uks;
 
     }else {
 
