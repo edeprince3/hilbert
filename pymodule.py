@@ -57,6 +57,8 @@ def run_polaritonic_scf(name, **kwargs):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RHF')
     elif ( lowername == 'polaritonic-uhf' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UHF')
+    elif ( lowername == 'polaritonic-uks' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UKS')
     elif ( lowername == 'polaritonic-rcis' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RCIS')
 
@@ -435,6 +437,7 @@ psi4.driver.procedures['gradient']['v2rdm-casscf'] = run_v2rdm_casscf_gradient
 # polaritonic scf
 psi4.driver.procedures['energy']['polaritonic-rhf'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-uhf'] = run_polaritonic_scf
+psi4.driver.procedures['energy']['polaritonic-uks'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-rcis'] = run_polaritonic_scf
 #psi4.driver.procedures['energy']['polaritonic-uhf'] = run_polaritonic_scf
 
