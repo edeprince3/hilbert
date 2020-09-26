@@ -242,19 +242,19 @@ double PolaritonicRHF::compute_energy() {
             // dipole self energy:
 
             // e-n term 
-            oei->add(scaled_e_n_dipole_squared_);
+            //oei->add(scaled_e_n_dipole_squared_);
+            oei->axpy(1.0,scaled_e_n_dipole_squared_);
 
             // e-e term (assuming a complete basis)
-            oei->add(scaled_e_e_dipole_squared_);
-
-/*
+            oei->axpy(1.0,scaled_e_e_dipole_squared_);
 
             // one-electron part of e-e term 
-            Fa_->subtract(quadrupole_scaled_sum_);
+            //oei->axpy(-0.5,quadrupole_scaled_sum_);
+            //Fa_->subtract(quadrupole_scaled_sum_);
 
             // two-electron part of e-e term (J)
             double scaled_mu = Da_->vector_dot(dipole_scaled_sum_);
-            Fa_->axpy(0.5 * 2.0 * scaled_mu,dipole_scaled_sum_);
+            Fa_->axpy(2.0 * scaled_mu,dipole_scaled_sum_);
 
             // two-electron part of e-e term (K)
 
@@ -266,7 +266,7 @@ double PolaritonicRHF::compute_energy() {
             std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
             double ** tp = tmp->pointer();
             C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
-            C_DGEMM('n','t',nso_,nso_,nso_,-0.5,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(fap[0][0]),nso_);
+            C_DGEMM('n','t',nso_,nso_,nso_,-1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(fap[0][0]),nso_);
 
             //for (int p = 0; p < nso_; p++) {
             //    for (int q = 0; q < nso_; q++) {
@@ -279,7 +279,6 @@ double PolaritonicRHF::compute_energy() {
             //        fap[p][q] -= 0.5 * dum;
             //    }
             //}
-*/
 
         }
         Fa_->add(oei);
