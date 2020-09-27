@@ -246,10 +246,10 @@ double PolaritonicRHF::compute_energy() {
             oei->axpy(1.0,scaled_e_n_dipole_squared_);
 
             // e-e term (assuming a complete basis)
-            oei->axpy(1.0,scaled_e_e_dipole_squared_);
+            //oei->axpy(1.0,scaled_e_e_dipole_squared_);
 
             // one-electron part of e-e term 
-            //oei->axpy(-0.5,quadrupole_scaled_sum_);
+            oei->axpy(-1.0,quadrupole_scaled_sum_);
             //Fa_->subtract(quadrupole_scaled_sum_);
 
             // two-electron part of e-e term (J)
