@@ -186,10 +186,8 @@ double PolaritonicRCIS::compute_energy() {
                                 int ijab = i * o * v * v + j * v * v + a * v + b;
                                 hp[ian][jbm] += 2.0 * int1_[iajb] - int2_[ijab];
 
-                                //if ( i != j || a != b) {
-                                    // dipole self energy contribution?
-                                    //hp[ian][jbm] += 0.5 * lambda_z * lambda_z * (2.0 * dz[i][a+o]*dz[j][b+o] - dz[i][j]*dz[a+o][b+o]);
-                                //}
+                                // dipole self energy contribution
+                                hp[ian][jbm] += lambda_z * lambda_z * (2.0 * dz[i][a+o]*dz[j][b+o] - dz[i][j]*dz[a+o][b+o]);
                             }
 
                             if ( i == j && a != b && n == m + 1 ) {
@@ -249,7 +247,6 @@ double PolaritonicRCIS::compute_energy() {
 
     eigval->print();
 
-/*
     //for (int i = 0; i < (o*v+1)*n_photon_states_; i++) {
     for (int i = 0; i < 50; i++) {
         double photon_weight = 0.0;
@@ -261,7 +258,6 @@ double PolaritonicRCIS::compute_energy() {
     }
     printf("\n");
     fflush(stdout);
-*/
     
     // print orbital energies
     //epsilon_a_->print();
