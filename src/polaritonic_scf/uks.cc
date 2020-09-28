@@ -306,6 +306,15 @@ double PolaritonicUKS::compute_energy() {
         }
 
         std::shared_ptr<Matrix> oei (new Matrix(h));
+        std::shared_ptr<Matrix> dipole_Ja (new Matrix(nso_,nso_));
+        std::shared_ptr<Matrix> dipole_Jb (new Matrix(nso_,nso_));
+        std::shared_ptr<Matrix> dipole_Ka (new Matrix(nso_,nso_));
+        std::shared_ptr<Matrix> dipole_Kb (new Matrix(nso_,nso_));
+
+        dipole_Ja->zero();
+        dipole_Jb->zero();
+        dipole_Ka->zero();
+        dipole_Kb->zero();
 
         if ( n_photon_states_ > 1 ) {
 
@@ -318,12 +327,49 @@ double PolaritonicUKS::compute_energy() {
             // dipole self energy:
 
             // e-n term 
-            oei->add(scaled_e_n_dipole_squared_);
+            //oei->add(scaled_e_n_dipole_squared_);
+            oei->axpy(1.0,scaled_e_n_dipole_squared_);
 
             // e-e term (assuming a complete basis)
-            oei->add(scaled_e_e_dipole_squared_);
+            //oei->axpy(1.0,scaled_e_e_dipole_squared_);
 
+            // one-electron part of e-e term 
+            oei->axpy(-1.0,quadrupole_scaled_sum_);
+
+            // two-electron part of e-e term (J)
+            double scaled_mu_a = Da_->vector_dot(dipole_scaled_sum_);
+            double scaled_mu_b = Db_->vector_dot(dipole_scaled_sum_);
+
+            dipole_Ja->axpy(scaled_mu_a,dipole_scaled_sum_);
+            dipole_Jb->axpy(scaled_mu_b,dipole_scaled_sum_);
+
+            // two-electron part of e-e term (K)
+
+            // Kpq += mu_pr * mu_qs * Drs
+            double ** dp  = dipole_scaled_sum_->pointer();
+            double ** dap = Da_->pointer();
+            double ** dbp = Db_->pointer();
+            double ** kap = dipole_Ka->pointer();
+            double ** kbp = dipole_Kb->pointer();
+
+            std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
+            double ** tp = tmp->pointer();
+
+            C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+            C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(kap[0][0]),nso_);
+
+            C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+            C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(kbp[0][0]),nso_);
+
+            Fa_->add(dipole_Ja);
+            Fa_->add(dipole_Jb);
+            Fa_->subtract(dipole_Ka);
+
+            Fb_->add(dipole_Ja);
+            Fb_->add(dipole_Jb);
+            Fb_->subtract(dipole_Kb);
         }
+
         Fa_->add(oei);
         Fb_->add(oei);
 
@@ -345,6 +391,14 @@ double PolaritonicUKS::compute_energy() {
             energy_ -= 0.5 * alpha * Db_->vector_dot(jk->K()[1]);
         }
 
+        energy_ += 0.5 * Da_->vector_dot(dipole_Ja);
+        energy_ += 0.5 * Da_->vector_dot(dipole_Jb);
+        energy_ -= 0.5 * Da_->vector_dot(dipole_Ka);
+
+        energy_ += 0.5 * Db_->vector_dot(dipole_Ja);
+        energy_ += 0.5 * Db_->vector_dot(dipole_Jb);
+        energy_ -= 0.5 * Db_->vector_dot(dipole_Kb);
+
         if (is_x_lrc) {
             double beta = 1.0 - functional->x_alpha();
             energy_ -= 0.5 * beta * Da_->vector_dot(jk->wK()[0]);
@@ -355,23 +409,6 @@ double PolaritonicUKS::compute_energy() {
         if (functional->needs_xc()) {
             energy_ += potential->quadrature_values()["FUNCTIONAL"];
         }
-
-/*
-        if ( n_photon_states_ > 1 ) {
-
-            build_cavity_hamiltonian();
-
-            std::shared_ptr<Matrix> V = (std::shared_ptr<Matrix>)(new Matrix(dipole_scaled_sum_));
-            V->scale(-CavityDipole_z_->pointer()[0][0]);
-            energy_ += Da_->vector_dot(V);
-
-            // self energy contributions
-            energy_ += Da_->vector_dot(scaled_e_n_dipole_squared_);
-            energy_ += Da_->vector_dot(scaled_e_e_dipole_squared_);
-            //energy_ -= Da_->vector_dot(quadrupole_scaled_sum_);
-
-        }
-*/
 
         // dele
         dele = energy_ - e_last;

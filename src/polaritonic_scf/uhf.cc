@@ -306,12 +306,6 @@ double PolaritonicUHF::compute_energy() {
         // evaluate the current energy, E = D(H+F) + Enuc
         energy_  = enuc_ + nuclear_dipole_self_energy_;
 
-        //energy_ += 0.5 * Da_->vector_dot(oei);
-        //energy_ += 0.5 * Db_->vector_dot(oei);
-
-        //energy_ += 0.5 * Da_->vector_dot(Fa_);
-        //energy_ += 0.5 * Db_->vector_dot(Fb_);
-
         energy_ += Da_->vector_dot(oei);
         energy_ += Db_->vector_dot(oei);
 
