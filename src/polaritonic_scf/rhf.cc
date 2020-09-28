@@ -291,23 +291,6 @@ double PolaritonicRHF::compute_energy() {
         energy_ += Da_->vector_dot(oei);
         energy_ += Da_->vector_dot(Fa_);
 
-/*
-        if ( n_photon_states_ > 1 ) {
-
-            build_cavity_hamiltonian();
-
-            std::shared_ptr<Matrix> V = (std::shared_ptr<Matrix>)(new Matrix(dipole_scaled_sum_));
-            V->scale(-CavityDipole_z_->pointer()[0][0]);
-            energy_ += Da_->vector_dot(V);
-
-            // self energy contributions
-            energy_ += Da_->vector_dot(scaled_e_n_dipole_squared_);
-            energy_ += Da_->vector_dot(scaled_e_e_dipole_squared_);
-            //energy_ -= Da_->vector_dot(quadrupole_scaled_sum_);
-
-        }
-*/
-
         // dele
         dele = energy_ - e_last;
 

@@ -255,10 +255,14 @@ double PolaritonicUHF::compute_energy() {
             // dipole self energy:
 
             // e-n term 
-            oei->add(scaled_e_n_dipole_squared_);
+            //oei->add(scaled_e_n_dipole_squared_);
+            oei->axpy(1.0,scaled_e_n_dipole_squared_);
 
             // e-e term (assuming a complete basis)
-            oei->add(scaled_e_e_dipole_squared_);
+            //oei->axpy(1.0,scaled_e_e_dipole_squared_);
+
+            // one-electron part of e-e term 
+            oei->axpy(-1.0,quadrupole_scaled_sum_);
 
             // two-electron part of e-e term (J)
             double scaled_mu_a = Da_->vector_dot(dipole_scaled_sum_);
@@ -300,33 +304,19 @@ double PolaritonicUHF::compute_energy() {
         // evaluate the current energy, E = D(H+F) + Enuc
         energy_  = enuc_ + nuclear_dipole_self_energy_;
 
-        energy_ += Da_->vector_dot(oei);
-        energy_ += Db_->vector_dot(oei);
+        energy_ += 0.5 * Da_->vector_dot(oei);
+        energy_ += 0.5 * Db_->vector_dot(oei);
 
-        energy_ += 0.5 * Da_->vector_dot(jk->J()[0]);
-        energy_ += 0.5 * Da_->vector_dot(jk->J()[1]);
-        energy_ -= 0.5 * Da_->vector_dot(jk->K()[0]);
+        energy_ += 0.5 * Da_->vector_dot(Fa_);
+        energy_ += 0.5 * Db_->vector_dot(Fb_);
 
-        energy_ += 0.5 * Db_->vector_dot(jk->J()[0]);
-        energy_ += 0.5 * Db_->vector_dot(jk->J()[1]);
-        energy_ -= 0.5 * Db_->vector_dot(jk->K()[1]);
+        //energy_ += 0.5 * Da_->vector_dot(jk->J()[0]);
+        //energy_ += 0.5 * Da_->vector_dot(jk->J()[1]);
+        //energy_ -= 0.5 * Da_->vector_dot(jk->K()[0]);
 
-/*
-        if ( n_photon_states_ > 1 ) {
-
-            build_cavity_hamiltonian();
-
-            std::shared_ptr<Matrix> V = (std::shared_ptr<Matrix>)(new Matrix(dipole_scaled_sum_));
-            V->scale(-CavityDipole_z_->pointer()[0][0]);
-            energy_ += Da_->vector_dot(V);
-
-            // self energy contributions
-            energy_ += Da_->vector_dot(scaled_e_n_dipole_squared_);
-            energy_ += Da_->vector_dot(scaled_e_e_dipole_squared_);
-            //energy_ -= Da_->vector_dot(quadrupole_scaled_sum_);
-
-        }
-*/
+        //energy_ += 0.5 * Db_->vector_dot(jk->J()[0]);
+        //energy_ += 0.5 * Db_->vector_dot(jk->J()[1]);
+        //energy_ -= 0.5 * Db_->vector_dot(jk->K()[1]);
 
         // dele
         dele = energy_ - e_last;
