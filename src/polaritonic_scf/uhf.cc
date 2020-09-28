@@ -233,15 +233,6 @@ double PolaritonicUHF::compute_energy() {
         // form J/K
         jk->compute();
 
-        // form Fa = h + Ja + Jb - Ka
-        Fa_->copy(jk->J()[0]);
-        Fa_->add(jk->J()[1]);
-        Fa_->subtract(jk->K()[0]);
-
-        Fb_->copy(jk->J()[0]);
-        Fb_->add(jk->J()[1]);
-        Fb_->subtract(jk->K()[1]);
-
         std::shared_ptr<Matrix> oei (new Matrix(h));
 
         if ( n_photon_states_ > 1 ) {
@@ -268,11 +259,14 @@ double PolaritonicUHF::compute_energy() {
             double scaled_mu_a = Da_->vector_dot(dipole_scaled_sum_);
             double scaled_mu_b = Db_->vector_dot(dipole_scaled_sum_);
 
-            Fa_->axpy(scaled_mu_a,dipole_scaled_sum_);
-            Fa_->axpy(scaled_mu_b,dipole_scaled_sum_);
+            jk->J()[0]->axpy(scaled_mu_a,dipole_scaled_sum_);
+            jk->J()[1]->axpy(scaled_mu_b,dipole_scaled_sum_);
 
-            Fb_->axpy(scaled_mu_a,dipole_scaled_sum_);
-            Fb_->axpy(scaled_mu_b,dipole_scaled_sum_);
+            //Fa_->axpy(scaled_mu_a,dipole_scaled_sum_);
+            //Fa_->axpy(scaled_mu_b,dipole_scaled_sum_);
+
+            //Fb_->axpy(scaled_mu_a,dipole_scaled_sum_);
+            //Fb_->axpy(scaled_mu_b,dipole_scaled_sum_);
 
             // two-electron part of e-e term (K)
 
@@ -280,22 +274,30 @@ double PolaritonicUHF::compute_energy() {
             double ** dp  = dipole_scaled_sum_->pointer();
             double ** dap = Da_->pointer();
             double ** dbp = Db_->pointer();
-            double ** fap = Fa_->pointer();
-            double ** fbp = Fb_->pointer();
+            double ** kap = jk->K()[0]->pointer();
+            double ** kbp = jk->K()[1]->pointer();
 
             std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
             double ** tp = tmp->pointer();
 
             C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
-            C_DGEMM('n','t',nso_,nso_,nso_,-1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(fap[0][0]),nso_);
+            C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(kap[0][0]),nso_);
 
             C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
-            C_DGEMM('n','t',nso_,nso_,nso_,-1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(fbp[0][0]),nso_);
+            C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(kbp[0][0]),nso_);
 
         }
 
-        Fa_->add(oei);
-        Fb_->add(oei);
+        // form Fa = h + Ja + Jb - Ka
+        Fa_->copy(oei);
+        Fa_->add(jk->J()[0]);
+        Fa_->add(jk->J()[1]);
+        Fa_->subtract(jk->K()[0]);
+
+        Fb_->copy(oei);
+        Fb_->add(jk->J()[0]);
+        Fb_->add(jk->J()[1]);
+        Fb_->subtract(jk->K()[1]);
 
         // Construct density from C
         C_DGEMM('n','t',nso_,nso_,nalpha_,1.0,&(Ca_->pointer()[0][0]),nso_,&(Ca_->pointer()[0][0]),nso_,0.0,&(Da_->pointer()[0][0]),nso_);
@@ -304,19 +306,22 @@ double PolaritonicUHF::compute_energy() {
         // evaluate the current energy, E = D(H+F) + Enuc
         energy_  = enuc_ + nuclear_dipole_self_energy_;
 
-        energy_ += 0.5 * Da_->vector_dot(oei);
-        energy_ += 0.5 * Db_->vector_dot(oei);
+        //energy_ += 0.5 * Da_->vector_dot(oei);
+        //energy_ += 0.5 * Db_->vector_dot(oei);
 
-        energy_ += 0.5 * Da_->vector_dot(Fa_);
-        energy_ += 0.5 * Db_->vector_dot(Fb_);
+        //energy_ += 0.5 * Da_->vector_dot(Fa_);
+        //energy_ += 0.5 * Db_->vector_dot(Fb_);
 
-        //energy_ += 0.5 * Da_->vector_dot(jk->J()[0]);
-        //energy_ += 0.5 * Da_->vector_dot(jk->J()[1]);
-        //energy_ -= 0.5 * Da_->vector_dot(jk->K()[0]);
+        energy_ += Da_->vector_dot(oei);
+        energy_ += Db_->vector_dot(oei);
 
-        //energy_ += 0.5 * Db_->vector_dot(jk->J()[0]);
-        //energy_ += 0.5 * Db_->vector_dot(jk->J()[1]);
-        //energy_ -= 0.5 * Db_->vector_dot(jk->K()[1]);
+        energy_ += 0.5 * Da_->vector_dot(jk->J()[0]);
+        energy_ += 0.5 * Da_->vector_dot(jk->J()[1]);
+        energy_ -= 0.5 * Da_->vector_dot(jk->K()[0]);
+
+        energy_ += 0.5 * Db_->vector_dot(jk->J()[0]);
+        energy_ += 0.5 * Db_->vector_dot(jk->J()[1]);
+        energy_ -= 0.5 * Db_->vector_dot(jk->K()[1]);
 
         // dele
         dele = energy_ - e_last;
