@@ -101,12 +101,14 @@ void PolaritonicUCCSD::common_init() {
     memset((void*)tamps_,'\0',(o*o*v*v+o*v)*sizeof(double));
     memset((void*)residual_,'\0',(o*o*v*v+o*v)*sizeof(double));
 
-    tmp1_ = (double*)malloc(v*v*v*v*sizeof(double));
-    tmp2_ = (double*)malloc(v*v*v*v*sizeof(double));
-    tmp3_ = (double*)malloc(v*v*v*v*sizeof(double));
-    memset((void*)tmp1_,'\0',v*v*v*v*sizeof(double));
-    memset((void*)tmp2_,'\0',v*v*v*v*sizeof(double));
-    memset((void*)tmp3_,'\0',v*v*v*v*sizeof(double));
+    // temporary storage ... reduce later
+
+    tmp1_ = (double*)malloc(o*v*v*v*sizeof(double));
+    tmp2_ = (double*)malloc(o*o*v*v*sizeof(double));
+    tmp3_ = (double*)malloc(o*o*v*v*sizeof(double));
+    memset((void*)tmp1_,'\0',o*v*v*v*sizeof(double));
+    memset((void*)tmp2_,'\0',o*o*v*v*sizeof(double));
+    memset((void*)tmp3_,'\0',o*o*v*v*sizeof(double));
 
     // orbital energies
     epsilon_ = (double*)malloc((o+v)*sizeof(double));
@@ -132,10 +134,17 @@ void PolaritonicUCCSD::common_init() {
 
 }
 
+// TODO: this is so wasteful. need to
+// 1. fold t1 into 3-index integrals
+// 2. don't build full four-index tensor
+// 3. don't build (ac|bd) 
+
 void PolaritonicUCCSD::build_mo_eris() {
 
     // get primary basis:
     std::shared_ptr<BasisSet> primary = reference_wavefunction_->get_basisset("ORBITAL");
+
+    // TODO: use DF_BASIS_CC
 
     // get auxiliary basis:
     std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
