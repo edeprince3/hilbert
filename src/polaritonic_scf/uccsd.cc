@@ -440,11 +440,11 @@ double PolaritonicUCCSD::compute_energy() {
     //outfile->Printf("    * Polaritonic UCCSD total energy: %20.12lf\n",energy_ + ec);
     outfile->Printf("    * UCCSD total energy: %20.12lf\n",energy_ + ec);
 
-    // prlong int cavity properties
+    // print cavity properties
     //if ( n_photon_states_ > 1 ) {
-    //    prlong int_cavity_properties_ = true;
+    //    print_cavity_properties_ = true;
     //    build_cavity_hamiltonian();
-    //    prlong int_cavity_properties_ = false;
+    //    print_cavity_properties_ = false;
     //}
     
     Process::environment.globals["UCCSD TOTAL ENERGY"] = energy_ + ec;
