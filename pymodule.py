@@ -61,6 +61,8 @@ def run_polaritonic_scf(name, **kwargs):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UKS')
     elif ( lowername == 'polaritonic-rcis' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RCIS')
+    elif ( lowername == 'polaritonic-uccsd' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UCCSD')
 
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
     # Fock matrices, and more
@@ -439,5 +441,6 @@ psi4.driver.procedures['energy']['polaritonic-rhf'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-uhf'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-uks'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-rcis'] = run_polaritonic_scf
+psi4.driver.procedures['energy']['polaritonic-uccsd'] = run_polaritonic_scf
 #psi4.driver.procedures['energy']['polaritonic-uhf'] = run_polaritonic_scf
 

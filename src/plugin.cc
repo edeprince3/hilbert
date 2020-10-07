@@ -40,6 +40,7 @@
 #include <polaritonic_scf/rhf.h>
 #include <polaritonic_scf/uhf.h>
 #include <polaritonic_scf/uks.h>
+#include <polaritonic_scf/uccsd.h>
 #include <polaritonic_scf/rcis.h>
 
 #include <misc/backtransform_tpdm.h>
@@ -56,7 +57,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC UKS POLARITONIC_RCIS");
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC UKS POLARITONIC_RCIS POLARITONIC_UCCSD");
 
         /*- Do DIIS? -*/
         options.add_bool("DIIS", true);
@@ -416,6 +417,16 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         double energy = uks->compute_energy();
 
         return (std::shared_ptr<Wavefunction>)uks;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_UCCSD") {
+
+        std::shared_ptr<PolaritonicUHF> uhf (new PolaritonicUHF(ref_wfn,options));
+        double energy = uhf->compute_energy();
+
+        std::shared_ptr<PolaritonicUCCSD> uccsd (new PolaritonicUCCSD((std::shared_ptr<Wavefunction>)uhf,options));
+        energy = uccsd->compute_energy();
+
+        return (std::shared_ptr<Wavefunction>)uccsd;
 
     }else {
 

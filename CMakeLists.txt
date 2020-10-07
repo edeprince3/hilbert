@@ -33,6 +33,7 @@ add_psi4_plugin(hilbert
     src/polaritonic_scf/uhf.cc
     src/polaritonic_scf/uks.cc
     src/polaritonic_scf/rcis.cc
+    src/polaritonic_scf/uccsd.cc
 
     src/jellium/jellium_scf_solver.cc
     src/jellium/jellium_integrals.cc
