@@ -39,6 +39,7 @@
 #include "uccsd.h"
 
 #include <misc/blas.h>
+#include <misc/hilbert_psifiles.h>
 
 using namespace psi;
 using namespace fnocc;
@@ -160,7 +161,9 @@ void PolaritonicUCCSD::common_init() {
 // 2. don't build full four-index tensor
 // 3. don't build (ac|bd) 
 
-void PolaritonicUCCSD::build_mo_eris() {
+
+// write three-index integrals to disk (file PSIF_DCC_QSO)
+void PolaritonicUCCSD::write_three_index_ints() {
 
     // get primary basis:
     std::shared_ptr<BasisSet> primary = reference_wavefunction_->get_basisset("ORBITAL");
@@ -174,35 +177,54 @@ void PolaritonicUCCSD::build_mo_eris() {
     nQ_ = auxiliary->nbf();
 
     // three-index integrals
-    std::shared_ptr<DFTensor> DFa (new DFTensor(primary,auxiliary,Ca_,nalpha_,nso_-nalpha_,nalpha_,nso_-nalpha_,options_));
+    std::shared_ptr<DFTensor> DF (new DFTensor(primary,auxiliary,Ca_,nalpha_,nso_-nalpha_,nalpha_,nso_-nalpha_,options_));
 
-    std::shared_ptr<Matrix> tmp_so = DFa->Qso();
+    std::shared_ptr<Matrix> tmp_so = DF->Qso();
     double ** tmp_so_p = tmp_so->pointer();
 
-    std::shared_ptr<Matrix> Qso (new Matrix(nQ_,2*nso_*2*nso_));
-    double ** qso_p = Qso->pointer();
-    for (int Q = 0; Q < nQ_; Q++) {
-        for (int mu = 0; mu < nso_; mu++) {
-            for (int nu = 0; nu < nso_; nu++) {
-                qso_p[Q][(mu     )*2*nso_+(nu     )] = tmp_so_p[Q][mu*nso_+nu];
-                qso_p[Q][(mu+nso_)*2*nso_+(nu+nso_)] = tmp_so_p[Q][mu*nso_+nu];
+    // write Qso to disk
+    auto psio = std::make_shared<PSIO>();
+
+    psio->open(PSIF_DCC_QSO, PSIO_OPEN_OLD);
+    psio->write_entry(PSIF_DCC_QSO, "Qso CC", (char*)&(tmp_so_p[0][0]), nQ_ * nso_ * nso_ * sizeof(double));
+    psio->close(PSIF_DCC_QSO, 1);
+
+}
+
+void PolaritonicUCCSD::build_mo_eris() {
+
+    /// generate and write SO-basis three-index integrals to disk
+    write_three_index_ints();
+
+    // read Qso from disk
+    long int n  = 2L*(long int)nmo_;
+    long int ns = 2L*(long int)nso_;
+
+    double * tmp = (double*)malloc(nQ_*ns*ns*sizeof(double));
+    memset((void*)tmp,'\0',nQ_*n*n*sizeof(double));
+
+    double * Qmo = (double*)malloc(nQ_*n*ns*sizeof(double));
+    memset((void*)Qmo,'\0',nQ_*n*ns*sizeof(double));
+
+    auto psio = std::make_shared<PSIO>();
+
+    psio->open(PSIF_DCC_QSO, PSIO_OPEN_OLD);
+    psio->read_entry(PSIF_DCC_QSO, "Qso CC", (char*)Qmo, nQ_ * nso_ * nso_ * sizeof(double));
+    psio->close(PSIF_DCC_QSO, 1);
+
+    for (long int Q = 0; Q < nQ_; Q++) {
+        for (long int mu = 0; mu < nso_; mu++) {
+            for (long int nu = 0; nu < nso_; nu++) {
+                tmp[Q*ns*ns+(mu     )*ns+(nu     )] = Qmo[Q*nso_*nso_+mu*nso_+nu];
+                tmp[Q*ns*ns+(mu+nso_)*ns+(nu+nso_)] = Qmo[Q*nso_*nso_+mu*nso_+nu];
             }
         }
     }
 
     // AO->MO transformation
 
-    long int n  = 2L*(long int)nmo_;
-    long int ns = 2L*(long int)nso_;
-
-    double * Qmo = (double*)malloc(nQ_*n*n*sizeof(double));
-    memset((void*)Qmo,'\0',nQ_*n*n*sizeof(double));
-
-    double * tmp = (double*)malloc(nQ_*n*n*sizeof(double));
-    memset((void*)tmp,'\0',nQ_*n*n*sizeof(double));
-
     // I(Q,mu,p) = C(nu,p) Qso(Q,mu,nu)
-    F_DGEMM('n','n',n,ns*nQ_,ns,1.0,&(C_->pointer()[0][0]),n,&(qso_p[0][0]),ns,0.0,Qmo,n);
+    F_DGEMM('n','n',n,ns*nQ_,ns,1.0,&(C_->pointer()[0][0]),n,tmp,ns,0.0,Qmo,n);
     for (int Q = 0; Q < nQ_; Q++) {
         for (int p = 0; p < n; p++) {
             for (int mu = 0; mu < ns; mu++) {

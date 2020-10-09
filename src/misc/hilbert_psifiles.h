@@ -27,6 +27,7 @@
 #ifndef HILBERT_PSIFILES_H
 #define HILBERT_PSIFILES_H
 
+#define PSIF_DCC_QSO            267  
 #define PSIF_DCC_QMO            268
 #define PSIF_V2RDM_CHECKPOINT   269
 #define PSIF_V2RDM_D2AA         270

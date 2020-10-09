@@ -100,6 +100,9 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// build mo-basis electron repulsion integrals
     void build_mo_eris();
 
+    /// generate and write SO-basis three-index integrals to disk
+    void write_three_index_ints();
+
     /// <ij||kl>
     double * eri_ijkl_;
 
