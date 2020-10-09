@@ -49,6 +49,9 @@ class PolaritonicUCCSD: public PolaritonicHF {
 
   protected:
 
+    /// alpha + beta MO transformation matrix
+    std::shared_ptr<Matrix> C_;
+
     /// number of auxiliary basis functions
     int nQ_;
 

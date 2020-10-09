@@ -78,10 +78,50 @@ void PolaritonicUCCSD::common_init() {
         throw PsiException("polaritonic uccsd only works with c1 symmetry for now.",__FILE__,__LINE__);
     }
 
-    // get MO-basis quantities:
+    // alpha + beta MO transformation matrix
+    C_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nmo_));
+    double ** cp = C_->pointer();
+    double ** ca = Ca_->pointer();
+    double ** cb = Cb_->pointer();
 
-    Fa_->transform(Ca_);
-    Fb_->transform(Cb_);
+    for (int mu = 0; mu < nso_; mu++) {
+        long int count = 0;
+        for (long int i = 0; i < nalpha_; i++) {
+            cp[mu][count++] = ca[mu][i];
+        }
+        for (long int i = 0; i < nbeta_; i++) {
+            cp[mu+nso_][count++] = cb[mu][i];
+        }
+        for (long int i = nalpha_; i < nmo_; i++) {
+            cp[mu][count++] = ca[mu][i];
+        }
+        for (long int i = nbeta_; i < nmo_; i++) {
+            cp[mu+nso_][count++] = cb[mu][i];
+        }
+    }
+
+    std::shared_ptr<Matrix> F (new Matrix(2*nso_,2*nso_));
+    double ** fp = F->pointer();
+    double ** fa = Fa_->pointer();
+    double ** fb = Fb_->pointer();
+    for (int mu = 0; mu < nso_; mu++) {
+        for (int nu = 0; nu < nso_; nu++) {
+            fp[mu][nu] = fa[mu][nu];
+            fp[mu+nso_][nu+nso_] = fb[mu][nu];
+        }
+    }
+
+    // get MO-basis quantities:
+    F->transform(C_);
+
+    // orbital energies
+    epsilon_ = (double*)malloc(2*nso_*sizeof(double));
+    memset((void*)epsilon_,'\0',2*nso_*sizeof(double));
+
+    double ** eps = F->pointer();
+    for (long int i = 0; i < 2*nso_; i++) {
+        epsilon_[i] = eps[i][i];
+    }
 
     build_mo_eris();
 
@@ -110,25 +150,6 @@ void PolaritonicUCCSD::common_init() {
     memset((void*)tmp2_,'\0',o*o*v*v*sizeof(double));
     memset((void*)tmp3_,'\0',o*o*v*v*sizeof(double));
 
-    // orbital energies
-    epsilon_ = (double*)malloc((o+v)*sizeof(double));
-    memset((void*)epsilon_,'\0',(o+v)*sizeof(double));
-    long int count = 0;
-    double ** ea = Fa_->pointer();
-    double ** eb = Fb_->pointer();
-    for (long int i = 0; i < nalpha_; i++) {
-        epsilon_[count++] = ea[i][i];
-    }
-    for (long int i = 0; i < nbeta_; i++) {
-        epsilon_[count++] = eb[i][i];
-    }
-    for (long int i = nalpha_; i < nmo_; i++) {
-        epsilon_[count++] = ea[i][i];
-    }
-    for (long int i = nbeta_; i < nmo_; i++) {
-        epsilon_[count++] = eb[i][i];
-    }
-
     // initialize diis solver
     diis = (std::shared_ptr<DIIS>)(new DIIS(o*o*v*v + o*v));
 
@@ -154,125 +175,53 @@ void PolaritonicUCCSD::build_mo_eris() {
 
     // three-index integrals
     std::shared_ptr<DFTensor> DFa (new DFTensor(primary,auxiliary,Ca_,nalpha_,nso_-nalpha_,nalpha_,nso_-nalpha_,options_));
-    std::shared_ptr<DFTensor> DFb (new DFTensor(primary,auxiliary,Cb_,nbeta_,nso_-nbeta_,nbeta_,nso_-nbeta_,options_));
 
-    std::shared_ptr<Matrix> tmp_a = DFa->Qmo();
-    std::shared_ptr<Matrix> tmp_b = DFb->Qmo();
+    std::shared_ptr<Matrix> tmp_so = DFa->Qso();
+    double ** tmp_so_p = tmp_so->pointer();
 
-    double ** Qmo_a = tmp_a->pointer();
-    double ** Qmo_b = tmp_b->pointer();
-
-    long int n1 = (long int)nmo_;
-    long int n2 = n1 * n1;
-    long int n3 = n1 * n2;
-    long int n4 = n1 * n3;
-
-    double * eri_aa = (double*)malloc(n4*sizeof(double));
-    double * eri_ab = (double*)malloc(n4*sizeof(double));
-    double * eri_bb = (double*)malloc(n4*sizeof(double));
-
-    memset((void*)eri_aa,'\0',n4*sizeof(double));
-    memset((void*)eri_ab,'\0',n4*sizeof(double));
-    memset((void*)eri_bb,'\0',n4*sizeof(double));
-
-    // (aa|aa)
-    F_DGEMM('n','t',n2,n2,nQ_,1.0,&(Qmo_a[0][0]),n2,&(Qmo_a[0][0]),n2,0.0,eri_aa,n2);
-
-    // (aa|bb)
-    F_DGEMM('n','t',n2,n2,nQ_,1.0,&(Qmo_b[0][0]),n2,&(Qmo_a[0][0]),n2,0.0,eri_ab,n2);
-
-    // (bb|bb)
-    F_DGEMM('n','t',n2,n2,nQ_,1.0,&(Qmo_b[0][0]),n2,&(Qmo_b[0][0]),n2,0.0,eri_bb,n2);
-
-    // (pq|rs) in full a+b space
-
-    double * eri = (double*)malloc(16L*n4*sizeof(double));
-    memset((void*)eri,'\0',16L*n4*sizeof(double));
-
-    long int n = 2 * nmo_;
-
-    long int oa = nalpha_;
-    long int va = nmo_ - oa;
-
-    long int ob = nbeta_;
-    long int vb = nmo_ - ob;
-
-    for (long int p = 0; p < n; p++) {
-        for (long int q = 0; q < n; q++) {
-            for (long int r = 0; r < n; r++) {
-                for (long int s = 0; s < n; s++) {
-
-                    // skip spin mismatches
-                    if ( p  < n1 && q >= n1 ) continue;
-                    if ( p >= n1 && q  < n1 ) continue;
-                    if ( r  < n1 && s >= n1 ) continue;
-                    if ( r >= n1 && s  < n1 ) continue;
-
-                    double my_eri;
-                    long int my_p;
-                    long int my_q;
-                    long int my_r;
-                    long int my_s;
-
-                    // (aa|aa)
-                    if ( p < n1 && r < n1 ) {
-                        my_eri = eri_aa[p*n3+q*n2+r*n1+s];
-                        if ( p < oa ) my_p = p;
-                        else          my_p = p + ob;
-                        if ( q < oa ) my_q = q;
-                        else          my_q = q + ob;
-                        if ( r < oa ) my_r = r;
-                        else          my_r = r + ob;
-                        if ( s < oa ) my_s = s;
-                        else          my_s = s + ob;
-                    }
-                    // (aa|bb)
-                    if ( p < n1 && r >= n1 ) {
-                        my_eri = eri_ab[p*n3+q*n2+(r-n1)*n1+(s-n1)];
-                        if ( p < oa ) my_p = p;
-                        else          my_p = p + ob;
-                        if ( q < oa ) my_q = q;
-                        else          my_q = q + ob;
-                        if ( r - n1 < ob ) my_r = r - n1 + oa;
-                        else               my_r = r - n1 + oa + va;
-                        if ( s - n1 < ob ) my_s = s - n1 + oa;
-                        else               my_s = s - n1 + oa + va;
-                    }
-                    // (bb|aa)
-                    if ( p >= n1 && r < n1 ) {
-                        my_eri = eri_ab[r*n3+s*n2+(p-n1)*n1+(q-n1)];
-                        if ( p - n1 < ob ) my_p = p - n1 + oa;
-                        else               my_p = p - n1 + oa + va;
-                        if ( q - n1 < ob ) my_q = q - n1 + oa;
-                        else               my_q = q - n1 + oa + va;
-                        if ( r < oa ) my_r = r;
-                        else          my_r = r + ob;
-                        if ( s < oa ) my_s = s;
-                        else          my_s = s + ob;
-                    }
-                    // (bb|bb)
-                    if ( p >= n1 && r >= n1 ) {
-                        my_eri = eri_bb[(p-n1)*n3+(q-n1)*n2+(r-n1)*n1+(s-n1)];
-                        if ( p - n1 < ob ) my_p = p - n1 + oa;
-                        else               my_p = p - n1 + oa + va;
-                        if ( q - n1 < ob ) my_q = q - n1 + oa;
-                        else               my_q = q - n1 + oa + va;
-                        if ( r - n1 < ob ) my_r = r - n1 + oa;
-                        else               my_r = r - n1 + oa + va;
-                        if ( s - n1 < ob ) my_s = s - n1 + oa;
-                        else               my_s = s - n1 + oa + va;
-                    }
-
-                    eri[my_p*n*n*n+my_r*n*n+my_q*n+my_s] = my_eri;
-	
-                }
+    std::shared_ptr<Matrix> Qso (new Matrix(nQ_,2*nso_*2*nso_));
+    double ** qso_p = Qso->pointer();
+    for (int Q = 0; Q < nQ_; Q++) {
+        for (int mu = 0; mu < nso_; mu++) {
+            for (int nu = 0; nu < nso_; nu++) {
+                qso_p[Q][(mu     )*2*nso_+(nu     )] = tmp_so_p[Q][mu*nso_+nu];
+                qso_p[Q][(mu+nso_)*2*nso_+(nu+nso_)] = tmp_so_p[Q][mu*nso_+nu];
             }
         }
     }
 
-    free(eri_aa);
-    free(eri_ab);
-    free(eri_bb);
+    // AO->MO transformation
+
+    long int n  = 2L*(long int)nmo_;
+    long int ns = 2L*(long int)nso_;
+
+    double * Qmo = (double*)malloc(nQ_*n*n*sizeof(double));
+    memset((void*)Qmo,'\0',nQ_*n*n*sizeof(double));
+
+    double * tmp = (double*)malloc(nQ_*n*n*sizeof(double));
+    memset((void*)tmp,'\0',nQ_*n*n*sizeof(double));
+
+    // I(Q,mu,p) = C(nu,p) Qso(Q,mu,nu)
+    F_DGEMM('n','n',n,ns*nQ_,ns,1.0,&(C_->pointer()[0][0]),n,&(qso_p[0][0]),ns,0.0,Qmo,n);
+    for (int Q = 0; Q < nQ_; Q++) {
+        for (int p = 0; p < n; p++) {
+            for (int mu = 0; mu < ns; mu++) {
+                tmp[Q*n*ns+p*ns+mu] = Qmo[Q*n*ns+mu*n+p];
+            }
+        }
+    }
+    // Qmo(Q,p,q) = C(mu,q) I(Q,p,mu)
+    F_DGEMM('n','n',n,n*nQ_,ns,1.0,&(C_->pointer()[0][0]),n,tmp,ns,0.0,Qmo,n);
+
+    free(tmp);
+
+    double * eri = (double*)malloc(n*n*n*n*sizeof(double));
+    memset((void*)eri,'\0',n*n*n*n*sizeof(double));
+
+    // (pq|rs) = Qmo(Q,rs) Qmo(Q,pq)
+    F_DGEMM('n','t',n*n,n*n,nQ_,1.0,Qmo,n*n,Qmo,n*n,0.0,eri,n*n);
+
+    // unpack different classes of eris
 
     long int o = nalpha_ + nbeta_;
     long int v = (nmo_-nalpha_) + (nmo_-nbeta_);
@@ -285,9 +234,9 @@ void PolaritonicUCCSD::build_mo_eris() {
         for (long int j = 0; j < o; j++) {
             for (long int k = 0; k < o; k++) {
                 for (long int l = 0; l < o; l++) {
-                    long int ijkl = i*n*n*n+j*n*n+k*n+l;
-                    long int ijlk = i*n*n*n+j*n*n+l*n+k;
-                    eri_ijkl_[i*o*o*o+j*o*o+k*o+l] = eri[ijkl] - eri[ijlk];
+                    long int ikjl = i*n*n*n+k*n*n+j*n+l;
+                    long int iljk = i*n*n*n+l*n*n+j*n+k;
+                    eri_ijkl_[i*o*o*o+j*o*o+k*o+l] = eri[ikjl] - eri[iljk];
                 }
             }
         }
@@ -301,9 +250,9 @@ void PolaritonicUCCSD::build_mo_eris() {
         for (long int b = 0; b < v; b++) {
             for (long int c = 0; c < v; c++) {
                 for (long int d = 0; d < v; d++) {
-                    long int abcd = (a+o)*n*n*n+(b+o)*n*n+(c+o)*n+(d+o);
-                    long int abdc = (a+o)*n*n*n+(b+o)*n*n+(d+o)*n+(c+o);
-                    eri_abcd_[a*v*v*v+b*v*v+c*v+d] = eri[abcd] - eri[abdc];
+                    long int acbd = (a+o)*n*n*n+(c+o)*n*n+(b+o)*n+(d+o);
+                    long int adbc = (a+o)*n*n*n+(d+o)*n*n+(b+o)*n+(c+o);
+                    eri_abcd_[a*v*v*v+b*v*v+c*v+d] = eri[acbd] - eri[adbc];
                 }
             }
         }
@@ -317,9 +266,9 @@ void PolaritonicUCCSD::build_mo_eris() {
         for (long int j = 0; j < o; j++) {
             for (long int a = 0; a < v; a++) {
                 for (long int b = 0; b < v; b++) {
-                    long int ijab = i*n*n*n+j*n*n+(a+o)*n+(b+o);
-                    long int ijba = i*n*n*n+j*n*n+(b+o)*n+(a+o);
-                    eri_ijab_[i*o*v*v+j*v*v+a*v+b] = eri[ijab] - eri[ijba];
+                    long int iajb = i*n*n*n+(a+o)*n*n+j*n+(b+o);
+                    long int ibja = i*n*n*n+(b+o)*n*n+j*n+(a+o);
+                    eri_ijab_[i*o*v*v+j*v*v+a*v+b] = eri[iajb] - eri[ibja];
                 }
             }
         }
@@ -332,9 +281,9 @@ void PolaritonicUCCSD::build_mo_eris() {
         for (long int b = 0; b < v; b++) {
             for (long int i = 0; i < o; i++) {
                 for (long int j = 0; j < o; j++) {
-                    long int iajb = i*n*n*n+(a+o)*n*n+j*n+(b+o);
-                    long int iabj = i*n*n*n+(a+o)*n*n+(b+o)*n+j;
-                    eri_iajb_[i*o*v*v+a*o*v+j*v+b] = eri[iajb] - eri[iabj];
+                    long int ijab = i*n*n*n+j*n*n+(a+o)*n+(b+o);
+                    long int ibaj = i*n*n*n+(b+o)*n*n+(a+o)*n+j;
+                    eri_iajb_[i*o*v*v+a*o*v+j*v+b] = eri[ijab] - eri[ibaj];
                 }
             }
         }
@@ -347,9 +296,9 @@ void PolaritonicUCCSD::build_mo_eris() {
         for (long int a = 0; a < v; a++) {
             for (long int j = 0; j < o; j++) {
                 for (long int k = 0; k < o; k++) {
-                    long int iajk = i*n*n*n+(a+o)*n*n+j*n+k;
-                    long int iakj = i*n*n*n+(a+o)*n*n+k*n+j;
-                    eri_iajk_[i*o*o*v+a*o*o+j*o+k] = eri[iajk] - eri[iakj];
+                    long int ijak = i*n*n*n+j*n*n+(a+o)*n+k;
+                    long int ikaj = i*n*n*n+k*n*n+(a+o)*n+j;
+                    eri_iajk_[i*o*o*v+a*o*o+j*o+k] = eri[ijak] - eri[ikaj];
                 }
             }
         }
@@ -363,9 +312,9 @@ void PolaritonicUCCSD::build_mo_eris() {
         for (long int b = 0; b < v; b++) {
             for (long int c = 0; c < v; c++) {
                 for (long int i = 0; i < o; i++) {
-                    long int aibc = (a+o)*n*n*n+i*n*n+(b+o)*n+(c+o);
-                    long int aicb = (a+o)*n*n*n+i*n*n+(c+o)*n+(b+o);
-                    eri_aibc_[a*o*v*v+i*v*v+b*v+c] = eri[aibc] - eri[aicb];
+                    long int abic = (a+o)*n*n*n+(b+o)*n*n+i*n+(c+o);
+                    long int acib = (a+o)*n*n*n+(c+o)*n*n+i*n+(b+o);
+                    eri_aibc_[a*o*v*v+i*v*v+b*v+c] = eri[abic] - eri[acib];
                 }
             }
         }
