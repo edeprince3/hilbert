@@ -85,18 +85,18 @@ void PolaritonicUCCSD::common_init() {
     double ** ca = Ca_->pointer();
     double ** cb = Cb_->pointer();
 
-    for (int mu = 0; mu < nso_; mu++) {
-        long int count = 0;
-        for (long int i = 0; i < nalpha_; i++) {
+    for (size_t mu = 0; mu < nso_; mu++) {
+        size_t count = 0;
+        for (size_t i = 0; i < nalpha_; i++) {
             cp[mu][count++] = ca[mu][i];
         }
-        for (long int i = 0; i < nbeta_; i++) {
+        for (size_t i = 0; i < nbeta_; i++) {
             cp[mu+nso_][count++] = cb[mu][i];
         }
-        for (long int i = nalpha_; i < nmo_; i++) {
+        for (size_t i = nalpha_; i < nmo_; i++) {
             cp[mu][count++] = ca[mu][i];
         }
-        for (long int i = nbeta_; i < nmo_; i++) {
+        for (size_t i = nbeta_; i < nmo_; i++) {
             cp[mu+nso_][count++] = cb[mu][i];
         }
     }
@@ -105,8 +105,8 @@ void PolaritonicUCCSD::common_init() {
     double ** fp = F->pointer();
     double ** fa = Fa_->pointer();
     double ** fb = Fb_->pointer();
-    for (int mu = 0; mu < nso_; mu++) {
-        for (int nu = 0; nu < nso_; nu++) {
+    for (size_t mu = 0; mu < nso_; mu++) {
+        for (size_t nu = 0; nu < nso_; nu++) {
             fp[mu][nu] = fa[mu][nu];
             fp[mu+nso_][nu+nso_] = fb[mu][nu];
         }
@@ -120,7 +120,7 @@ void PolaritonicUCCSD::common_init() {
     memset((void*)epsilon_,'\0',2*nso_*sizeof(double));
 
     double ** eps = F->pointer();
-    for (long int i = 0; i < 2*nso_; i++) {
+    for (size_t i = 0; i < 2*nso_; i++) {
         epsilon_[i] = eps[i][i];
     }
 
@@ -128,8 +128,8 @@ void PolaritonicUCCSD::common_init() {
 
     // allocate memory for amplitudes, residual, and temporary buffer
 
-    long int o = nalpha_ + nbeta_;
-    long int v = (nmo_-nalpha_) + (nmo_-nbeta_);
+    size_t o = nalpha_ + nbeta_;
+    size_t v = (nmo_-nalpha_) + (nmo_-nbeta_);
 
     tamps_ = (double*)malloc((o*v + o*o*v*v)*sizeof(double));
     t2_    = tamps_;
@@ -197,8 +197,8 @@ void PolaritonicUCCSD::build_mo_eris() {
     write_three_index_ints();
 
     // read Qso from disk
-    long int n  = 2L*(long int)nmo_;
-    long int ns = 2L*(long int)nso_;
+    size_t n  = 2L*(size_t)nmo_;
+    size_t ns = 2L*(size_t)nso_;
 
     double * tmp = (double*)malloc(nQ_*ns*ns*sizeof(double));
     memset((void*)tmp,'\0',nQ_*n*n*sizeof(double));
@@ -212,9 +212,9 @@ void PolaritonicUCCSD::build_mo_eris() {
     psio->read_entry(PSIF_DCC_QSO, "Qso CC", (char*)Qmo, nQ_ * nso_ * nso_ * sizeof(double));
     psio->close(PSIF_DCC_QSO, 1);
 
-    for (long int Q = 0; Q < nQ_; Q++) {
-        for (long int mu = 0; mu < nso_; mu++) {
-            for (long int nu = 0; nu < nso_; nu++) {
+    for (size_t Q = 0; Q < nQ_; Q++) {
+        for (size_t mu = 0; mu < nso_; mu++) {
+            for (size_t nu = 0; nu < nso_; nu++) {
                 tmp[Q*ns*ns+(mu     )*ns+(nu     )] = Qmo[Q*nso_*nso_+mu*nso_+nu];
                 tmp[Q*ns*ns+(mu+nso_)*ns+(nu+nso_)] = Qmo[Q*nso_*nso_+mu*nso_+nu];
             }
@@ -225,9 +225,9 @@ void PolaritonicUCCSD::build_mo_eris() {
 
     // I(Q,mu,p) = C(nu,p) Qso(Q,mu,nu)
     F_DGEMM('n','n',n,ns*nQ_,ns,1.0,&(C_->pointer()[0][0]),n,tmp,ns,0.0,Qmo,n);
-    for (int Q = 0; Q < nQ_; Q++) {
-        for (int p = 0; p < n; p++) {
-            for (int mu = 0; mu < ns; mu++) {
+    for (size_t Q = 0; Q < nQ_; Q++) {
+        for (size_t p = 0; p < n; p++) {
+            for (size_t mu = 0; mu < ns; mu++) {
                 tmp[Q*n*ns+p*ns+mu] = Qmo[Q*n*ns+mu*n+p];
             }
         }
@@ -245,19 +245,19 @@ void PolaritonicUCCSD::build_mo_eris() {
 
     // unpack different classes of eris
 
-    long int o = nalpha_ + nbeta_;
-    long int v = (nmo_-nalpha_) + (nmo_-nbeta_);
+    size_t o = nalpha_ + nbeta_;
+    size_t v = (nmo_-nalpha_) + (nmo_-nbeta_);
 
     // <ij||kl>
     eri_ijkl_ = (double*)malloc(o*o*o*o*sizeof(double));
     memset((void*)eri_ijkl_,'\0',o*o*o*o*sizeof(double));
 
-    for (long int i = 0; i < o; i++) {
-        for (long int j = 0; j < o; j++) {
-            for (long int k = 0; k < o; k++) {
-                for (long int l = 0; l < o; l++) {
-                    long int ikjl = i*n*n*n+k*n*n+j*n+l;
-                    long int iljk = i*n*n*n+l*n*n+j*n+k;
+    for (size_t i = 0; i < o; i++) {
+        for (size_t j = 0; j < o; j++) {
+            for (size_t k = 0; k < o; k++) {
+                for (size_t l = 0; l < o; l++) {
+                    size_t ikjl = i*n*n*n+k*n*n+j*n+l;
+                    size_t iljk = i*n*n*n+l*n*n+j*n+k;
                     eri_ijkl_[i*o*o*o+j*o*o+k*o+l] = eri[ikjl] - eri[iljk];
                 }
             }
@@ -268,12 +268,12 @@ void PolaritonicUCCSD::build_mo_eris() {
     eri_abcd_ = (double*)malloc(v*v*v*v*sizeof(double));
     memset((void*)eri_abcd_,'\0',v*v*v*v*sizeof(double));
 
-    for (long int a = 0; a < v; a++) {
-        for (long int b = 0; b < v; b++) {
-            for (long int c = 0; c < v; c++) {
-                for (long int d = 0; d < v; d++) {
-                    long int acbd = (a+o)*n*n*n+(c+o)*n*n+(b+o)*n+(d+o);
-                    long int adbc = (a+o)*n*n*n+(d+o)*n*n+(b+o)*n+(c+o);
+    for (size_t a = 0; a < v; a++) {
+        for (size_t b = 0; b < v; b++) {
+            for (size_t c = 0; c < v; c++) {
+                for (size_t d = 0; d < v; d++) {
+                    size_t acbd = (a+o)*n*n*n+(c+o)*n*n+(b+o)*n+(d+o);
+                    size_t adbc = (a+o)*n*n*n+(d+o)*n*n+(b+o)*n+(c+o);
                     eri_abcd_[a*v*v*v+b*v*v+c*v+d] = eri[acbd] - eri[adbc];
                 }
             }
@@ -284,12 +284,12 @@ void PolaritonicUCCSD::build_mo_eris() {
     eri_ijab_ = (double*)malloc(o*o*v*v*sizeof(double));
     memset((void*)eri_ijab_,'\0',o*o*v*v*sizeof(double));
 
-    for (long int i = 0; i < o; i++) {
-        for (long int j = 0; j < o; j++) {
-            for (long int a = 0; a < v; a++) {
-                for (long int b = 0; b < v; b++) {
-                    long int iajb = i*n*n*n+(a+o)*n*n+j*n+(b+o);
-                    long int ibja = i*n*n*n+(b+o)*n*n+j*n+(a+o);
+    for (size_t i = 0; i < o; i++) {
+        for (size_t j = 0; j < o; j++) {
+            for (size_t a = 0; a < v; a++) {
+                for (size_t b = 0; b < v; b++) {
+                    size_t iajb = i*n*n*n+(a+o)*n*n+j*n+(b+o);
+                    size_t ibja = i*n*n*n+(b+o)*n*n+j*n+(a+o);
                     eri_ijab_[i*o*v*v+j*v*v+a*v+b] = eri[iajb] - eri[ibja];
                 }
             }
@@ -299,12 +299,12 @@ void PolaritonicUCCSD::build_mo_eris() {
     // <ia||jb>
     eri_iajb_ = (double*)malloc(o*o*v*v*sizeof(double));
     memset((void*)eri_iajb_,'\0',o*o*v*v*sizeof(double));
-    for (long int a = 0; a < v; a++) {
-        for (long int b = 0; b < v; b++) {
-            for (long int i = 0; i < o; i++) {
-                for (long int j = 0; j < o; j++) {
-                    long int ijab = i*n*n*n+j*n*n+(a+o)*n+(b+o);
-                    long int ibaj = i*n*n*n+(b+o)*n*n+(a+o)*n+j;
+    for (size_t a = 0; a < v; a++) {
+        for (size_t b = 0; b < v; b++) {
+            for (size_t i = 0; i < o; i++) {
+                for (size_t j = 0; j < o; j++) {
+                    size_t ijab = i*n*n*n+j*n*n+(a+o)*n+(b+o);
+                    size_t ibaj = i*n*n*n+(b+o)*n*n+(a+o)*n+j;
                     eri_iajb_[i*o*v*v+a*o*v+j*v+b] = eri[ijab] - eri[ibaj];
                 }
             }
@@ -314,12 +314,12 @@ void PolaritonicUCCSD::build_mo_eris() {
     // <ia||jk>
     eri_iajk_ = (double*)malloc(o*o*o*v*sizeof(double));
     memset((void*)eri_iajk_,'\0',o*o*o*v*sizeof(double));
-    for (long int i = 0; i < o; i++) {
-        for (long int a = 0; a < v; a++) {
-            for (long int j = 0; j < o; j++) {
-                for (long int k = 0; k < o; k++) {
-                    long int ijak = i*n*n*n+j*n*n+(a+o)*n+k;
-                    long int ikaj = i*n*n*n+k*n*n+(a+o)*n+j;
+    for (size_t i = 0; i < o; i++) {
+        for (size_t a = 0; a < v; a++) {
+            for (size_t j = 0; j < o; j++) {
+                for (size_t k = 0; k < o; k++) {
+                    size_t ijak = i*n*n*n+j*n*n+(a+o)*n+k;
+                    size_t ikaj = i*n*n*n+k*n*n+(a+o)*n+j;
                     eri_iajk_[i*o*o*v+a*o*o+j*o+k] = eri[ijak] - eri[ikaj];
                 }
             }
@@ -330,12 +330,12 @@ void PolaritonicUCCSD::build_mo_eris() {
     eri_aibc_ = (double*)malloc(o*v*v*v*sizeof(double));
     memset((void*)eri_aibc_,'\0',o*v*v*v*sizeof(double));
 
-    for (long int a = 0; a < v; a++) {
-        for (long int b = 0; b < v; b++) {
-            for (long int c = 0; c < v; c++) {
-                for (long int i = 0; i < o; i++) {
-                    long int abic = (a+o)*n*n*n+(b+o)*n*n+i*n+(c+o);
-                    long int acib = (a+o)*n*n*n+(c+o)*n*n+i*n+(b+o);
+    for (size_t a = 0; a < v; a++) {
+        for (size_t b = 0; b < v; b++) {
+            for (size_t c = 0; c < v; c++) {
+                for (size_t i = 0; i < o; i++) {
+                    size_t abic = (a+o)*n*n*n+(b+o)*n*n+i*n+(c+o);
+                    size_t acib = (a+o)*n*n*n+(c+o)*n*n+i*n+(b+o);
                     eri_aibc_[a*o*v*v+i*v*v+b*v+c] = eri[abic] - eri[acib];
                 }
             }
@@ -351,7 +351,7 @@ double PolaritonicUCCSD::compute_energy() {
     // grab some input options_
     double e_convergence = options_.get_double("E_CONVERGENCE");
     double d_convergence = options_.get_double("D_CONVERGENCE");
-    long int maxiter          = options_.get_int("MAXITER");
+    size_t maxiter          = options_.get_int("MAXITER");
 
     outfile->Printf("\n");
     outfile->Printf("    No. basis functions:            %5i\n",nso_);
@@ -380,12 +380,12 @@ double PolaritonicUCCSD::compute_energy() {
     outfile->Printf("                |dT| ");
     outfile->Printf("\n");
 
-    long int o = nalpha_ + nbeta_;
-    long int v = 2 * nalpha_ - o;
+    size_t o = nalpha_ + nbeta_;
+    size_t v = 2 * nalpha_ - o;
 
     double ec = 0.0;
 
-    long int iter = 0;
+    size_t iter = 0;
     do {
 
         e_last = energy_ + ec;
@@ -436,8 +436,8 @@ double PolaritonicUCCSD::compute_energy() {
 
 void PolaritonicUCCSD::residual() {
 
-    long int o = nalpha_ + nbeta_;
-    long int v = 2 * nmo_ - o;
+    size_t o = nalpha_ + nbeta_;
+    size_t v = 2 * nmo_ - o;
 
     memset((void*)residual_,'\0',(o*o*v*v+o*v)*sizeof(double));
 
@@ -464,11 +464,11 @@ void PolaritonicUCCSD::residual() {
     // - 1.00000 <i,e||m,a> t1(a,i) 
 
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int m = 0; m < o; m++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t m = 0; m < o; m++) {
             double dum = 0.0;
-            for (long int a = 0; a < v; a++) {
-                for (long int i = 0; i < o; i++) {
+            for (size_t a = 0; a < v; a++) {
+                for (size_t i = 0; i < o; i++) {
                     dum -= eri_iajb_[i*o*v*v+e*o*v+m*v+a] * t1_[a*o+i];
                 }
             }
@@ -480,10 +480,10 @@ void PolaritonicUCCSD::residual() {
 
     // v'(m,i,j,a) = <i,j||m,a>
 #pragma omp parallel for schedule(static)
-    for (long int m = 0; m < o; m++) {
-        for (long int i = 0; i < o; i++) {
-            for (long int j = 0; j < o; j++) {
-                for (long int a = 0; a < v; a++) {
+    for (size_t m = 0; m < o; m++) {
+        for (size_t i = 0; i < o; i++) {
+            for (size_t j = 0; j < o; j++) {
+                for (size_t a = 0; a < v; a++) {
                     tmp1_[m*o*o*v+i*o*v+j*v+a] = eri_iajk_[m*o*o*v+a*o*o+i*o+j];
                 }
             }
@@ -492,10 +492,10 @@ void PolaritonicUCCSD::residual() {
 
     // t'(i,j,a,e) = t2(a,e,i,j) + 2 t1(a,i) t1(e,j)
 #pragma omp parallel for schedule(static)
-    for (long int i = 0; i < o; i++) {
-        for (long int j = 0; j < o; j++) {
-            for (long int a = 0; a < v; a++) {
-                for (long int e = 0; e < v; e++) {
+    for (size_t i = 0; i < o; i++) {
+        for (size_t j = 0; j < o; j++) {
+            for (size_t a = 0; a < v; a++) {
+                for (size_t e = 0; e < v; e++) {
                     tmp2_[i*o*v*v+j*v*v+a*v+e] = t2_[a*o*o*v+e*o*o+i*o+j] + 2.0 * t1_[a*o+i] * t1_[e*o+j];
                 }
             }
@@ -509,10 +509,10 @@ void PolaritonicUCCSD::residual() {
 
     // t'(i,a,b,m) = t2(a,b,i,m) + 2 t1(a,i) t1(b,m)
 #pragma omp parallel for schedule(static)
-    for (long int i = 0; i < o; i++) {
-        for (long int a = 0; a < v; a++) {
-            for (long int b = 0; b < v; b++) {
-                for (long int m = 0; m < o; m++) {
+    for (size_t i = 0; i < o; i++) {
+        for (size_t a = 0; a < v; a++) {
+            for (size_t b = 0; b < v; b++) {
+                for (size_t m = 0; m < o; m++) {
                     tmp1_[i*o*v*v+a*o*v+b*o+m] = t2_[a*o*o*v+b*o*o+i*o+m] + 2.0 * t1_[a*o+i] * t1_[b*o+m];
                 }   
             }   
@@ -526,11 +526,11 @@ void PolaritonicUCCSD::residual() {
             
     // I(j,b) = <i,j||a,b> t1(a,i)
 #pragma omp parallel for schedule(static)
-    for (long int j = 0; j < o; j++) {
-        for (long int b = 0; b < v; b++) {
+    for (size_t j = 0; j < o; j++) {
+        for (size_t b = 0; b < v; b++) {
             double dum = 0.0;
-            for (long int a = 0; a < v; a++) {
-                for (long int i = 0; i < o; i++) {
+            for (size_t a = 0; a < v; a++) {
+                for (size_t i = 0; i < o; i++) {
                     dum += eri_ijab_[i*o*v*v+j*v*v+a*v+b] * t1_[a*o+i];
                 }
             }   
@@ -540,11 +540,11 @@ void PolaritonicUCCSD::residual() {
 
     // r(e,m) = - I(j,b) ( t2(b,e,m,j) + t1(b,m) t1(e,j) )
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int m = 0; m < o; m++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t m = 0; m < o; m++) {
             double dum = 0.0;
-            for (long int j = 0; j < o; j++) {
-                for (long int b = 0; b < v; b++) {
+            for (size_t j = 0; j < o; j++) {
+                for (size_t b = 0; b < v; b++) {
                     dum += tmp1_[j*v+b] * ( t2_[b*o*o*v+e*o*o+m*o+j] + t1_[b*o+m] * t1_[e*o+j] );
                 }
             }
@@ -556,10 +556,10 @@ void PolaritonicUCCSD::residual() {
 
     // v'(i,j,b,a) = <i,j||a,b>
 #pragma omp parallel for schedule(static)
-    for (long int i = 0; i < o; i++) {
-        for (long int j = 0; j < o; j++) {
-            for (long int b = 0; b < v; b++) {
-                for (long int a = 0; a < v; a++) {
+    for (size_t i = 0; i < o; i++) {
+        for (size_t j = 0; j < o; j++) {
+            for (size_t b = 0; b < v; b++) {
+                for (size_t a = 0; a < v; a++) {
                     tmp1_[i*o*v*v+j*v*v+b*v+a] = eri_ijab_[i*o*v*v+j*v*v+a*v+b];
                 }
             }
@@ -571,10 +571,10 @@ void PolaritonicUCCSD::residual() {
 
     // t'(e,i,j,b) = t2(b,e,i,j)
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) { 
-        for (long int i = 0; i < o; i++) {
-            for (long int j = 0; j < o; j++) {
-                for (long int b = 0; b < v; b++) {
+    for (size_t e = 0; e < v; e++) { 
+        for (size_t i = 0; i < o; i++) {
+            for (size_t j = 0; j < o; j++) {
+                for (size_t b = 0; b < v; b++) {
                     tmp1_[e*o*o*v+i*o*v+j*v+b] = t2_[b*o*o*v+e*o*o+i*o+j];
                 }
             }
@@ -588,10 +588,10 @@ void PolaritonicUCCSD::residual() {
 
     // t'(j,a,b,m) = t2(a,b,j,m) 
 #pragma omp parallel for schedule(static)
-    for (long int j = 0; j < o; j++) { 
-        for (long int a = 0; a < v; a++) {
-            for (long int b = 0; b < v; b++) {
-                for (long int m = 0; m < o; m++) {
+    for (size_t j = 0; j < o; j++) { 
+        for (size_t a = 0; a < v; a++) {
+            for (size_t b = 0; b < v; b++) {
+                for (size_t m = 0; m < o; m++) {
                     tmp1_[j*o*v*v+a*o*v+b*o+m] = t2_[a*o*o*v+b*o*o+j*o+m];
                 }
             }
@@ -688,10 +688,10 @@ void PolaritonicUCCSD::residual() {
 
     // + 1.00000 <e,f||m,n> 
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] = eri_ijab_[m*o*v*v+n*v*v+e*v+f];
                 }
             }
@@ -703,10 +703,10 @@ void PolaritonicUCCSD::residual() {
     F_DGEMM('n','n',o*o*v,v,o,1.0,eri_iajk_,o*o*v,t1_,o,0.0,tmp1_,o*o*v);
     C_DAXPY(o*o*v*v,-1.0,tmp1_,1,r2_,1);
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] += tmp1_[f*o*o*v+e*o*o+m*o+n];
                 }
             }
@@ -719,10 +719,10 @@ void PolaritonicUCCSD::residual() {
 
     // v'(a,n,i,j) = <n,a||i,j>
 #pragma omp parallel for schedule(static)
-    for (long int a = 0; a < v; a++) {
-        for (long int n = 0; n < o; n++) {
-            for (long int i = 0; i < o; i++) {
-                for (long int j = 0; j < o; j++) {
+    for (size_t a = 0; a < v; a++) {
+        for (size_t n = 0; n < o; n++) {
+            for (size_t i = 0; i < o; i++) {
+                for (size_t j = 0; j < o; j++) {
                     tmp1_[a*o*o*o+n*o*o+i*o+j] = eri_iajk_[n*o*o*v+a*o*o+i*o+j];
                 }
             }
@@ -737,10 +737,10 @@ void PolaritonicUCCSD::residual() {
 
     C_DAXPY(o*o*v*v,-1.0,tmp1_,1,r2_,1);
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] += tmp1_[e*o*o*v+f*o*o+n*o+m];
                 }
             }
@@ -752,11 +752,11 @@ void PolaritonicUCCSD::residual() {
 
     // I(j,n) = <i,j||n,a> t1(a,i)
 #pragma omp parallel for schedule(static)
-    for (long int j = 0; j < o; j++) {
-        for (long int n = 0; n < o; n++) {
+    for (size_t j = 0; j < o; j++) {
+        for (size_t n = 0; n < o; n++) {
             double dum = 0.0;
-            for (long int a = 0; a < v; a++) {
-                for (long int i = 0; i < o; i++) {
+            for (size_t a = 0; a < v; a++) {
+                for (size_t i = 0; i < o; i++) {
                     dum += eri_iajk_[n*o*o*v+a*o*o+i*o+j] * t1_[a*o+i];
                 }
             }
@@ -768,10 +768,10 @@ void PolaritonicUCCSD::residual() {
     F_DGEMM('n','n',o,o*v*v,o,1.0,tmp1_,o,t2_,o,0.0,tmp2_,o);
     C_DAXPY(o*o*v*v,1.0,tmp2_,1,r2_,1);
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] -= tmp2_[e*o*o*v+f*o*o+n*o+m];
                 }
             }
@@ -785,10 +785,10 @@ void PolaritonicUCCSD::residual() {
 
     // v'(n,i,a,j) = <i,j||n,a>
 #pragma omp parallel for schedule(static)
-    for (long int n = 0; n < o; n++) {
-        for (long int i = 0; i < o; i++) {
-            for (long int a = 0; a < v; a++) {
-                for (long int j = 0; j < o; j++) {
+    for (size_t n = 0; n < o; n++) {
+        for (size_t i = 0; i < o; i++) {
+            for (size_t a = 0; a < v; a++) {
+                for (size_t j = 0; j < o; j++) {
                     tmp1_[n*o*o*v+i*o*v+a*o+j] = eri_iajk_[n*o*o*v+a*o*o+i*o+j];
                 }
             }
@@ -797,10 +797,10 @@ void PolaritonicUCCSD::residual() {
 
     // t'(e,m,a,j) = t2(a,e,j,m)
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int m = 0; m < o; m++) {
-            for (long int a = 0; a < v; a++) {
-                for (long int j = 0; j < o; j++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t m = 0; m < o; m++) {
+            for (size_t a = 0; a < v; a++) {
+                for (size_t j = 0; j < o; j++) {
                     tmp2_[e*o*o*v+m*o*v+a*o+j] = t2_[a*o*o*v+e*o*o+j*o+m];
                 }
             }
@@ -814,10 +814,10 @@ void PolaritonicUCCSD::residual() {
     F_DGEMM('t','n',o*o*v,v,o,1.0,tmp3_,o,t1_,o,0.0,tmp1_,o*o*v);
 
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] -= tmp1_[f*o*o*v+e*o*o+m*o+n];
                     r2_[e*o*o*v+f*o*o+m*o+n] += tmp1_[f*o*o*v+e*o*o+n*o+m];
                     r2_[e*o*o*v+f*o*o+m*o+n] += tmp1_[e*o*o*v+f*o*o+m*o+n];
@@ -832,10 +832,10 @@ void PolaritonicUCCSD::residual() {
 
     // v'(a,n,i,j) = <na||ij>
 #pragma omp parallel for schedule(static)
-    for (long int a = 0; a < v; a++) {
-        for (long int n = 0; n < o; n++) {
-            for (long int i = 0; i < o; i++) {
-                for (long int j = 0; j < o; j++) {
+    for (size_t a = 0; a < v; a++) {
+        for (size_t n = 0; n < o; n++) {
+            for (size_t i = 0; i < o; i++) {
+                for (size_t j = 0; j < o; j++) {
                     tmp1_[a*o*o*o+n*o*o+i*o+j] = eri_iajk_[n*o*o*v+a*o*o+i*o+j];
                 }
             }
@@ -852,10 +852,10 @@ void PolaritonicUCCSD::residual() {
     F_DGEMM('t','n',o*o*v,v,o,1.0,tmp1_,o,t1_,o,0.0,tmp2_,o*o*v);
 
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] += tmp2_[f*o*o*v+e*o*o+m*o+n];
                     r2_[e*o*o*v+f*o*o+m*o+n] -= tmp2_[f*o*o*v+e*o*o+n*o+m];
                 }
@@ -867,10 +867,10 @@ void PolaritonicUCCSD::residual() {
     // - 1.00000 <e,f||a,m> t1(a,n) 
     F_DGEMM('n','t',o*v*v,o,v,1.0,eri_aibc_,o*v*v,t1_,o,0.0,tmp1_,o*v*v);
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] += tmp1_[m*o*v*v+n*v*v+e*v+f];
                     r2_[e*o*o*v+f*o*o+m*o+n] -= tmp1_[n*o*v*v+m*v*v+e*v+f];
                 }
@@ -881,10 +881,10 @@ void PolaritonicUCCSD::residual() {
     // t'(a,b,i,j) = t2(a,b,i,j) + 2 t1(a,i) t1(b,j)
     C_DCOPY(o*o*v*v,t2_,1,tmp1_,1);
 #pragma omp parallel for schedule(static)
-    for (long int a = 0; a < v; a++) {
-        for (long int b = 0; b < v; b++) {
-            for (long int i = 0; i < o; i++) {
-                for (long int j = 0; j < o; j++) {
+    for (size_t a = 0; a < v; a++) {
+        for (size_t b = 0; b < v; b++) {
+            for (size_t i = 0; i < o; i++) {
+                for (size_t j = 0; j < o; j++) {
                     tmp1_[a*o*o*v+b*o*o+i*o+j] += 2.0 * t1_[a*o+i] * t1_[b*o+j];
                 }
             }
@@ -901,10 +901,10 @@ void PolaritonicUCCSD::residual() {
 
     // t'(a,i,f,m) = t2(a,f,m,i) + t1(a,m) t1(f,i) 
 #pragma omp parallel for schedule(static)
-    for (long int a = 0; a < v; a++) {
-        for (long int i = 0; i < o; i++) {
-            for (long int f = 0; f < v; f++) {
-                for (long int m = 0; m < o; m++) {
+    for (size_t a = 0; a < v; a++) {
+        for (size_t i = 0; i < o; i++) {
+            for (size_t f = 0; f < v; f++) {
+                for (size_t m = 0; m < o; m++) {
                     tmp1_[a*o*o*v+i*o*v+f*o+m] = t2_[a*o*o*v+f*o*o+m*o+i] + t1_[a*o+m] * t1_[f*o+i];
                 }
             }
@@ -913,10 +913,10 @@ void PolaritonicUCCSD::residual() {
 
     // v'(a,i,e,n) = <ie||na>
 #pragma omp parallel for schedule(static)
-    for (long int a = 0; a < v; a++) {
-        for (long int i = 0; i < o; i++) {
-            for (long int e = 0; e < v; e++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t a = 0; a < v; a++) {
+        for (size_t i = 0; i < o; i++) {
+            for (size_t e = 0; e < v; e++) {
+                for (size_t n = 0; n < o; n++) {
                     tmp2_[a*o*o*v+i*o*v+e*o+n] = eri_iajb_[i*o*v*v+e*o*v+n*v+a];
                 }
             }
@@ -926,10 +926,10 @@ void PolaritonicUCCSD::residual() {
     // I(e,n,f,m) = t'(a,i,f,m) v'(a,i,e,n) 
     F_DGEMM('n','t',o*v,o*v,o*v,1.0,tmp1_,o*v,tmp2_,o*v,0.0,tmp3_,o*v);
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
 
                     double dum = 0.0;
                     dum -= tmp3_[e*o*o*v+n*o*v+f*o+m];
@@ -952,10 +952,10 @@ void PolaritonicUCCSD::residual() {
     // R(m,n,e,f) = t1(f,i) I(m,n,e,i)
     F_DGEMM('t','n',v,o*o*v,o,1.0,t1_,o,tmp1_,o,0.0,tmp2_,v);
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] -= tmp2_[m*o*v*v+n*v*v+e*v+f];
                     r2_[e*o*o*v+f*o*o+m*o+n] += tmp2_[m*o*v*v+n*v*v+f*v+e];
                 }
@@ -967,11 +967,11 @@ void PolaritonicUCCSD::residual() {
     // + 1.00000 <f,i||a,b> t1(a,i) t2(b,e,m,n) 
 
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int b = 0; b < v; b++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t b = 0; b < v; b++) {
             double dum = 0.0;
-            for (long int a = 0; a < v; a++) {
-                for (long int i = 0; i < o; i++) {
+            for (size_t a = 0; a < v; a++) {
+                for (size_t i = 0; i < o; i++) {
                     dum += eri_aibc_[e*o*v*v+i*v*v+a*v+b] * t1_[a*o+i];
                 }
             }
@@ -981,10 +981,10 @@ void PolaritonicUCCSD::residual() {
     F_DGEMM('n','n',o*o*v,v,v,1.0,t2_,o*o*v,tmp1_,v,0.0,tmp2_,o*o*v);
     C_DAXPY(o*o*v*v,-1.0,tmp2_,1,r2_,1);
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] += tmp2_[f*o*o*v+e*o*o+m*o+n];
                 }
             }
@@ -996,10 +996,10 @@ void PolaritonicUCCSD::residual() {
 
     // v'(e,b,i,a) = <e,i||a,b>
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int i = 0; i < o; i++) {
-            for (long int a = 0; a < v; a++) {
-                for (long int b = 0; b < v; b++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t i = 0; i < o; i++) {
+            for (size_t a = 0; a < v; a++) {
+                for (size_t b = 0; b < v; b++) {
                     tmp1_[e*o*v*v+b*o*v+i*v+a] = eri_aibc_[e*o*v*v+i*v*v+a*v+b];
                 }
             }
@@ -1011,10 +1011,10 @@ void PolaritonicUCCSD::residual() {
 
     // t'(b,i,n,f) = t2(b,f,n,i)
 #pragma omp parallel for schedule(static)
-    for (long int b = 0; b < v; b++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int n = 0; n < o; n++) {
-                for (long int i = 0; i < o; i++) {
+    for (size_t b = 0; b < v; b++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t n = 0; n < o; n++) {
+                for (size_t i = 0; i < o; i++) {
                     tmp1_[b*o*o*v+i*o*v+n*v+f] = t2_[b*o*o*v+f*o*o+n*o+i];
                 }
             }
@@ -1025,10 +1025,10 @@ void PolaritonicUCCSD::residual() {
     F_DGEMM('n','n',o*v,o*v,o*v,1.0,tmp1_,o*v,tmp2_,o*v,0.0,tmp3_,o*v);
 
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] -= tmp3_[m*o*v*v+e*o*v+n*v+f];
                     r2_[e*o*o*v+f*o*o+m*o+n] += tmp3_[m*o*v*v+f*o*v+n*v+e];
                 }
@@ -1041,10 +1041,10 @@ void PolaritonicUCCSD::residual() {
 
     // t'(b,i,m,f) = t2(b,f,m,i) + t1(b,m) t1(f,i)
 #pragma omp parallel for schedule(static)
-    for (long int b = 0; b < v; b++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int i = 0; i < o; i++) {
+    for (size_t b = 0; b < v; b++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t i = 0; i < o; i++) {
                     tmp1_[b*o*o*v+i*o*v+m*v+f] = t2_[b*o*o*v+f*o*o+m*o+i] + t1_[b*o+m] * t1_[f*o+i];
                 }
             }
@@ -1055,10 +1055,10 @@ void PolaritonicUCCSD::residual() {
     F_DGEMM('n','n',o*v,o*v,o*v,1.0,tmp1_,o*v,tmp2_,o*v,0.0,tmp3_,o*v);
 
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] += tmp3_[n*o*v*v+e*o*v+m*v+f];
                     r2_[e*o*o*v+f*o*o+m*o+n] -= tmp3_[n*o*v*v+f*o*v+m*v+e];
                 }
@@ -1073,10 +1073,10 @@ void PolaritonicUCCSD::residual() {
     // t'(a,b,m,n) = t2(a,b,m,n) + 2 t1(a,m) t1(b,n)
     C_DCOPY(o*o*v*v,t2_,1,tmp1_,1);
 #pragma omp parallel for schedule(static)
-    for (long int a = 0; a < v; a++) {
-        for (long int b = 0; b < v; b++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t a = 0; a < v; a++) {
+        for (size_t b = 0; b < v; b++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     tmp1_[a*o*o*v+b*o*o+m*o+n] += 2.0 * t1_[a*o+m] * t1_[b*o+n];
                 }
             }
@@ -1096,10 +1096,10 @@ void PolaritonicUCCSD::residual() {
 
     // t'(n,j,a,b) = 0.5 t2(a,b,n,j) + 2 t1(a,n) t1(b,j)
 #pragma omp parallel for schedule(static)
-    for (long int n = 0; n < o; n++) {
-        for (long int j = 0; j < o; j++) {
-            for (long int a = 0; a < v; a++) {
-                for (long int b = 0; b < v; b++) {
+    for (size_t n = 0; n < o; n++) {
+        for (size_t j = 0; j < o; j++) {
+            for (size_t a = 0; a < v; a++) {
+                for (size_t b = 0; b < v; b++) {
                     tmp1_[n*o*v*v+j*v*v+a*v+b] = 0.5 * (t2_[a*o*o*v+b*o*o+n*o+j] + 2.0 * t1_[a*o+n] * t1_[b*o+j]);
                 }
             }
@@ -1114,10 +1114,10 @@ void PolaritonicUCCSD::residual() {
 
     C_DAXPY(o*o*v*v,-1.0,tmp1_,1,r2_,1);
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] += tmp1_[e*o*o*v+f*o*o+n*o+m];
                 }
             }
@@ -1131,10 +1131,10 @@ void PolaritonicUCCSD::residual() {
     
     // v'(a,b,i,j) = <i,j||a,b>
 #pragma omp parallel for schedule(static)
-    for (long int a = 0; a < v; a++) {
-        for (long int b = 0; b < v; b++) {
-            for (long int i = 0; i < o; i++) {
-                for (long int j = 0; j < o; j++) {
+    for (size_t a = 0; a < v; a++) {
+        for (size_t b = 0; b < v; b++) {
+            for (size_t i = 0; i < o; i++) {
+                for (size_t j = 0; j < o; j++) {
                     tmp1_[a*o*o*v+b*o*o+i*o+j] = eri_ijab_[i*o*v*v+j*v*v+a*v+b];
                 }
             }
@@ -1143,10 +1143,10 @@ void PolaritonicUCCSD::residual() {
 
     // t'(f,b,i,j) = 0.5 ( t2(b,f,i,j) + 2.0 t1(b,i) t1(f,j) )
 #pragma omp parallel for schedule(static)
-    for (long int f = 0; f < v; f++) {
-        for (long int b = 0; b < v; b++) {
-            for (long int i = 0; i < o; i++) {
-                for (long int j = 0; j < o; j++) {
+    for (size_t f = 0; f < v; f++) {
+        for (size_t b = 0; b < v; b++) {
+            for (size_t i = 0; i < o; i++) {
+                for (size_t j = 0; j < o; j++) {
                     tmp2_[f*o*o*v+b*o*o+i*o+j] = 0.5 * ( t2_[b*o*o*v+f*o*o+i*o+j] + 2.0 * t1_[b*o+i] * t1_[f*o+j]);
                 }
             }
@@ -1161,17 +1161,17 @@ void PolaritonicUCCSD::residual() {
 
     C_DAXPY(o*o*v*v,1.0,tmp1_,1,r2_,1);
 #pragma omp parallel for schedule(static)
-    for (long int f = 0; f < v; f++) {
-        for (long int e = 0; e < v; e++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t f = 0; f < v; f++) {
+        for (size_t e = 0; e < v; e++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[f*o*o*v+e*o*o+m*o+n] -= tmp1_[e*o*o*v+f*o*o+m*o+n];
                 }   
             }   
         }   
     }
 
-    // + 1.00000 <i,j||a,b> t2(a,e,n,j) t2(b,f,m,i)   (1st 2 can be unfolded long into 4 permutations)
+    // + 1.00000 <i,j||a,b> t2(a,e,n,j) t2(b,f,m,i)   (1st 2 can be unfolded size_to 4 permutations)
     // - 1.00000 <i,j||a,b> t2(a,e,m,j) t2(b,f,n,i) 
     // + 1.00000 <i,j||a,b> t1(a,n) t1(e,j) t2(b,f,m,i) 
     // - 1.00000 <i,j||a,b> t1(a,n) t1(f,j) t2(b,e,m,i) 
@@ -1180,10 +1180,10 @@ void PolaritonicUCCSD::residual() {
 
     //I(i,b,j,a) = <i,j||a,b>
 #pragma omp parallel for schedule(static)
-    for (long int i = 0; i < o; i++) {
-        for (long int j = 0; j < o; j++) {
-            for (long int a = 0; a < v; a++) {
-                for (long int b = 0; b < v; b++) {
+    for (size_t i = 0; i < o; i++) {
+        for (size_t j = 0; j < o; j++) {
+            for (size_t a = 0; a < v; a++) {
+                for (size_t b = 0; b < v; b++) {
                     tmp1_[i*o*v*v+b*o*v+j*v+a] = eri_ijab_[i*o*v*v+j*v*v+a*v+b];
                 }
             }
@@ -1192,10 +1192,10 @@ void PolaritonicUCCSD::residual() {
 
     // t'(i,b,m,f) = t2(b,f,m,i)
 #pragma omp parallel for schedule(static)
-    for (long int b = 0; b < v; b++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int i = 0; i < o; i++) {
+    for (size_t b = 0; b < v; b++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t i = 0; i < o; i++) {
                     tmp2_[i*o*v*v+b*o*v+m*v+f] = t2_[b*o*o*v+f*o*o+m*o+i];
                 }
             }
@@ -1207,10 +1207,10 @@ void PolaritonicUCCSD::residual() {
 
     // t''(n,e,j,a) = t2(a,e,n,j) + 2 t1(a,n) t1(e,j)
 #pragma omp parallel for schedule(static)
-    for (long int n = 0; n < o; n++) {
-        for (long int e = 0; e < v; e++) {
-            for (long int j = 0; j < o; j++) {
-                for (long int a = 0; a < v; a++) {
+    for (size_t n = 0; n < o; n++) {
+        for (size_t e = 0; e < v; e++) {
+            for (size_t j = 0; j < o; j++) {
+                for (size_t a = 0; a < v; a++) {
                     tmp1_[e*o*o*v+n*o*v+j*v+a] = t2_[a*o*o*v+e*o*o+n*o+j] + 2.0 * t1_[a*o+n] * t1_[e*o+j];
                 }
             }
@@ -1220,10 +1220,10 @@ void PolaritonicUCCSD::residual() {
     //r'(e,n,m,f) = I''(m,f,j,a) t''(n,e,j,a)
     F_DGEMM('t','n',o*v,o*v,o*v,0.5,tmp3_,o*v,tmp1_,o*v,0.0,tmp2_,o*v);
 #pragma omp parallel for schedule(static)
-    for (long int e = 0; e < v; e++) {
-        for (long int f = 0; f < v; f++) {
-            for (long int m = 0; m < o; m++) {
-                for (long int n = 0; n < o; n++) {
+    for (size_t e = 0; e < v; e++) {
+        for (size_t f = 0; f < v; f++) {
+            for (size_t m = 0; m < o; m++) {
+                for (size_t n = 0; n < o; n++) {
                     r2_[e*o*o*v+f*o*o+m*o+n] += tmp2_[e*o*o*v+n*o*v+m*v+f];
                     r2_[e*o*o*v+f*o*o+m*o+n] -= tmp2_[f*o*o*v+n*o*v+m*v+e];
                     r2_[e*o*o*v+f*o*o+m*o+n] -= tmp2_[e*o*o*v+m*o*v+n*v+f];
@@ -1237,19 +1237,19 @@ void PolaritonicUCCSD::residual() {
 
 double PolaritonicUCCSD::update_amplitudes() {
 
-    long int o = nalpha_ + nbeta_;
-    long int v = 2 * nmo_ - o;
+    size_t o = nalpha_ + nbeta_;
+    size_t v = 2 * nmo_ - o;
 
     // t2
-    for (long int a = 0; a < v; a++) {
+    for (size_t a = 0; a < v; a++) {
         double da = epsilon_[a+o];
-        for (long int b = 0; b < v; b++) {
+        for (size_t b = 0; b < v; b++) {
             double dab = da + epsilon_[b+o];
-            for (long int i = 0; i < o; i++) {
+            for (size_t i = 0; i < o; i++) {
                 double dabi = dab - epsilon_[i];
-                for (long int j = 0; j < o; j++) {
+                for (size_t j = 0; j < o; j++) {
                     double dabij = dabi - epsilon_[j];
-                    long int abij = a*o*o*v+b*o*o+i*o+j;
+                    size_t abij = a*o*o*v+b*o*o+i*o+j;
                     r2_[abij] /= -dabij;
                 }
             }
@@ -1257,11 +1257,11 @@ double PolaritonicUCCSD::update_amplitudes() {
     }
 
     // t1
-    for (long int a = 0; a < v; a++) {
+    for (size_t a = 0; a < v; a++) {
         double da = epsilon_[a+o];
-        for (long int i = 0; i < o; i++) {
+        for (size_t i = 0; i < o; i++) {
             double dai = da - epsilon_[i];
-            long int ai = a*o+i;
+            size_t ai = a*o+i;
             r1_[ai] /= -dai;
         }
     }
@@ -1279,16 +1279,16 @@ double PolaritonicUCCSD::update_amplitudes() {
 
 double PolaritonicUCCSD::correlation_energy() {
 
-    long int o = nalpha_ + nbeta_;
-    long int v = 2 * nmo_ - o;
+    size_t o = nalpha_ + nbeta_;
+    size_t v = 2 * nmo_ - o;
 
     double ec = 0.0;
 
     // + 0.25000 <i,j||a,b> ( t2(a,b,i,j) + 2 * t1(a,i) t1(b,j) )
-    for (long int a = 0; a < v; a++) {
-        for (long int b = 0; b < v; b++) {
-            for (long int i = 0; i < o; i++) {
-                for (long int j = 0; j < o; j++) {
+    for (size_t a = 0; a < v; a++) {
+        for (size_t b = 0; b < v; b++) {
+            for (size_t i = 0; i < o; i++) {
+                for (size_t j = 0; j < o; j++) {
                     ec += 0.25 * eri_ijab_[i*o*v*v+j*v*v+a*v+b] * ( t2_[a*o*o*v+b*o*o+i*o+j] + 2.0 * t1_[a*o+i] * t1_[b*o+j] );
                 }
             }
