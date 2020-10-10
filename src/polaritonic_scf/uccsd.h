@@ -53,7 +53,7 @@ class PolaritonicUCCSD: public PolaritonicHF {
     std::shared_ptr<Matrix> C_;
 
     /// number of auxiliary basis functions
-    int nQ_;
+    size_t nQ_;
 
     /// temporary container 1
     double * tmp1_;
