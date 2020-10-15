@@ -52,6 +52,12 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// alpha + beta MO transformation matrix
     std::shared_ptr<Matrix> C_;
 
+    /// alpha + beta Fock matrix
+    std::shared_ptr<Matrix> F_;
+
+    /// alpha + beta core hamiltonian matrix
+    std::shared_ptr<Matrix> H_;
+
     /// number of auxiliary basis functions
     size_t nQ_;
 
@@ -88,14 +94,20 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// the DIIS solver
     std::shared_ptr<DIIS> diis;
 
-    /// build residual
-    void residual();
+    /// build t1 part of residual
+    void residual_t1();
+
+    /// build t2 part of residual
+    void residual_t2();
 
     /// update t amplitudes
     double update_amplitudes();
 
     /// evaluate correlation energy
     double correlation_energy();
+
+    /// build t1-transformed integrals
+    void t1_transformation();
 
     /// build mo-basis electron repulsion integrals
     void build_mo_eris();
@@ -112,8 +124,14 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// <ij||ab>
     double * eri_ijab_;
 
+    /// <ab||ij>
+    double * eri_abij_;
+
     /// <ia||jb>
     double * eri_iajb_;
+
+    /// <jk||ia>
+    double * eri_jkia_;
 
     /// <ia||jk>
     double * eri_iajk_;
