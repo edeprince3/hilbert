@@ -55,8 +55,14 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// alpha + beta Fock matrix
     std::shared_ptr<Matrix> F_;
 
+    /// alpha + beta dipole (scaled sum)
+    std::shared_ptr<Matrix> Dipole_;
+
     /// alpha + beta core hamiltonian matrix
     std::shared_ptr<Matrix> H_;
+
+    /// alpha + beta extra one-electron terms introduced by cavity
+    std::shared_ptr<Matrix> oe_cavity_terms_;
 
     /// number of auxiliary basis functions
     size_t nQ_;
@@ -70,8 +76,11 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// temporary container 3
     double * tmp3_;
 
-    /// t amplitudes (all)
-    double * tamps_;
+    /// the number of cc amplitudes
+    size_t ccamps_dim_;
+
+    /// cc amplitudes (all)
+    double * ccamps_;
 
     /// t amplitudes (doubles)
     double * t2_;
@@ -79,14 +88,41 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// t amplitudes (singles)
     double * t1_;
 
+    /// do account for u0?
+    bool include_u0_;
+
+    /// do account for u1?
+    bool include_u1_;
+
+    /// do account for u2?
+    bool include_u2_;
+
+    /// u amplitudes (0)
+    double * u0_;
+
+    /// u amplitudes (singles)
+    double * u1_;
+
+    /// u amplitudes (doubles)
+    double * u2_;
+
     /// residual (all)
     double * residual_;
 
-    /// residual (doubles)
-    double * r2_;
+    /// residual (t doubles)
+    double * rt2_;
 
-    /// residual (singles)
-    double * r1_;
+    /// residual (t singles)
+    double * rt1_;
+
+    /// residual (u doubles)
+    double * ru2_;
+
+    /// residual (u singles)
+    double * ru1_;
+
+    /// residual (u 0)
+    double * ru0_;
 
     /// orbital energies (full a+b list)
     double * epsilon_;
@@ -94,11 +130,23 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// the DIIS solver
     std::shared_ptr<DIIS> diis;
 
+    /// build total residual
+    void residual();
+
     /// build t1 part of residual
     void residual_t1();
 
     /// build t2 part of residual
     void residual_t2();
+
+    /// build u1 part of residual
+    void residual_u1();
+
+    /// build u2 part of residual
+    void residual_u2();
+
+    /// build u0 part of the residual
+    void residual_u0();
 
     /// update t amplitudes
     double update_amplitudes();
