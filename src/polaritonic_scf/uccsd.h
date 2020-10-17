@@ -155,7 +155,7 @@ class PolaritonicUCCSD: public PolaritonicHF {
     double correlation_energy();
 
     /// build t1-transformed integrals
-    void t1_transformation();
+    double t1_transformation();
 
     /// build mo-basis electron repulsion integrals
     void build_mo_eris();

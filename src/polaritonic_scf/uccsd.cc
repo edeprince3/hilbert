@@ -270,7 +270,7 @@ void PolaritonicUCCSD::write_three_index_ints() {
 
 }
 
-void PolaritonicUCCSD::t1_transformation() {
+double PolaritonicUCCSD::t1_transformation() {
 
     size_t n  = 2L*(size_t)nmo_;
     size_t ns = 2L*(size_t)nso_;
@@ -528,6 +528,13 @@ void PolaritonicUCCSD::t1_transformation() {
         }
     }
 
+
+    // calculate t1 contribution to correlation energy
+    double ec = 0.0;
+    for (size_t i = 0; i < o; i++) {
+        ec += 0.5 * fp[i][i];
+    }
+
     for (size_t Q = 0; Q < nQ_; Q++) {
 
         // exchange:
@@ -542,6 +549,10 @@ void PolaritonicUCCSD::t1_transformation() {
         }
         C_DAXPY(n*n, dum, Qmo + Q*n*n, 1, &(fp[0][0]), 1);
     }
+    for (size_t i = 0; i < o; i++) {
+        ec += 0.5 * fp[i][i];
+    }
+    ec += enuc_ - reference_wavefunction_->energy();
 
     // update orbital energies
     for (size_t i = 0; i < n; i++) {
@@ -578,7 +589,9 @@ void PolaritonicUCCSD::t1_transformation() {
     F_->add(oe_tmp);
 
     free(oei_tmp);
-    
+
+    // return t1 contribution to correlation energy
+    return ec;    
 }
 
 void PolaritonicUCCSD::build_mo_eris() {
@@ -814,10 +827,10 @@ double PolaritonicUCCSD::compute_energy() {
         tnorm = update_amplitudes();
 
         // t1-transformation e(-T1) H e(T1)
-        t1_transformation();
+        ec = t1_transformation();
 
-        // evaluate correlation energy
-        ec = correlation_energy();
+        // evaluate t1 contribution to correlation energy
+        ec += correlation_energy();
 
         // dele
         dele = energy_ + ec - e_last;
@@ -879,7 +892,6 @@ void PolaritonicUCCSD::residual() {
 // u1 residual
 // 
 void PolaritonicUCCSD::residual_u1() {
-    throw PsiException("residual_u1() not yet implemented",__FILE__,__LINE__);
 }
 
 // 
@@ -898,6 +910,7 @@ void PolaritonicUCCSD::residual_u2() {
 //     + 1.00000 F(i,a) u1(a,i) 
 //     - 1.00000 d+(i,a) t1(a,i) 
 //     + 0.25000 <i,j||a,b> u2(a,b,i,j) 
+//     + 1.00000 <i,j||a,b> t1(b,j) u1(a,i) 
 void PolaritonicUCCSD::residual_u0() {
 
     size_t o = nalpha_ + nbeta_;
@@ -911,15 +924,28 @@ void PolaritonicUCCSD::residual_u0() {
         r0 -= dp[i][i];
     }
 
-    double **fp = F_->pointer();
 
-    // F(i,a) u1(a,i) 
     if ( include_u1_ ) {
+
+        // F(i,a) u1(a,i) 
+        double **fp = F_->pointer();
         for (size_t i = 0; i < o; i++) {
             for (size_t a = 0; a < v; a++) {
                 r0 += fp[i][a+o] * u1_[a*o+i];
             }
         }
+
+        // + <i,j||a,b> t1(b,j) u1(a,i) 
+        for (size_t a = 0; a < v; a++) {
+            for (size_t b = 0; b < v; b++) {
+                for (size_t i = 0; i < o; i++) {
+                    for (size_t j = 0; j < o; j++) {
+                        r0 += 0.25 * eri_ijab_[i*o*v*v+j*v*v+a*v+b] * u1_[a*o*+i] * t1_[b*o+j];
+                    }
+                }
+            }
+        }
+
     }
 
     // - d+(i,a) t1(a,i) 
@@ -1037,6 +1063,67 @@ void PolaritonicUCCSD::residual_t1() {
 
     // r(e,m) = t'(i,a,b,m) <e,i||a,b>
     F_DGEMM('n','n',o,v,o*v*v,-0.5,tmp1_,o,eri_aibc_,o*v*v,1.0,rt1_,o);
+
+    // cavity terms:
+
+    double ** dp = Dipole_->pointer();
+
+    if ( include_u0_ ) {
+
+        // - d-(e,m) u0 
+#pragma omp parallel for schedule(static)
+        for (size_t e = 0; e < v; e++) {
+            for (size_t m = 0; m < o; m++) {
+                rt1_[e*o+m] -= dp[e+o][m] * u0_[0];
+            }
+        }
+    }
+
+    if ( include_u1_ ) {
+
+        // - d-(i,i) u1(e,m) 
+        double dii = 0.0;
+        for (size_t i = 0; i < o; i++) {
+            dii += dp[i][i];
+        }
+        C_DAXPY(o*v,-dii,u1_,1,rt1_,1);
+
+        // + d-(i,m) u1(e,i) 
+#pragma omp parallel for schedule(static)
+        for (size_t i = 0; i < o; i++) {
+            for (size_t m = 0; m < o; m++) {
+                tmp1_[i*o+m] = dp[i][m];
+            }
+        }
+        F_DGEMM('n','n',o,v,o,1.0,tmp1_,o,u1_,o,1.0,rt1_,o);
+
+        // - u1(a,m) d-(e,a) 
+#pragma omp parallel for schedule(static)
+        for (size_t e = 0; e < v; e++) {
+            for (size_t a = 0; a < v; a++) {
+                tmp1_[e*v+a] = dp[e][a];
+            }
+        }
+        F_DGEMM('n','n',o,v,v,-1.0,u1_,o,tmp1_,v,1.0,rt1_,o);
+
+    }
+
+    if ( include_u2_ ) {
+
+        // - d-(i,a) u2(a,e,i,m) 
+#pragma omp parallel for schedule(static)
+        for (size_t e = 0; e < v; e++) {
+            for (size_t m = 0; m < o; m++) {
+                double dum = 0.0;
+                for (size_t i = 0; i < o; i++) {
+                    for (size_t a = 0; a < v; a++) {
+                        dum -= dp[i][a+o] * u2_[a*o*o*v+e*o*o+i*o+m];
+                    }
+                }
+            }
+        }
+    }
+
 
 }
 
@@ -1421,19 +1508,18 @@ double PolaritonicUCCSD::correlation_energy() {
 
     double ec = 0.0;
 
-    // + 0.25000 <i,j||a,b> ( t2(a,b,i,j) + 2 * t1(a,i) t1(b,j) )
+    // + 0.25000 <i,j||a,b> t2(a,b,i,j)
     for (size_t a = 0; a < v; a++) {
         for (size_t b = 0; b < v; b++) {
             for (size_t i = 0; i < o; i++) {
                 for (size_t j = 0; j < o; j++) {
-                    ec += 0.25 * eri_ijab_[i*o*v*v+j*v*v+a*v+b] * ( t2_[a*o*o*v+b*o*o+i*o+j] + 2.0 * t1_[a*o+i] * t1_[b*o+j] );
+                    ec += 0.25 * eri_ijab_[i*o*v*v+j*v*v+a*v+b] * t2_[a*o*o*v+b*o*o+i*o+j];
                 }
             }
         }
     }
 
     return ec;
-
 }
 
 } // End namespaces
