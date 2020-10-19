@@ -184,8 +184,11 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// <ia||jk>
     double * eri_iajk_;
 
-    /// <ab||ci>
+    /// <ai||bc>
     double * eri_aibc_;
+
+    /// <ab||ic>
+    double * eri_abic_;
 
 };
 
