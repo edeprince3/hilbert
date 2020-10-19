@@ -80,9 +80,9 @@ void PolaritonicUCCSD::common_init() {
     }
 
     // include amplitudes for photon transitions?
-    include_u0_ = true;
-    include_u1_ = true;
-    include_u2_ = true;
+    include_u0_ = false;
+    include_u1_ = false;
+    include_u2_ = false;
 
     // alpha + beta MO transformation matrix
     C_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nmo_));
