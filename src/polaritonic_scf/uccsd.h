@@ -55,8 +55,14 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// alpha + beta Fock matrix
     std::shared_ptr<Matrix> F_;
 
-    /// alpha + beta dipole (scaled sum)
-    std::shared_ptr<Matrix> Dipole_;
+    /// alpha + beta dipole x
+    std::shared_ptr<Matrix> Dipole_x_;
+
+    /// alpha + beta dipole y
+    std::shared_ptr<Matrix> Dipole_y_;
+
+    /// alpha + beta dipole z
+    std::shared_ptr<Matrix> Dipole_z_;
 
     /// alpha + beta core hamiltonian matrix
     std::shared_ptr<Matrix> H_;

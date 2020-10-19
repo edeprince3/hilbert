@@ -80,7 +80,7 @@ void PolaritonicUCCSD::common_init() {
     }
 
     // include amplitudes for photon transitions?
-    include_u0_ = false;
+    include_u0_ = true;
     include_u1_ = false;
     include_u2_ = false;
 
@@ -153,16 +153,32 @@ void PolaritonicUCCSD::common_init() {
     F_->transform(C_);
 
     // scaled sum of dipole integrals
-    Dipole_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
-    double ** dp = Dipole_->pointer();
-    double ** dipole_scaled_sum_p = dipole_scaled_sum_->pointer();
+    Dipole_x_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
+    Dipole_y_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
+    Dipole_z_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
+    double ** dx = Dipole_x_->pointer();
+    double ** dy = Dipole_y_->pointer();
+    double ** dz = Dipole_z_->pointer();
+    double ** dipole_x_p = dipole_[0]->pointer();
+    double ** dipole_y_p = dipole_[1]->pointer();
+    double ** dipole_z_p = dipole_[2]->pointer();
     for (size_t mu = 0; mu < nso_; mu++) {
         for (size_t nu = 0; nu < nso_; nu++) {
-            dp[mu][nu]           = dipole_scaled_sum_p[mu][nu];
-            dp[mu+nso_][nu+nso_] = dipole_scaled_sum_p[mu][nu];
+
+            dx[mu][nu]           = dipole_x_p[mu][nu];
+            dx[mu+nso_][nu+nso_] = dipole_x_p[mu][nu];
+
+            dy[mu][nu]           = dipole_y_p[mu][nu];
+            dy[mu+nso_][nu+nso_] = dipole_y_p[mu][nu];
+
+            dz[mu][nu]           = dipole_z_p[mu][nu];
+            dz[mu+nso_][nu+nso_] = dipole_z_p[mu][nu];
+
         }
     }
-    Dipole_->transform(C_);
+    Dipole_x_->transform(C_);
+    Dipole_y_->transform(C_);
+    Dipole_z_->transform(C_);
 
     // orbital energies
     epsilon_ = (double*)malloc(2*nso_*sizeof(double));
@@ -354,25 +370,36 @@ double PolaritonicUCCSD::t1_transformation() {
     double * oei_tmp = (double*)malloc(ns*ns*sizeof(double));
 
     // transform dipole integrals
-    double ** dp = Dipole_->pointer();
+    double ** dx = Dipole_x_->pointer();
+    double ** dy = Dipole_y_->pointer();
+    double ** dz = Dipole_z_->pointer();
+    double ** dipole_x_p = dipole_[0]->pointer();
+    double ** dipole_y_p = dipole_[1]->pointer();
+    double ** dipole_z_p = dipole_[2]->pointer();
+    for (size_t mu = 0; mu < nso_; mu++) {
+        for (size_t nu = 0; nu < nso_; nu++) {
 
-    // ao basis
+            dx[mu][nu]           = dipole_x_p[mu][nu];
+            dx[mu+nso_][nu+nso_] = dipole_x_p[mu][nu];
+
+            dy[mu][nu]           = dipole_y_p[mu][nu];
+            dy[mu+nso_][nu+nso_] = dipole_y_p[mu][nu];
+
+            dz[mu][nu]           = dipole_z_p[mu][nu];
+            dz[mu+nso_][nu+nso_] = dipole_z_p[mu][nu];
+        
+        }
+    }
     std::shared_ptr<Matrix> dipole_tmp (new Matrix(ns,ns));
     double ** dipole_tmp_p = dipole_tmp->pointer();
     double ** dipole_scaled_sum_p = dipole_scaled_sum_->pointer();
-    for (size_t mu = 0; mu < nso_; mu++) {
-        for (size_t nu = 0; nu < nso_; nu++) {
-            dipole_tmp_p[mu][nu]           = dipole_scaled_sum_p[mu][nu];
-            dipole_tmp_p[mu+nso_][nu+nso_] = dipole_scaled_sum_p[mu][nu];
-        }
-    }
 
-    // t1 transformation
+    // t1 transformation (dipole x)
     for (size_t mu = 0; mu < ns; mu++) {
         for (size_t p = 0; p < n; p++) {
             double dum = 0.0;
             for (size_t nu = 0; nu < ns; nu++) {
-                dum += CL_p[nu][p] * dipole_tmp_p[nu][mu];
+                dum += CL_p[nu][p] * dipole_x_p[nu][mu];
             }
             oei_tmp[p * ns + mu] = dum;
         }
@@ -383,20 +410,72 @@ double PolaritonicUCCSD::t1_transformation() {
             for (size_t nu = 0; nu < ns; nu++) {
                 dum += CR_p[nu][q] * oei_tmp[p * ns + nu];
             }
-            dp[p][q] = dum;
+            dx[p][q] = dum;
         }
     }
+    // t1 transformation (dipole y)
+    for (size_t mu = 0; mu < ns; mu++) {
+        for (size_t p = 0; p < n; p++) {
+            double dum = 0.0;
+            for (size_t nu = 0; nu < ns; nu++) {
+                dum += CL_p[nu][p] * dipole_y_p[nu][mu];
+            }
+            oei_tmp[p * ns + mu] = dum;
+        }
+    }
+    for (size_t p = 0; p < n; p++) {
+        for (size_t q = 0; q < n; q++) {
+            double dum = 0.0;
+            for (size_t nu = 0; nu < ns; nu++) {
+                dum += CR_p[nu][q] * oei_tmp[p * ns + nu];
+            }
+            dy[p][q] = dum;
+        }
+    }
+    // t1 transformation (dipole z)
+    for (size_t mu = 0; mu < ns; mu++) {
+        for (size_t p = 0; p < n; p++) {
+            double dum = 0.0;
+            for (size_t nu = 0; nu < ns; nu++) {
+                dum += CL_p[nu][p] * dipole_z_p[nu][mu];
+            }
+            oei_tmp[p * ns + mu] = dum;
+        }
+    }
+    for (size_t p = 0; p < n; p++) {
+        for (size_t q = 0; q < n; q++) {
+            double dum = 0.0;
+            for (size_t nu = 0; nu < ns; nu++) {
+                dum += CR_p[nu][q] * oei_tmp[p * ns + nu];
+            }
+            dz[p][q] = dum;
+        }
+    }
+
+    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
+    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
 
     // add two-electron part of dipole self energy to eris
     for (size_t p = 0; p < n; p++) {
         for (size_t q = 0; q < n; q++) {
             for (size_t r = 0; r < n; r++) {
                 for (size_t s = 0; s < n; s++) {
-                    eri[p*n*n*n+q*n*n+r*n+s] += dp[p][q] * dp[r][s];
+                    eri[p*n*n*n+q*n*n+r*n+s] += lambda_x * lambda_x * dx[p][q] * dx[r][s];
+                    eri[p*n*n*n+q*n*n+r*n+s] += lambda_y * lambda_y * dy[p][q] * dy[r][s];
+                    eri[p*n*n*n+q*n*n+r*n+s] += lambda_z * lambda_z * dz[p][q] * dz[r][s];
                 }
             }
         }
     }
+
+    // now that dipole integrals have been used for self-energy term, scale for coupling terms
+    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+    Dipole_x_->scale(coupling_factor_x);
+    Dipole_y_->scale(coupling_factor_y);
+    Dipole_z_->scale(coupling_factor_z);
 
     // unpack different classes of eris
 
@@ -965,7 +1044,7 @@ void PolaritonicUCCSD::residual_u1() {
 
     memset((void*)ru1_,'\0',o*v*sizeof(double));
 
-    double ** dp = Dipole_->pointer();
+    double ** dp = Dipole_z_->pointer();
     double ** fp = F_->pointer();
 
     // - 1.00000 d+(e,m)
@@ -1278,7 +1357,7 @@ void PolaritonicUCCSD::residual_u2() {
     C_DAXPY(o*o*v*v,w0,u2_,1,ru2_,1);
 
     double ** fp = F_->pointer();
-    double ** dp = Dipole_->pointer();
+    double ** dp = Dipole_z_->pointer();
 
     // + F(i,m) u2(e,f,n,i)
     // - F(i,n) u2(e,f,m,i)
@@ -2288,16 +2367,18 @@ void PolaritonicUCCSD::residual_u2() {
 // - 1.00000 d+(i,i) 
 // + 1.00000 F(i,a) u1(a,i) 
 // + 0.25000 <i,j||a,b> u2(a,b,i,j) 
-// + 1.00000 u0 w0 (added in update_amplitudes)
+// + 1.00000 u0 w0 
 void PolaritonicUCCSD::residual_u0() {
 
     size_t o = nalpha_ + nbeta_;
     size_t v = 2L * nmo_ - o;
 
-    double r0 = 0.0;
+    // TODO: generalize for x,y,z
+    double w0 = cavity_frequency_[2];
+    double r0 = u0_[0] * w0;
 
     // - d+(i,i) 
-    double ** dp = Dipole_->pointer();
+    double ** dp = Dipole_z_->pointer();
     for (size_t i = 0; i < o; i++) {
         r0 -= dp[i][i];
     }
@@ -2430,7 +2511,7 @@ void PolaritonicUCCSD::residual_t1() {
 
     // cavity terms:
 
-    double ** dp = Dipole_->pointer();
+    double ** dp = Dipole_z_->pointer();
 
     if ( include_u0_ ) {
 
@@ -2829,7 +2910,7 @@ void PolaritonicUCCSD::residual_t2() {
 
     if ( include_u1_ ) {
 
-        double ** dp = Dipole_->pointer();
+        double ** dp = Dipole_z_->pointer();
 
         // + d-(e,n) u1(f,m)
         // - d-(e,m) u1(f,n)
@@ -2947,7 +3028,7 @@ void PolaritonicUCCSD::residual_t2() {
 
     if ( include_u2_ ) {
 
-        double ** dp = Dipole_->pointer();
+        double ** dp = Dipole_z_->pointer();
 
         // - d-(i,i) u2(e,f,m,n)
         double dii = 0.0;
@@ -2999,7 +3080,7 @@ void PolaritonicUCCSD::residual_t2() {
 
     if ( include_u0_ ) {
 
-        double ** dp = Dipole_->pointer();
+        double ** dp = Dipole_z_->pointer();
 
         // + u0 P(m,n) d-(i,n) t2(e,f,m,i)
         for (size_t i = 0; i < o; i++) {
@@ -3112,7 +3193,8 @@ double PolaritonicUCCSD::update_amplitudes() {
 
         // TODO: generalize for x,y,z
         double w0 = cavity_frequency_[2];
-        ru0_[0] = -ru0_[0] / w0 - u0_[0];
+        //ru0_[0] = -ru0_[0] / w0 - u0_[0];
+        ru0_[0] /= -w0;
     }
 
     // diis
@@ -3157,7 +3239,7 @@ double PolaritonicUCCSD::correlation_energy() {
     if ( include_u0_ ) {
 
         // - 1.00000 d-(i,i) u0 
-        double ** dp = Dipole_->pointer();
+        double ** dp = Dipole_z_->pointer();
         for (size_t i = 0; i < o; i++) {
             ec -= dp[i][i] * u0_[0];
         }
@@ -3167,7 +3249,7 @@ double PolaritonicUCCSD::correlation_energy() {
     if ( include_u1_ ) {
 
         // - 1.00000 d-(i,a) u1(a,i) 
-        double ** dp = Dipole_->pointer();
+        double ** dp = Dipole_z_->pointer();
         for (size_t i = 0; i < o; i++) {
             for (size_t a = 0; a < v; a++) {
                 ec -= dp[i][a+o] * u1_[a*o+i];
