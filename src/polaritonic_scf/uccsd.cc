@@ -1153,21 +1153,25 @@ void PolaritonicUCCSD::residual_u1() {
     // r(e,m) = I(m,i) u1(e,i)
     F_DGEMM('t','n',o,v,o,0.5,tmp2_,o,u1_,o,1.0,ru1_,o);
 
-    // + 1.00000 d-(i,m) u1(e,i) u0
-    for (size_t i = 0; i < o; i++) {
-        for (size_t m = 0; m < o; m++) {
-            tmp1_[i*o+m] = dp[i][m];
-        }
-    }
-    F_DGEMM('n','n',o,v,o,u0_[0],tmp1_,o,u1_,o,1.0,ru1_,o);
+    if ( include_u0_ ) {
 
-    // - 1.00000 d-(e,a) u1(a,m) u0
-    for (size_t e = 0; e < v; e++) {
-        for (size_t a = 0; a < v; a++) {
-            tmp1_[e*v+a] = dp[e+o][a+o];
+        // + 1.00000 d-(i,m) u1(e,i) u0
+        for (size_t i = 0; i < o; i++) {
+            for (size_t m = 0; m < o; m++) {
+                tmp1_[i*o+m] = dp[i][m];
+            }
         }
+        F_DGEMM('n','n',o,v,o,u0_[0],tmp1_,o,u1_,o,1.0,ru1_,o);
+
+        // - 1.00000 d-(e,a) u1(a,m) u0
+        for (size_t e = 0; e < v; e++) {
+            for (size_t a = 0; a < v; a++) {
+                tmp1_[e*v+a] = dp[e+o][a+o];
+            }
+        }
+        F_DGEMM('n','n',o,v,v,-u0_[0],u1_,o,tmp1_,v,1.0,ru1_,o);
+
     }
-    F_DGEMM('n','n',o,v,v,-u0_[0],u1_,o,tmp1_,v,1.0,ru1_,o);
 
     // - 1.00000 d-(i,a) u1(a,i) u1(e,m)
     double Iia = 0.0;
@@ -1199,10 +1203,21 @@ void PolaritonicUCCSD::residual_u1() {
                 for (size_t a = 0; a < v; a++) {
                     for (size_t i = 0; i < o; i++) {
                         dum += u2_[a*o*o*v+e*o*o+i*o+m] * fp[i][a+o];
-                        dum -= u2_[a*o*o*v+e*o*o+i*o+m] * dp[i][a+o];
                     }
                 }
                 ru1_[e*o+m] += dum;
+
+                if ( include_u0_ ) {
+
+                    dum = 0.0;
+                    for (size_t a = 0; a < v; a++) {
+                        for (size_t i = 0; i < o; i++) {
+                            dum -= u2_[a*o*o*v+e*o*o+i*o+m] * dp[i][a+o];
+                        }
+                    }
+                    ru1_[e*o+m] += dum * u0_[0];
+
+                }
             }
         }
 
@@ -2529,9 +2544,10 @@ void PolaritonicUCCSD::residual_t1() {
                 double dum = 0.0;
                 for (size_t i = 0; i < o; i++) {
                     for (size_t a = 0; a < v; a++) {
-                        dum -= dp[i][a+o] * t2_[a*o*o*v+e*o*o+i*o+m] * u0_[0];
+                        dum += dp[i][a+o] * t2_[a*o*o*v+e*o*o+i*o+m];
                     }
                 }
+                rt1_[e*o+m] -= dum * u0_[0];
             }
         }
 
@@ -2559,7 +2575,7 @@ void PolaritonicUCCSD::residual_t1() {
 #pragma omp parallel for schedule(static)
         for (size_t e = 0; e < v; e++) {
             for (size_t a = 0; a < v; a++) {
-                tmp1_[e*v+a] = dp[e][a];
+                tmp1_[e*v+a] = dp[e+o][a+o];
             }
         }
         F_DGEMM('n','n',o,v,v,-1.0,u1_,o,tmp1_,v,1.0,rt1_,o);
@@ -3099,7 +3115,7 @@ void PolaritonicUCCSD::residual_t2() {
             }
         }
 
-        // - u0 P(e,f) u0(a,f,m,n) d-(e,a)
+        // - u0 P(e,f) t2(a,f,m,n) d-(e,a)
         for (size_t e = 0; e < v; e++) {
             for (size_t a = 0; a < v; a++) {
                 tmp1_[e*v+a] = dp[e+o][a+o];
@@ -3201,7 +3217,9 @@ double PolaritonicUCCSD::update_amplitudes() {
     diis->WriteErrorVector(residual_);
     diis->Extrapolate(ccamps_);
 
-    //printf("u0 = %20.12lf\n",u0_[0]);
+    if ( include_u0_ ) {
+        printf("u0 = %20.12lf\n",u0_[0]);
+    }
 
     return C_DNRM2(ccamps_dim_,residual_,1);
 
