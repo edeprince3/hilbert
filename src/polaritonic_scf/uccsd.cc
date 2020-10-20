@@ -2420,12 +2420,9 @@ void PolaritonicUCCSD::residual_u0() {
 
     // - d+(i,i) 
     double ** dp = Dipole_z_->pointer();
-double dum = 0.0;
     for (size_t i = 0; i < o; i++) {
-        dum += dp[i][i];
         r0 -= dp[i][i];
     }
-printf("%20.12lf = %20.12lf * %20.12lf - %20.12lf\n",r0,u0_[0],w0,dum);
 
     if ( include_u1_ ) {
 
@@ -3240,7 +3237,6 @@ double PolaritonicUCCSD::update_amplitudes() {
         double w0 = cavity_frequency_[2];
         //ru0_[0] = -ru0_[0] / w0 - u0_[0];
         ru0_[0] /= -w0;
-printf("hey wtf %20.12lf\n",ru0_[0]);
     }
 
     // diis
@@ -3249,9 +3245,9 @@ printf("hey wtf %20.12lf\n",ru0_[0]);
     diis->WriteErrorVector(residual_);
     diis->Extrapolate(ccamps_);
 
-    if ( include_u0_ ) {
-        printf("u0 = %20.12lf\n",u0_[0]);
-    }
+    //if ( include_u0_ ) {
+    //    printf("u0 = %20.12lf\n",u0_[0]);
+    //}
 
     return C_DNRM2(ccamps_dim_,residual_,1);
 
