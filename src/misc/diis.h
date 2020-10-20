@@ -48,6 +48,9 @@ public:
     void Extrapolate(double * vector);
     void Extrapolate(double * vector1, double * vector2);
 
+    // restart diis
+    void restart();
+
 private:
 
     /// temporary storage

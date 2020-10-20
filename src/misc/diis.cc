@@ -54,6 +54,12 @@ DIIS::~DIIS() {
     free(tmp2_);
 }
 
+// reset diis solver (without freeing memory).
+void DIIS::restart() {
+    diis_iter_         = 0;
+    replace_diis_iter_ = 1;
+}
+
 // Write current solution vector to disk (in file PSIF_DCC_OVEC).
 void DIIS::WriteVector(double * vector){
 
