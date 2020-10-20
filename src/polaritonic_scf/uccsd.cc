@@ -80,7 +80,7 @@ void PolaritonicUCCSD::common_init() {
     }
 
     // include amplitudes for photon transitions?
-    include_u0_ = true;
+    include_u0_ = false;
     include_u1_ = false;
     include_u2_ = false;
 
@@ -391,15 +391,13 @@ double PolaritonicUCCSD::t1_transformation() {
         }
     }
     std::shared_ptr<Matrix> dipole_tmp (new Matrix(ns,ns));
-    double ** dipole_tmp_p = dipole_tmp->pointer();
-    double ** dipole_scaled_sum_p = dipole_scaled_sum_->pointer();
 
     // t1 transformation (dipole x)
     for (size_t mu = 0; mu < ns; mu++) {
         for (size_t p = 0; p < n; p++) {
             double dum = 0.0;
             for (size_t nu = 0; nu < ns; nu++) {
-                dum += CL_p[nu][p] * dipole_x_p[nu][mu];
+                dum += CL_p[nu][p] * dx[nu][mu];
             }
             oei_tmp[p * ns + mu] = dum;
         }
@@ -418,7 +416,7 @@ double PolaritonicUCCSD::t1_transformation() {
         for (size_t p = 0; p < n; p++) {
             double dum = 0.0;
             for (size_t nu = 0; nu < ns; nu++) {
-                dum += CL_p[nu][p] * dipole_y_p[nu][mu];
+                dum += CL_p[nu][p] * dy[nu][mu];
             }
             oei_tmp[p * ns + mu] = dum;
         }
@@ -437,7 +435,7 @@ double PolaritonicUCCSD::t1_transformation() {
         for (size_t p = 0; p < n; p++) {
             double dum = 0.0;
             for (size_t nu = 0; nu < ns; nu++) {
-                dum += CL_p[nu][p] * dipole_z_p[nu][mu];
+                dum += CL_p[nu][p] * dz[nu][mu];
             }
             oei_tmp[p * ns + mu] = dum;
         }
@@ -3203,7 +3201,7 @@ double PolaritonicUCCSD::update_amplitudes() {
     diis->WriteErrorVector(residual_);
     diis->Extrapolate(ccamps_);
 
-printf("u0 = %20.12lf\n",u0_[0]);
+    //printf("u0 = %20.12lf\n",u0_[0]);
 
     return C_DNRM2(ccamps_dim_,residual_,1);
 
