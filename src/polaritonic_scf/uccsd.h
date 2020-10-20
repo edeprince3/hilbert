@@ -136,6 +136,9 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// the DIIS solver
     std::shared_ptr<DIIS> diis;
 
+    /// solve CC equations
+    double cc_iterations();
+
     /// build total residual
     void residual();
 

@@ -917,7 +917,46 @@ double PolaritonicUCCSD::compute_energy() {
     outfile->Printf("\n");
     outfile->Printf("\n");
 
-    // CCSD iterations
+    // CCSD iterations without photon
+    include_u0_ = false;
+    include_u1_ = false;
+    include_u2_ = false;
+
+    double ec = cc_iterations();
+
+/*
+    // CCSD iterations with photon
+    include_u0_ = true;
+    include_u1_ = true;
+    include_u2_ = true;
+    diis->restart();
+
+    ec = cc_iterations();
+*/
+
+    //outfile->Printf("    * Polaritonic UCCSD total energy: %20.12lf\n",energy_ + ec);
+    outfile->Printf("    * UCCSD total energy: %20.12lf\n",energy_ + ec);
+
+    // print cavity properties
+    //if ( n_photon_states_ > 1 ) {
+    //    print_cavity_properties_ = true;
+    //    build_cavity_hamiltonian();
+    //    print_cavity_properties_ = false;
+    //}
+    
+    Process::environment.globals["UCCSD TOTAL ENERGY"] = energy_ + ec;
+    Process::environment.globals["CURRENT ENERGY"] = energy_ + ec;
+
+    return energy_;
+
+}
+
+double PolaritonicUCCSD::cc_iterations() {
+
+    // grab some input options_
+    double e_convergence = options_.get_double("E_CONVERGENCE");
+    double d_convergence = options_.get_double("D_CONVERGENCE");
+    size_t maxiter          = options_.get_int("MAXITER");
 
     double e_last  = 0.0;
     double dele    = 0.0;
@@ -970,25 +1009,14 @@ double PolaritonicUCCSD::compute_energy() {
     outfile->Printf("    CCSD iterations converged!\n");
     outfile->Printf("\n");
 
-    //outfile->Printf("    * Polaritonic UCCSD total energy: %20.12lf\n",energy_ + ec);
-    outfile->Printf("    * UCCSD total energy: %20.12lf\n",energy_ + ec);
-
-    // print cavity properties
-    //if ( n_photon_states_ > 1 ) {
-    //    print_cavity_properties_ = true;
-    //    build_cavity_hamiltonian();
-    //    print_cavity_properties_ = false;
-    //}
-    
-    Process::environment.globals["UCCSD TOTAL ENERGY"] = energy_ + ec;
-    Process::environment.globals["CURRENT ENERGY"] = energy_ + ec;
-
-    return energy_;
+    return ec;
 
 }
 
 // evaluate total residual
 void PolaritonicUCCSD::residual() {
+
+    memset((void*)residual_,'\0',ccamps_dim_*sizeof(double));
 
     residual_t1();
 
@@ -2392,9 +2420,12 @@ void PolaritonicUCCSD::residual_u0() {
 
     // - d+(i,i) 
     double ** dp = Dipole_z_->pointer();
+double dum = 0.0;
     for (size_t i = 0; i < o; i++) {
+        dum += dp[i][i];
         r0 -= dp[i][i];
     }
+printf("%20.12lf = %20.12lf * %20.12lf - %20.12lf\n",r0,u0_[0],w0,dum);
 
     if ( include_u1_ ) {
 
@@ -3209,6 +3240,7 @@ double PolaritonicUCCSD::update_amplitudes() {
         double w0 = cavity_frequency_[2];
         //ru0_[0] = -ru0_[0] / w0 - u0_[0];
         ru0_[0] /= -w0;
+printf("hey wtf %20.12lf\n",ru0_[0]);
     }
 
     // diis
