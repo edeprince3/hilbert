@@ -49,6 +49,12 @@ class PolaritonicUCCSD: public PolaritonicHF {
 
   protected:
 
+    /// the number of occupied spin orbitals
+    size_t o_;
+
+    /// the number of unoccupied spin orbitals
+    size_t v_;
+
     /// do use 1D hubbard hamiltonian instead of molecular hamiltonian?
     bool is_hubbard_;
 
