@@ -66,8 +66,97 @@ void PolaritonicUCCSD::common_init() {
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *******************************************************\n");
 
+    is_hubbard_ = options_.get_bool("HUBBARD_HAMILTONIAN");
+
+    outfile->Printf("\n");
+    outfile->Printf("  ==> Hamiltonian type <==\n");
+    outfile->Printf("\n");
+    outfile->Printf("        %s\n",is_hubbard_ ? "Hubbard" : "molecular");
+    outfile->Printf("\n");
+
     same_a_b_orbs_ = false;
     same_a_b_dens_ = false;
+
+    // include amplitudes for photon transitions?
+    include_u0_ = false;
+    include_u1_ = false;
+    include_u2_ = false;
+
+    // molecular hamiltonian
+    if ( !is_hubbard_ ) {
+
+        initialize_with_molecular_hamiltonian();
+
+    }else {
+
+        initialize_with_hubbard_hamiltonian();
+
+    }
+
+    // allocate memory for amplitudes, residual, and temporary buffers
+
+    size_t o = nalpha_ + nbeta_;
+    size_t v = (nmo_-nalpha_) + (nmo_-nbeta_);
+
+    ccamps_dim_ = o*o*v*v + o*v;
+
+    if ( include_u0_ ) {
+        ccamps_dim_++;
+    }
+    if ( include_u1_ ) {
+        ccamps_dim_ += o*v;
+    }
+    if ( include_u2_ ) {
+        ccamps_dim_ += o*o*v*v;
+    }
+
+    ccamps_   = (double*)malloc(ccamps_dim_*sizeof(double));
+    residual_ = (double*)malloc(ccamps_dim_*sizeof(double));
+
+    size_t off = 0;
+    t2_  = ccamps_   + off; 
+    rt2_ = residual_ + off; off += o*o*v*v;
+
+    t1_  = ccamps_   + off; 
+    rt1_ = residual_ + off; off += o*v;
+
+    if ( include_u0_ ) {
+        u0_    = ccamps_   + off;
+        ru0_   = residual_ + off; off++;
+    }
+    if ( include_u1_ ) {
+        u1_    = ccamps_   + off;
+        ru1_   = residual_ + off; off += o*v;
+    }
+    if ( include_u2_ ) {
+        u2_    = ccamps_   + off;
+        ru2_   = residual_ + off; off += o*o*v*v;
+    }
+
+    memset((void*)ccamps_,'\0',ccamps_dim_*sizeof(double));
+    memset((void*)residual_,'\0',ccamps_dim_*sizeof(double));
+
+    // temporary storage ... reduce later
+
+    tmp1_ = (double*)malloc(o*o*v*v*sizeof(double));
+    tmp2_ = (double*)malloc(o*o*v*v*sizeof(double));
+    tmp3_ = (double*)malloc(o*o*v*v*sizeof(double));
+    memset((void*)tmp1_,'\0',o*o*v*v*sizeof(double));
+    memset((void*)tmp2_,'\0',o*o*v*v*sizeof(double));
+    memset((void*)tmp3_,'\0',o*o*v*v*sizeof(double));
+
+    // initialize diis solver
+    diis = (std::shared_ptr<DIIS>)(new DIIS(ccamps_dim_));
+
+}
+
+void PolaritonicUCCSD::initialize_with_hubbard_hamiltonian() {
+
+    throw PsiException("hubbard hamiltonian not yet implemented for UCCSD",__FILE__,__LINE__);
+
+}
+
+void PolaritonicUCCSD::initialize_with_molecular_hamiltonian() {
 
     // ensure scf_type df
     if ( options_.get_str("SCF_TYPE") != "DF" ) {
@@ -78,11 +167,6 @@ void PolaritonicUCCSD::common_init() {
     if ( reference_wavefunction_->nirrep() > 1 ) {
         throw PsiException("polaritonic uccsd only works with c1 symmetry for now.",__FILE__,__LINE__);
     }
-
-    // include amplitudes for photon transitions?
-    include_u0_ = false;
-    include_u1_ = false;
-    include_u2_ = false;
 
     // alpha + beta MO transformation matrix
     C_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nmo_));
@@ -194,62 +278,6 @@ void PolaritonicUCCSD::common_init() {
 
     // construct four-index integrals
     build_mo_eris();
-
-    // allocate memory for amplitudes, residual, and temporary buffers
-
-    size_t o = nalpha_ + nbeta_;
-    size_t v = (nmo_-nalpha_) + (nmo_-nbeta_);
-
-    ccamps_dim_ = o*o*v*v + o*v;
-
-    if ( include_u0_ ) {
-        ccamps_dim_++;
-    }
-    if ( include_u1_ ) {
-        ccamps_dim_ += o*v;
-    }
-    if ( include_u2_ ) {
-        ccamps_dim_ += o*o*v*v;
-    }
-
-    ccamps_   = (double*)malloc(ccamps_dim_*sizeof(double));
-    residual_ = (double*)malloc(ccamps_dim_*sizeof(double));
-
-    size_t off = 0;
-    t2_  = ccamps_   + off; 
-    rt2_ = residual_ + off; off += o*o*v*v;
-
-    t1_  = ccamps_   + off; 
-    rt1_ = residual_ + off; off += o*v;
-
-    if ( include_u0_ ) {
-        u0_    = ccamps_   + off;
-        ru0_   = residual_ + off; off++;
-    }
-    if ( include_u1_ ) {
-        u1_    = ccamps_   + off;
-        ru1_   = residual_ + off; off += o*v;
-    }
-    if ( include_u2_ ) {
-        u2_    = ccamps_   + off;
-        ru2_   = residual_ + off; off += o*o*v*v;
-    }
-
-    memset((void*)ccamps_,'\0',ccamps_dim_*sizeof(double));
-    memset((void*)residual_,'\0',ccamps_dim_*sizeof(double));
-
-    // temporary storage ... reduce later
-
-    tmp1_ = (double*)malloc(o*o*v*v*sizeof(double));
-    tmp2_ = (double*)malloc(o*o*v*v*sizeof(double));
-    tmp3_ = (double*)malloc(o*o*v*v*sizeof(double));
-    memset((void*)tmp1_,'\0',o*o*v*v*sizeof(double));
-    memset((void*)tmp2_,'\0',o*o*v*v*sizeof(double));
-    memset((void*)tmp3_,'\0',o*o*v*v*sizeof(double));
-
-    // initialize diis solver
-    diis = (std::shared_ptr<DIIS>)(new DIIS(ccamps_dim_));
-
 }
 
 // TODO: this is so wasteful. need to
@@ -287,6 +315,30 @@ void PolaritonicUCCSD::write_three_index_ints() {
 }
 
 double PolaritonicUCCSD::t1_transformation() {
+
+    double ec = 0.0;
+
+    if ( is_hubbard_ ) {
+
+        ec = t1_transformation_hubbard_hamiltonian();
+
+    }else {
+
+        ec = t1_transformation_molecular_hamiltonian();
+
+    }
+
+    return ec;
+
+}
+
+double PolaritonicUCCSD::t1_transformation_hubbard_hamiltonian() {
+
+    throw PsiException("hubbard hamiltonian not yet implemented for UCCSD",__FILE__,__LINE__);
+
+}
+
+double PolaritonicUCCSD::t1_transformation_molecular_hamiltonian() {
 
     size_t n  = 2L*(size_t)nmo_;
     size_t ns = 2L*(size_t)nso_;
@@ -901,9 +953,15 @@ void PolaritonicUCCSD::build_mo_eris() {
 
 double PolaritonicUCCSD::compute_energy() {
 
+    if ( include_u0_ || include_u1_ || include_u2_ ) {
+
+        throw PsiException("polaritonic UCCSD is not yet working",__FILE__,__LINE__);
+
+    }
+
     // grab some input options_
     double e_convergence = options_.get_double("E_CONVERGENCE");
-    double d_convergence = options_.get_double("D_CONVERGENCE");
+    double r_convergence = options_.get_double("R_CONVERGENCE");
     size_t maxiter          = options_.get_int("MAXITER");
 
     outfile->Printf("\n");
@@ -912,7 +970,7 @@ double PolaritonicUCCSD::compute_energy() {
     outfile->Printf("    No. alpha electrons:            %5i\n",nalpha_);
     outfile->Printf("    No. beta electrons:             %5i\n",nbeta_);
     outfile->Printf("    e_convergence:             %10.3le\n",e_convergence);
-    outfile->Printf("    d_convergence:             %10.3le\n",d_convergence);
+    outfile->Printf("    r_convergence:             %10.3le\n",r_convergence);
     outfile->Printf("    maxiter:                        %5i\n",maxiter);
     outfile->Printf("\n");
     outfile->Printf("\n");
@@ -955,7 +1013,7 @@ double PolaritonicUCCSD::cc_iterations() {
 
     // grab some input options_
     double e_convergence = options_.get_double("E_CONVERGENCE");
-    double d_convergence = options_.get_double("D_CONVERGENCE");
+    double r_convergence = options_.get_double("R_CONVERGENCE");
     size_t maxiter          = options_.get_int("MAXITER");
 
     double e_last  = 0.0;
@@ -999,7 +1057,7 @@ double PolaritonicUCCSD::cc_iterations() {
         iter++;
         if ( iter > maxiter ) break;
 
-    }while(fabs(dele) > e_convergence || tnorm > d_convergence );
+    }while(fabs(dele) > e_convergence || tnorm > r_convergence );
 
     if ( iter > maxiter ) {
         throw PsiException("Maximum number of iterations exceeded!",__FILE__,__LINE__);

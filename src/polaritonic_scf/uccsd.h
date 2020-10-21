@@ -49,6 +49,15 @@ class PolaritonicUCCSD: public PolaritonicHF {
 
   protected:
 
+    /// do use 1D hubbard hamiltonian instead of molecular hamiltonian?
+    bool is_hubbard_;
+
+    /// set up problem for molecular hamiltonian
+    void initialize_with_molecular_hamiltonian();
+
+    /// set up problem for 1D hubbard hamiltonian
+    void initialize_with_hubbard_hamiltonian();
+
     /// alpha + beta MO transformation matrix
     std::shared_ptr<Matrix> C_;
 
@@ -165,6 +174,12 @@ class PolaritonicUCCSD: public PolaritonicHF {
 
     /// build t1-transformed integrals
     double t1_transformation();
+
+    /// build t1-transformed integrals using a molecular hamiltonian
+    double t1_transformation_molecular_hamiltonian();
+
+    /// build t1-transformed integrals using a 1D hubbard hamiltonian
+    double t1_transformation_hubbard_hamiltonian();
 
     /// build mo-basis electron repulsion integrals
     void build_mo_eris();
