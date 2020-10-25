@@ -58,6 +58,9 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// do use 1D hubbard hamiltonian instead of molecular hamiltonian?
     bool is_hubbard_;
 
+    /// solve scf problem for hubbard model
+    std::shared_ptr<Matrix> hubbard_hartree_fock();
+
     /// set up problem for molecular hamiltonian
     void initialize_with_molecular_hamiltonian();
 
@@ -182,13 +185,10 @@ class PolaritonicUCCSD: public PolaritonicHF {
     double t1_transformation();
 
     /// build t1-transformed integrals using a molecular hamiltonian
-    double t1_transformation_molecular_hamiltonian();
+    double t1_transformation_molecular_hamiltonian(std::shared_ptr<Matrix> CL, std::shared_ptr<Matrix> CR, bool do_allocate_memory);
 
     /// build t1-transformed integrals using a 1D hubbard hamiltonian
-    double t1_transformation_hubbard_hamiltonian();
-
-    /// build mo-basis electron repulsion integrals
-    void build_mo_eris();
+    double t1_transformation_hubbard_hamiltonian(std::shared_ptr<Matrix> CL, std::shared_ptr<Matrix> CR, bool do_allocate_memory);
 
     /// generate and write SO-basis three-index integrals to disk
     void write_three_index_ints();
@@ -219,6 +219,9 @@ class PolaritonicUCCSD: public PolaritonicHF {
 
     /// <ab||ic>
     double * eri_abic_;
+
+    /// antisymmetrize different blocks of eris
+    void unpack_eris(double * eri, bool do_allocate_memory);
 
 };
 
