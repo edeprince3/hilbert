@@ -220,66 +220,23 @@ void PolaritonicUCCSD::initialize_with_hubbard_hamiltonian() {
     Dipole_y_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
     Dipole_z_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
 
-/*
-    // extra one-electron terms introduced by cavity
-    oe_cavity_terms_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
-    double ** oe_cavity_terms_p = oe_cavity_terms_->pointer();
-
-    // electron-nucleus contribution to dipole self energy
-    double ** scaled_e_n_dipole_squared_p = scaled_e_n_dipole_squared_->pointer();
-
-    // one-electron part of electron-electron contribution to dipole self energy
-    double ** quadrupole_scaled_sum_p = quadrupole_scaled_sum_->pointer();
-
-    for (size_t mu = 0; mu < nso_; mu++) {
-        for (size_t nu = 0; nu < nso_; nu++) {
-            double dum = scaled_e_n_dipole_squared_p[mu][nu] - quadrupole_scaled_sum_p[mu][nu];
-            oe_cavity_terms_p[mu][nu]           = dum;
-            oe_cavity_terms_p[mu+nso_][nu+nso_] = dum;
-        }
+    std::shared_ptr<Matrix> dip_a (new Matrix(nso_,nso_));
+    if ( nso_ != 4 ) {
+        throw PsiException("dipole terms hard-coded for four site Hubbard model",__FILE__,__LINE__);
     }
+    double ** da_p = dip_a->pointer();
+    da_p[0][0] = -1.5;
+    da_p[1][1] = -0.5;
+    da_p[2][2] =  0.5;
+    da_p[3][3] =  1.5;
 
-    // fock matrix
-    F_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
-    double ** fp = F_->pointer();
-    double ** fa = Fa_->pointer();
-    double ** fb = Fb_->pointer();
-    for (size_t mu = 0; mu < nso_; mu++) {
-        for (size_t nu = 0; nu < nso_; nu++) {
-            fp[mu][nu]           = fa[mu][nu];
-            fp[mu+nso_][nu+nso_] = fb[mu][nu];
-        }
-    }
-    F_->transform(C_);
-
-    // scaled sum of dipole integrals
-    Dipole_x_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
-    Dipole_y_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
-    Dipole_z_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
-    double ** dx = Dipole_x_->pointer();
-    double ** dy = Dipole_y_->pointer();
     double ** dz = Dipole_z_->pointer();
-    double ** dipole_x_p = dipole_[0]->pointer();
-    double ** dipole_y_p = dipole_[1]->pointer();
-    double ** dipole_z_p = dipole_[2]->pointer();
     for (size_t mu = 0; mu < nso_; mu++) {
         for (size_t nu = 0; nu < nso_; nu++) {
-
-            dx[mu][nu]           = dipole_x_p[mu][nu];
-            dx[mu+nso_][nu+nso_] = dipole_x_p[mu][nu];
-
-            dy[mu][nu]           = dipole_y_p[mu][nu];
-            dy[mu+nso_][nu+nso_] = dipole_y_p[mu][nu];
-
-            dz[mu][nu]           = dipole_z_p[mu][nu];
-            dz[mu+nso_][nu+nso_] = dipole_z_p[mu][nu];
-
+            dz[mu][nu]           = da_p[mu][nu];
+            dz[mu+nso_][nu+nso_] = da_p[mu][nu];
         }
     }
-    Dipole_x_->transform(C_);
-    Dipole_y_->transform(C_);
-    Dipole_z_->transform(C_);
-*/
 
     // construct four-index integrals (and build fock matrix)
     F_ = (std::shared_ptr<Matrix>)(new Matrix(H_));
@@ -348,8 +305,23 @@ std::shared_ptr<Matrix> PolaritonicUCCSD::hubbard_hartree_fock() {
 
     double U = options_.get_double("HUBBARD_U");
 
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+
+    std::shared_ptr<Matrix> dip_a (new Matrix(nso_,nso_));
+    double ** da_p = dip_a->pointer();
+    da_p[0][0] = -1.5;
+    da_p[1][1] = -0.5;
+    da_p[2][2] =  0.5;
+    da_p[3][3] =  1.5;
+
     for (size_t p = 0; p < nso_; p++) {
         eri[p*nso_*nso_*nso_+p*nso_*nso_+p*nso_+p] = U;
+    }
+    // dipole self energy
+    for (size_t p = 0; p < nso_; p++) {
+        for (size_t q = 0; q < nso_; q++) {
+            eri[p*nso_*nso_*nso_+p*nso_*nso_+q*nso_+q] += 1.0 * da_p[p][p] * da_p[q][q] * lambda_z * lambda_z;
+        }
     }
 
     double e_convergence = options_.get_double("E_CONVERGENCE");
@@ -371,9 +343,61 @@ std::shared_ptr<Matrix> PolaritonicUCCSD::hubbard_hartree_fock() {
                         dum -=       dp[r][s] * eri[p*nso_*nso_*nso_+s*nso_*nso_+r*nso_+q];
                     }
                 }
-                fp[p][q] += dum;
+                // dipole self energy
+                double val = 0.0;
+                for (size_t r = 0; r < nso_; r++) {
+                    val += da_p[p][r] * da_p[r][q];
+                }
+                fp[p][q] += dum + 0.5 * val * lambda_z * lambda_z;
             }
         }
+
+        // cavity-molecule terms
+
+        double dipole = 2.0 * Da->vector_dot(dip_a);
+
+        // cavity 
+
+        // bare cavity Hamiltonian
+        std::shared_ptr<Matrix> cavity_H (new Matrix(n_photon_states_,n_photon_states_));
+        double ** cavity_Hp = cavity_H->pointer();
+        for (size_t A = 0; A < n_photon_states_; A++) {
+            cavity_Hp[A][A] = A * cavity_frequency_[2];
+        }
+
+        // cavity dipole operator
+        std::shared_ptr<Matrix> cavity_D (new Matrix(n_photon_states_,n_photon_states_));
+        double ** cavity_Dp = cavity_D->pointer();
+        for (int A=0; A<n_photon_states_-1; A++){
+            cavity_Dp[A+1][A] += cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
+            cavity_Dp[A][A+1] += cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
+        }
+
+        // cavity interaction
+        std::shared_ptr<Matrix> cavity_I (new Matrix(n_photon_states_,n_photon_states_));
+        double ** cavity_Ip = cavity_I->pointer();
+        for (int A = 0; A<n_photon_states_; A++) {
+            if (A < n_photon_states_ - 1) {
+                cavity_Ip[A][A+1] = -dipole * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
+            }
+            if (A > 0) {
+                cavity_Ip[A][A-1] = -dipole * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A);
+            }
+        }
+
+        // total cavity hamiltonian
+        cavity_H->add(cavity_I);
+
+        // diagonalize total cavity hamiltonian
+        std::shared_ptr<Matrix> eigvec (new Matrix(n_photon_states_,n_photon_states_));
+        std::shared_ptr<Vector> eigval (new Vector(n_photon_states_));
+        cavity_H->diagonalize(eigvec, eigval);
+
+        // transform cavity dipole matrix to basis that diagonalizes total cavity hamiltonian
+        cavity_D->transform(eigvec);
+
+        // add cavity interaction term to fock matrix
+        Fa->axpy(-cavity_Dp[0][0] * cavity_frequency_[2] * cavity_coupling_strength_[2],dip_a);
 
         // diagonalize F' to obtain C'
         Fa->diagonalize(Ca,eps,ascending);
@@ -383,6 +407,7 @@ std::shared_ptr<Matrix> PolaritonicUCCSD::hubbard_hartree_fock() {
 
         energy = 0.0;
         energy += Da->vector_dot(Ha);
+        energy += -2.0 * cavity_Dp[0][0] * cavity_frequency_[2] * cavity_coupling_strength_[2] * Da->vector_dot(dip_a);
         energy += Da->vector_dot(Fa);
 
         // dele
@@ -628,16 +653,47 @@ double PolaritonicUCCSD::t1_transformation_hubbard_hamiltonian(std::shared_ptr<M
     double * eri = (double*)malloc(n*n*n*n*sizeof(double));
     memset((void*)eri,'\0',n*n*n*n*sizeof(double));
   
+    // add dipole self energy term to eris
+    std::shared_ptr<Matrix> dip_a (new Matrix(nso_,nso_));
+    if ( nso_ != 4 ) {
+        throw PsiException("dipole terms hard-coded for four site Hubbard model",__FILE__,__LINE__);
+    }
+    double ** da_p = dip_a->pointer();
+    da_p[0][0] = -1.5;
+    da_p[1][1] = -0.5;
+    da_p[2][2] =  0.5;
+    da_p[3][3] =  1.5;
+
+    double ** dz = Dipole_z_->pointer();
+    Dipole_z_->zero();
+    for (size_t mu = 0; mu < nso_; mu++) {
+        for (size_t nu = 0; nu < nso_; nu++) {
+            dz[mu][nu]           = da_p[mu][nu];
+            dz[mu+nso_][nu+nso_] = da_p[mu][nu];
+        }
+    }
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+
     double U = options_.get_double("HUBBARD_U");
 
     for (size_t pa = 0; pa < nso_; pa++) {
         size_t pb = pa + nso_;
-        eri[pa*n*n*n+pa*n*n+pa*n+pa] = U;
         eri[pa*n*n*n+pa*n*n+pb*n+pb] = U;
         eri[pb*n*n*n+pb*n*n+pa*n+pa] = U;
-        eri[pb*n*n*n+pb*n*n+pb*n+pb] = U;
     }
 
+    // dipole self-energy: 1/2 d^2 lambda^2
+    for (size_t pa = 0; pa < nso_; pa++) {
+        for (size_t qa = 0; qa < nso_; qa++) {
+            size_t pb = pa + nso_;
+            size_t qb = qa + nso_;
+            eri[pa*n*n*n+pa*n*n+qa*n+qa] += 1.0 * dz[pa][pa] * dz[qa][qa] * lambda_z * lambda_z;
+            eri[pb*n*n*n+pb*n*n+qb*n+qb] += 1.0 * dz[pb][pb] * dz[qb][qb] * lambda_z * lambda_z;
+            eri[pa*n*n*n+pa*n*n+qb*n+qb] += 1.0 * dz[pa][pa] * dz[qb][qb] * lambda_z * lambda_z;
+            eri[pb*n*n*n+pb*n*n+qa*n+qa] += 1.0 * dz[pb][pb] * dz[qa][qa] * lambda_z * lambda_z;
+        }
+    }
+ 
     // transform eris
     double * tmp_eri = (double*)malloc(n*n*n*n*sizeof(double));
     memset((void*)tmp_eri,'\0',n*n*n*n*sizeof(double));
@@ -730,120 +786,23 @@ double PolaritonicUCCSD::t1_transformation_hubbard_hamiltonian(std::shared_ptr<M
     }
     free(tmp_eri);
 
-// not sure what to do with these yet
-
     // add two-electron part of dipole self energy to eris
     double * oei_tmp = (double*)malloc(n*n*sizeof(double));
 
-/*
-    // transform dipole integrals
-    double ** dx = Dipole_x_->pointer();
-    double ** dy = Dipole_y_->pointer();
-    double ** dz = Dipole_z_->pointer();
-    double ** dipole_x_p = dipole_[0]->pointer();
-    double ** dipole_y_p = dipole_[1]->pointer();
-    double ** dipole_z_p = dipole_[2]->pointer();
-    for (size_t mu = 0; mu < nso_; mu++) {
-        for (size_t nu = 0; nu < nso_; nu++) {
-
-            dx[mu][nu]           = dipole_x_p[mu][nu];
-            dx[mu+nso_][nu+nso_] = dipole_x_p[mu][nu];
-
-            dy[mu][nu]           = dipole_y_p[mu][nu];
-            dy[mu+nso_][nu+nso_] = dipole_y_p[mu][nu];
-
-            dz[mu][nu]           = dipole_z_p[mu][nu];
-            dz[mu+nso_][nu+nso_] = dipole_z_p[mu][nu];
-        
-        }
-    }
-    std::shared_ptr<Matrix> dipole_tmp (new Matrix(ns,ns));
-
-    // t1 transformation (dipole x)
-    for (size_t mu = 0; mu < ns; mu++) {
-        for (size_t p = 0; p < n; p++) {
-            double dum = 0.0;
-            for (size_t nu = 0; nu < ns; nu++) {
-                dum += CL_p[nu][p] * dx[nu][mu];
-            }
-            oei_tmp[p * ns + mu] = dum;
-        }
-    }
-    for (size_t p = 0; p < n; p++) {
-        for (size_t q = 0; q < n; q++) {
-            double dum = 0.0;
-            for (size_t nu = 0; nu < ns; nu++) {
-                dum += CR_p[nu][q] * oei_tmp[p * ns + nu];
-            }
-            dx[p][q] = dum;
-        }
-    }
-    // t1 transformation (dipole y)
-    for (size_t mu = 0; mu < ns; mu++) {
-        for (size_t p = 0; p < n; p++) {
-            double dum = 0.0;
-            for (size_t nu = 0; nu < ns; nu++) {
-                dum += CL_p[nu][p] * dy[nu][mu];
-            }
-            oei_tmp[p * ns + mu] = dum;
-        }
-    }
-    for (size_t p = 0; p < n; p++) {
-        for (size_t q = 0; q < n; q++) {
-            double dum = 0.0;
-            for (size_t nu = 0; nu < ns; nu++) {
-                dum += CR_p[nu][q] * oei_tmp[p * ns + nu];
-            }
-            dy[p][q] = dum;
-        }
-    }
-    // t1 transformation (dipole z)
-    for (size_t mu = 0; mu < ns; mu++) {
-        for (size_t p = 0; p < n; p++) {
-            double dum = 0.0;
-            for (size_t nu = 0; nu < ns; nu++) {
-                dum += CL_p[nu][p] * dz[nu][mu];
-            }
-            oei_tmp[p * ns + mu] = dum;
-        }
-    }
-    for (size_t p = 0; p < n; p++) {
-        for (size_t q = 0; q < n; q++) {
-            double dum = 0.0;
-            for (size_t nu = 0; nu < ns; nu++) {
-                dum += CR_p[nu][q] * oei_tmp[p * ns + nu];
-            }
-            dz[p][q] = dum;
-        }
-    }
-
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    //double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
 
     // add two-electron part of dipole self energy to eris
-    for (size_t p = 0; p < n; p++) {
-        for (size_t q = 0; q < n; q++) {
-            for (size_t r = 0; r < n; r++) {
-                for (size_t s = 0; s < n; s++) {
-                    eri[p*n*n*n+q*n*n+r*n+s] += lambda_x * lambda_x * dx[p][q] * dx[r][s];
-                    eri[p*n*n*n+q*n*n+r*n+s] += lambda_y * lambda_y * dy[p][q] * dy[r][s];
-                    eri[p*n*n*n+q*n*n+r*n+s] += lambda_z * lambda_z * dz[p][q] * dz[r][s];
-                }
-            }
-        }
-    }
+    //for (size_t p = 0; p < n; p++) {
+    //    for (size_t q = 0; q < n; q++) {
+    //        for (size_t r = 0; r < n; r++) {
+    //            for (size_t s = 0; s < n; s++) {
+    //                eri[p*n*n*n+q*n*n+r*n+s] += lambda_z * lambda_z * dz[p][q] * dz[r][s];
+    //            }
+    //        }
+    //    }
+    //}
 
-    // now that dipole integrals have been used for self-energy term, scale for coupling terms
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
-    Dipole_x_->scale(coupling_factor_x);
-    Dipole_y_->scale(coupling_factor_y);
-    Dipole_z_->scale(coupling_factor_z);
-*/
-
-    // transform oeis
+    // transform remaining oeis
 
     // core hamiltonian
     double ** hp = H_->pointer();
@@ -852,7 +811,17 @@ double PolaritonicUCCSD::t1_transformation_hubbard_hamiltonian(std::shared_ptr<M
         for (size_t p = 0; p < n; p++) {
             double dum = 0.0;
             for (size_t nu = 0; nu < n; nu++) {
-                dum += CL_p[nu][p] * hp[nu][mu];
+                //dum += CL_p[nu][p] * hp[nu][mu];
+
+                double val = hp[nu][mu];
+
+                // dipole self-energy: 1/2 d^2 lambda^2
+                for (size_t sigma = 0; sigma < n; sigma++) {
+                    val += 0.5 * dz[nu][sigma] * dz[sigma][mu] * lambda_z * lambda_z;
+                }
+
+                dum += CL_p[nu][p] * val;
+
             }
             oei_tmp[p * n + mu] = dum;
         }
@@ -867,6 +836,32 @@ double PolaritonicUCCSD::t1_transformation_hubbard_hamiltonian(std::shared_ptr<M
             fp[p][q] = dum;
         }
     }
+
+    // transform dipole integrals
+
+    // t1 transformation (dipole z)
+    for (size_t mu = 0; mu < n; mu++) {
+        for (size_t p = 0; p < n; p++) {
+            double dum = 0.0;
+            for (size_t nu = 0; nu < n; nu++) {
+                dum += CL_p[nu][p] * dz[nu][mu];
+            }
+            oei_tmp[p * n + mu] = dum;
+        }
+    }
+    for (size_t p = 0; p < n; p++) {
+        for (size_t q = 0; q < n; q++) {
+            double dum = 0.0;
+            for (size_t nu = 0; nu < n; nu++) {
+                dum += CR_p[nu][q] * oei_tmp[p * n + nu];
+            }
+            dz[p][q] = dum;
+        }
+    }
+
+    // now that dipole integrals have been used for self-energy term, scale for coupling terms
+    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+    Dipole_z_->scale(-coupling_factor_z);
 
     // calculate t1 contribution to correlation energy
     double ec = 0.0;
@@ -1386,9 +1381,9 @@ double PolaritonicUCCSD::compute_energy() {
     outfile->Printf("\n");
 
     // CCSD iterations without photon
-    include_u0_ = false;
-    include_u1_ = false;
-    include_u2_ = false;
+    //include_u0_ = false;
+    //include_u1_ = false;
+    //include_u2_ = false;
 
     double ec = cc_iterations();
 
@@ -1453,6 +1448,7 @@ double PolaritonicUCCSD::cc_iterations() {
         dele = energy_ + ec - e_last;
 
         outfile->Printf("    %5i %20.12lf %20.12lf %20.12lf\n",iter,ec,dele,tnorm);
+printf("energy %20.12lf\n",ec);
 
         iter++;
         if ( iter > maxiter ) break;
@@ -3675,6 +3671,7 @@ double PolaritonicUCCSD::update_amplitudes() {
         //ru0_[0] = -ru0_[0] / w0 - u0_[0];
         ru0_[0] /= -w0;
     }
+//printf("u0, r0 %20.12lf %20.12lf\n",u0_[0],ru0_[0]);
 
     // diis 
     C_DAXPY(ccamps_dim_,1.0,residual_,1,ccamps_,1);

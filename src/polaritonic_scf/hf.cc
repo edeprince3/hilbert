@@ -362,9 +362,9 @@ void PolaritonicHF::build_cavity_hamiltonian(){
 
         if (A > 0) {
 
-            HCavityInteraction_x_->pointer()[A][A-1] = (e_dip_x + nuc_dip_x_) * cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A);
-            HCavityInteraction_y_->pointer()[A][A-1] = (e_dip_y + nuc_dip_y_) * cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A);
-            HCavityInteraction_z_->pointer()[A][A-1] = (e_dip_z + nuc_dip_z_) * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A);
+            HCavityInteraction_x_->pointer()[A][A-1] = -(e_dip_x + nuc_dip_x_) * cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A);
+            HCavityInteraction_y_->pointer()[A][A-1] = -(e_dip_y + nuc_dip_y_) * cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A);
+            HCavityInteraction_z_->pointer()[A][A-1] = -(e_dip_z + nuc_dip_z_) * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A);
         }
     }
 

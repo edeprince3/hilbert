@@ -125,6 +125,10 @@ double PolaritonicUHF::compute_energy() {
     double d_convergence = options_.get_double("D_CONVERGENCE");
     int maxiter          = options_.get_int("MAXITER");
 
+    if ( options_.get_bool("HUBBARD_HAMILTONIAN") ) {
+        return true;
+    }
+
     outfile->Printf("\n");
     outfile->Printf("    No. basis functions:            %5i\n",nso_);
     outfile->Printf("    No. auxiliary basis functions:  %5i\n",nQ);
