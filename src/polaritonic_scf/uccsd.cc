@@ -1880,12 +1880,12 @@ void PolaritonicUCCSD::residual_u2() {
     }
     // r'(e,f,n,m) =  u2(a,f,m,n) F(e,a)
     F_DGEMM('n','n',o_*o_*v_,v_,v_,1.0,u2_,o_*o_*v_,tmp1_,v_,0.0,tmp2_,o_*o_*v_);
+    C_DAXPY(o_*o_*v_*v_,1.0,tmp2_,1,ru2_,1);
 #pragma omp parallel for schedule(static)
     for (size_t e = 0; e < v_; e++) {
         for (size_t f = 0; f < v_; f++) {
             for (size_t m = 0; m < o_; m++) {
                 for (size_t n = 0; n < o_; n++) {
-                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] += tmp2_[e*o_*o_*v_+f*o_*o_+m*o_+n];
                     ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp2_[f*o_*o_*v_+e*o_*o_+m*o_+n];
                 }
             }
@@ -2481,12 +2481,13 @@ void PolaritonicUCCSD::residual_u2() {
     }
 
 
-// - 1.00000 <e,i||a,b> t2(b,f,m,n) u1(a,i)
-// + 1.00000 <f,i||a,b> t2(b,e,m,n) u1(a,i)
-//
-// or
-//
-// - P(e,f) <e,i||a,b> t2(b,f,m,n) u1(a,i)
+    // - 1.00000 <e,i||a,b> t2(b,f,m,n) u1(a,i)
+    // + 1.00000 <f,i||a,b> t2(b,e,m,n) u1(a,i)
+    //
+    // or
+    //
+    // - P(e,f) <e,i||a,b> t2(b,f,m,n) u1(a,i)
+
     // I(e,b) = <e,i||a,b> u1(a,i)
 #pragma omp parallel for schedule(static)
     for (size_t e = 0; e < v_; e++) {
@@ -2589,9 +2590,9 @@ void PolaritonicUCCSD::residual_u2() {
         }
     }
 
-
     // - d+(i,m) t2(e,f,n,i)
     // + d+(i,n) t2(e,f,m,i)
+
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < o_; i++) {
         for (size_t m = 0; m < o_; m++) {
@@ -2622,12 +2623,12 @@ void PolaritonicUCCSD::residual_u2() {
     }
     // r'(e,f,n,m) =  t2(a,f,m,n) d+(e,a)
     F_DGEMM('n','n',o_*o_*v_,v_,v_,1.0,t2_,o_*o_*v_,tmp1_,v_,0.0,tmp2_,o_*o_*v_);
+    C_DAXPY(o_*o_*v_*v_,-1.0,tmp2_,1,ru2_,1);
 #pragma omp parallel for schedule(static)
     for (size_t e = 0; e < v_; e++) {
         for (size_t f = 0; f < v_; f++) {
             for (size_t m = 0; m < o_; m++) {
                 for (size_t n = 0; n < o_; n++) {
-                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp2_[e*o_*o_*v_+f*o_*o_+m*o_+n];
                     ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] += tmp2_[f*o_*o_*v_+e*o_*o_+m*o_+n];
                 }
             }
@@ -2642,6 +2643,7 @@ void PolaritonicUCCSD::residual_u2() {
     // or
     // 
     // P(e,f) P(m,n) d-(i,n) u1(f,i) u1(e,m)
+
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < o_; i++) {
         for (size_t n = 0; n < o_; n++) {
@@ -2676,6 +2678,7 @@ void PolaritonicUCCSD::residual_u2() {
     // or
     //
     // P(e,f) P(m,e) d-(e,a) u1(a,n) u1(f,m)
+
 #pragma omp parallel for schedule(static)
     for (size_t e = 0; e < v_; e++) {
         for (size_t a = 0; a < v_; a++) {
@@ -2717,6 +2720,7 @@ void PolaritonicUCCSD::residual_u2() {
     // or
     //
     // P(m,n) 2.0 d-(i,a) u1(a,n) u2(e,f,m,i)
+
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < o_; i++) {
         for (size_t a = 0; a < v_; a++) {
@@ -2745,6 +2749,7 @@ void PolaritonicUCCSD::residual_u2() {
     // or
     //
     // P(e,f) 2.0 d-(i,a) u1(e,i) u2(a,f,m,n)
+
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < o_; i++) {
         for (size_t a = 0; a < v_; a++) {
@@ -2769,12 +2774,13 @@ void PolaritonicUCCSD::residual_u2() {
 
     // + 1.00000 d-(i,a) u1(e,m) u2(a,f,n,i)
     // - 1.00000 d-(i,a) u1(e,n) u2(a,f,m,i)
-    // + 1.00000 d-(i,a) u1(f,n) u2(a,e,m,i)
     // - 1.00000 d-(i,a) u1(f,m) u2(a,e,n,i)
+    // + 1.00000 d-(i,a) u1(f,n) u2(a,e,m,i)
     //
     // or
     //
     // P(m,n) P(e,f) d-(i,a) u2(a,f,n,i) u1(e,m)
+
 #pragma omp parallel for schedule(static)
     for (size_t f = 0; f < v_; f++) {
         for (size_t n = 0; n < o_; n++) {
