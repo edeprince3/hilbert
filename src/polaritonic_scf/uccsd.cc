@@ -135,12 +135,17 @@ void PolaritonicUCCSD::common_init() {
 
     // temporary storage ... reduce later
 
-    tmp1_ = (double*)malloc(o_*v_*v_*v_*sizeof(double));
-    tmp2_ = (double*)malloc(o_*v_*v_*v_*sizeof(double));
-    tmp3_ = (double*)malloc(o_*v_*v_*v_*sizeof(double));
-    memset((void*)tmp1_,'\0',o_*v_*v_*v_*sizeof(double));
-    memset((void*)tmp2_,'\0',o_*v_*v_*v_*sizeof(double));
-    memset((void*)tmp3_,'\0',o_*v_*v_*v_*sizeof(double));
+    int dim = o_*v_*v_*v_;
+    if ( o_ > v_ ) {
+        dim = o_*o_*o_*o_;
+    }
+
+    tmp1_ = (double*)malloc(dim*sizeof(double));
+    tmp2_ = (double*)malloc(dim*sizeof(double));
+    tmp3_ = (double*)malloc(dim*sizeof(double));
+    memset((void*)tmp1_,'\0',dim*sizeof(double));
+    memset((void*)tmp2_,'\0',dim*sizeof(double));
+    memset((void*)tmp3_,'\0',dim*sizeof(double));
 
     // initialize diis solver
     diis = (std::shared_ptr<DIIS>)(new DIIS(ccamps_dim_));
@@ -1448,7 +1453,6 @@ double PolaritonicUCCSD::cc_iterations() {
         dele = energy_ + ec - e_last;
 
         outfile->Printf("    %5i %20.12lf %20.12lf %20.12lf\n",iter,ec,dele,tnorm);
-printf("energy %20.12lf\n",ec);
 
         iter++;
         if ( iter > maxiter ) break;
