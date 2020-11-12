@@ -75,30 +75,7 @@ class PolaritonicHF: public Wavefunction {
     std::shared_ptr<Matrix> dipole_scaled_sum_;
     std::shared_ptr<Matrix> quadrupole_scaled_sum_;
     std::shared_ptr<Matrix> scaled_e_n_dipole_squared_;
-    std::shared_ptr<Matrix> scaled_e_e_dipole_squared_;
 
-    // cavity related quantities: 
-
-    std::shared_ptr<Matrix> CavityDipolePotential_x_;
-    std::shared_ptr<Matrix> CavityDipolePotential_y_;
-    std::shared_ptr<Matrix> CavityDipolePotential_z_;
-    std::shared_ptr<Matrix> CavityDipole_x_;
-    std::shared_ptr<Matrix> CavityDipole_y_;
-    std::shared_ptr<Matrix> CavityDipole_z_;
-    std::shared_ptr<Matrix> HCavity_x_;
-    std::shared_ptr<Matrix> HCavity_y_;
-    std::shared_ptr<Matrix> HCavity_z_;
-    std::shared_ptr<Matrix> HCavityTotal_x_;
-    std::shared_ptr<Matrix> HCavityTotal_y_;
-    std::shared_ptr<Matrix> HCavityTotal_z_;
-    std::shared_ptr<Matrix> HCavityInteraction_x_;
-    std::shared_ptr<Matrix> HCavityInteraction_y_;
-    std::shared_ptr<Matrix> HCavityInteraction_z_;
-
-    void build_cavity_hamiltonian();
-    void dipole_potential_integrals();
-
-    void InitializeCavity();
 
     double * cavity_frequency_; 
     double * cavity_coupling_strength_; 
@@ -110,8 +87,7 @@ class PolaritonicHF: public Wavefunction {
     double nuc_dip_z_;
 
     void initialize_cavity();
-
-    bool print_cavity_properties_;
+    void update_cavity_terms();
 
 };
 

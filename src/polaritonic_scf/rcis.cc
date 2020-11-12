@@ -131,12 +131,9 @@ double PolaritonicRCIS::compute_energy() {
     outfile->Printf("    No. auxiliary basis functions:  %5i\n",nQ);
     outfile->Printf("    No. electrons:                  %5i\n",nalpha_ + nbeta_);
 
-    // print cavity properties
-    //print_cavity_properties_ = true;
     if ( n_photon_states_ > 1 ) {
-        build_cavity_hamiltonian();
+        update_cavity_terms();
     }
-    //print_cavity_properties_ = false;
 
     // transform dipole integrals to MO basis
     dipole_[0]->transform(Ca_);
@@ -163,6 +160,15 @@ double PolaritonicRCIS::compute_energy() {
     double ** dy = dipole_[1]->pointer();
     double ** dz = dipole_[2]->pointer();
 
+    std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
+    HCavity_z->zero();
+    if ( n_photon_states_ > 1 ) {
+        HCavity_z->pointer()[1][1] = cavity_frequency_[2];
+    }
+    if ( n_photon_states_ > 1 ) {
+        throw PsiException("polaritonic CIS does not work with N_PHOTON_STATES > 2",__FILE__,__LINE__);
+    }
+
     for (int i = 0; i < o; i++) {
         for (int a = 0; a < v; a++) {
             for (int n = 0; n < n_photon_states_; n++) {
@@ -177,7 +183,7 @@ double PolaritonicRCIS::compute_energy() {
 
                             // full diagonal
                             if ( i == j && a == b && m == n ) {
-                                hp[ian][jbm] += ep[a+o] - ep[i] + HCavity_z_->pointer()[m][m];
+                                hp[ian][jbm] += ep[a+o] - ep[i] + HCavity_z->pointer()[m][m];
                             }
 
                             // diagonal in photon states
@@ -237,7 +243,7 @@ double PolaritonicRCIS::compute_energy() {
     // now, couple |0,n> to all other |0,m>
     for (int n = 0; n < n_photon_states_; n++) {
         for (int m = 0; m < n_photon_states_; m++) {
-            hp[off+n][off+m] += HCavity_z_->pointer()[n][m];
+            hp[off+n][off+m] += HCavity_z->pointer()[n][m];
         }
     }
 

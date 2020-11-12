@@ -233,20 +233,12 @@ double PolaritonicRHF::compute_energy() {
 
         if ( n_photon_states_ > 1 ) {
 
-            build_cavity_hamiltonian();
-
-            std::shared_ptr<Matrix> V = (std::shared_ptr<Matrix>)(new Matrix(dipole_scaled_sum_));
-            V->scale(-CavityDipole_z_->pointer()[0][0]);
-            oei->add(V);
+            update_cavity_terms();
 
             // dipole self energy:
 
             // e-n term 
-            //oei->add(scaled_e_n_dipole_squared_);
             oei->axpy(1.0,scaled_e_n_dipole_squared_);
-
-            // e-e term (assuming a complete basis)
-            //oei->axpy(1.0,scaled_e_e_dipole_squared_);
 
             // one-electron part of e-e term 
             oei->axpy(-1.0,quadrupole_scaled_sum_);
@@ -336,13 +328,6 @@ double PolaritonicRHF::compute_energy() {
 
     outfile->Printf("    * Polaritonic RHF total energy: %20.12lf\n",energy_);
 
-    // print cavity properties
-    if ( n_photon_states_ > 1 ) {
-        print_cavity_properties_ = true;
-        build_cavity_hamiltonian();
-        print_cavity_properties_ = false;
-    }
-    
     Process::environment.globals["SCF TOTAL ENERGY"] = energy_;
 
     // print orbital energies
