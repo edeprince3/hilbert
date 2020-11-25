@@ -1,0 +1,63 @@
+# test against hubbard model polaritonic CC
+# https://journals.aps.org/prresearch/pdf/10.1103/PhysRevResearch.2.023262
+
+sys.path.insert(0, '../../..')
+import hilbert 
+
+molecule h2 {
+0 1
+H 0.0 0.0 0.0
+H 0.0 0.0 1.0
+no_reorient
+nocom
+symmetry c1
+}
+set {
+  basis cc-pvdz
+  scf_type df 
+  e_convergence 1e-12
+  d_convergence 1e-12 
+  df_basis_mp2  aug-cc-pv5z-jkfit
+  df_basis_cc   aug-cc-pv5z-jkfit
+  df_basis_scf  aug-cc-pv5z-jkfit
+} 
+
+set hilbert {
+  maxiter 500
+
+  n_photon_states          2
+  cavity_frequency         [0.0, 0.0, 1.028]
+  cavity_coupling_strength [0.0, 0.0, 0.01]
+
+  #n_photon_states          1
+  #cavity_frequency         [0.0, 0.0, 0.0]
+  #cavity_coupling_strength [0.0, 0.0, 0.0]
+
+  hubbard_hamiltonian true
+  hubbard_t  0.5
+  hubbard_u  1.0
+  n_hubbard_spins 4
+  n_hubbard_sites 4
+  hubbard_multiplicity 1
+
+  polaritonic_cc_include_u0 true
+  polaritonic_cc_include_u1 true
+  polaritonic_cc_include_u2 true
+}
+
+activate(h2)
+
+set reference uhf
+
+ref_0 = -1.43801 # field free
+ref_1 = -1.43791 # CC-SD-S-0
+ref_2 = -1.43795 # CC-SD-S-D
+ref_3 = -1.43796 # CC-SD-S-DT
+
+en = energy('polaritonic-uccsd') 
+#compare_values(ref_0, en, 5, "CCSD(0)") # TEST
+#compare_values(ref_1, en, 5, "CC-SD-S-O") # TEST
+#compare_values(ref_2, en, 5, "CC-SD-S-D") # TEST
+compare_values(ref_3, en, 5, "QED-CCSD-1 vs CC-SD-S-DT") # TEST
+
+

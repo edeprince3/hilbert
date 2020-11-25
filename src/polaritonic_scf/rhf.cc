@@ -177,7 +177,7 @@ double PolaritonicRHF::compute_energy() {
     Da_->copy(Fprime);
 */
 
-    energy_  = enuc_ + nuclear_dipole_self_energy_;
+    energy_  = enuc_ + average_electric_dipole_self_energy_;
     energy_ += Da_->vector_dot(h);
     energy_ += Da_->vector_dot(Fa_);
 
@@ -279,7 +279,7 @@ double PolaritonicRHF::compute_energy() {
         C_DGEMM('n','t',nso_,nso_,nalpha_,1.0,&(Ca_->pointer()[0][0]),nso_,&(Ca_->pointer()[0][0]),nso_,0.0,&(Da_->pointer()[0][0]),nso_);
 
         // evaluate the current energy, E = D(H+F) + Enuc
-        energy_  = enuc_ + nuclear_dipole_self_energy_;
+        energy_  = enuc_ + average_electric_dipole_self_energy_;
         energy_ += Da_->vector_dot(oei);
         energy_ += Da_->vector_dot(Fa_);
 
@@ -330,11 +330,13 @@ double PolaritonicRHF::compute_energy() {
 
     Process::environment.globals["SCF TOTAL ENERGY"] = energy_;
 
+    // update cavity terms once more
+    if ( n_photon_states_ > 1 ) {
+        update_cavity_terms();
+    }
+
     // print orbital energies
     epsilon_a_->print();
-
-    //double * ep = epsilon_a_->pointer();
-    //printf("%20.12lf %20.12lf %20.12lf %20.12lf %20.12lf %20.12lf\n",ep[nalpha_-3],ep[nalpha_-2],ep[nalpha_-1],ep[nalpha_],ep[nalpha_+1],ep[nalpha_+2]);fflush(stdout);
 
     return energy_;
 

@@ -109,7 +109,7 @@ void PolaritonicHF::common_init() {
     // memory is from process::environment
     memory_ = Process::environment.get_memory();
 
-    nuclear_dipole_self_energy_ = 0.0;
+    average_electric_dipole_self_energy_ = 0.0;
 
     // initialize cavity parameters
     initialize_cavity();
@@ -222,10 +222,14 @@ void PolaritonicHF::initialize_cavity() {
 
     // e-(n-<d>) contribution 0.5 * 2 (lambda . de) ( lambda . (dn - <d>) )
 
-    // initialize with <d> = 0.0
-    double dip_x = 0.0;
-    double dip_y = 0.0;
-    double dip_z = 0.0;
+    // initialize with <de> = 0
+    e_dip_x_ = 0.0;
+    e_dip_y_ = 0.0;
+    e_dip_z_ = 0.0;
+
+    tot_dip_x_ = nuc_dip_x_;
+    tot_dip_y_ = nuc_dip_y_;
+    tot_dip_z_ = nuc_dip_z_;
 
     // e contribution: lambda . de
     std::shared_ptr<Matrix> el_dipdot (new Matrix(nso_,nso_));
@@ -236,17 +240,17 @@ void PolaritonicHF::initialize_cavity() {
 
     // n-<d> contribution: lambda . (dn - <d>)
     double nuc_dipdot = 0.0;
-    nuc_dipdot += lambda_x * ( nuc_dip_x_ - dip_x );
-    nuc_dipdot += lambda_y * ( nuc_dip_y_ - dip_y );
-    nuc_dipdot += lambda_z * ( nuc_dip_z_ - dip_z );
+    nuc_dipdot += lambda_x * ( nuc_dip_x_ - tot_dip_x_ );
+    nuc_dipdot += lambda_y * ( nuc_dip_y_ - tot_dip_y_ );
+    nuc_dipdot += lambda_z * ( nuc_dip_z_ - tot_dip_z_ );
 
     // e-(n-<d>) contribution 0.5 * 2 (lambda . de) ( lambda . (dn - <d>) )
     scaled_e_n_dipole_squared_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
     scaled_e_n_dipole_squared_->copy(el_dipdot);
     scaled_e_n_dipole_squared_->scale(nuc_dipdot);
 
-    // constant terms:  0.5 ( lambda . ( dn - <d> ) )^2
-    nuclear_dipole_self_energy_ = 0.5 * nuc_dipdot * nuc_dipdot;
+    // constant terms:  0.5 ( lambda . ( dn - <d> ) )^2 = 0.5 ( lambda . <de> )^2
+    average_electric_dipole_self_energy_ = 0.5 * nuc_dipdot * nuc_dipdot;
 
 }
 
@@ -263,25 +267,25 @@ void PolaritonicHF::update_cavity_terms(){
 
     // evaluate the electronic contribute to the molecule's dipole moment
 
-    double e_dip_x = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1); 
-    double e_dip_y = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1); 
-    double e_dip_z = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+    e_dip_x_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1); 
+    e_dip_y_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1); 
+    e_dip_z_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
 
     if ( same_a_b_dens_ ) {
-        e_dip_x *= 2.0;
-        e_dip_y *= 2.0;
-        e_dip_z *= 2.0;
+        e_dip_x_ *= 2.0;
+        e_dip_y_ *= 2.0;
+        e_dip_z_ *= 2.0;
     }else {
-        e_dip_x += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1); 
-        e_dip_y += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1); 
-        e_dip_z += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+        e_dip_x_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1); 
+        e_dip_y_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1); 
+        e_dip_z_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
     }
 
     // evaluate the total dipole moment:
 
-    double dip_x = e_dip_x + nuc_dip_x_;
-    double dip_y = e_dip_y + nuc_dip_y_;
-    double dip_z = e_dip_z + nuc_dip_z_;
+    tot_dip_x_ = e_dip_x_ + nuc_dip_x_;
+    tot_dip_y_ = e_dip_y_ + nuc_dip_y_;
+    tot_dip_z_ = e_dip_z_ + nuc_dip_z_;
 
     // e-(n-<d>) contribution 0.5 * 2 (lambda . de) ( lambda . (dn - <d>) )
 
@@ -298,9 +302,9 @@ void PolaritonicHF::update_cavity_terms(){
 
     // n-<d> contribution: lambda . (dn - <d>)
     double nuc_dipdot = 0.0;
-    nuc_dipdot += lambda_x * ( nuc_dip_x_ - dip_x );
-    nuc_dipdot += lambda_y * ( nuc_dip_y_ - dip_y );
-    nuc_dipdot += lambda_z * ( nuc_dip_z_ - dip_z );
+    nuc_dipdot += lambda_x * ( nuc_dip_x_ - tot_dip_x_ );
+    nuc_dipdot += lambda_y * ( nuc_dip_y_ - tot_dip_y_ );
+    nuc_dipdot += lambda_z * ( nuc_dip_z_ - tot_dip_z_ );
 
     // e-(n-<d>) contribution 0.5 * 2 (lambda . de) ( lambda . (dn - <d>) )
     scaled_e_n_dipole_squared_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
@@ -308,7 +312,7 @@ void PolaritonicHF::update_cavity_terms(){
     scaled_e_n_dipole_squared_->scale(nuc_dipdot);
 
     // constant terms:  0.5 ( lambda . ( dn - <d> ) )^2
-    nuclear_dipole_self_energy_ = 0.5 * nuc_dipdot * nuc_dipdot;
+    average_electric_dipole_self_energy_ = 0.5 * nuc_dipdot * nuc_dipdot;
 
 }
 

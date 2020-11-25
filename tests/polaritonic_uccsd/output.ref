@@ -1,0 +1,783 @@
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.4a2.dev1054 
+
+                         Git: Rev {master} 673fe5b dirty
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, and M. H. Lechner
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Wednesday, 25 November 2020 10:59AM
+
+    Process ID: 46850
+    Host:       Alberts-MacBook-Pro.local
+    PSIDATADIR: /Users/deprince/software/psi4/install/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input File <==
+
+--------------------------------------------------------------------------
+# PYTHONPATH must include directory above plugin directory.
+#     Define either externally or here, then import plugin.
+sys.path.insert(0, '../../..')
+import hilbert 
+#memory 10 gb
+
+molecule h2 {
+
+0 1
+         O            0.000000000000     0.000000000000    -0.068516219320
+         H            0.000000000000    -0.790689573744     0.543701060715
+         H            0.000000000000     0.790689573744     0.543701060715
+no_reorient
+nocom
+symmetry c1
+}
+
+set {
+  basis cc-pvdz
+  scf_type df 
+  e_convergence 1e-12
+  d_convergence 1e-12 
+} 
+
+
+# w = 2.0 eV
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+
+set hilbert {
+  maxiter 500
+  n_photon_states          2
+  cavity_frequency         [0.0, 0.0, 0.07349864501573]
+  cavity_coupling_strength [0.0, 0.0, 0.130411334821786]
+
+  #n_photon_states          1
+  #cavity_frequency         [0.0, 0.0, 0.0]
+  #cavity_coupling_strength [0.0, 0.0, 0.0]
+
+  polaritonic_cc_include_u0 true
+  polaritonic_cc_include_u1 true
+  polaritonic_cc_include_u2 true
+}
+
+activate(h2)
+
+set reference uhf
+en = energy('polaritonic-uccsd') 
+
+ref = -76.234653553147
+compare_values(ref, en, 8, "UCCSD total energy") # TEST
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Wed Nov 25 10:59:00 2020
+
+   => Loading Basis Set <=
+
+    Name: CC-PVDZ
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line   198 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UHF Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.12555  B =     13.37733  C =      8.72955 [cm^-1]
+  Rotational constants: A = 753245.07149  B = 401042.16706  C = 261705.25473 [MHz]
+  Nuclear repulsion =    8.801465564563406
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-12
+  Density threshold  = 1.00e-12
+  Integral threshold = 0.00e+00
+
+  ==> Primary Basis <==
+
+  Basis Set: CC-PVDZ
+    Blend: CC-PVDZ
+    Number of shells: 12
+    Number of basis function: 24
+    Number of Cartesian functions: 25
+    Spherical Harmonics?: true
+    Max angular momentum: 2
+
+   => Loading Basis Set <=
+
+    Name: (CC-PVDZ AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   221 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 2-3 entry H          line    51 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz-jkfit.gbs 
+
+  ==> Integral Setup <==
+
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                  Yes
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:              375
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (CC-PVDZ AUX)
+    Blend: CC-PVDZ-JKFIT
+    Number of shells: 42
+    Number of basis function: 116
+    Number of Cartesian functions: 131
+    Spherical Harmonics?: true
+    Max angular momentum: 3
+
+  Minimum eigenvalue in the overlap matrix is 3.7382439197E-02.
+  Reciprocal condition number of the overlap matrix is 1.0328862040E-02.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A         24      24 
+   -------------------------
+    Total      24      24
+   -------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UHF iter SAD:   -75.45137243475020   -7.54514e+01   0.00000e+00 
+   @DF-UHF iter   1:   -75.94580099112508   -4.94429e-01   1.74038e-02 DIIS
+   @DF-UHF iter   2:   -75.99964867099625   -5.38477e-02   1.04495e-02 DIIS
+   @DF-UHF iter   3:   -76.02091630759767   -2.12676e-02   9.59211e-04 DIIS
+   @DF-UHF iter   4:   -76.02136941091487   -4.53103e-04   2.41284e-04 DIIS
+   @DF-UHF iter   5:   -76.02139623764067   -2.68267e-05   4.32356e-05 DIIS
+   @DF-UHF iter   6:   -76.02139743202625   -1.19439e-06   6.70672e-06 DIIS
+   @DF-UHF iter   7:   -76.02139746368489   -3.16586e-08   1.07122e-06 DIIS
+   @DF-UHF iter   8:   -76.02139746459258   -9.07690e-10   2.63034e-07 DIIS
+   @DF-UHF iter   9:   -76.02139746465463   -6.20446e-11   4.16358e-08 DIIS
+   @DF-UHF iter  10:   -76.02139746465592   -1.29319e-12   3.60702e-09 DIIS
+   @DF-UHF iter  11:   -76.02139746465593   -1.42109e-14   5.95158e-10 DIIS
+   @DF-UHF iter  12:   -76.02139746465596   -2.84217e-14   3.13163e-11 DIIS
+   @DF-UHF iter  13:   -76.02139746465591    5.68434e-14   4.90865e-12 DIIS
+   @DF-UHF iter  14:   -76.02139746465592   -1.42109e-14   4.55677e-13 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   @Spin Contamination Metric:   3.552713679E-15
+   @S^2 Expected:                0.000000000E+00
+   @S^2 Observed:                3.552713679E-15
+   @S   Expected:                0.000000000E+00
+   @S   Observed:                0.000000000E+00
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A    -20.557851     2A     -1.316186     3A     -0.677076  
+       4A     -0.558723     5A     -0.490375  
+
+    Alpha Virtual:                                                        
+
+       6A      0.178016     7A      0.249486     8A      0.760311  
+       9A      0.816144    10A      1.166347    11A      1.198686  
+      12A      1.256576    13A      1.452880    14A      1.466534  
+      15A      1.668515    16A      1.877409    17A      1.890443  
+      18A      2.355075    19A      2.388631    20A      3.249433  
+      21A      3.298364    22A      3.454607    23A      3.821967  
+      24A      4.099335  
+
+    Beta Occupied:                                                        
+
+       1A    -20.557851     2A     -1.316186     3A     -0.677076  
+       4A     -0.558723     5A     -0.490375  
+
+    Beta Virtual:                                                         
+
+       6A      0.178016     7A      0.249486     8A      0.760311  
+       9A      0.816144    10A      1.166347    11A      1.198686  
+      12A      1.256576    13A      1.452880    14A      1.466534  
+      15A      1.668515    16A      1.877409    17A      1.890443  
+      18A      2.355075    19A      2.388631    20A      3.249433  
+      21A      3.298364    22A      3.454607    23A      3.821967  
+      24A      4.099335  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+    SOCC [     0 ]
+
+  @DF-UHF Final Energy:   -76.02139746465592
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.8014655645634061
+    One-Electron Energy =                -122.4453031356081141
+    Two-Electron Energy =                  37.6224401063887939
+    Total Energy =                        -76.0213974646559194
+
+  UHF NO Occupations:
+  HONO-2 :    3  A 2.0000000
+  HONO-1 :    4  A 2.0000000
+  HONO-0 :    5  A 2.0000000
+  LUNO+0 :    6  A 0.0000000
+  LUNO+1 :    7  A 0.0000000
+  LUNO+2 :    8  A 0.0000000
+  LUNO+3 :    9  A 0.0000000
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+  Nuclear Dipole Moment: [e a0]
+     X:     0.0000      Y:     0.0000      Z:     1.0191
+
+  Electronic Dipole Moment: [e a0]
+     X:    -0.0000      Y:    -0.0000      Z:    -0.1945
+
+  Dipole Moment: [e a0]
+     X:    -0.0000      Y:    -0.0000      Z:     0.8246     Total:     0.8246
+
+  Dipole Moment: [D]
+     X:    -0.0000      Y:    -0.0000      Z:     2.0958     Total:     2.0958
+
+
+*** tstop() called on Alberts-MacBook-Pro.local at Wed Nov 25 10:59:00 2020
+Module time:
+	user time   =       0.25 seconds =       0.00 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+Total time:
+	user time   =       0.25 seconds =       0.00 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+   => Loading Basis Set <=
+
+    Name: (CC-PVDZ AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   221 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 2-3 entry H          line    51 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (CC-PVDZ AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   235 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz-ri.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = CC-PVDZ
+    Blend                  = CC-PVDZ
+    Total number of shells = 12
+    Number of primitives   = 32
+    Number of AO           = 25
+    Number of SO           = 24
+    Maximum AM             = 2
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     17s 4p 1d // 3s 2p 1d 
+       2     H     4s 1p // 2s 1p 
+       3     H     4s 1p // 2s 1p 
+
+  ==> AO Basis Functions <==
+
+    [ CC-PVDZ ]
+    spherical
+    ****
+    O   1
+    S   8 1.00
+                     11720.00000000           0.00071000
+                      1759.00000000           0.00547000
+                       400.80000000           0.02783700
+                       113.70000000           0.10480000
+                        37.03000000           0.28306200
+                        13.27000000           0.44871900
+                         5.02500000           0.27095200
+                         1.01300000           0.01545800
+    S   8 1.00
+                     11720.00000000          -0.00016000
+                      1759.00000000          -0.00126300
+                       400.80000000          -0.00626700
+                       113.70000000          -0.02571600
+                        37.03000000          -0.07092400
+                        13.27000000          -0.16541100
+                         5.02500000          -0.11695500
+                         1.01300000           0.55736800
+    S   1 1.00
+                         0.30230000           1.00000000
+    P   3 1.00
+                        17.70000000           0.04301800
+                         3.85400000           0.22891300
+                         1.04600000           0.50872800
+    P   1 1.00
+                         0.27530000           1.00000000
+    D   1 1.00
+                         1.18500000           1.00000000
+    ****
+    H   2
+    S   3 1.00
+                        13.01000000           0.01968500
+                         1.96200000           0.13797700
+                         0.44460000           0.47814800
+    S   1 1.00
+                         0.12200000           1.00000000
+    P   1 1.00
+                         0.72700000           1.00000000
+    ****
+    H   3
+    S   3 1.00
+                        13.01000000           0.01968500
+                         1.96200000           0.13797700
+                         0.44460000           0.47814800
+    S   1 1.00
+                         0.12200000           1.00000000
+    P   1 1.00
+                         0.72700000           1.00000000
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic UHF                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = CC-PVDZ
+    Blend                  = CC-PVDZ
+    Total number of shells = 12
+    Number of primitives   = 32
+    Number of AO           = 25
+    Number of SO           = 24
+    Maximum AM             = 2
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     17s 4p 1d // 3s 2p 1d 
+       2     H     4s 1p // 2s 1p 
+       3     H     4s 1p // 2s 1p 
+
+  ==> AO Basis Functions <==
+
+    [ CC-PVDZ ]
+    spherical
+    ****
+    O   1
+    S   8 1.00
+                     11720.00000000           0.00071000
+                      1759.00000000           0.00547000
+                       400.80000000           0.02783700
+                       113.70000000           0.10480000
+                        37.03000000           0.28306200
+                        13.27000000           0.44871900
+                         5.02500000           0.27095200
+                         1.01300000           0.01545800
+    S   8 1.00
+                     11720.00000000          -0.00016000
+                      1759.00000000          -0.00126300
+                       400.80000000          -0.00626700
+                       113.70000000          -0.02571600
+                        37.03000000          -0.07092400
+                        13.27000000          -0.16541100
+                         5.02500000          -0.11695500
+                         1.01300000           0.55736800
+    S   1 1.00
+                         0.30230000           1.00000000
+    P   3 1.00
+                        17.70000000           0.04301800
+                         3.85400000           0.22891300
+                         1.04600000           0.50872800
+    P   1 1.00
+                         0.27530000           1.00000000
+    D   1 1.00
+                         1.18500000           1.00000000
+    ****
+    H   2
+    S   3 1.00
+                        13.01000000           0.01968500
+                         1.96200000           0.13797700
+                         0.44460000           0.47814800
+    S   1 1.00
+                         0.12200000           1.00000000
+    P   1 1.00
+                         0.72700000           1.00000000
+    ****
+    H   3
+    S   3 1.00
+                        13.01000000           0.01968500
+                         1.96200000           0.13797700
+                         0.44460000           0.47814800
+    S   1 1.00
+                         0.12200000           1.00000000
+    P   1 1.00
+                         0.72700000           1.00000000
+    ****
+
+
+    No. basis functions:               24
+    No. auxiliary basis functions:    116
+    No. alpha electrons:                5
+    No. beta electrons:                 5
+    e_convergence:              1.000e-12
+    d_convergence:              1.000e-12
+    maxiter:                          500
+
+
+
+    Guess energy:      -76.021397464651
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -76.016328206230       0.005069258421       0.000115424894
+        1     -76.016332483501      -0.000004277271       0.000054731310
+        2     -76.016333211005      -0.000000727504       0.000026134522
+        3     -76.016334297778      -0.000001086773       0.000007219095
+        4     -76.016334128450       0.000000169329       0.000001209742
+        5     -76.016334274354      -0.000000145905       0.000000121765
+        6     -76.016334290777      -0.000000016423       0.000000022845
+        7     -76.016334290725       0.000000000052       0.000000004835
+        8     -76.016334290631       0.000000000094       0.000000000819
+        9     -76.016334290626       0.000000000005       0.000000000827
+       10     -76.016334290631      -0.000000000005       0.000000000150
+       11     -76.016334290629       0.000000000002       0.000000000031
+       12     -76.016334290631      -0.000000000002       0.000000000007
+       13     -76.016334290631       0.000000000000       0.000000000001
+
+    SCF iterations converged!
+
+    * Polaritonic UHF total energy:     -76.016334290631
+
+ #  #
+ Irrep: 1
+      1: -20.5561448
+      2: -1.3158935
+      3: -0.6758515
+      4: -0.5578631
+      5: -0.4890480
+      6:  0.1830010
+      7:  0.2540151
+      8:  0.7623123
+      9:  0.8192427
+     10:  1.1696445
+     11:  1.2003339
+     12:  1.2590564
+     13:  1.4550956
+     14:  1.4684301
+     15:  1.6701359
+     16:  1.8794248
+     17:  1.8932183
+     18:  2.3574361
+     19:  2.3908878
+     20:  3.2508752
+     21:  3.2996907
+     22:  3.4565360
+     23:  3.8236815
+     24:  4.1013916
+
+
+ #  #
+ Irrep: 1
+      1: -20.5561448
+      2: -1.3158935
+      3: -0.6758515
+      4: -0.5578631
+      5: -0.4890480
+      6:  0.1830010
+      7:  0.2540151
+      8:  0.7623123
+      9:  0.8192427
+     10:  1.1696445
+     11:  1.2003339
+     12:  1.2590564
+     13:  1.4550956
+     14:  1.4684301
+     15:  1.6701359
+     16:  1.8794248
+     17:  1.8932183
+     18:  2.3574361
+     19:  2.3908878
+     20:  3.2508752
+     21:  3.2996907
+     22:  3.4565360
+     23:  3.8236815
+     24:  4.1013916
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = CC-PVDZ
+    Blend                  = CC-PVDZ
+    Total number of shells = 12
+    Number of primitives   = 32
+    Number of AO           = 25
+    Number of SO           = 24
+    Maximum AM             = 2
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     17s 4p 1d // 3s 2p 1d 
+       2     H     4s 1p // 2s 1p 
+       3     H     4s 1p // 2s 1p 
+
+  ==> AO Basis Functions <==
+
+    [ CC-PVDZ ]
+    spherical
+    ****
+    O   1
+    S   8 1.00
+                     11720.00000000           0.00071000
+                      1759.00000000           0.00547000
+                       400.80000000           0.02783700
+                       113.70000000           0.10480000
+                        37.03000000           0.28306200
+                        13.27000000           0.44871900
+                         5.02500000           0.27095200
+                         1.01300000           0.01545800
+    S   8 1.00
+                     11720.00000000          -0.00016000
+                      1759.00000000          -0.00126300
+                       400.80000000          -0.00626700
+                       113.70000000          -0.02571600
+                        37.03000000          -0.07092400
+                        13.27000000          -0.16541100
+                         5.02500000          -0.11695500
+                         1.01300000           0.55736800
+    S   1 1.00
+                         0.30230000           1.00000000
+    P   3 1.00
+                        17.70000000           0.04301800
+                         3.85400000           0.22891300
+                         1.04600000           0.50872800
+    P   1 1.00
+                         0.27530000           1.00000000
+    D   1 1.00
+                         1.18500000           1.00000000
+    ****
+    H   2
+    S   3 1.00
+                        13.01000000           0.01968500
+                         1.96200000           0.13797700
+                         0.44460000           0.47814800
+    S   1 1.00
+                         0.12200000           1.00000000
+    P   1 1.00
+                         0.72700000           1.00000000
+    ****
+    H   3
+    S   3 1.00
+                        13.01000000           0.01968500
+                         1.96200000           0.13797700
+                         0.44460000           0.47814800
+    S   1 1.00
+                         0.12200000           1.00000000
+    P   1 1.00
+                         0.72700000           1.00000000
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    UCCSD                                            *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+
+    ==> Hamiltonian type <==
+
+        molecular
+
+
+    Required memory:              25.2 mb
+
+  ==> DF Tensor (by Rob Parrish) <==
+
+ => Primary Basis Set <= 
+
+  Basis Set: CC-PVDZ
+    Blend: CC-PVDZ
+    Number of shells: 12
+    Number of basis function: 24
+    Number of Cartesian functions: 25
+    Spherical Harmonics?: true
+    Max angular momentum: 2
+
+ => Auxiliary Basis Set <= 
+
+  Basis Set: (CC-PVDZ AUX)
+    Blend: CC-PVDZ-RI
+    Number of shells: 30
+    Number of basis function: 84
+    Number of Cartesian functions: 96
+    Spherical Harmonics?: true
+    Max angular momentum: 3
+
+
+    No. basis functions:               24
+    No. auxiliary basis functions:     84
+    No. alpha electrons:                5
+    No. beta electrons:                 5
+    e_convergence:              1.000e-12
+    r_convergence:              1.000e-05
+    maxiter:                          500
+
+
+
+    ==>  Begin CCSD Iterations <==
+
+     Iter               energy                   dE                 |dT| 
+        0      -0.208719510991      -0.208719510991       0.459092285158
+        1      -0.213328526257      -0.004609015266       0.062389302988
+        2      -0.217695586702      -0.004367060445       0.021880538599
+        3      -0.218306705043      -0.000611118340       0.006339378856
+        4      -0.218320743069      -0.000014038026       0.001518176511
+        5      -0.218318645999       0.000002097070       0.000446762250
+        6      -0.218318941224      -0.000000295225       0.000159856096
+        7      -0.218319382121      -0.000000440897       0.000043086150
+        8      -0.218319278889       0.000000103233       0.000010601309
+        9      -0.218319270942       0.000000007947       0.000005075707
+       10      -0.218319265140       0.000000005802       0.000002956028
+       11      -0.218319263498       0.000000001642       0.000000267761
+       12      -0.218319262804       0.000000000695       0.000000064239
+       13      -0.218319262697       0.000000000106       0.000000016967
+       14      -0.218319262553       0.000000000144       0.000000006472
+       15      -0.218319262522       0.000000000032       0.000000002086
+       16      -0.218319262515       0.000000000007       0.000000000258
+       17      -0.218319262517      -0.000000000002       0.000000000049
+       18      -0.218319262517      -0.000000000000       0.000000000012
+
+    CCSD iterations converged!
+
+    * Polaritonic UCCSD total energy:     -76.234653553147
+    UCCSD total energy....................................................................PASSED
+
+    Psi4 stopped on: Wednesday, 25 November 2020 10:59AM
+    Psi4 wall time for execution: 0:00:04.00
+
+*** Psi4 exiting successfully. Buy a developer a beer!

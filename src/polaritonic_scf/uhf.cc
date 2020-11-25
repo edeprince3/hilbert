@@ -179,7 +179,7 @@ double PolaritonicUHF::compute_energy() {
     Da_->copy(Fprime);
 */
 
-    energy_  = enuc_ + nuclear_dipole_self_energy_;
+    energy_  = enuc_ + average_electric_dipole_self_energy_;
     energy_ += 0.5 * Da_->vector_dot(h);
     energy_ += 0.5 * Db_->vector_dot(h);
     energy_ += 0.5 * Da_->vector_dot(Fa_);
@@ -300,7 +300,7 @@ double PolaritonicUHF::compute_energy() {
         C_DGEMM('n','t',nso_,nso_,nbeta_,1.0,&(Cb_->pointer()[0][0]),nso_,&(Cb_->pointer()[0][0]),nso_,0.0,&(Db_->pointer()[0][0]),nso_);
 
         // evaluate the current energy, E = D(H+F) + Enuc
-        energy_  = enuc_ + nuclear_dipole_self_energy_;
+        energy_  = enuc_ + average_electric_dipole_self_energy_;
 
         energy_ += Da_->vector_dot(oei);
         energy_ += Db_->vector_dot(oei);
@@ -372,8 +372,10 @@ double PolaritonicUHF::compute_energy() {
     epsilon_a_->print();
     epsilon_b_->print();
 
-    //double * ep = epsilon_a_->pointer();
-    //printf("%20.12lf %20.12lf %20.12lf %20.12lf %20.12lf %20.12lf\n",ep[nalpha_-3],ep[nalpha_-2],ep[nalpha_-1],ep[nalpha_],ep[nalpha_+1],ep[nalpha_+2]);fflush(stdout);
+    // update cavity terms once more
+    if ( n_photon_states_ > 1 ) {
+        update_cavity_terms();
+    } 
 
     return energy_;
 

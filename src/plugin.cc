@@ -238,6 +238,9 @@ int read_options(std::string name, Options& options)
         /*- total number of spins in hubbard model -*/
         options.add_int("N_HUBBARD_SPINS",4);
 
+        /*- multiplicity in hubbard model -*/
+        options.add_int("HUBBARD_MULTIPLICITY",1);
+
         /*- fractional charge -*/
         options.add_double("FRACTIONAL_CHARGE", 0.0);
 
@@ -325,6 +328,15 @@ int read_options(std::string name, Options& options)
         options.add("CAVITY_FREQUENCY",new ArrayType());
         /*- cavity coupling strength (a.u.) -*/
         options.add("CAVITY_COUPLING_STRENGTH",/* 2990.0/2.54175*/new ArrayType());
+
+        /*- do include u0 in polaritioinic ccsd? -*/
+        options.add_bool("POLARITONIC_CC_INCLUDE_U0",false);
+
+        /*- do include u1 in polaritioinic ccsd? -*/
+        options.add_bool("POLARITONIC_CC_INCLUDE_U1",false);
+
+        /*- do include u2 in polaritioinic ccsd? -*/
+        options.add_bool("POLARITONIC_CC_INCLUDE_U2",false);
     }
 
     return true;

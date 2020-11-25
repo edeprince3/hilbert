@@ -71,6 +71,8 @@ void PolaritonicRCIS::common_init() {
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *******************************************************\n");
 
+    throw PsiException("polaritonic rcis needs to be updated to work in coherent-state basis.",__FILE__,__LINE__);
+
     // ensure scf_type df
     if ( options_.get_str("SCF_TYPE") != "DF" ) {
         throw PsiException("polaritonic rcis only works with scf_type df for now",__FILE__,__LINE__);

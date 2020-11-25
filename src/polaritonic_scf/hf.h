@@ -65,8 +65,8 @@ class PolaritonicHF: public Wavefunction {
     /// nuclear repulsion energy
     double enuc_;
 
-    /// nuclear dipole self energy
-    double nuclear_dipole_self_energy_;
+    /// part of the dipole self energy: 1/2 lambda^2 (dn - <d>)^2 = 1/2 lambda^2 <de>^2
+    double average_electric_dipole_self_energy_;
 
     /// the multiplicity
     int multiplicity_;
@@ -76,7 +76,6 @@ class PolaritonicHF: public Wavefunction {
     std::shared_ptr<Matrix> quadrupole_scaled_sum_;
     std::shared_ptr<Matrix> scaled_e_n_dipole_squared_;
 
-
     double * cavity_frequency_; 
     double * cavity_coupling_strength_; 
 
@@ -85,6 +84,14 @@ class PolaritonicHF: public Wavefunction {
     double nuc_dip_x_;
     double nuc_dip_y_; 
     double nuc_dip_z_;
+
+    double e_dip_x_;
+    double e_dip_y_; 
+    double e_dip_z_;
+
+    double tot_dip_x_;
+    double tot_dip_y_; 
+    double tot_dip_z_;
 
     void initialize_cavity();
     void update_cavity_terms();

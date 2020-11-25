@@ -184,6 +184,9 @@ class PolaritonicUCCSD: public PolaritonicHF {
     /// build t1-transformed integrals
     double t1_transformation();
 
+    /// build t1-transformed one-electron integrals
+    void t1_transform_oei(std::shared_ptr<Matrix> CL, std::shared_ptr<Matrix> CR, std::shared_ptr<Matrix> in);
+
     /// build t1-transformed integrals using a molecular hamiltonian
     double t1_transformation_molecular_hamiltonian(std::shared_ptr<Matrix> CL, std::shared_ptr<Matrix> CR, bool do_allocate_memory);
 
@@ -221,7 +224,28 @@ class PolaritonicUCCSD: public PolaritonicHF {
     double * eri_abic_;
 
     /// antisymmetrize different blocks of eris
-    void unpack_eris(double * eri, bool do_allocate_memory);
+    void unpack_eris(double * eri, bool do_allocate_memory, bool is_df);
+
+    /// antisymmetrize different blocks of eris
+    void unpack_eris_df(double * Qmo, bool do_allocate_memory, bool is_df);
+
+    /// return an element of the eri tensor
+    double compute_eri(size_t p, size_t q, size_t r, size_t s, double * eri, bool is_df);
+
+    /// low-memory version of double particle ladder diagram
+    void double_particle_ladder_diagram(double * t2, double * r2);
+
+    /// virtual-virtual block of three-index eris
+    double * Qvv_;
+
+    /// occupied-occupied block of three-index eris
+    double * Qoo_;
+
+    /// occupied-virtual block of three-index eris
+    double * Qov_;
+
+    /// virtual-occupied block of three-index eris
+    double * Qvo_;
 
 };
 

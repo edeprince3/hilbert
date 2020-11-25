@@ -71,6 +71,17 @@ def run_polaritonic_scf(name, **kwargs):
     if ref_wfn is None:
         ref_wfn = psi4.driver.scf_helper(name, **kwargs)
 
+    scf_aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_SCF",
+                                        psi4.core.get_option("SCF", "DF_BASIS_SCF"),
+                                        "JKFIT", psi4.core.get_global_option('BASIS'),
+                                        puream=ref_wfn.basisset().has_puream())
+    ref_wfn.set_basisset("DF_BASIS_SCF", scf_aux_basis)
+
+    aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_CC",
+                                        psi4.core.get_global_option("DF_BASIS_CC"),
+                                        "RIFIT", psi4.core.get_global_option("BASIS"))
+    ref_wfn.set_basisset("DF_BASIS_CC", aux_basis)
+
     # Ensure IWL files have been written when not using DF/CD
     scf_type = psi4.core.get_option('SCF', 'SCF_TYPE')
     if ( scf_type == 'PK' or scf_type == 'DIRECT' ):
