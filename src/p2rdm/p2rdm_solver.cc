@@ -401,14 +401,13 @@ void  p2RDMSolver::common_init(){
     //else if ( options_.get_str("ORBOPT_ALGORITHM") == "NEWTON_RAPHSON" )     orbopt_data_[14] = 2.0;
     // orbital optimizatoin algorithm
 
-    // orbital optimization algorithm is handled automatically internally
-    orbopt_data_[14] = 0.0;
-    //orbopt_data_[14] = 3.0;
-    //if      ( options_.get_str("ORBOPT_ALGORITHM") == "STEEPEST_DESCENT" ) orbopt_data_[14] = 0.0;
-    //else if ( options_.get_str("ORBOPT_ALGORITHM") == "HESTENES_STIEFEL" ) orbopt_data_[14] = 1.0;
-    //else if ( options_.get_str("ORBOPT_ALGORITHM") == "DAI_YUAN" )         orbopt_data_[14] = 2.0;
-    //else if ( options_.get_str("ORBOPT_ALGORITHM") == "HAGER_ZHANG" )      orbopt_data_[14] = 3.0;
-    //else if ( options_.get_str("ORBOPT_ALGORITHM") == "KOU_DAI" )          orbopt_data_[14] = 4.0;
+    //orbopt_data_[14] = 0.0;
+    orbopt_data_[14] = 3.0;
+    if      ( options_.get_str("ORBOPT_ALGORITHM") == "STEEPEST_DESCENT" ) orbopt_data_[14] = 0.0;
+    else if ( options_.get_str("ORBOPT_ALGORITHM") == "HESTENES_STIEFEL" ) orbopt_data_[14] = 1.0;
+    else if ( options_.get_str("ORBOPT_ALGORITHM") == "DAI_YUAN" )         orbopt_data_[14] = 2.0;
+    else if ( options_.get_str("ORBOPT_ALGORITHM") == "HAGER_ZHANG" )      orbopt_data_[14] = 3.0;
+    else if ( options_.get_str("ORBOPT_ALGORITHM") == "KOU_DAI" )          orbopt_data_[14] = 4.0;
 
     orbopt_converged_ = false;
 
@@ -459,7 +458,7 @@ double p2RDMSolver::compute_energy() {
 
             //if ( iter < 50 ) orbopt_data_[14] = 3.0; // steepest descent
             //else             orbopt_data_[14] = 3.0; // hager-zhang 
-            orbopt_data_[14] = 3.0; // hager-zhang 
+            //orbopt_data_[14] = 3.0; // hager-zhang 
 
             oo_energy = RotateOrbitals();
             dE = fabs(energy - oo_energy);
