@@ -1,0 +1,42 @@
+
+# job description:
+print('        H2O / 6-31g / p2RDM, scf_type = DF, rOH = 1.0 A, aHOH = 104.5')
+
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule h2o {
+0 1
+O
+H 1 1.0
+H 1 1.0 2 104.5
+symmetry c1
+}
+
+set {
+
+  reference rhf
+  basis 6-31g
+  scf_type df
+
+  e_convergence 1e-6
+  r_convergence 1e-6
+
+  orbopt_gradient_convergence 1e-8
+  orbopt_energy_convergence 1e-6
+
+  #localize_orbitals true
+  #noisy_orbitals true
+  optimize_orbitals true
+  orbopt_maxiter 100
+  maxiter 10000
+
+}
+
+en = energy('p2rdm')
+
+ref_scf    = -75.98014193580194 # TEST
+ref_p2rdm  = -76.117545625964   # TEST
+
+compare_values(ref_scf, variable("SCF TOTAL ENERGY"), 8, "SCF total energy") # TEST
+compare_values(ref_p2rdm, variable("CURRENT ENERGY"), 5, "p2RDM total energy") # TEST

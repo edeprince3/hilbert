@@ -1,0 +1,491 @@
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.4a2.dev403 
+
+                         Git: Rev {master} 3121918 dirty
+
+
+    R. M. Parrish, L. A. Burns, D. G. A. Smith, A. C. Simmonett,
+    A. E. DePrince III, E. G. Hohenstein, U. Bozkaya, A. Yu. Sokolov,
+    R. Di Remigio, R. M. Richard, J. F. Gonthier, A. M. James,
+    H. R. McAlexander, A. Kumar, M. Saitow, X. Wang, B. P. Pritchard,
+    P. Verma, H. F. Schaefer III, K. Patkowski, R. A. King, E. F. Valeev,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, and C. D. Sherrill,
+    J. Chem. Theory Comput. 13(7) pp 3185--3197 (2017).
+    (doi: 10.1021/acs.jctc.7b00174)
+
+
+                         Additional Contributions by
+    P. Kraus, H. Kruse, M. H. Lechner, M. C. Schieber, R. A. Shaw,
+    A. Alenaizan, R. Galvelis, Z. L. Glick, S. Lehtola, and J. P. Misiewicz
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Tuesday, 29 December 2020 03:35PM
+
+    Process ID: 88228
+    Host:       csl-dhcp50.chem.fsu.edu
+    PSIDATADIR: /Users/deprince/edeprince3/psi4/install/master/share/psi4
+    Memory:     500.0 MiB
+    Threads:    2
+    
+  ==> Input File <==
+
+--------------------------------------------------------------------------
+
+# job description:
+print('        H2O / 6-31g / p2RDM, scf_type = DF, rOH = 1.0 A, aHOH = 104.5')
+
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule h2o {
+0 1
+O
+H 1 1.0
+H 1 1.0 2 104.5
+symmetry c1
+}
+
+set {
+
+  reference rhf
+  basis 6-31g
+  scf_type df
+
+  e_convergence 1e-6
+  r_convergence 1e-6
+
+  orbopt_gradient_convergence 1e-8
+  orbopt_energy_convergence 1e-6
+
+  #localize_orbitals true
+  #noisy_orbitals true
+  optimize_orbitals true
+  orbopt_maxiter 100
+  maxiter 10000
+
+}
+
+en = energy('p2rdm')
+
+ref_scf    = -75.98014193580194 # TEST
+ref_p2rdm  = -76.117545625964   # TEST
+
+compare_values(ref_scf, variable("SCF TOTAL ENERGY"), 8, "SCF total energy") # TEST
+compare_values(ref_p2rdm, variable("CURRENT ENERGY"), 5, "p2RDM total energy") # TEST
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+*** tstart() called on csl-dhcp50.chem.fsu.edu
+*** at Tue Dec 29 15:35:32 2020
+
+   => Loading Basis Set <=
+
+    Name: 6-31G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line   117 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/6-31g.gbs 
+    atoms 2-3 entry H          line    26 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/6-31g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              RHF Reference
+                        2 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.12555  B =     13.37733  C =      8.72955 [cm^-1]
+  Rotational constants: A = 753245.07149  B = 401042.16706  C = 261705.25473 [MHz]
+  Nuclear repulsion =    8.801465564567374
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-06
+  Density threshold  = 1.00e-08
+  Integral threshold = 0.00e+00
+
+  ==> Primary Basis <==
+
+  Basis Set: 6-31G
+    Blend: 6-31G
+    Number of shells: 9
+    Number of basis function: 13
+    Number of Cartesian functions: 13
+    Spherical Harmonics?: false
+    Max angular momentum: 1
+
+   => Loading Basis Set <=
+
+    Name: (6-31G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   221 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 2-3 entry H          line    51 file /Users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
+
+  ==> Pre-Iterations <==
+
+   -------------------------------------------------------
+    Irrep   Nso     Nmo     Nalpha   Nbeta   Ndocc  Nsocc
+   -------------------------------------------------------
+     A         13      13       0       0       0       0
+   -------------------------------------------------------
+    Total      13      13       5       5       5       0
+   -------------------------------------------------------
+
+  ==> Integral Setup <==
+
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                  Yes
+    wK tasked:                  No
+    OpenMP threads:              2
+    Integrals threads:           2
+    Memory [MiB]:              375
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (6-31G AUX)
+    Blend: CC-PVDZ-JKFIT
+    Number of shells: 42
+    Number of basis function: 131
+    Number of Cartesian functions: 131
+    Spherical Harmonics?: false
+    Max angular momentum: 3
+
+  Minimum eigenvalue in the overlap matrix is 7.3923788795E-02.
+  Reciprocal condition number of the overlap matrix is 2.1980826342E-02.
+    Using symmetric orthogonalization.
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF.
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-RHF iter SAD:   -75.45941871343946   -7.54594e+01   0.00000e+00 
+   @DF-RHF iter   1:   -75.90434666105449   -4.44928e-01   3.09953e-02 DIIS
+   @DF-RHF iter   2:   -75.95857164768375   -5.42250e-02   1.90214e-02 DIIS
+   @DF-RHF iter   3:   -75.97973621452076   -2.11646e-02   1.56674e-03 DIIS
+   @DF-RHF iter   4:   -75.98012651826795   -3.90304e-04   3.11867e-04 DIIS
+   @DF-RHF iter   5:   -75.98014154101924   -1.50228e-05   4.14320e-05 DIIS
+   @DF-RHF iter   6:   -75.98014191790529   -3.76886e-07   8.27072e-06 DIIS
+   @DF-RHF iter   7:   -75.98014193491819   -1.70129e-08   1.79874e-06 DIIS
+   @DF-RHF iter   8:   -75.98014193578231   -8.64119e-10   3.33255e-07 DIIS
+   @DF-RHF iter   9:   -75.98014193580256   -2.02505e-11   3.10076e-08 DIIS
+   @DF-RHF iter  10:   -75.98014193580288   -3.12639e-13   2.58167e-09 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Doubly Occupied:                                                      
+
+       1A    -20.568888     2A     -1.334712     3A     -0.686875  
+       4A     -0.554298     5A     -0.499284  
+
+    Virtual:                                                              
+
+       6A      0.193417     7A      0.287599     8A      1.041506  
+       9A      1.130380    10A      1.164432    11A      1.220999  
+      12A      1.368964    13A      1.693510  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+
+  @DF-RHF Final Energy:   -75.98014193580288
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.8014655645673745
+    One-Electron Energy =                -122.2751012239382362
+    Two-Electron Energy =                  37.4934937235679726
+    Total Energy =                        -75.9801419358028909
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+  Nuclear Dipole Moment: [e a0]
+     X:     0.0000      Y:     0.0000      Z:     1.0191
+
+  Electronic Dipole Moment: [e a0]
+     X:     0.0000      Y:    -0.0000      Z:     0.0213
+
+  Dipole Moment: [e a0]
+     X:     0.0000      Y:    -0.0000      Z:     1.0404     Total:     1.0404
+
+  Dipole Moment: [D]
+     X:     0.0000      Y:    -0.0000      Z:     2.6444     Total:     2.6444
+
+
+*** tstop() called on csl-dhcp50.chem.fsu.edu at Tue Dec 29 15:35:32 2020
+Module time:
+	user time   =       0.29 seconds =       0.00 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+Total time:
+	user time   =       0.29 seconds =       0.00 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+
+
+        ***************************************************
+        *                                                 *
+        *    p2RDM                                        *
+        *                                                 *
+        *    parametric 2RDM                              *
+        *                                                 *
+        ***************************************************
+
+    ==> Convergence parameters <==
+
+        r_convergence:                  1.000e-06
+        e_convergence:                  1.000e-06
+        maximum iterations:                 10000
+
+    ==> Orbital optimization parameters <==
+
+        localize orbitals?                     no
+        optimize orbitals?                    yes
+        g_convergence:                  1.000e-08
+        e_convergence:                  1.000e-06
+        maximum iterations:                   100
+        exact diagonal Hessian:              true
+        number of DIIS vectors:                 0
+        print iteration info:               false
+
+    ==> Transform three-electron integrals <==
+
+        Time for integral transformation:     0.01 s
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = 6-31G
+    Blend                  = 6-31G
+    Total number of shells = 9
+    Number of primitives   = 22
+    Number of AO           = 13
+    Number of SO           = 13
+    Maximum AM             = 1
+    Spherical Harmonics    = FALSE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     10s 4p // 3s 2p 
+       2     H     4s // 2s 
+       3     H     4s // 2s 
+
+  ==> AO Basis Functions <==
+
+    [ 6-31G ]
+    cartesian
+    ****
+    O   1
+    S   6 1.00
+                      5484.67170000           0.00183110
+                       825.23495000           0.01395010
+                       188.04696000           0.06844510
+                        52.96450000           0.23271430
+                        16.89757000           0.47019300
+                         5.79963530           0.35852090
+    S   3 1.00
+                        15.53961600          -0.11077750
+                         3.59993360          -0.14802630
+                         1.01376180           1.13076700
+    P   3 1.00
+                        15.53961600           0.07087430
+                         3.59993360           0.33975280
+                         1.01376180           0.72715860
+    S   1 1.00
+                         0.27000580           1.00000000
+    P   1 1.00
+                         0.27000580           1.00000000
+    ****
+    H   2
+    S   3 1.00
+                        18.73113700           0.03349460
+                         2.82539370           0.23472695
+                         0.64012170           0.81375733
+    S   1 1.00
+                         0.16127780           1.00000000
+    ****
+    H   3
+    S   3 1.00
+                        18.73113700           0.03349460
+                         2.82539370           0.23472695
+                         0.64012170           0.81375733
+    S   1 1.00
+                         0.16127780           1.00000000
+    ****
+
+    ==> Begin oo-p2RDM iterations <==
+
+
+    ==> Begin p2RDM iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.1336690091    0.1336690091    0.1762477411
+           1   -0.1320052576   -0.0016637515    0.0254690950
+           2   -0.1363419907    0.0043367330    0.0105553469
+           3   -0.1365835625    0.0002415718    0.0023528324
+           4   -0.1366736946    0.0000901321    0.0006191915
+           5   -0.1366838163    0.0000101218    0.0001081873
+           6   -0.1366829655   -0.0000008508    0.0000257107
+           7   -0.1366831164    0.0000001509    0.0000061034
+           8   -0.1366831167    0.0000000004    0.0000007905
+
+    p2RDM one-electron energy =    -122.156737163768
+    p2RDM two-electron energy =      37.238446555433
+    * p2RDM total energy      =     -76.116825043768
+
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.107232002873
+        p2RDM two-electron energy =      37.188236730395
+        * p2RDM total energy      =     -76.117529707911
+
+    ==> oo-p2RDM summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          0         9         100  -76.1168250438  -76.1175297079   76.1175297079
+
+    ==> Begin p2RDM iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.1380483717    0.1380483717    0.0019459624
+           1   -0.1380555365    0.0000071648    0.0004681007
+           2   -0.1381019685    0.0000464319    0.0001924662
+           3   -0.1381011999   -0.0000007686    0.0000247273
+           4   -0.1381025671    0.0000013672    0.0000081061
+           5   -0.1381026978    0.0000001306    0.0000019198
+           6   -0.1381026531   -0.0000000447    0.0000003718
+
+    p2RDM one-electron energy =    -122.106093567523
+    p2RDM two-electron energy =      37.187084073209
+    * p2RDM total energy      =     -76.117543929746
+
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.105344911536
+        p2RDM two-electron energy =      37.186334686610
+        * p2RDM total energy      =     -76.117544660358
+
+    ==> oo-p2RDM summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          1         7         100  -76.1175439297  -76.1175446604    0.0000149524
+
+    ==> Begin p2RDM iterations <==
+
+        iter          energy       d(Energy)          |d(T)|
+           0   -0.1381266758    0.1381266758    0.0002184415
+           1   -0.1381300453    0.0000033694    0.0000444484
+           2   -0.1381320202    0.0000019750    0.0000133683
+           3   -0.1381321183    0.0000000981    0.0000022564
+           4   -0.1381321442    0.0000000259    0.0000005115
+
+    p2RDM one-electron energy =    -122.105368124383
+    p2RDM two-electron energy =      37.186357637645
+    * p2RDM total energy      =     -76.117544922171
+
+
+    ==> Orbital Optimization <==
+
+        p2RDM one-electron energy =    -122.105277455722
+        p2RDM two-electron energy =      37.186266732832
+        * p2RDM total energy      =     -76.117545158322
+
+    ==> oo-p2RDM summary <==
+
+       iter   iter(CI)   iter(oo)           E(CI)           E(oo)            |dE|
+          2         5          96  -76.1175449222  -76.1175451583    0.0000004980
+
+      oo-p2RDM iterations converged!
+
+    * oo-p2RDM total energy:                  -76.117545158322
+
+
+ # Natural Orbital Occupation Numbers (spin free) #
+ Irrep: 1
+      1:  1.9999599
+      2:  1.9889809
+      3:  1.9820997
+      4:  1.9706836
+      5:  1.9670875
+      6:  0.0291903
+      7:  0.0280169
+      8:  0.0167142
+      9:  0.0112618
+     10:  0.0028931
+     11:  0.0021111
+     12:  0.0005484
+     13:  0.0004527
+
+    SCF total energy..................................................PASSED
+    p2RDM total energy................................................PASSED
+
+    Psi4 stopped on: Tuesday, 29 December 2020 03:35PM
+    Psi4 wall time for execution: 0:00:01.30
+
+*** Psi4 exiting successfully. Buy a developer a beer!

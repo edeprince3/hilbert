@@ -457,14 +457,15 @@ double p2RDMSolver::compute_energy() {
         double oo_energy;
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {
 
-            if ( iter < 50 ) orbopt_data_[14] = 3.0; // steepest descent
-            else             orbopt_data_[14] = 3.0; // hager-zhang 
+            //if ( iter < 50 ) orbopt_data_[14] = 3.0; // steepest descent
+            //else             orbopt_data_[14] = 3.0; // hager-zhang 
+            orbopt_data_[14] = 3.0; // hager-zhang 
 
             oo_energy = RotateOrbitals();
             dE = fabs(energy - oo_energy);
 
             // increase number of orbital optimization steps
-            orbopt_data_[8] += 1.0; // AED
+            //orbopt_data_[8] += 1.0; // AED
 
         }else {
             oo_energy = rdm_energy;
