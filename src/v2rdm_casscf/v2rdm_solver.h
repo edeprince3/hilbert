@@ -43,6 +43,7 @@
 #include <psi4/libmints/vector.h>
 
 #include <focas/focas_c_interface.h>
+#include <focas/orbital_optimizer.h>
 #include <misc/hilbert_psifiles.h>
 
 #include <libsdp/sdp_solver.h>
@@ -126,6 +127,9 @@ class v2RDMSolver: public Wavefunction{
     void orbital_locations(const std::string &orbital_name, int *start, int *end);
 
   protected:
+
+    // GG orbital optimization class def
+    std::shared_ptr<OrbitalOptimizer> orbopt_;
 
     virtual bool same_a_b_orbs() const { return same_a_b_orbs_; }
     virtual bool same_a_b_dens() const { return same_a_b_dens_; }

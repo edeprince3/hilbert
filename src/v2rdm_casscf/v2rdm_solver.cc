@@ -300,6 +300,9 @@ void  v2RDMSolver::common_init(){
     orbopt_iter_total_ = 0;
     orbopt_time_       = 0.0;
 
+// GG initialize orbopt_ class
+    orbopt_ = (std::shared_ptr<OrbitalOptimizer>)(new OrbitalOptimizer(reference_wavefunction_,options_));
+
     // allocate memory for orbital lagrangian (TODO: make these smaller)
     X_               = (double*)malloc(nmo_*nmo_*sizeof(double));
 
@@ -3079,11 +3082,22 @@ void v2RDMSolver::RotateOrbitals(){
     //      symmetry_energy_order,frzcpi_,nrstc_,amo_,nrstv_,nirrep_,
     //      orbopt_data_,orbopt_outfile_);
 
+// GG call new C code
+    double dE_orbopt = 0.0e0; double gnorm_orbopt = 1.0e3;bool converged_orbopt; int iter_orbopt;
+    orbopt_->optimize_orbitals(d2_act_spatial_sym_, d1_act_spatial_sym_, tei_full_sym_, oei_full_sym_, orbopt_transformation_matrix_,\
+                               dE_orbopt, gnorm_orbopt,converged_orbopt,iter_orbopt);
+    orbopt_data_[10] = iter_orbopt;
+    orbopt_data_[11] = gnorm_orbopt;
+    orbopt_data_[12] = dE_orbopt;
+    orbopt_data_[13] = converged_orbopt;
+
+/*
     OrbOpt(orbopt_transformation_matrix_,
           oei_full_sym_,oei_full_dim_,tei_full_sym_,tei_full_dim_,
           d1_act_spatial_sym_,d1_act_spatial_dim_,d2_act_spatial_sym_,d2_act_spatial_dim_,
           symmetry_energy_order,nrstc_,amo_,nrstv_,nirrep_,
           orbopt_data_,orbopt_outfile_,X_);
+*/
 
     if ( orbopt_data_[8] > 0 ) {
         outfile->Printf("            Orbital Optimization %s in %3i iterations \n",(int)orbopt_data_[13] ? "converged" : "did not converge",(int)orbopt_data_[10]);
