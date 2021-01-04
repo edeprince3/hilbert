@@ -35,6 +35,8 @@ void OrbitalOptimizer::optimize_orbitals(double * d2, double * d1, double * tei,
     double E_new; double E_init;
     double dE_quad; double dE; double dE_ratio;
 
+    RAS_aa_ = false;
+
     outfile->Printf("        iter       Energy        dE       |g|     r\n");
 
     iter_orbopt = 0;
@@ -232,8 +234,6 @@ void OrbitalOptimizer::Restore_last_step( double * tei, double * oei, double * M
 
     if ( !eval_G ) {
 
-        printf("heyho\n");
-
         C_DSCAL(Nrot_,-1.0e0,&kappa_save_[0],1);
         ExponentiateKappa( kappa_save_ );
         TransformIntegrals( tei, oei, MOcoeff );
@@ -255,7 +255,49 @@ void OrbitalOptimizer::Precondition_Step(){
 
     }
 
+    if ( RAS_aa_ ) RAS_ZeroRedundant_aa(kappa_ref_);
+
     C_DCOPY(Nrot_,&kappa_ref_[0],1,&kappa_current_[0],1);
+
+}
+
+void OrbitalOptimizer::RAS_ZeroRedundant_aa( double * kappa ){
+
+    // function to zero rotations between RAS1 and RAS2 AA subspaces
+
+    for ( int h = 0; h < nirrep_; h++ ){
+
+        int nmo_ras1 = aa_ras1pi_[h];
+
+//        if ( nmo_ras1 == 0 ) continue;
+
+        // eliminate RAS1-RAS1 rotations
+
+        for ( int t_c = first_index_[h][1]; t_c < first_index_[h][1] + nmo_ras1; t_c++){
+
+            for ( int u_c = first_index_[h][1]; u_c < t_c; u_c++){
+
+                int tu = Grad_IndMap_c_[Lt_ij_index(t_c,u_c)];
+                kappa[tu] = 0.0e0;
+
+            }
+
+        }
+
+        // eliminate RAS2-RAS2 rotations
+
+        for ( int t_c = first_index_[h][1] + nmo_ras1; t_c < last_index_[h][1]; t_c++){
+
+            for ( int u_c = first_index_[h][1] + nmo_ras1; u_c < t_c; u_c++){
+
+                int tu = Grad_IndMap_c_[Lt_ij_index(t_c,u_c)];
+                kappa[tu] = 0.0e0;
+
+            }
+
+        }
+
+    }
 
 }
 

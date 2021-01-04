@@ -37,6 +37,8 @@ void OrbitalOptimizer::ComputeG(double * d2, double * d1, double * tei, double *
 
     Compute_G();
 
+//    if ( RAS_aa_ ) RAS_ZeroRedundant_aa(orbital_gradient_);
+
     gradient_norm_ = sqrt( C_DDOT(Nrot_,&orbital_gradient_[0],1,&orbital_gradient_[0],1) );
 
 }

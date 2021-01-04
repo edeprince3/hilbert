@@ -785,6 +785,9 @@ void OrbitalOptimizer::Alloc_OindMap(){
     Q_offset_ = (int *)malloc(nirrep_*sizeof(int));
     memset((void*)Q_offset_,'\0',nirrep_*sizeof(int));
 
+    aa_ras1pi_ = (int *)malloc(nirrep_*sizeof(int));
+    memset((void*)aa_ras1pi_,'\0',nirrep_*sizeof(int));
+
     OindMap_e2c_ = (int *)malloc(nmo*sizeof(int)); 
     memset((void*)OindMap_e2c_,'\0',nmo*sizeof(int));
 
@@ -839,7 +842,7 @@ void OrbitalOptimizer::Dealloc_OindMap(){
     free(Active_GindMap_c_);
     free(Active_GindMap_e_);
     free(Full_GindMap_c_);
- 
+    free(aa_ras1pi_); 
 
     for (int i = 0; i < nirrep_; i++){
         free(first_index_[i]);

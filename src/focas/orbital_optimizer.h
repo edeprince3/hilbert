@@ -199,6 +199,9 @@ class OrbitalOptimizer {
 
     double * diagonal_orbital_hessian_;
 
+    bool RAS_aa_;
+    int * aa_ras1pi_;
+
     // functions for optimization
 
     void Restore_last_step(double * tei, double * oei, double * transformation_matrix, bool converged_e, bool converged_g, bool eval_G);
@@ -331,6 +334,8 @@ class OrbitalOptimizer {
     void Compute_G_aa();
 
     void Compute_G_ad();
+
+    void RAS_ZeroRedundant_aa( double * kappa );
 
     void Determine_GradIndMap();
 
