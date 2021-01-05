@@ -202,6 +202,14 @@ class OrbitalOptimizer {
     bool RAS_aa_;
     int * aa_ras1pi_;
 
+    // functions for generalized Fock matrix
+
+    void Get_GeneralizedFock(double * d2, double * d1, double * tei, double * oei, double * Fock);
+
+    void Compute_GeneralizedFock(double * d2, double * d1, double * tei, double * oei, double * Fock);
+
+    void GeneralizedFock_block( double * Fock, int p_class, int q_class );
+
     // functions for optimization
 
     void Restore_last_step(double * tei, double * oei, double * transformation_matrix, bool converged_e, bool converged_g, bool eval_G);
@@ -393,7 +401,9 @@ class OrbitalOptimizer {
 
     // functions for sorting & scaling d2, d1, and e1
 
-    void Sort(double * d2, double * d1, double * oei, double * transformation_matrix, int direction);
+    void Sort(double * d2, double * d1, double * oei, int direction);
+
+    void Sort_MOcoeff(double * MOcoeff, int direction);
 
 };
 

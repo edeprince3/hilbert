@@ -185,7 +185,8 @@ void OrbitalOptimizer::Initiate_Optimizer(double * d2, double * d1, double * oei
 
     // sort oei, d1, and d2 (needs maping arrays)
     int direction = 1;
-    Sort( d2, d1, oei, transformation_matrix, direction );
+    Sort( d2, d1, oei, direction );
+    Sort_MOcoeff(transformation_matrix, direction);
 
     // allocate indexing arrays
     Alloc_Gradient();
@@ -204,7 +205,8 @@ void OrbitalOptimizer::Finalize_Optimizer(double * d2, double * d1, double * oei
 
     // sort d2, d1, oei (needs mapping arrays)
     int direction = -1;
-    Sort( d2, d1, oei, transformation_matrix, direction );
+    Sort( d2, d1, oei, direction );
+    Sort_MOcoeff( transformation_matrix, direction );
 
     // allocate mapping arrays
     Dealloc_OindMap();

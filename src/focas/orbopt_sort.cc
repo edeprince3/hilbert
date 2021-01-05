@@ -22,15 +22,19 @@ using namespace fnocc;
 
 namespace hilbert{
 
-void OrbitalOptimizer::Sort(double * d2, double * d1, double * oei, double * trans, int direction){
+void OrbitalOptimizer::Sort(double * d2, double * d1, double * oei, int direction){
 
     // function to sort d2, d1, and oei from energy to class order (direction 1) or class to energy (direction -1)
     // elements of d2 are scaled as well
 
-    int d2_max_ngem = Max_value(act_gempi_,nirrep_);
+    int d2_max_ngem  = Max_value(act_gempi_,nirrep_);
+    int oei_max_ngem = full_gempi_[0];
 
-    double * symblock_tmp = (double *)malloc(d2_max_ngem*(d2_max_ngem+1)/2*sizeof(double));
-    memset((void*)symblock_tmp,'\0',d2_max_ngem*(d2_max_ngem+1)/2*sizeof(double));
+    int tmp_dim = d2_max_ngem*(d2_max_ngem+1)/2;
+    if ( oei_max_ngem > tmp_dim ) tmp_dim = oei_max_ngem;
+
+    double * symblock_tmp = (double *)malloc(tmp_dim*sizeof(double));
+    memset((void*)symblock_tmp,'\0',tmp_dim*sizeof(double));
 
     // sort 2-e density
 
@@ -147,16 +151,8 @@ void OrbitalOptimizer::Sort(double * d2, double * d1, double * oei, double * tra
 
     for ( int i = 0; i < act_gempi_[0]; i++) d1[i] = symblock_tmp[i];
 
-//    if ( direction == 1 ) for ( int i = 0; i < act_gempi_[0]; i++) printf("%i %17.10e\n",i,d1[i]);
-
-    int oei_max_ngem = full_gempi_[0];
-
-    free(symblock_tmp);
-
-    symblock_tmp = (double *)malloc(oei_max_ngem*sizeof(double));
-    memset((void*)symblock_tmp,'\0',oei_max_ngem*sizeof(double));
-
     // sort 1-e integrals
+
     irrep_offset = 0;
 
     for ( int h_p = 0; h_p < nirrep_; h_p++){
@@ -182,8 +178,6 @@ void OrbitalOptimizer::Sort(double * d2, double * d1, double * oei, double * tra
                        if ( direction == 1  ) symblock_tmp[pq_c] = oei[pq_i];
                        if ( direction == -1 ) symblock_tmp[pq_i] = oei[pq_c];
 
-//                       printf("%i   %i %i %20.12e\n",h_p,p_c,q_c,symblock_tmp[pq_c]);
-
                    }
 
                 }
@@ -200,8 +194,14 @@ void OrbitalOptimizer::Sort(double * d2, double * d1, double * oei, double * tra
 
     free(symblock_tmp);
 
+}
+
+
+void OrbitalOptimizer::Sort_MOcoeff(double * trans, int direction){
+
     // sort the MO coefficient matrix
 
+    double * symblock_tmp;
 
     if ( direction == -1 ){
 
@@ -210,7 +210,7 @@ void OrbitalOptimizer::Sort(double * d2, double * d1, double * oei, double * tra
 
     }
 
-    irrep_offset = 0;
+    int irrep_offset = 0;
 
     for ( int h = 0; h < nirrep_; h++ ){
 
@@ -231,8 +231,6 @@ void OrbitalOptimizer::Sort(double * d2, double * d1, double * oei, double * tra
                         int q_e  = OindMap_c2e_[q_c];
                         int pq_i = Full_ij_index(q_i,p_i,nmo) + irrep_offset;
                         int pq_e = Full_ij_index(q_e,p_e,nmo_);
-
-//                        printf("%i %i    %i %i   %i \n",q_c,p_c,q_e,p_e,pq_e);
 
                         if ( direction == 1 ) {
 
