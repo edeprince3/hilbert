@@ -1534,6 +1534,7 @@ void PolaritonicUCCSD::unpack_eris_df(double * Qmo, bool do_allocate_memory, boo
                     //eri_aibc_[a*o_*v_*v_+i*v_*v_+b*v_+c] = eri[abic] - eri[acib];
                     //eri_aibc_[a*o_*v_*v_+i*v_*v_+b*v_+c] = compute_eri(a+o_,b+o_,i,c+o_,Qmo,is_df) - compute_eri(a+o_,c+o_,i,b+o_,Qmo,is_df);
 
+// wtf
                     eri_aibc_[a*o_*v_*v_+i*v_*v_+b*v_+c] = tmp1_[a*o_*v_*v_+b*o_*v_+i*v_+c] - tmp1_[a*o_*v_*v_+c*o_*v_+i*v_+b];
 
                     double dipole_self_energy = 0.0;
@@ -3265,8 +3266,6 @@ void PolaritonicUCCSD::residual_u2() {
         }
     }
 
-// TODO: refactor ov^3 integral terms
-
     // - 1.00000 <e,i||a,b> t2(b,f,i,m) u1(a,n)
     // + 1.00000 <e,i||a,b> t2(b,f,i,n) u1(a,m)
     // + 1.00000 <f,i||a,b> t2(b,e,i,m) u1(a,n)
@@ -3432,20 +3431,249 @@ void PolaritonicUCCSD::residual_u2() {
     // - 0.5 P(e,f) <e,i||a,b> t2(a,b,m,n) u1(f,i)
 
     // I(m,n,e,i) = <e,i||a,b> t2(a,b,m,n) 
-    F_DGEMM('t','t',o_*v_,o_*o_,v_*v_,1.0,eri_aibc_,v_*v_,t2_,o_*o_,0.0,tmp1_,o_*v_);
-    // r'(m,n,e,f) = u1(f,i) I(m,n,e,i)
-    F_DGEMM('t','n',v_,o_*o_*v_,o_,-0.5,u1_,o_,tmp1_,o_,0.0,tmp2_,v_);
+    if ( is_hubbard_ ) { // heyhey
+
+        F_DGEMM('t','t',o_*v_,o_*o_,v_*v_,1.0,eri_aibc_,v_*v_,t2_,o_*o_,0.0,tmp1_,o_*v_);
+
+        // r'(m,n,e,f) = u1(f,i) I(m,n,e,i)
+        F_DGEMM('t','n',v_,o_*o_*v_,o_,-0.5,u1_,o_,tmp1_,o_,0.0,tmp2_,v_);
+
 #pragma omp parallel for schedule(static)
-    for (size_t e = 0; e < v_; e++) {
-        for (size_t f = 0; f < v_; f++) {
-            for (size_t m = 0; m < o_; m++) {
-                for (size_t n = 0; n < o_; n++) {
-                    double dum = 0.0;
-                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] += tmp2_[m*o_*v_*v_+n*v_*v_+e*v_+f];
-                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp2_[m*o_*v_*v_+n*v_*v_+f*v_+e];
+        for (size_t e = 0; e < v_; e++) {
+            for (size_t f = 0; f < v_; f++) {
+                for (size_t m = 0; m < o_; m++) {
+                    for (size_t n = 0; n < o_; n++) {
+                        ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] += tmp2_[m*o_*v_*v_+n*v_*v_+e*v_+f];
+                        ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp2_[m*o_*v_*v_+n*v_*v_+f*v_+e];
+                    }
                 }
             }
         }
+    }else {
+
+// wtf
+
+        // four terms to avoid storing <e,i||a,b>
+
+        // 1: +(Q|ea) (Q|ib) t2(a,b,m,n) u1(f,i)
+        // 2: -(Q|eb) (Q|ia) t2(a,b,m,n) u1(f,i)
+
+        // i think the only term that actually differs between these
+        // two will be the contraction involving t2. all other 
+        // intermediates are common, so let's try to do everything
+        // at once.
+
+        // need to loop over "e" to avoid storing large tensors. 
+        // unfortunately, this term is still o^3v^3 cost, and much 
+        // less efficient than it used to be because we're doing v o^3v^2 gemms
+        for (size_t e = 0; e < v_; e++) {
+           
+            // I(Q,a) = (Q|e,a)
+#pragma omp parallel for schedule(static)
+            for (size_t q = 0; q < nQ_; q++) {
+                for (size_t a = 0; a < v_; a++) {
+                    tmp1_[q*v_+a] = Qvv_[q*v_*v_+e*v_+a];
+                }
+            }
+
+            // I'(i,b,a) = I(Q,a) (Q|i,b)
+            F_DGEMM('n','t',v_,o_*v_,nQ_,1.0,tmp1_,v_,Qov_,o_*v_,0.0,tmp2_,v_);
+
+            // t'(b,a,m,n) = t2(a,b,m,n)
+#pragma omp parallel for schedule(static)
+            for (size_t b = 0; b < v_; b++) {
+                for (size_t a = 0; a < v_; a++) {
+                    for (size_t m = 0; m < o_; m++) {
+                        for (size_t n = 0; n < o_; n++) {
+                            tmp1_[b*o_*o_*v_+a*o_*o_+m*o_+n] = t2_[a*o_*o_*v_+b*o_*o_+m*o_+n] - t2_[b*o_*o_*v_+a*o_*o_+m*o_+n];
+                        }
+                    }
+                }
+            }
+
+            // I''(i,m,n) = t'(b,a,m,n) I(i,b,a)
+            F_DGEMM('n','n',o_*o_,o_,v_*v_,1.0,tmp1_,o_*o_,tmp2_,v_*v_,0.0,tmp3_,o_*o_);
+
+            // I'''(f,m,n) = 0.5 I'''(i,m,n) u1(f,i)
+            F_DGEMM('n','n',o_*o_,v_,o_,0.5,tmp3_,o_*o_,u1_,o_,0.0,tmp1_,o_*o_);
+
+            // r(e,f,m,n) -= I'''(f,m,n) 
+            // r(f,e,m,n) += I'''(f,m,n) 
+            for (size_t f = 0; f < v_; f++) {
+                for (size_t m = 0; m < o_; m++) {
+                    for (size_t n = 0; n < o_; n++) {
+                        ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp1_[f*o_*o_+m*o_+n];
+                        ru2_[f*o_*o_*v_+e*o_*o_+m*o_+n] += tmp1_[f*o_*o_+m*o_+n];
+                    }
+                }
+            }
+
+        }
+
+/*
+        // 2: -(Q|eb) (Q|ia) t2(a,b,m,n) u1(f,i)
+
+        // need to loop over "e" to avoid storing large tensors. 
+        // unfortunately, this term is still o^3v^3 cost, and much 
+        // less efficient than it used to be because we're doing v o^3v^2 gemms
+        for (size_t e = 0; e < v_; e++) {
+           
+            // I(Q,b) = (Q|e,b)
+#pragma omp parallel for schedule(static)
+            for (size_t q = 0; q < nQ_; q++) {
+                for (size_t b = 0; b < v_; b++) {
+                    tmp1_[q*v_+b] = Qvv_[q*v_*v_+e*v_+b]; // identical to term above
+                }
+            }
+
+            // I'(i,a,b) = I(Q,b) (Q|i,a)
+            F_DGEMM('n','t',v_,o_*v_,nQ_,1.0,tmp1_,v_,Qov_,o_*v_,0.0,tmp2_,v_); // identical to term above
+
+            // I''(i,m,n) = t2(a,b,m,n) I(i,a,b)
+            F_DGEMM('n','n',o_*o_,o_,v_*v_,1.0,t2_,o_*o_,tmp2_,v_*v_,0.0,tmp3_,o_*o_);
+
+            // I'''(f,m,n) = -0.5 I'''(i,m,n) u1(f,i)
+            F_DGEMM('n','n',o_*o_,v_,o_,-0.5,tmp3_,o_*o_,u1_,o_,0.0,tmp1_,o_*o_); // identical to term above (except for sign)
+
+            // r(e,f,m,n) -= I'''(f,m,n) 
+            // r(f,e,m,n) += I'''(f,m,n) 
+            for (size_t f = 0; f < v_; f++) {
+                for (size_t m = 0; m < o_; m++) {
+                    for (size_t n = 0; n < o_; n++) {
+                        ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp1_[f*o_*o_+m*o_+n];
+                        ru2_[f*o_*o_*v_+e*o_*o_+m*o_+n] += tmp1_[f*o_*o_+m*o_+n];
+                    }
+                }
+            }
+
+        }
+*/
+
+        // 3: +d(e,a) d(i,b) t2(a,b,m,n) u1(f,i)
+        double ** dz = Dipole_z_->pointer();
+        double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+        double lz2 = lambda_z * lambda_z;
+
+        // d'(e,a) = d(e,a)
+#pragma omp parallel for schedule(static)
+        for (size_t e = 0; e < v_; e++) {
+            for (size_t a = 0; a < v_; a++) {
+                tmp3_[e*v_+a] = lz2 * dz[e+o_][a+o_];
+            }
+        }
+        
+
+        // I(e,b,m,n) = t2(a,b,m,n) d'(e,a)
+        F_DGEMM('n','n',o_*o_*v_,v_,v_,1.0,t2_,o_*o_*v_,tmp3_,v_,0.0,tmp2_,o_*o_*v_);
+
+        // I'(f,b) = d(i,b) u(f,i)
+#pragma omp parallel for schedule(static)
+        for (size_t f = 0; f < v_; f++) {
+            for (size_t b = 0; b < v_; b++) {
+                double dum = 0.0;
+                for (size_t i = 0; i < o_; i++) {
+                    dum += dz[i][b+o_] * u1_[f*o_+i];
+                }
+                tmp3_[f*v_+b] = dum;
+            }
+        }
+
+        // I''(b,e,m,n) = I(e,b,m,n)
+#pragma omp parallel for schedule(static)
+        for (size_t b = 0; b < v_; b++) {
+            for (size_t e = 0; e < v_; e++) {
+                for (size_t m = 0; m < o_; m++) {
+                    for (size_t n = 0; n < o_; n++) {
+                        tmp1_[b*o_*o_*v_+e*o_*o_+m*o_+n] = tmp2_[e*o_*o_*v_+b*o_*o_+m*o_+n];
+                    }
+                }
+            }
+        }
+
+
+        // r'(f,e,m,n) += 0.5 I''(b,e,m,n) I'(f,b)
+        F_DGEMM('n','n',o_*o_*v_,v_,v_,0.5,tmp1_,o_*o_*v_,tmp3_,v_,0.0,tmp2_,o_*o_*v_);
+
+        // r(e,f,m,n) += -r'(f,e,m,n) + r'(e,f,m,n) 
+#pragma omp parallel for schedule(static)
+        for (size_t e = 0; e < v_; e++) {
+            for (size_t f = 0; f < v_; f++) {
+                for (size_t m = 0; m < o_; m++) {
+                    for (size_t n = 0; n < o_; n++) {
+                        ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp2_[f*o_*o_*v_+e*o_*o_+m*o_+n];
+                        ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] += tmp2_[e*o_*o_*v_+f*o_*o_+m*o_+n];
+                    }
+                }
+            }
+        }
+
+        // 4: -d(e,b) d(i,a) t2(a,b,m,n) u1(f,i)
+
+        // t'(b,a,m,n) = t2(a,b,m,n)
+#pragma omp parallel for schedule(static)
+        for (size_t b = 0; b < v_; b++) {
+            for (size_t a = 0; a < v_; a++) {
+                for (size_t m = 0; m < o_; m++) {
+                    for (size_t n = 0; n < o_; n++) {
+                        tmp1_[b*o_*o_*v_+a*o_*o_+m*o_+n] = t2_[a*o_*o_*v_+b*o_*o_+m*o_+n];
+                    }
+                }
+            }
+        }
+
+        // d'(e,b) = d(e,b)
+#pragma omp parallel for schedule(static)
+        for (size_t e = 0; e < v_; e++) {
+            for (size_t b = 0; b < v_; b++) {
+                tmp3_[e*v_+b] = lz2 * dz[e+o_][b+o_];
+            }
+        }
+
+        // I(e,a,m,n) = t'(b,a,m,n) d'(e,b)
+        F_DGEMM('n','n',o_*o_*v_,v_,v_,1.0,tmp1_,o_*o_*v_,tmp3_,v_,0.0,tmp2_,o_*o_*v_);
+
+        // I'(f,a) = d(i,a) u(f,i)
+#pragma omp parallel for schedule(static)
+        for (size_t f = 0; f < v_; f++) {
+            for (size_t a = 0; a < v_; a++) {
+                double dum = 0.0;
+                for (size_t i = 0; i < o_; i++) {
+                    dum += dz[i][a+o_] * u1_[f*o_+i];
+                }
+                tmp3_[f*v_+a] = dum;
+            }
+        }
+
+        // I''(a,e,m,n) = I(e,a,m,n)
+#pragma omp parallel for schedule(static)
+        for (size_t a = 0; a < v_; a++) {
+            for (size_t e = 0; e < v_; e++) {
+                for (size_t m = 0; m < o_; m++) {
+                    for (size_t n = 0; n < o_; n++) {
+                        tmp1_[a*o_*o_*v_+e*o_*o_+m*o_+n] = tmp2_[e*o_*o_*v_+a*o_*o_+m*o_+n];
+                    }
+                }
+            }
+        }
+
+
+        // r'(f,e,m,n) -= 0.5 I''(a,e,m,n) I'(f,a)
+        F_DGEMM('n','n',o_*o_*v_,v_,v_,-0.5,tmp1_,o_*o_*v_,tmp3_,v_,0.0,tmp2_,o_*o_*v_);
+
+        // r(e,f,m,n) = -r'(f,e,m,n) + r'(e,f,m,n);
+#pragma omp parallel for schedule(static)
+        for (size_t e = 0; e < v_; e++) {
+            for (size_t f = 0; f < v_; f++) {
+                for (size_t m = 0; m < o_; m++) {
+                    for (size_t n = 0; n < o_; n++) {
+                        ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp2_[f*o_*o_*v_+e*o_*o_+m*o_+n];
+                        ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] += tmp2_[e*o_*o_*v_+f*o_*o_+m*o_+n];
+                    }
+                }
+            }
+        }
+
+
     }
 
     // - d+(i,m) t2(e,f,n,i)
