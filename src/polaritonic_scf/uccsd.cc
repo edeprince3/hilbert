@@ -62,11 +62,11 @@ PolaritonicUCCSD::~PolaritonicUCCSD() {
     }else {
         free(eri_abcd_);
         free(eri_abic_);
+        free(eri_aibc_);
         free(eri_abij_);
     }
 
     free(eri_ijkl_);
-    free(eri_aibc_);
     free(eri_iajb_);
     free(eri_ijab_);
     free(eri_jkia_);
@@ -508,7 +508,7 @@ void PolaritonicUCCSD::initialize_with_molecular_hamiltonian() {
 
     size_t required_memory = 0;
     required_memory += ccamps_dim_ * 4L;         // amplitudes, residual, diis storage
-    required_memory += o_*v_*v_*v_;              // <ai||bc>
+    //required_memory += o_*v_*v_*v_;              // <ai||bc>
     required_memory += o_*o_*v_*v_;              // <ia||jb>
     required_memory += o_*o_*v_*v_;              // <ij||ab>
     required_memory += o_*o_*o_*v_;              // <jk||ia>
@@ -520,8 +520,8 @@ void PolaritonicUCCSD::initialize_with_molecular_hamiltonian() {
     //required_memory += o_*v_*v_*v_;              // <ab||ic>
     //required_memory += o_*o_*v_*v_;              // <ab||ij>
 
-    // tmp1 must be ov^3 until we eliminate eri_aibc_...
-    size_t dim = o_*v_*v_*v_; 
+    // tmp1 used to be ov^3, but we have eliminated eri_aibc_...
+    size_t dim = o_*o_*v_*v_; 
     if ( o_ > v_ ) {
         dim = o_*o_*o_*o_;
     }
@@ -1516,6 +1516,7 @@ void PolaritonicUCCSD::unpack_eris_df(double * Qmo, bool do_allocate_memory, boo
         }
     }
 
+/*
     // <ai||bc> = (ab|ic) - (ac|ib)
     if ( do_allocate_memory ) {
         eri_aibc_ = (double*)malloc(o_*v_*v_*v_*sizeof(double));
@@ -1534,7 +1535,6 @@ void PolaritonicUCCSD::unpack_eris_df(double * Qmo, bool do_allocate_memory, boo
                     //eri_aibc_[a*o_*v_*v_+i*v_*v_+b*v_+c] = eri[abic] - eri[acib];
                     //eri_aibc_[a*o_*v_*v_+i*v_*v_+b*v_+c] = compute_eri(a+o_,b+o_,i,c+o_,Qmo,is_df) - compute_eri(a+o_,c+o_,i,b+o_,Qmo,is_df);
 
-// wtf
                     eri_aibc_[a*o_*v_*v_+i*v_*v_+b*v_+c] = tmp1_[a*o_*v_*v_+b*o_*v_+i*v_+c] - tmp1_[a*o_*v_*v_+c*o_*v_+i*v_+b];
 
                     double dipole_self_energy = 0.0;
@@ -1552,6 +1552,7 @@ void PolaritonicUCCSD::unpack_eris_df(double * Qmo, bool do_allocate_memory, boo
             }
         }
     }
+*/
 
 /*
     // <ab||ic> = (ai|bc) - (ac|bi)
@@ -2197,7 +2198,7 @@ void PolaritonicUCCSD::residual_u1() {
         }
 
         // r(e,m) = -0.5 u'(i,a,b,m) <e,i||a,b>
-	if ( is_hubbard_ ) { // heyhey i think this one is good
+	if ( is_hubbard_ ) { 
             F_DGEMM('n','n',o_,v_,o_*v_*v_,-0.5,tmp3_,o_,eri_aibc_,o_*v_*v_,1.0,ru1_,o_);
 	}else {
 
@@ -3136,7 +3137,7 @@ void PolaritonicUCCSD::residual_u2() {
     // - P(e,f) <e,i||a,b> t2(b,f,m,n) u1(a,i)
 
     // I(e,b) = <e,i||a,b> u1(a,i)
-    if ( is_hubbard_ ) { // heyhey i think this one is good
+    if ( is_hubbard_ ) { 
 
 #pragma omp parallel for schedule(static)
         for (size_t e = 0; e < v_; e++) {
@@ -3276,7 +3277,8 @@ void PolaritonicUCCSD::residual_u2() {
     //   P(e,f) P(m,n) <e,i||a,b> t2(a,f,i,m) u1(b,n)
 
     // I(e,i,a,n) = u1(b,n) <e,i||a,b>
-    if ( is_hubbard_ ) { // heyhey i think this one works
+    if ( is_hubbard_ ) { 
+
         F_DGEMM('n','n',o_,o_*v_*v_,v_,1.0,u1_,o_,eri_aibc_,v_,0.0,tmp1_,o_);
 
         // I'(e,n,a,i) = I(e,i,a,n)
@@ -3431,7 +3433,7 @@ void PolaritonicUCCSD::residual_u2() {
     // - 0.5 P(e,f) <e,i||a,b> t2(a,b,m,n) u1(f,i)
 
     // I(m,n,e,i) = <e,i||a,b> t2(a,b,m,n) 
-    if ( is_hubbard_ ) { // heyhey
+    if ( is_hubbard_ ) { 
 
         F_DGEMM('t','t',o_*v_,o_*o_,v_*v_,1.0,eri_aibc_,v_*v_,t2_,o_*o_,0.0,tmp1_,o_*v_);
 
@@ -3450,8 +3452,6 @@ void PolaritonicUCCSD::residual_u2() {
             }
         }
     }else {
-
-// wtf
 
         // four terms to avoid storing <e,i||a,b>
 
@@ -3511,7 +3511,7 @@ void PolaritonicUCCSD::residual_u2() {
         }
 
 /*
-        // 2: -(Q|eb) (Q|ia) t2(a,b,m,n) u1(f,i)
+        // 2: -(Q|eb) (Q|ia) t2(a,b,m,n) u1(f,i) ... folded into term 1 above
 
         // need to loop over "e" to avoid storing large tensors. 
         // unfortunately, this term is still o^3v^3 cost, and much 
@@ -4107,7 +4107,7 @@ void PolaritonicUCCSD::residual_t1() {
 
 
     // r(e,m) = -0.5 t'(i,a,b,m) <e,i||a,b>
-    if ( is_hubbard_ ) { // heyhey this one is good?
+    if ( is_hubbard_ ) { 
         F_DGEMM('n','n',o_,v_,o_*v_*v_,-0.5,tmp1_,o_,eri_aibc_,o_*v_*v_,1.0,rt1_,o_);
     }else {
 
