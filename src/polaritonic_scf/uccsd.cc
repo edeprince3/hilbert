@@ -3550,6 +3550,8 @@ void PolaritonicUCCSD::residual_u2() {
 */
 
         // 3: +d(e,a) d(i,b) t2(a,b,m,n) u1(f,i)
+        // 4: -d(e,b) d(i,a) t2(a,b,m,n) u1(f,i)
+
         double ** dz = Dipole_z_->pointer();
         double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
         double lz2 = lambda_z * lambda_z;
@@ -3561,10 +3563,23 @@ void PolaritonicUCCSD::residual_u2() {
                 tmp3_[e*v_+a] = lz2 * dz[e+o_][a+o_];
             }
         }
+
+        // t'(a,b,m,n) = t2(a,b,m,n) - t2(b,a,m,n) ... 2nd term here accounts for term 4 below
+        C_DCOPY(o_*o_*v_*v_,t2_,1,tmp1_,1);
+#pragma omp parallel for schedule(static)
+        for (size_t b = 0; b < v_; b++) {
+            for (size_t a = 0; a < v_; a++) {
+                for (size_t m = 0; m < o_; m++) {
+                    for (size_t n = 0; n < o_; n++) {
+                        tmp1_[a*o_*o_*v_+b*o_*o_+m*o_+n] -= t2_[b*o_*o_*v_+a*o_*o_+m*o_+n];
+                    }
+                }
+            }
+        }
         
 
         // I(e,b,m,n) = t2(a,b,m,n) d'(e,a)
-        F_DGEMM('n','n',o_*o_*v_,v_,v_,1.0,t2_,o_*o_*v_,tmp3_,v_,0.0,tmp2_,o_*o_*v_);
+        F_DGEMM('n','n',o_*o_*v_,v_,v_,1.0,tmp1_,o_*o_*v_,tmp3_,v_,0.0,tmp2_,o_*o_*v_);
 
         // I'(f,b) = d(i,b) u(f,i)
 #pragma omp parallel for schedule(static)
@@ -3608,7 +3623,7 @@ void PolaritonicUCCSD::residual_u2() {
         }
 
         // 4: -d(e,b) d(i,a) t2(a,b,m,n) u1(f,i)
-
+/*
         // t'(b,a,m,n) = t2(a,b,m,n)
 #pragma omp parallel for schedule(static)
         for (size_t b = 0; b < v_; b++) {
@@ -3672,6 +3687,7 @@ void PolaritonicUCCSD::residual_u2() {
                 }
             }
         }
+*/
 
 
     }
