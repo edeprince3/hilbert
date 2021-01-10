@@ -4132,14 +4132,16 @@ void PolaritonicUCCSD::residual_t1() {
         // r(e,m) = -0.5 t'(i,a,b,m) [(ea|Q)(Q|ib) - (eb|Q)(Q|ia) + d(ea)d(ib) - d(eb)d(ia) ]
 
         // 1: -0.5 t'(i,a,b,m) (ea|ib)
+        // 2: +0.5 t'(i,a,b,m) (eb|ia)
 
-        // t''(i,b,a,m) = t'(i,a,b,m) = t2(a,b,i,m)
+        // t''(i,b,a,m) = t'(i,a,b,m) = t2(a,b,i,m) - t2(b,a,i,m)
+        // ... account for terms 1 and 2 simultaneously
 #pragma omp parallel for schedule(static)
         for (size_t i = 0; i < o_; i++) {
             for (size_t b = 0; b < v_; b++) {
                 for (size_t a = 0; a < v_; a++) {
                     for (size_t m = 0; m < o_; m++) {
-                        tmp2_[i*o_*v_*v_+b*o_*v_+a*o_+m] = t2_[a*o_*o_*v_+b*o_*o_+i*o_+m];
+                        tmp2_[i*o_*v_*v_+b*o_*v_+a*o_+m] = t2_[a*o_*o_*v_+b*o_*o_+i*o_+m] - t2_[b*o_*o_*v_+a*o_*o_+i*o_+m];
                     }
                 }
             }
@@ -4160,6 +4162,7 @@ void PolaritonicUCCSD::residual_t1() {
         // r(e,m) = -0.5 I(Q,a,m) I'(Q,a,e)
         F_DGEMM('n','t',o_,v_,nQ_*v_,-0.5,tmp3_,o_,tmp1_,v_,1.0,rt1_,o_);
 
+/*
         // 2: +0.5 t'(i,a,b,m) (eb|ia)
 
         // t'(i,a,b,m) = t2(a,b,i,m)
@@ -4179,6 +4182,7 @@ void PolaritonicUCCSD::residual_t1() {
         // r(e,m) = I(Q,b,m) (Q|e,b) 
         // r(e,m) = I(Q,b,m) I'(Q,b,e) ... transposed Qvv still in tmp1
         F_DGEMM('n','t',o_,v_,nQ_*v_,1.0,tmp2_,o_,tmp1_,v_,1.0,rt1_,o_);
+*/
 
         // 3: t'(i,a,b,m) d(e,a) d(i,b)
         double ** dz = Dipole_z_->pointer();
@@ -4192,7 +4196,8 @@ void PolaritonicUCCSD::residual_t1() {
                double dum = 0.0;
                for (size_t i = 0; i < o_; i++) {
                    for (size_t b = 0; b < v_; b++) {
-                       dum += tmp3_[i*o_*v_*v_+a*o_*v_+b*o_+m] * dz[i][b+o_];
+                       //dum += tmp3_[i*o_*v_*v_+a*o_*v_+b*o_+m] * dz[i][b+o_];
+                       dum += tmp2_[i*o_*v_*v_+b*o_*v_+a*o_+m] * dz[i][b+o_]; // account for terms 3 and 4 simultaneously
                    }
                }
                tmp1_[a*o_+m] = dum;
@@ -4211,6 +4216,7 @@ void PolaritonicUCCSD::residual_t1() {
            }
        }
 
+/*
        // 4: +0.5 t'(i,a,b,m) d(e,b) d(i,a)
 
        // I(b,m) = t'(i,a,b,m) d(i,a)
@@ -4238,6 +4244,7 @@ void PolaritonicUCCSD::residual_t1() {
                rt1_[e*o_+m] += 0.5 * lz2 * dum;
            }
        }
+*/
 
     }
 
