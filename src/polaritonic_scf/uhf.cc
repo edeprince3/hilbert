@@ -366,6 +366,8 @@ double PolaritonicUHF::compute_energy() {
 
     outfile->Printf("    * Polaritonic UHF total energy: %20.12lf\n",energy_);
 
+    compute_s2();
+
     Process::environment.globals["SCF TOTAL ENERGY"] = energy_;
 
     // print orbital energies
@@ -379,6 +381,44 @@ double PolaritonicUHF::compute_energy() {
 
     return energy_;
 
+}
+
+// compute <S^2>
+void PolaritonicUHF::compute_s2() {
+
+    double ms = 0.5 * (nalpha_ - nbeta_);
+    double s2_expected = ms*(ms+1);
+
+    // <S^2> = <S^2_expected> + N_b - |<i_a|j_b>|^2
+
+    double dN = 0.0;
+
+    int nbf = S_->colspi()[0];
+    int nmo = Ca_->colspi()[0];
+    int na = nalpha_;
+    int nb = nbeta_;
+
+    auto Ht = std::make_shared<Matrix>("H Temp", nbf, nb);
+    auto Ft = std::make_shared<Matrix>("F Temp", na, nb);
+
+    double** Sp = S_->pointer();
+    double** Cap = Ca_->pointer();
+    double** Cbp = Cb_->pointer();
+    double** Htp = Ht->pointer();
+    double** Ftp = Ft->pointer();
+
+    C_DGEMM('N', 'N', nbf, nb, nbf, 1.0, Sp[0], nbf, Cbp[0], nmo, 0.0, Htp[0], nb);
+    C_DGEMM('T', 'N', na, nb, nbf, 1.0, Cap[0], nmo, Htp[0], nb, 0.0, Ftp[0], nb);
+
+    for (long int ab = 0; ab < (long int)na * nb; ab++) dN += Ftp[0][ab] * Ftp[0][ab];
+
+    double s2 = s2_expected + nbeta_ - dN;
+
+    outfile->Printf("\n");
+    outfile->Printf("    <S^2> Expected: %20.12lf\n",s2_expected);
+    outfile->Printf("    <S^2> Observed: %20.12lf\n",s2);
+    outfile->Printf("\n");
+    
 }
 
 } // End namespaces

@@ -47,6 +47,8 @@ class PolaritonicUHF: public PolaritonicHF {
 
   protected:
 
+    void compute_s2();
+
 };
 
 } // End namespaces
