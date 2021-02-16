@@ -370,6 +370,8 @@ double PolaritonicUHF::compute_energy() {
 
     Process::environment.globals["SCF TOTAL ENERGY"] = energy_;
 
+    Process::environment.globals["CURRENT ENERGY"] = energy_;
+
     // print orbital energies
     epsilon_a_->print();
     epsilon_b_->print();

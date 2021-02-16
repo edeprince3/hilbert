@@ -457,6 +457,8 @@ double PolaritonicUKS::compute_energy() {
 
     Process::environment.globals["SCF TOTAL ENERGY"] = energy_;
 
+    Process::environment.globals["CURRENT ENERGY"] = energy_;
+
     // update cavity terms once more
     if ( n_photon_states_ > 1 ) {
         update_cavity_terms();
