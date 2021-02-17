@@ -367,12 +367,12 @@ def run_p2rdm(name, **kwargs):
 
     psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'P2RDM')
 
-    if lowername == 'p2rdm':
-        psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'K')
-    elif lowername == 'cid':
-        psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'CID')
-    elif lowername == 'cepa(0)':
-        psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'CEPA(0)')
+    #if lowername == 'p2rdm':
+    #    psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'K')
+    #elif lowername == 'cid':
+    #    psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'CID')
+    #elif lowername == 'cepa(0)':
+    #    psi4.core.set_local_option('HILBERT', 'P2RDM_TYPE', 'CEPA(0)')
 
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
     # Fock matrices, and more
@@ -427,7 +427,7 @@ psi4.driver.procedures['energy']['jellium-scf'] = run_jellium_scf
 
 # p2rdm
 psi4.driver.procedures['energy']['p2rdm'] = run_p2rdm
-psi4.driver.procedures['energy']['cid']   = run_p2rdm
+#psi4.driver.procedures['energy']['cid']   = run_p2rdm
 
 # pair methods:
 psi4.driver.procedures['energy']['pp2rdm']   = run_pp2rdm
