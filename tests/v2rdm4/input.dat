@@ -34,6 +34,7 @@ N      0.00000000     2.71003942     0.00000000
 N      0.00000000    -2.71003942     0.00000000
 }
 set {
+  ints_tolerance 0.0
   basis cc-pvdz
   scf_type df
   d_convergence 1e-8
