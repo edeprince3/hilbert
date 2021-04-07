@@ -65,14 +65,15 @@ add_psi4_plugin(hilbert
 
     src/focas/update_transformation_matrix.cc
     src/focas/orbital_optimizer.cc
-    src/focas/orbopt_energy.cc
-    src/focas/orbopt_gradient.cc
-    src/focas/orbopt_hessian.cc
-    src/focas/orbopt_exponential.cc
-    src/focas/orbopt_integraltransform_cpu.cc
-    src/focas/orbopt_sort.cc
-    src/focas/orbopt_optimize.cc
-    src/focas/orbopt_lagrangian.cc
+    src/focas/C_files/orbopt_energy.cc
+    src/focas/C_files/orbopt_gradient.cc
+    src/focas/C_files/orbopt_hessian.cc
+    src/focas/C_files/orbopt_exponential.cc
+    src/focas/C_files/orbopt_integraltransform_cpu.cc
+    src/focas/C_files/orbopt_sort.cc
+    src/focas/C_files/orbopt_optimize.cc
+    src/focas/C_files/orbopt_utility.cc
+    src/focas/C_files/orbopt_lagrangian.cc
 
     src/focas/focas_data.F90
     src/focas/focas_exponential.F90

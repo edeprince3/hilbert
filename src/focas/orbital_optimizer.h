@@ -46,9 +46,13 @@ class OrbitalOptimizer {
     OrbitalOptimizer(std::shared_ptr<Wavefunction> reference_wavefunction, Options & options);
     ~OrbitalOptimizer();
 
+    // functions for generalized Fock matrix
+
+    void Get_GeneralizedFock(double * d2, double * d1, double * tei, double * oei, double * Fock);
+
     /// take an orbital optimization step
     void optimize_orbitals(double * d2, double * d1, double * tei, double * oei, double * transformation_matrix,\
-                           double& dE_orbopt, double& gnorm_orbopt, bool& converged_orbopt, int& iter_orbopt);
+                           double& dE_orbopt, double& gnorm_orbopt, int& iter_orbopt);
 
     /// returns the orbital lagrangian
     void get_lagrangian(std::shared_ptr<Matrix> Lagrangian);
@@ -137,6 +141,21 @@ class OrbitalOptimizer {
     std::string algorithm_;
 
     /// variables GG added
+
+    /// flag for including active-active rotations
+    bool oo_active_active_rotations_=false;
+
+    /// flag for calculating exact diagonal Hessian elements
+    bool oo_exact_diagonal_hessian_=false;
+
+    /// gradient convergence
+    double oo_gradient_convergence_ = 1.0e-4;
+
+    /// gradient convergence
+    double oo_energy_convergence_ = 1.0e-8;
+
+    /// maximum number of iterations
+    int oo_maxiter_ = 20;
  
     int * OindMap_e2i_;      // orbital index map energy--> irrep
     int * OindMap_e2c_;      // orbital index map energy --> class
@@ -201,10 +220,6 @@ class OrbitalOptimizer {
 
     bool RAS_aa_;
     int * aa_ras1pi_;
-
-    // functions for generalized Fock matrix
-
-    void Get_GeneralizedFock(double * d2, double * d1, double * tei, double * oei, double * Fock);
 
     void Compute_GeneralizedFock(double * d2, double * d1, double * tei, double * oei, double * Fock);
 
