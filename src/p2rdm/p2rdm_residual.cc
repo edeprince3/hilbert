@@ -64,8 +64,11 @@ void p2RDMSolver::evaluate_residual() {
     if (nQ_*o*v > tempvdim)   tempvdim = nQ_*o*v;
     if (nso_*nso_ > tempvdim) tempvdim = nso_*nso_;
 
+    long int                         temptdim = o*(o+1)*v*(v+1);
+    if ( o*o*o*o > o*(o+1)*v*(v+1) ) temptdim = o*o*o*o;
+
     double * integrals = (double *)malloc(dim * sizeof(double));
-    double * tempt     = (double *)malloc((o*(o+1)*v*(v+1)) * sizeof(double));
+    double * tempt     = (double *)malloc(temptdim * sizeof(double));
     double * tempv     = (double *)malloc(tempvdim * sizeof(double));
     double * Abij      = (double *)malloc(o*(o+1)/2*v * sizeof(double));
     double * Sbij      = (double *)malloc(o*(o+1)/2*v * sizeof(double));
@@ -198,8 +201,8 @@ void p2RDMSolver::evaluate_residual() {
     F_DGEMM('n','n',o*o,v*v,o*o,1.0,tempt,o*o,t2_,o*o,1.0,r2_,o*o);
 
     // (ac|bd) t2(cd,ij)
-    long int oov = o * o * v;
-    long int oo = o * o;
+    long int oov  = o * o * v;
+    long int oo   = o * o;
     long int otri = o * (o + 1) / 2;
     long int vtri = v * (v + 1) / 2;
 
@@ -428,7 +431,6 @@ void p2RDMSolver::evaluate_residual() {
     free(tempv);
     free(Abij);
     free(Sbij);
-
 
 }
 
