@@ -44,9 +44,7 @@ namespace hilbert{
 
 
 // D2 portion of A^T.y ( and D1 / Q1 )
-void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
-    double* A_p = A->pointer();
-    double* u_p = u->pointer();
+void v2RDMSolver::D2_constraints_ATu(double* A,double* u){
 
     // Traces
     if ( constrain_sz_ ) {
@@ -56,7 +54,7 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
                 int h = SymmetryPair(symmetry[i],symmetry[j]);
                 int ij = ibas_ab_sym[h][i][j];
                 if ( gems_ab[h] == 0 ) continue;
-                A_p[d2aboff[h] + ij*gems_ab[h]+ij] += u_p[offset];
+                A[d2aboff[h] + ij*gems_ab[h]+ij] += u[offset];
             }
         }
         offset++;
@@ -68,7 +66,7 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
                 int h = SymmetryPair(symmetry[i],symmetry[j]);
                 if ( gems_aa[h] == 0 ) continue;
                 int ij = ibas_aa_sym[h][i][j];
-                A_p[d2aaoff[h]+ij*gems_aa[h]+ij] += u_p[offset];
+                A[d2aaoff[h]+ij*gems_aa[h]+ij] += u[offset];
             }
         }
         offset++;
@@ -79,7 +77,7 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
                 int h = SymmetryPair(symmetry[i],symmetry[j]);
                 if ( gems_aa[h] == 0 ) continue;
                 int ij = ibas_aa_sym[h][i][j];
-                A_p[d2bboff[h]+ij*gems_aa[h]+ij] += u_p[offset];
+                A[d2bboff[h]+ij*gems_aa[h]+ij] += u[offset];
             }
         }
         offset++;
@@ -91,13 +89,13 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
 
                 if ( gems_ab[h] == 0 ) continue;
                 int ij = ibas_ab_sym[h][i][j];
-                A_p[d2aboff[h] + ij*gems_ab[h]+ij] += 2.0 * u_p[offset];
+                A[d2aboff[h] + ij*gems_ab[h]+ij] += 2.0 * u[offset];
 
                 if ( i == j ) continue;   
                 if ( gems_aa[h] == 0 ) continue;
                 ij = ibas_aa_sym[h][i][j];
-                A_p[d2aaoff[h]+ij*gems_aa[h]+ij] += u_p[offset];
-                A_p[d2bboff[h]+ij*gems_aa[h]+ij] += u_p[offset];
+                A[d2aaoff[h]+ij*gems_aa[h]+ij] += u[offset];
+                A[d2bboff[h]+ij*gems_aa[h]+ij] += u[offset];
             }
         }
         offset++;
@@ -107,9 +105,9 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
     for (int h = 0; h < nirrep_; h++) {
         for (int ij = 0; ij < gems_aa[h]; ij++) {
             for (int kl = 0; kl < gems_aa[h]; kl++) {
-                double dum = u_p[offset];
-                A_p[d2aaoff[h] + ij*gems_aa[h] + kl] += dum;
-                A_p[d2aaoff[h] + kl*gems_aa[h] + ij] -= dum;
+                double dum = u[offset];
+                A[d2aaoff[h] + ij*gems_aa[h] + kl] += dum;
+                A[d2aaoff[h] + kl*gems_aa[h] + ij] -= dum;
                 offset++;
             }
         }
@@ -117,9 +115,9 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
     for (int h = 0; h < nirrep_; h++) {
         for (int ij = 0; ij < gems_aa[h]; ij++) {
             for (int kl = 0; kl < gems_aa[h]; kl++) {
-                double dum = u_p[offset];
-                A_p[d2bboff[h] + ij*gems_aa[h] + kl] += dum;
-                A_p[d2bboff[h] + kl*gems_aa[h] + ij] -= dum;
+                double dum = u[offset];
+                A[d2bboff[h] + ij*gems_aa[h] + kl] += dum;
+                A[d2bboff[h] + kl*gems_aa[h] + ij] -= dum;
                 offset++;
             }
         }
@@ -127,9 +125,9 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
     for (int h = 0; h < nirrep_; h++) {
         for (int ij = 0; ij < gems_ab[h]; ij++) {
             for (int kl = 0; kl < gems_ab[h]; kl++) {
-                double dum = u_p[offset];
-                A_p[d2aboff[h] + ij*gems_ab[h] + kl] += dum;
-                A_p[d2aboff[h] + kl*gems_ab[h] + ij] -= dum;
+                double dum = u[offset];
+                A[d2aboff[h] + ij*gems_ab[h] + kl] += dum;
+                A[d2aboff[h] + kl*gems_ab[h] + ij] -= dum;
                 offset++;
             }
         }
@@ -139,9 +137,9 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
     for (int h = 0; h < nirrep_; h++) {
         for(int i = 0; i < amopi_[h]; i++){
             for(int j = 0; j < amopi_[h]; j++){
-                double dum = u_p[offset + i*amopi_[h]+j];
-                A_p[d1aoff[h] + j*amopi_[h]+i] += dum;
-                A_p[q1aoff[h] + i*amopi_[h]+j] += dum;
+                double dum = u[offset + i*amopi_[h]+j];
+                A[d1aoff[h] + j*amopi_[h]+i] += dum;
+                A[q1aoff[h] + i*amopi_[h]+j] += dum;
             }
         }
         offset += amopi_[h]*amopi_[h];
@@ -151,9 +149,9 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
     for (int h = 0; h < nirrep_; h++) {
         for(int i = 0; i < amopi_[h]; i++){
             for(int j = 0; j < amopi_[h]; j++){
-                double dum = u_p[offset + i*amopi_[h]+j];
-                A_p[d1boff[h] + j*amopi_[h]+i] += dum;
-                A_p[q1boff[h] + i*amopi_[h]+j] += dum;
+                double dum = u[offset + i*amopi_[h]+j];
+                A[d1boff[h] + j*amopi_[h]+i] += dum;
+                A[q1boff[h] + i*amopi_[h]+j] += dum;
             }
         }
         offset += amopi_[h]*amopi_[h];
@@ -171,14 +169,14 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
         for (int h = 0; h < nirrep_; h++) {
             for (int i = 0; i < amopi_[h]; i++){
                 for (int j = 0; j < amopi_[h]; j++){
-                    A_p[d1aoff[h] + i*amopi_[h]+j] += (na + nb - 1.0) * u_p[offset + i*amopi_[h]+j];
+                    A[d1aoff[h] + i*amopi_[h]+j] += (na + nb - 1.0) * u[offset + i*amopi_[h]+j];
                     int ii = i + poff;
                     int jj = j + poff;
                     for (int k = 0; k < amo_; k++){
                         int h2  = SymmetryPair(symmetry[ii],symmetry[k]);
                         int ik = ibas_ab_sym[h2][ii][k];
                         int jk = ibas_ab_sym[h2][jj][k];
-                        A_p[d2aboff[h2] + ik*gems_ab[h2]+jk] -= u_p[offset + i*amopi_[h]+j];
+                        A[d2aboff[h2] + ik*gems_ab[h2]+jk] -= u[offset + i*amopi_[h]+j];
                     }
                     for(int k =0; k < amo_; k++){
                         if( ii==k || jj==k )continue;
@@ -187,7 +185,7 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
                         int jk = ibas_aa_sym[h2][jj][k];
                         int sik = ( ii < k ? 1 : -1);
                         int sjk = ( jj < k ? 1 : -1);
-                        A_p[d2aaoff[h2] + ik*gems_aa[h2]+jk] -= sik*sjk*u_p[offset + i*amopi_[h]+j];
+                        A[d2aaoff[h2] + ik*gems_aa[h2]+jk] -= sik*sjk*u[offset + i*amopi_[h]+j];
                     }
                 }
             }
@@ -200,14 +198,14 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
         for (int h = 0; h < nirrep_; h++) {
             for(int i = 0; i < amopi_[h]; i++){
                 for(int j = 0; j < amopi_[h]; j++){
-                    A_p[d1boff[h] + i*amopi_[h]+j] += (na + nb - 1.0) * u_p[offset + i*amopi_[h]+j];
+                    A[d1boff[h] + i*amopi_[h]+j] += (na + nb - 1.0) * u[offset + i*amopi_[h]+j];
                     int ii = i + poff;
                     int jj = j + poff;
                     for(int k = 0; k < amo_; k++){
                         int h2  = SymmetryPair(symmetry[ii],symmetry[k]);
                         int ik = ibas_ab_sym[h2][k][ii];
                         int jk = ibas_ab_sym[h2][k][jj];
-                        A_p[d2aboff[h2] + ik*gems_ab[h2]+jk] -= u_p[offset + i*amopi_[h]+j];
+                        A[d2aboff[h2] + ik*gems_ab[h2]+jk] -= u[offset + i*amopi_[h]+j];
                     }
                     for(int k =0; k < amo_; k++){
                         if( ii==k || jj==k )continue;
@@ -216,7 +214,7 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
                         int jk = ibas_aa_sym[h2][jj][k];
                         int sik = ( ii < k ? 1 : -1);
                         int sjk = ( jj < k ? 1 : -1);
-                        A_p[d2bboff[h2] + ik*gems_aa[h2]+jk] -= sik*sjk*u_p[offset + i*amopi_[h]+j];
+                        A[d2bboff[h2] + ik*gems_aa[h2]+jk] -= sik*sjk*u[offset + i*amopi_[h]+j];
                     }
                 }
             }
@@ -229,14 +227,14 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
         for (int h = 0; h < nirrep_; h++) {
             for (int i = 0; i < amopi_[h]; i++){
                 for (int j = 0; j < amopi_[h]; j++){
-                    A_p[d1aoff[h] + i*amopi_[h]+j] += nb * u_p[offset + i*amopi_[h]+j];
+                    A[d1aoff[h] + i*amopi_[h]+j] += nb * u[offset + i*amopi_[h]+j];
                     int ii = i + poff;
                     int jj = j + poff;
                     for (int k = 0; k < amo_; k++){
                         int h2  = SymmetryPair(symmetry[ii],symmetry[k]);
                         int ik = ibas_ab_sym[h2][ii][k];
                         int jk = ibas_ab_sym[h2][jj][k];
-                        A_p[d2aboff[h2] + ik*gems_ab[h2]+jk] -= u_p[offset + i*amopi_[h]+j];
+                        A[d2aboff[h2] + ik*gems_ab[h2]+jk] -= u[offset + i*amopi_[h]+j];
                     }
                 }
             }
@@ -249,14 +247,14 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
         for (int h = 0; h < nirrep_; h++) {
             for(int i = 0; i < amopi_[h]; i++){
                 for(int j = 0; j < amopi_[h]; j++){
-                    A_p[d1boff[h] + i*amopi_[h]+j] += na * u_p[offset + i*amopi_[h]+j];
+                    A[d1boff[h] + i*amopi_[h]+j] += na * u[offset + i*amopi_[h]+j];
                     int ii = i + poff;
                     int jj = j + poff;
                     for(int k = 0; k < amo_; k++){
                         int h2  = SymmetryPair(symmetry[ii],symmetry[k]);
                         int ik = ibas_ab_sym[h2][k][ii];
                         int jk = ibas_ab_sym[h2][k][jj];
-                        A_p[d2aboff[h2] + ik*gems_ab[h2]+jk] -= u_p[offset + i*amopi_[h]+j];
+                        A[d2aboff[h2] + ik*gems_ab[h2]+jk] -= u[offset + i*amopi_[h]+j];
                     }
                 }
             }
@@ -269,7 +267,7 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
         for (int h = 0; h < nirrep_; h++) {
             for(int i = 0; i < amopi_[h]; i++){
                 for(int j = 0; j < amopi_[h]; j++){
-                    A_p[d1aoff[h] + i*amopi_[h]+j] += (na - 1.0) * u_p[offset + i*amopi_[h]+j];
+                    A[d1aoff[h] + i*amopi_[h]+j] += (na - 1.0) * u[offset + i*amopi_[h]+j];
                     int ii = i + poff;
                     int jj = j + poff;
                     for(int k =0; k < amo_; k++){
@@ -279,7 +277,7 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
                         int jk = ibas_aa_sym[h2][jj][k];
                         int sik = ( ii < k ? 1 : -1);
                         int sjk = ( jj < k ? 1 : -1);
-                        A_p[d2aaoff[h2] + ik*gems_aa[h2]+jk] -= sik*sjk*u_p[offset + i*amopi_[h]+j];
+                        A[d2aaoff[h2] + ik*gems_aa[h2]+jk] -= sik*sjk*u[offset + i*amopi_[h]+j];
                     }
                 }
             }
@@ -292,7 +290,7 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
         for (int h = 0; h < nirrep_; h++) {
             for(int i = 0; i < amopi_[h]; i++){
                 for(int j = 0; j < amopi_[h]; j++){
-                    A_p[d1boff[h] + i*amopi_[h]+j] += (nb - 1.0) * u_p[offset + i*amopi_[h]+j];
+                    A[d1boff[h] + i*amopi_[h]+j] += (nb - 1.0) * u[offset + i*amopi_[h]+j];
                     int ii = i + poff;
                     int jj = j + poff;
                     for(int k =0; k < amo_; k++){
@@ -302,7 +300,7 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
                         int jk = ibas_aa_sym[h2][jj][k];
                         int sik = ( ii < k ? 1 : -1);
                         int sjk = ( jj < k ? 1 : -1);
-                        A_p[d2bboff[h2] + ik*gems_aa[h2]+jk] -= sik*sjk*u_p[offset + i*amopi_[h]+j];
+                        A[d2bboff[h2] + ik*gems_aa[h2]+jk] -= sik*sjk*u[offset + i*amopi_[h]+j];
                     }
                 }
             }
@@ -314,10 +312,7 @@ void v2RDMSolver::D2_constraints_ATu(SharedVector A,SharedVector u){
 }
 
 // D2 portion of A.x (and D1/Q1)
-void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
-
-    double* A_p = A->pointer();
-    double* u_p = u->pointer();
+void v2RDMSolver::D2_constraints_Au(double* A,double* u){
 
     if ( constrain_sz_ ) {
         // Traces
@@ -328,10 +323,10 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
                 int h = SymmetryPair(symmetry[i],symmetry[j]);
                 if ( gems_ab[h] == 0 ) continue;
                 int ij = ibas_ab_sym[h][i][j];
-                sumab += u_p[d2aboff[h] + ij*gems_ab[h]+ij];
+                sumab += u[d2aboff[h] + ij*gems_ab[h]+ij];
             }
         }
-        A_p[offset] = sumab;
+        A[offset] = sumab;
         offset++;
 
         // Tr(D2aa)
@@ -342,11 +337,11 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
                 int h = SymmetryPair(symmetry[i],symmetry[j]);
                 if ( gems_aa[h] == 0 ) continue;
                 int ij = ibas_aa_sym[h][i][j];
-                sumaa += u_p[d2aaoff[h] + ij*gems_aa[h]+ij];
+                sumaa += u[d2aaoff[h] + ij*gems_aa[h]+ij];
             }
 
         }
-        A_p[offset] = sumaa;
+        A[offset] = sumaa;
         offset++;
 
         // Tr(D2bb)
@@ -357,11 +352,11 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
                 int h = SymmetryPair(symmetry[i],symmetry[j]);
                 if ( gems_aa[h] == 0 ) continue;
                 int ij = ibas_aa_sym[h][i][j];
-                sumbb += u_p[d2bboff[h] + ij*gems_aa[h]+ij];
+                sumbb += u[d2bboff[h] + ij*gems_aa[h]+ij];
             }
 
         }
-        A_p[offset] = sumbb;
+        A[offset] = sumbb;
         offset++;
     }else {
         // Tr(D2ab + D2aa + D2bb)
@@ -372,18 +367,18 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
 
                 if ( gems_ab[h] == 0 ) continue;
                 int ij = ibas_ab_sym[h][i][j];
-                sum += 2.0 * u_p[d2aboff[h] + ij*gems_ab[h]+ij];
+                sum += 2.0 * u[d2aboff[h] + ij*gems_ab[h]+ij];
 
                 if ( i==j ) continue;
 
                 if ( gems_aa[h] == 0 ) continue;
                 ij = ibas_aa_sym[h][i][j];
-                sum += u_p[d2aaoff[h] + ij*gems_aa[h]+ij];
-                sum += u_p[d2bboff[h] + ij*gems_aa[h]+ij];
+                sum += u[d2aaoff[h] + ij*gems_aa[h]+ij];
+                sum += u[d2bboff[h] + ij*gems_aa[h]+ij];
             }
 
         }
-        A_p[offset] = sum;
+        A[offset] = sum;
         offset++;
     }
 
@@ -391,9 +386,9 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
     for (int h = 0; h < nirrep_; h++) {
         for (int ij = 0; ij < gems_aa[h]; ij++) {
             for (int kl = 0; kl < gems_aa[h]; kl++) {
-                double dum = u_p[d2aaoff[h] + ij*gems_aa[h] + kl];
-                dum       -= u_p[d2aaoff[h] + kl*gems_aa[h] + ij];
-                A_p[offset] = dum;
+                double dum = u[d2aaoff[h] + ij*gems_aa[h] + kl];
+                dum       -= u[d2aaoff[h] + kl*gems_aa[h] + ij];
+                A[offset] = dum;
                 offset++;
             }
         }
@@ -401,9 +396,9 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
     for (int h = 0; h < nirrep_; h++) {
         for (int ij = 0; ij < gems_aa[h]; ij++) {
             for (int kl = 0; kl < gems_aa[h]; kl++) {
-                double dum = u_p[d2bboff[h] + ij*gems_aa[h] + kl];
-                dum       -= u_p[d2bboff[h] + kl*gems_aa[h] + ij];
-                A_p[offset] = dum;
+                double dum = u[d2bboff[h] + ij*gems_aa[h] + kl];
+                dum       -= u[d2bboff[h] + kl*gems_aa[h] + ij];
+                A[offset] = dum;
                 offset++;
             }
         }
@@ -411,9 +406,9 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
     for (int h = 0; h < nirrep_; h++) {
         for (int ij = 0; ij < gems_ab[h]; ij++) {
             for (int kl = 0; kl < gems_ab[h]; kl++) {
-                double dum = u_p[d2aboff[h] + ij*gems_ab[h] + kl];
-                dum       -= u_p[d2aboff[h] + kl*gems_ab[h] + ij];
-                A_p[offset] = dum;
+                double dum = u[d2aboff[h] + ij*gems_ab[h] + kl];
+                dum       -= u[d2aboff[h] + kl*gems_ab[h] + ij];
+                A[offset] = dum;
                 offset++;
             }
         }
@@ -423,7 +418,7 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
     for (int h = 0; h < nirrep_; h++) {
         for(int i = 0; i < amopi_[h]; i++){
             for(int j = 0; j < amopi_[h]; j++){
-                A_p[offset+i*amopi_[h]+j] = u_p[d1aoff[h]+j*amopi_[h]+i] + u_p[q1aoff[h]+i*amopi_[h]+j];
+                A[offset+i*amopi_[h]+j] = u[d1aoff[h]+j*amopi_[h]+i] + u[q1aoff[h]+i*amopi_[h]+j];
             }
         }
         offset += amopi_[h]*amopi_[h];
@@ -433,7 +428,7 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
     for (int h = 0; h < nirrep_; h++) {
         for(int i = 0; i < amopi_[h]; i++){
             for(int j = 0; j < amopi_[h]; j++){
-                A_p[offset+i*amopi_[h]+j] = u_p[d1boff[h]+j*amopi_[h]+i] + u_p[q1boff[h]+i*amopi_[h]+j];
+                A[offset+i*amopi_[h]+j] = u[d1boff[h]+j*amopi_[h]+i] + u[q1boff[h]+i*amopi_[h]+j];
             }
         }
         offset += amopi_[h]*amopi_[h];
@@ -451,14 +446,14 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
         for (int h = 0; h < nirrep_; h++) {
             for (int i = 0; i < amopi_[h]; i++){
                 for (int j = 0; j < amopi_[h]; j++){
-                    double sum = (n - 1.0) * u_p[d1aoff[h] + i*amopi_[h]+j];
+                    double sum = (n - 1.0) * u[d1aoff[h] + i*amopi_[h]+j];
                     int ii  = i + poff;
                     int jj  = j + poff;
                     for(int k = 0; k < amo_; k++){
                         int h2  = SymmetryPair(symmetry[ii],symmetry[k]);
                         int ik = ibas_ab_sym[h2][ii][k];
                         int jk = ibas_ab_sym[h2][jj][k];
-                        sum -= u_p[d2aboff[h2] + ik*gems_ab[h2]+jk];
+                        sum -= u[d2aboff[h2] + ik*gems_ab[h2]+jk];
                     }
                     for(int k = 0; k < amo_; k++){
                         if( ii==k || jj==k ) continue;
@@ -467,9 +462,9 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
                         int jk  = ibas_aa_sym[h2][jj][k];
                         int sik = ( ii < k ) ? 1 : -1;
                         int sjk = ( jj < k ) ? 1 : -1;
-                        sum -= sik*sjk*u_p[d2aaoff[h2] + ik*gems_aa[h2]+jk];
+                        sum -= sik*sjk*u[d2aaoff[h2] + ik*gems_aa[h2]+jk];
                     }
-                    A_p[offset + i*amopi_[h]+j] = sum;
+                    A[offset + i*amopi_[h]+j] = sum;
                 }
             }
             offset += amopi_[h]*amopi_[h];
@@ -481,14 +476,14 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
         for (int h = 0; h < nirrep_; h++) {
             for (int i = 0; i < amopi_[h]; i++){
                 for (int j = 0; j < amopi_[h]; j++){
-                    double sum = (n - 1.0) * u_p[d1boff[h] + i*amopi_[h]+j];
+                    double sum = (n - 1.0) * u[d1boff[h] + i*amopi_[h]+j];
                     int ii  = i + poff;
                     int jj  = j + poff;
                     for(int k = 0; k < amo_; k++){
                         int h2  = SymmetryPair(symmetry[ii],symmetry[k]);
                         int ik = ibas_ab_sym[h2][k][ii];
                         int jk = ibas_ab_sym[h2][k][jj];
-                        sum -= u_p[d2aboff[h2] + ik*gems_ab[h2]+jk];
+                        sum -= u[d2aboff[h2] + ik*gems_ab[h2]+jk];
                     }
                     for(int k = 0; k < amo_; k++){
                         if( ii==k || jj==k ) continue;
@@ -497,9 +492,9 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
                         int jk  = ibas_aa_sym[h2][jj][k];
                         int sik = ( ii < k ) ? 1 : -1;
                         int sjk = ( jj < k ) ? 1 : -1;
-                        sum -= sik*sjk*u_p[d2bboff[h2] + ik*gems_aa[h2]+jk];
+                        sum -= sik*sjk*u[d2bboff[h2] + ik*gems_aa[h2]+jk];
                     }
-                    A_p[offset + i*amopi_[h]+j] = sum;
+                    A[offset + i*amopi_[h]+j] = sum;
                 }
             }
             offset += amopi_[h]*amopi_[h];
@@ -511,16 +506,16 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
         for (int h = 0; h < nirrep_; h++) {
             for (int i = 0; i < amopi_[h]; i++){
                 for (int j = 0; j < amopi_[h]; j++){
-                    double sum = nb * u_p[d1aoff[h] + i*amopi_[h]+j];
+                    double sum = nb * u[d1aoff[h] + i*amopi_[h]+j];
                     int ii  = i + poff;
                     int jj  = j + poff;
                     for(int k = 0; k < amo_; k++){
                         int h2  = SymmetryPair(symmetry[ii],symmetry[k]);
                         int ik = ibas_ab_sym[h2][ii][k];
                         int jk = ibas_ab_sym[h2][jj][k];
-                        sum -= u_p[d2aboff[h2] + ik*gems_ab[h2]+jk];
+                        sum -= u[d2aboff[h2] + ik*gems_ab[h2]+jk];
                     }
-                    A_p[offset + i*amopi_[h]+j] = sum;
+                    A[offset + i*amopi_[h]+j] = sum;
                 }
             }
             offset += amopi_[h]*amopi_[h];
@@ -532,16 +527,16 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
         for (int h = 0; h < nirrep_; h++) {
             for (int i = 0; i < amopi_[h]; i++){
                 for (int j = 0; j < amopi_[h]; j++){
-                    double sum = na * u_p[d1boff[h] + i*amopi_[h]+j];
+                    double sum = na * u[d1boff[h] + i*amopi_[h]+j];
                     int ii  = i + poff;
                     int jj  = j + poff;
                     for(int k = 0; k < amo_; k++){
                         int h2  = SymmetryPair(symmetry[ii],symmetry[k]);
                         int ik = ibas_ab_sym[h2][k][ii];
                         int jk = ibas_ab_sym[h2][k][jj];
-                        sum -= u_p[d2aboff[h2] + ik*gems_ab[h2]+jk];
+                        sum -= u[d2aboff[h2] + ik*gems_ab[h2]+jk];
                     }
-                    A_p[offset + i*amopi_[h]+j] = sum;
+                    A[offset + i*amopi_[h]+j] = sum;
                 }
             }
             offset += amopi_[h]*amopi_[h];
@@ -553,7 +548,7 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
         for (int h = 0; h < nirrep_; h++) {
             for (int i = 0; i < amopi_[h]; i++){
                 for (int j = 0; j < amopi_[h]; j++){
-                    double sum = (na - 1.0) * u_p[d1aoff[h] + i*amopi_[h]+j];
+                    double sum = (na - 1.0) * u[d1aoff[h] + i*amopi_[h]+j];
                     int ii  = i + poff;
                     int jj  = j + poff;
                     for(int k = 0; k < amo_; k++){
@@ -563,9 +558,9 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
                         int jk  = ibas_aa_sym[h2][jj][k];
                         int sik = ( ii < k ) ? 1 : -1;
                         int sjk = ( jj < k ) ? 1 : -1;
-                        sum -= sik*sjk*u_p[d2aaoff[h2] + ik*gems_aa[h2]+jk];
+                        sum -= sik*sjk*u[d2aaoff[h2] + ik*gems_aa[h2]+jk];
                     }
-                    A_p[offset+i*amopi_[h]+j] = sum;
+                    A[offset+i*amopi_[h]+j] = sum;
                 }
             }
             offset += amopi_[h]*amopi_[h];
@@ -577,7 +572,7 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
         for (int h = 0; h < nirrep_; h++) {
             for (int i = 0; i < amopi_[h]; i++){
                 for (int j = 0; j < amopi_[h]; j++){
-                    double sum = (nb - 1.0) * u_p[d1boff[h] + i*amopi_[h]+j];
+                    double sum = (nb - 1.0) * u[d1boff[h] + i*amopi_[h]+j];
                     int ii  = i + poff;
                     int jj  = j + poff;
                     for(int k = 0; k < amo_; k++){
@@ -587,9 +582,9 @@ void v2RDMSolver::D2_constraints_Au(SharedVector A,SharedVector u){
                         int jk  = ibas_aa_sym[h2][jj][k];
                         int sik = ( ii < k ) ? 1 : -1;
                         int sjk = ( jj < k ) ? 1 : -1;
-                        sum -= sik*sjk*u_p[d2bboff[h2] + ik*gems_aa[h2]+jk];
+                        sum -= sik*sjk*u[d2bboff[h2] + ik*gems_aa[h2]+jk];
                     }
-                    A_p[offset+i*amopi_[h]+j] = sum;
+                    A[offset+i*amopi_[h]+j] = sum;
                 }
             }
             offset += amopi_[h]*amopi_[h];

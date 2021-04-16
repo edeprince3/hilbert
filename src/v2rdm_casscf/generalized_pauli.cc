@@ -34,7 +34,7 @@ namespace hilbert {
 
 
 // portion of A^T.y corresponding to generalized pauli constraints
-void v2RDMSolver::Generalized_Pauli_constraints_ATu(SharedVector A,SharedVector u, int state){
+void v2RDMSolver::Generalized_Pauli_constraints_ATu(double* A,double* u, int state){
 
     if ( gpc_[state] == GeneralizedPauli_3_8 ) {
 
@@ -77,7 +77,7 @@ void v2RDMSolver::Generalized_Pauli_constraints_ATu(SharedVector A,SharedVector 
 }
 
 // portion of A.x corresponding to generalized pauli constraints
-void v2RDMSolver::Generalized_Pauli_constraints_Au(SharedVector A,SharedVector u, int state){
+void v2RDMSolver::Generalized_Pauli_constraints_Au(double* A,double* u, int state){
 
     if ( gpc_[state] == GeneralizedPauli_3_8 ) {
 

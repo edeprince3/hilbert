@@ -34,10 +34,8 @@ using namespace psi;
 namespace hilbert{
 
 // portion of A^T.y corresponding to generalized paulit constraints
-void v2RDMSolver::Generalized_Pauli_4_8_constraints_ATu(SharedVector A,SharedVector u, int state){
+void v2RDMSolver::Generalized_Pauli_4_8_constraints_ATu(double* A,double* u, int state){
 
-    double* A_p = A->pointer();
-    double* u_p = u->pointer();
     double ** orb_p = NatOrbs_[state]->pointer();
 
     //int * x1aoff;
@@ -48,40 +46,38 @@ void v2RDMSolver::Generalized_Pauli_4_8_constraints_ATu(SharedVector A,SharedVec
 
     int off = gpcoff[state][0];
 
-    //GP_N_8_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,-1,1,0,0,0,0,0,0); //=0,   ########################
-    //GP_N_8_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,-1,1,0,0,0,0,0); //=0,   ##                    ##
-    //GP_N_8_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,-1,1,0,0,0,0); //=0,   ##                    ##
-    //GP_N_8_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,0,-1,1,0,0,0); //=0,   ##    ordering for    ##
-    //GP_N_8_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,0,0,-1,1,0,0); //=0,   ##    lambda[i]'s     ##
-    //GP_N_8_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,0,0,0,-1,1,0); //=0,   ##                    ##
-    //GP_N_8_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,0,0,0,0,-1,1); //=0,   ##                    ##
-    //GP_N_8_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,0,0,0,0,0,0,0,-1); //=0,   ########################
+    //GP_N_8_ATu(u[offset++],off,A,x1aoff,x1boff,orb_p,-1,1,0,0,0,0,0,0); //=0,   ########################
+    //GP_N_8_ATu(u[offset++],off,A,x1aoff,x1boff,orb_p,0,-1,1,0,0,0,0,0); //=0,   ##                    ##
+    //GP_N_8_ATu(u[offset++],off,A,x1aoff,x1boff,orb_p,0,0,-1,1,0,0,0,0); //=0,   ##                    ##
+    //GP_N_8_ATu(u[offset++],off,A,x1aoff,x1boff,orb_p,0,0,0,-1,1,0,0,0); //=0,   ##    ordering for    ##
+    //GP_N_8_ATu(u[offset++],off,A,x1aoff,x1boff,orb_p,0,0,0,0,-1,1,0,0); //=0,   ##    lambda[i]'s     ##
+    //GP_N_8_ATu(u[offset++],off,A,x1aoff,x1boff,orb_p,0,0,0,0,0,-1,1,0); //=0,   ##                    ##
+    //GP_N_8_ATu(u[offset++],off,A,x1aoff,x1boff,orb_p,0,0,0,0,0,0,-1,1); //=0,   ##                    ##
+    //GP_N_8_ATu(u[offset++],off,A,x1aoff,x1boff,orb_p,0,0,0,0,0,0,0,-1); //=0,   ########################
 
-    //GP_N_8_ATu(u_p[offset++],off,A_p,x1aoff,x1boff,orb_p,1,0,0,0,0,0,0,0); //=1,    ##  Pauli inequality:lambda[1); //=1 ##
+    //GP_N_8_ATu(u[offset++],off,A,x1aoff,x1boff,orb_p,1,0,0,0,0,0,0,0); //=1,    ##  Pauli inequality:lambda[1); //=1 ##
 
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,0,-1,0,-1,-1,0); //=0,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,0,-1,-1,0,0,-1); //=0,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,-1,0,0,-1,0,-1); //=0,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,-1,0,0,0,0,-1,-1); //=0,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,1,0,-1,0,-1,0,-1); //=0,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,0,1,-1,0,0,-1,-1); //=0,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,0,0,0,1,-1,-1,-1); //=0,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,0,-1,0,-1,-1,0); //=0,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,0,-1,-1,0,0,-1); //=0,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,-1,0,0,-1,0,-1); //=0,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,-1,0,0,0,0,-1,-1); //=0,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,1,0,-1,0,-1,0,-1); //=0,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,0,1,-1,0,0,-1,-1); //=0,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,0,0,0,1,-1,-1,-1); //=0,
 
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,1,-1,0,0,0,0); //=2,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,0,0,0,0,0,-1); //=2,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,0,0,0,-1,0,0); //=2,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,1,0,1,0,-1,0); //=2,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,1,0,0,1,0,-1); //=2,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,0,1,1,0,0,-1); //=2,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u_p[offset++],off,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,1,1,0,1,0,0,-1); //=2
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,1,-1,0,0,0,0); //=2,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,0,0,0,0,0,-1); //=2,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,0,0,0,-1,0,0); //=2,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,1,0,1,0,-1,0); //=2,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,1,0,0,1,0,-1); //=2,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,0,1,1,0,0,-1); //=2,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,1,1,0,1,0,0,-1); //=2
 
 }
 
 // portion of A.x corresponding to generalized paulit constraints
-void v2RDMSolver::Generalized_Pauli_4_8_constraints_Au(SharedVector A,SharedVector u,int state){
+void v2RDMSolver::Generalized_Pauli_4_8_constraints_Au(double* A,double* u,int state){
 
-    double* A_p = A->pointer();
-    double* u_p = u->pointer();
     double ** orb_p = NatOrbs_[state]->pointer();
 
     //int * x1aoff;
@@ -92,44 +88,44 @@ void v2RDMSolver::Generalized_Pauli_4_8_constraints_Au(SharedVector A,SharedVect
 
     double * eigvals = (double*)malloc(8*sizeof(double));
     for (int i = 0; i < 8; i++) {
-        eigvals[i] = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],i+1,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state]);
+        eigvals[i] = Generalized_Pauli_Au_term(orb_p,u,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],i+1,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state]);
     }
 
     int off = gpcoff[state][0];
     int saveoff = offset;
 
-    //A_p[offset++] = GP_N_8_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,-1,1,0,0,0,0,0,0); //=0,   ########################
-    //A_p[offset++] = GP_N_8_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,-1,1,0,0,0,0,0); //=0,   ##                    ##
-    //A_p[offset++] = GP_N_8_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,-1,1,0,0,0,0); //=0,   ##                    ##
-    //A_p[offset++] = GP_N_8_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,0,-1,1,0,0,0); //=0,   ##    ordering for    ##
-    //A_p[offset++] = GP_N_8_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,-1,1,0,0); //=0,   ##    lambda[i]'s     ##
-    //A_p[offset++] = GP_N_8_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,0,-1,1,0); //=0,   ##                    ##
-    //A_p[offset++] = GP_N_8_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,0,0,-1,1); //=0,   ##                    ##
-    //A_p[offset++] = GP_N_8_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,0,0,0,-1); //=0,   ########################
+    //A[offset++] = GP_N_8_Au(off,u,x1aoff,x1boff,orb_p,eigvals,-1,1,0,0,0,0,0,0); //=0,   ########################
+    //A[offset++] = GP_N_8_Au(off,u,x1aoff,x1boff,orb_p,eigvals,0,-1,1,0,0,0,0,0); //=0,   ##                    ##
+    //A[offset++] = GP_N_8_Au(off,u,x1aoff,x1boff,orb_p,eigvals,0,0,-1,1,0,0,0,0); //=0,   ##                    ##
+    //A[offset++] = GP_N_8_Au(off,u,x1aoff,x1boff,orb_p,eigvals,0,0,0,-1,1,0,0,0); //=0,   ##    ordering for    ##
+    //A[offset++] = GP_N_8_Au(off,u,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,-1,1,0,0); //=0,   ##    lambda[i]'s     ##
+    //A[offset++] = GP_N_8_Au(off,u,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,0,-1,1,0); //=0,   ##                    ##
+    //A[offset++] = GP_N_8_Au(off,u,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,0,0,-1,1); //=0,   ##                    ##
+    //A[offset++] = GP_N_8_Au(off,u,x1aoff,x1boff,orb_p,eigvals,0,0,0,0,0,0,0,-1); //=0,   ########################
  
-    //A_p[offset++] = GP_N_8_Au(off,u_p,x1aoff,x1boff,orb_p,eigvals,1,0,0,0,0,0,0,0); //=1,    ##  Pauli inequality:lambda[1); //=1 ##
+    //A[offset++] = GP_N_8_Au(off,u,x1aoff,x1boff,orb_p,eigvals,1,0,0,0,0,0,0,0); //=1,    ##  Pauli inequality:lambda[1); //=1 ##
  
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,1,0,0,-1,0,-1,-1,0); //=0,
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,1,0,0,-1,-1,0,0,-1); //=0,
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,1,0,-1,0,0,-1,0,-1); //=0,
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,1,-1,0,0,0,0,-1,-1); //=0,
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,0,1,0,-1,0,-1,0,-1); //=0,
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,0,0,1,-1,0,0,-1,-1); //=0,
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,0,0,0,0,1,-1,-1,-1); //=0,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,0,0,-1,0,-1,-1,0); //=0,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,0,0,-1,-1,0,0,-1); //=0,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,0,-1,0,0,-1,0,-1); //=0,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,-1,0,0,0,0,-1,-1); //=0,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,0,1,0,-1,0,-1,0,-1); //=0,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,0,0,1,-1,0,0,-1,-1); //=0,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,0,0,0,0,1,-1,-1,-1); //=0,
  
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,1,1,1,-1,0,0,0,0); //=2,
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,1,1,0,0,0,0,0,-1); //=2,
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,1,1,0,0,0,-1,0,0); //=2,
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,1,0,1,0,1,0,-1,0); //=2,
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,1,0,1,0,0,1,0,-1); //=2,
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,1,0,0,1,1,0,0,-1); //=2,
-    A_p[offset++] = GP_N_8_Au(off,u_p,orb_p,eigvals,0,1,1,0,1,0,0,-1); //=2
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,1,1,-1,0,0,0,0); //=2,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,1,0,0,0,0,0,-1); //=2,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,1,0,0,0,-1,0,0); //=2,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,0,1,0,1,0,-1,0); //=2,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,0,1,0,0,1,0,-1); //=2,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,0,0,1,1,0,0,-1); //=2,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,0,1,1,0,1,0,0,-1); //=2
 
     if ( print_gpc_error_ ) {
         outfile->Printf("\n");        outfile->Printf("    ==> Generalized Pauli Constraint Errors <===\n");
         outfile->Printf("\n");
         for (int i = saveoff; i < saveoff+n_gpc_[state]; i++) {
-            outfile->Printf("    %5i %20.12lf %20.12lf %5s\n",i,A_p[i],b->pointer()[i],A_p[i] <= b->pointer()[i] ? "" : "XXX");
+            outfile->Printf("    %5i %20.12lf %20.12lf %5s\n",i,A[i],b->pointer()[i],A[i] <= b->pointer()[i] ? "" : "XXX");
         }
     }
 

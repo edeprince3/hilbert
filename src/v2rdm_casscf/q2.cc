@@ -43,12 +43,9 @@ using namespace psi;
 namespace hilbert{
 
 // Q2 guess
-void v2RDMSolver::Q2_constraints_guess(SharedVector u){
-
-    double * u_p = u->pointer();
+void v2RDMSolver::Q2_constraints_guess(double* u){
 
     // map D2ab to Q2ab
-
     for (int h = 0; h < nirrep_; h++) {
         #pragma omp parallel for schedule (static)
         for (int ij = 0; ij < gems_ab[h]; ij++) {
@@ -60,21 +57,21 @@ void v2RDMSolver::Q2_constraints_guess(SharedVector u){
 
                 double dum  = 0.0;
 
-                dum        +=  u_p[d2aboff[h] + kl*gems_ab[h]+ij];          // +D2(kl,ij)
+                dum        +=  u[d2aboff[h] + kl*gems_ab[h]+ij];          // +D2(kl,ij)
 
                 if ( j==l ) {
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    dum        +=  u_p[q1aoff[h2] + ii*amopi_[h2]+kk]; // +Q1(i,k) djl
+                    dum        +=  u[q1aoff[h2] + ii*amopi_[h2]+kk]; // +Q1(i,k) djl
                 }
                 if ( i==k ) {
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    dum        -=  u_p[d1boff[h2] + ll*amopi_[h2]+jj]; // -D1(l,j) dik
+                    dum        -=  u[d1boff[h2] + ll*amopi_[h2]+jj]; // -D1(l,j) dik
                 }
-                u_p[q2aboff[h] + ij*gems_ab[h]+kl] = dum;
+                u[q2aboff[h] + ij*gems_ab[h]+kl] = dum;
             }
         }
         offset += gems_ab[h]*gems_ab[h];
@@ -92,34 +89,34 @@ void v2RDMSolver::Q2_constraints_guess(SharedVector u){
 
                 double dum  = 0.0;
 
-                dum        +=  u_p[d2aaoff[h] + kl*gems_aa[h]+ij];    // +D2(kl,ij)
+                dum        +=  u[d2aaoff[h] + kl*gems_aa[h]+ij];    // +D2(kl,ij)
 
                 if ( j==l ) {
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    dum        +=  u_p[q1aoff[h2] + ii*amopi_[h2]+kk];  // +Q1(i,k) djl
+                    dum        +=  u[q1aoff[h2] + ii*amopi_[h2]+kk];  // +Q1(i,k) djl
                 }
                 if ( j==k ) {
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    dum        +=  u_p[d1aoff[h2] + ll*amopi_[h2]+ii];  // +D1(l,i) djk
+                    dum        +=  u[d1aoff[h2] + ll*amopi_[h2]+ii];  // +D1(l,i) djk
                 }
                 if ( i==l ) {
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    dum        -=  u_p[q1aoff[h2] + jj*amopi_[h2]+kk];  // -Q1(j,k) dil
+                    dum        -=  u[q1aoff[h2] + jj*amopi_[h2]+kk];  // -Q1(j,k) dil
                 }
                 if ( i==k ) {
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    dum        -=  u_p[d1aoff[h2] + ll*amopi_[h2]+jj];  // -D1(l,j) dkl
+                    dum        -=  u[d1aoff[h2] + ll*amopi_[h2]+jj];  // -D1(l,j) dkl
                 }
 
-                u_p[q2aaoff[h] + ij*gems_aa[h]+kl] = dum;
+                u[q2aaoff[h] + ij*gems_aa[h]+kl] = dum;
             }
         }
         offset += gems_aa[h]*gems_aa[h];
@@ -137,33 +134,33 @@ void v2RDMSolver::Q2_constraints_guess(SharedVector u){
 
                 double dum  = 0.0;
 
-                dum        +=  u_p[d2bboff[h] + kl*gems_aa[h]+ij];    // +D2(kl,ij)
+                dum        +=  u[d2bboff[h] + kl*gems_aa[h]+ij];    // +D2(kl,ij)
 
                 if ( j==l ) {
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    dum        +=  u_p[q1boff[h2] + ii*amopi_[h2]+kk];  // +Q1(i,k) djl
+                    dum        +=  u[q1boff[h2] + ii*amopi_[h2]+kk];  // +Q1(i,k) djl
                 }
                 if ( j==k ) {
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    dum        +=  u_p[d1boff[h2] + ll*amopi_[h2]+ii];  // +D1(l,i) djk
+                    dum        +=  u[d1boff[h2] + ll*amopi_[h2]+ii];  // +D1(l,i) djk
                 }
                 if ( i==l ) {
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    dum        -=  u_p[q1boff[h2] + jj*amopi_[h2]+kk];  // -Q1(j,k) dil
+                    dum        -=  u[q1boff[h2] + jj*amopi_[h2]+kk];  // -Q1(j,k) dil
                 }
                 if ( i==k ) {
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    dum        -=  u_p[d1boff[h2] + ll*amopi_[h2]+jj];  // -D1(l,j) dkl
+                    dum        -=  u[d1boff[h2] + ll*amopi_[h2]+jj];  // -D1(l,j) dkl
                 }
-                u_p[q2bboff[h] + ij*gems_aa[h]+kl] = dum;
+                u[q2bboff[h] + ij*gems_aa[h]+kl] = dum;
             }
         }
         offset += gems_aa[h]*gems_aa[h];
@@ -171,9 +168,7 @@ void v2RDMSolver::Q2_constraints_guess(SharedVector u){
 }
 
 // Q2 portion of A.x (with symmetry)
-void v2RDMSolver::Q2_constraints_Au(SharedVector A,SharedVector u){
-    double * A_p = A->pointer();
-    double * u_p = u->pointer();
+void v2RDMSolver::Q2_constraints_Au(double* A,double* u){
 
     long int blocksize_ab = 0;
     long int blocksize_aa = 0;
@@ -183,8 +178,8 @@ void v2RDMSolver::Q2_constraints_Au(SharedVector A,SharedVector u){
     }
 
     // map D2ab to Q2ab
-    C_DCOPY(blocksize_ab,u_p + d2aboff[0],1,A_p + offset,1);      // + D2(kl,ij)
-    C_DAXPY(blocksize_ab,-1.0,u_p + q2aboff[0],1,A_p + offset,1); // - Q2(kl,ij)
+    C_DCOPY(blocksize_ab,u + d2aboff[0],1,A + offset,1);      // + D2(kl,ij)
+    C_DAXPY(blocksize_ab,-1.0,u + q2aboff[0],1,A + offset,1); // - Q2(kl,ij)
     for (int h = 0; h < nirrep_; h++) {
         #pragma omp parallel for schedule (static)
         for (int ij = 0; ij < gems_ab[h]; ij++) {
@@ -197,7 +192,7 @@ void v2RDMSolver::Q2_constraints_Au(SharedVector A,SharedVector u){
             //for (int kk = 0; kk < amopi_[hi]; kk++) {
             //    int k  = kk + pitzer_offset[hi];
             //    int kj = ibas_ab_sym[h][k][j];
-            //    A_p[offset + ij*gems_ab[h]+kj] += u_p[q1aoff[hi] + ii*amopi_[hi]+kk]; // +Q1(i,k) djl
+            //    A[offset + ij*gems_ab[h]+kj] += u[q1aoff[hi] + ii*amopi_[hi]+kk]; // +Q1(i,k) djl
             //}
             // -D1(k,i) djl
             int hi = symmetry[i];
@@ -205,7 +200,7 @@ void v2RDMSolver::Q2_constraints_Au(SharedVector A,SharedVector u){
             for (int kk = 0; kk < amopi_[hi]; kk++) {
                 int k  = kk + pitzer_offset[hi];
                 int kj = ibas_ab_sym[h][k][j];
-                A_p[offset + ij*gems_ab[h]+kj] -= u_p[d1aoff[hi] + kk*amopi_[hi]+ii]; // +Q1(k,i) djl
+                A[offset + ij*gems_ab[h]+kj] -= u[d1aoff[hi] + kk*amopi_[hi]+ii]; // +Q1(k,i) djl
             }
 
             // -D1(l,j) dik
@@ -214,15 +209,15 @@ void v2RDMSolver::Q2_constraints_Au(SharedVector A,SharedVector u){
             for (int ll = 0; ll < amopi_[hj]; ll++) {
                 int l  = ll + pitzer_offset[hj];
                 int il = ibas_ab_sym[h][i][l];
-                A_p[offset + ij*gems_ab[h]+il] -= u_p[d1boff[hj] + ll*amopi_[hj]+jj]; // -D1(l,j) dik
+                A[offset + ij*gems_ab[h]+il] -= u[d1boff[hj] + ll*amopi_[hj]+jj]; // -D1(l,j) dik
             }
         }
         offset += gems_ab[h]*gems_ab[h];
     }
 
     // map D2aa to Q2aa
-    C_DCOPY(blocksize_aa,u_p + d2aaoff[0],1,A_p + offset,1);      // + D2(kl,ij)
-    C_DAXPY(blocksize_aa,-1.0,u_p + q2aaoff[0],1,A_p + offset,1); // - Q2(kl,ij)
+    C_DCOPY(blocksize_aa,u + d2aaoff[0],1,A + offset,1);      // + D2(kl,ij)
+    C_DAXPY(blocksize_aa,-1.0,u + q2aaoff[0],1,A + offset,1); // - Q2(kl,ij)
     for (int h = 0; h < nirrep_; h++) {
         #pragma omp parallel for schedule (static)
         for (int ij = 0; ij < gems_aa[h]; ij++) {
@@ -236,35 +231,35 @@ void v2RDMSolver::Q2_constraints_Au(SharedVector A,SharedVector u){
                     //int h2 = symmetry[i];
                     //int ii = i - pitzer_offset[h2];
                     //int kk = k - pitzer_offset[h2];
-                    //dum        +=  u_p[q1aoff[h2] + ii*amopi_[h2]+kk];  // +Q1(i,k) djl
+                    //dum        +=  u[q1aoff[h2] + ii*amopi_[h2]+kk];  // +Q1(i,k) djl
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    dum        -=  u_p[d1aoff[h2] + kk*amopi_[h2]+ii];  // -D1(k,i) djl
+                    dum        -=  u[d1aoff[h2] + kk*amopi_[h2]+ii];  // -D1(k,i) djl
                 }
                 if ( j==k ) {
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    dum        +=  u_p[d1aoff[h2] + ll*amopi_[h2]+ii];  // +D1(l,i) djk
+                    dum        +=  u[d1aoff[h2] + ll*amopi_[h2]+ii];  // +D1(l,i) djk
                 }
                 if ( i==l ) {
                     //int h2 = symmetry[j];
                     //int jj = j - pitzer_offset[h2];
                     //int kk = k - pitzer_offset[h2];
-                    //dum        -=  u_p[q1aoff[h2] + jj*amopi_[h2]+kk];  // -Q1(j,k) dil
+                    //dum        -=  u[q1aoff[h2] + jj*amopi_[h2]+kk];  // -Q1(j,k) dil
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    dum        +=  u_p[d1aoff[h2] + kk*amopi_[h2]+jj];  // +D1(k,j) dil
+                    dum        +=  u[d1aoff[h2] + kk*amopi_[h2]+jj];  // +D1(k,j) dil
                 }
                 if ( i==k ) {
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    dum        -=  u_p[d1aoff[h2] + ll*amopi_[h2]+jj];  // -D1(l,j) dkl
+                    dum        -=  u[d1aoff[h2] + ll*amopi_[h2]+jj];  // -D1(l,j) dkl
                 }
-                A_p[offset + ij*gems_aa[h]+kl] += dum;
+                A[offset + ij*gems_aa[h]+kl] += dum;
             }
         }
         offset += gems_aa[h]*gems_aa[h];
@@ -272,8 +267,8 @@ void v2RDMSolver::Q2_constraints_Au(SharedVector A,SharedVector u){
 
 
     // map D2bb to Q2bb
-    C_DCOPY(blocksize_aa,u_p + d2bboff[0],1,A_p + offset,1);      // + D2(kl,ij)
-    C_DAXPY(blocksize_aa,-1.0,u_p + q2bboff[0],1,A_p + offset,1); // - Q2(kl,ij)
+    C_DCOPY(blocksize_aa,u + d2bboff[0],1,A + offset,1);      // + D2(kl,ij)
+    C_DAXPY(blocksize_aa,-1.0,u + q2bboff[0],1,A + offset,1); // - Q2(kl,ij)
     for (int h = 0; h < nirrep_; h++) {
         #pragma omp parallel for schedule (static)
         for (int ij = 0; ij < gems_aa[h]; ij++) {
@@ -287,35 +282,35 @@ void v2RDMSolver::Q2_constraints_Au(SharedVector A,SharedVector u){
                     //int h2 = symmetry[i];
                     //int ii = i - pitzer_offset[h2];
                     //int kk = k - pitzer_offset[h2];
-                    //dum        +=  u_p[q1boff[h2] + ii*amopi_[h2]+kk];  // +Q1(i,k) djl
+                    //dum        +=  u[q1boff[h2] + ii*amopi_[h2]+kk];  // +Q1(i,k) djl
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    dum        -=  u_p[d1boff[h2] + kk*amopi_[h2]+ii];  // -D1(k,i) djl
+                    dum        -=  u[d1boff[h2] + kk*amopi_[h2]+ii];  // -D1(k,i) djl
                 }
                 if ( j==k ) {
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    dum        +=  u_p[d1boff[h2] + ll*amopi_[h2]+ii];  // +D1(l,i) djk
+                    dum        +=  u[d1boff[h2] + ll*amopi_[h2]+ii];  // +D1(l,i) djk
                 }
                 if ( i==l ) {
                     //int h2 = symmetry[j];
                     //int jj = j - pitzer_offset[h2];
                     //int kk = k - pitzer_offset[h2];
-                    //dum        -=  u_p[q1boff[h2] + jj*amopi_[h2]+kk];  // -Q1(j,k) dil
+                    //dum        -=  u[q1boff[h2] + jj*amopi_[h2]+kk];  // -Q1(j,k) dil
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    dum        +=  u_p[d1boff[h2] + kk*amopi_[h2]+jj];  // +Q1(k,j) dil
+                    dum        +=  u[d1boff[h2] + kk*amopi_[h2]+jj];  // +Q1(k,j) dil
                 }
                 if ( i==k ) {
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    dum        -=  u_p[d1boff[h2] + ll*amopi_[h2]+jj];  // -D1(l,j) dkl
+                    dum        -=  u[d1boff[h2] + ll*amopi_[h2]+jj];  // -D1(l,j) dkl
                 }
-                A_p[offset + ij*gems_aa[h]+kl] += dum;
+                A[offset + ij*gems_aa[h]+kl] += dum;
             }
         }
         offset += gems_aa[h]*gems_aa[h];
@@ -323,10 +318,7 @@ void v2RDMSolver::Q2_constraints_Au(SharedVector A,SharedVector u){
 }
 
 // Q2 portion of A^T.y (with symmetry)
-void v2RDMSolver::Q2_constraints_ATu(SharedVector A,SharedVector u){
-
-    double * A_p = A->pointer();
-    double * u_p = u->pointer();
+void v2RDMSolver::Q2_constraints_ATu(double* A,double* u){
 
     long int blocksize_ab = 0;
     long int blocksize_aa = 0;
@@ -336,8 +328,8 @@ void v2RDMSolver::Q2_constraints_ATu(SharedVector A,SharedVector u){
     }
 
     // map D2ab to Q2ab
-    C_DAXPY(blocksize_ab, 1.0,u_p + offset,1,A_p + d2aboff[0],1); // + D2(kl,ij)
-    C_DAXPY(blocksize_ab,-1.0,u_p + offset,1,A_p + q2aboff[0],1); // - Q2(ij,kl)
+    C_DAXPY(blocksize_ab, 1.0,u + offset,1,A + d2aboff[0],1); // + D2(kl,ij)
+    C_DAXPY(blocksize_ab,-1.0,u + offset,1,A + q2aboff[0],1); // - Q2(ij,kl)
     for (int h = 0; h < nirrep_; h++) {
         for (int ij = 0; ij < gems_ab[h]; ij++) {
             int i = bas_ab_sym[h][ij][0];
@@ -345,18 +337,18 @@ void v2RDMSolver::Q2_constraints_ATu(SharedVector A,SharedVector u){
             for (int kl = 0; kl < gems_ab[h]; kl++) {
                 int k = bas_ab_sym[h][kl][0];
                 int l = bas_ab_sym[h][kl][1];
-                double val = u_p[offset + ij*gems_ab[h]+kl];
+                double val = u[offset + ij*gems_ab[h]+kl];
                 if ( j==l ) {
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    A_p[d1aoff[h2]  + kk*amopi_[h2]+ii] -= val;
+                    A[d1aoff[h2]  + kk*amopi_[h2]+ii] -= val;
                 }
                 if ( i==k ) {
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    A_p[d1boff[h2]  + ll*amopi_[h2]+jj] -= val;
+                    A[d1boff[h2]  + ll*amopi_[h2]+jj] -= val;
                 }
             }
         }
@@ -364,8 +356,8 @@ void v2RDMSolver::Q2_constraints_ATu(SharedVector A,SharedVector u){
     }
 
     // map D2aa to Q2aa
-    C_DAXPY(blocksize_aa, 1.0,u_p + offset,1,A_p + d2aaoff[0],1); // + D2(kl,ij)
-    C_DAXPY(blocksize_aa,-1.0,u_p + offset,1,A_p + q2aaoff[0],1); // - Q2(ij,kl)
+    C_DAXPY(blocksize_aa, 1.0,u + offset,1,A + d2aaoff[0],1); // + D2(kl,ij)
+    C_DAXPY(blocksize_aa,-1.0,u + offset,1,A + q2aaoff[0],1); // - Q2(ij,kl)
     for (int h = 0; h < nirrep_; h++) {
         for (int ij = 0; ij < gems_aa[h]; ij++) {
             int i = bas_aa_sym[h][ij][0];
@@ -373,30 +365,30 @@ void v2RDMSolver::Q2_constraints_ATu(SharedVector A,SharedVector u){
             for (int kl = 0; kl < gems_aa[h]; kl++) {
                 int k = bas_aa_sym[h][kl][0];
                 int l = bas_aa_sym[h][kl][1];
-                double val = u_p[offset + ij*gems_aa[h]+kl];
+                double val = u[offset + ij*gems_aa[h]+kl];
                 if ( j==l ) {
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    A_p[d1aoff[h2]  + kk*amopi_[h2]+ii] -= val;
+                    A[d1aoff[h2]  + kk*amopi_[h2]+ii] -= val;
                 }
                 if ( j==k ) {
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    A_p[d1aoff[h2]  + ll*amopi_[h2]+ii] += val;
+                    A[d1aoff[h2]  + ll*amopi_[h2]+ii] += val;
                 }
                 if ( i==l ) {
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    A_p[d1aoff[h2]  + kk*amopi_[h2]+jj] += val;
+                    A[d1aoff[h2]  + kk*amopi_[h2]+jj] += val;
                 }
                 if ( i==k ) {
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    A_p[d1aoff[h2]  + ll*amopi_[h2]+jj] -= val;
+                    A[d1aoff[h2]  + ll*amopi_[h2]+jj] -= val;
                 }
             }
         }
@@ -405,8 +397,8 @@ void v2RDMSolver::Q2_constraints_ATu(SharedVector A,SharedVector u){
 
 
     // map D2bb to Q2bb
-    C_DAXPY(blocksize_aa, 1.0,u_p + offset,1,A_p + d2bboff[0],1); // + D2(kl,ij)
-    C_DAXPY(blocksize_aa,-1.0,u_p + offset,1,A_p + q2bboff[0],1); // - Q2(ij,kl)
+    C_DAXPY(blocksize_aa, 1.0,u + offset,1,A + d2bboff[0],1); // + D2(kl,ij)
+    C_DAXPY(blocksize_aa,-1.0,u + offset,1,A + q2bboff[0],1); // - Q2(ij,kl)
     for (int h = 0; h < nirrep_; h++) {
         for (int ij = 0; ij < gems_aa[h]; ij++) {
             int i = bas_aa_sym[h][ij][0];
@@ -414,30 +406,30 @@ void v2RDMSolver::Q2_constraints_ATu(SharedVector A,SharedVector u){
             for (int kl = 0; kl < gems_aa[h]; kl++) {
                 int k = bas_aa_sym[h][kl][0];
                 int l = bas_aa_sym[h][kl][1];
-                double val = u_p[offset + ij*gems_aa[h]+kl];
+                double val = u[offset + ij*gems_aa[h]+kl];
                 if ( j==l ) {
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    A_p[d1boff[h2]  + kk*amopi_[h2]+ii] -= val;
+                    A[d1boff[h2]  + kk*amopi_[h2]+ii] -= val;
                 }
                 if ( j==k ) {
                     int h2 = symmetry[i];
                     int ii = i - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    A_p[d1boff[h2]  + ll*amopi_[h2]+ii] += val;
+                    A[d1boff[h2]  + ll*amopi_[h2]+ii] += val;
                 }
                 if ( i==l ) {
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int kk = k - pitzer_offset[h2];
-                    A_p[d1boff[h2]  + kk*amopi_[h2]+jj] += val;
+                    A[d1boff[h2]  + kk*amopi_[h2]+jj] += val;
                 }
                 if ( i==k ) {
                     int h2 = symmetry[j];
                     int jj = j - pitzer_offset[h2];
                     int ll = l - pitzer_offset[h2];
-                    A_p[d1boff[h2]  + ll*amopi_[h2]+jj] -= val;
+                    A[d1boff[h2]  + ll*amopi_[h2]+jj] -= val;
                 }
             }
         }

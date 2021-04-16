@@ -42,10 +42,7 @@ using namespace psi;
 namespace hilbert{
 
 // D4 portion of A.u 
-void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
-
-    double * A_p = A->pointer();
-    double * u_p = u->pointer();
+void v2RDMSolver::D4_constraints_Au(double* A,double* u){
 
     int na = nalpha_ - nrstc_ - nfrzc_;
     int nb = nbeta_ - nrstc_ - nfrzc_;
@@ -60,7 +57,7 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                     int l = bas_aaa_sym[h][lmn][0];
                     int m = bas_aaa_sym[h][lmn][1];
                     int n = bas_aaa_sym[h][lmn][2];
-                    double dum = (na - 3.0) * u_p[d3aaaoff[h] + ijk*trip_aaa[h] + lmn];
+                    double dum = (na - 3.0) * u[d3aaaoff[h] + ijk*trip_aaa[h] + lmn];
                     for ( int p = 0; p < amo_; p++) {
                         if ( i == p) continue;
                         if ( j == p) continue;
@@ -78,9 +75,9 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                         if ( p < l ) s = -s;
                         if ( p < m ) s = -s;
                         if ( p < n ) s = -s;
-                        dum -= s * u_p[d4aaaaoff[h2] + ijkp*quartet_aaaa[h2]+lmnp];
+                        dum -= s * u[d4aaaaoff[h2] + ijkp*quartet_aaaa[h2]+lmnp];
                     }
-                    A_p[offset + ijk*trip_aaa[h]+lmn] = dum;
+                    A[offset + ijk*trip_aaa[h]+lmn] = dum;
                 }
             }
             offset += trip_aaa[h] * trip_aaa[h];
@@ -98,14 +95,14 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                     int l = bas_aaa_sym[h][lmn][0];
                     int m = bas_aaa_sym[h][lmn][1];
                     int n = bas_aaa_sym[h][lmn][2];
-                    double dum = nb * u_p[d3aaaoff[h] + ijk*trip_aaa[h] + lmn];
+                    double dum = nb * u[d3aaaoff[h] + ijk*trip_aaa[h] + lmn];
                     for ( int p = 0; p < amo_; p++) {
                         int h2 = SymmetryPair(h,symmetry[p]);
                         int ijkp = ibas_aaab_sym[h2][i][j][k][p];
                         int lmnp = ibas_aaab_sym[h2][l][m][n][p];
-                        dum -= u_p[d4aaaboff[h2] + ijkp*quartet_aaab[h2]+lmnp];
+                        dum -= u[d4aaaboff[h2] + ijkp*quartet_aaab[h2]+lmnp];
                     }
-                    A_p[offset + ijk*trip_aaa[h]+lmn] = dum;
+                    A[offset + ijk*trip_aaa[h]+lmn] = dum;
                 }
             }
             offset += trip_aaa[h] * trip_aaa[h];
@@ -121,7 +118,7 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                     int l = bas_aab_sym[h][lmn][0];
                     int m = bas_aab_sym[h][lmn][1];
                     int n = bas_aab_sym[h][lmn][2];
-                    double dum = (na - 2.0) * u_p[d3aaboff[h] + ijk*trip_aab[h] + lmn];
+                    double dum = (na - 2.0) * u[d3aaboff[h] + ijk*trip_aab[h] + lmn];
                     for ( int p = 0; p < amo_; p++) {
                         if ( i == p) continue;
                         if ( j == p) continue;
@@ -135,9 +132,9 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                         if ( p < j ) s = -s;
                         if ( p < l ) s = -s;
                         if ( p < m ) s = -s;
-                        dum -= s * u_p[d4aaaboff[h2] + ijkp*quartet_aaab[h2]+lmnp];
+                        dum -= s * u[d4aaaboff[h2] + ijkp*quartet_aaab[h2]+lmnp];
                     }
-                    A_p[offset + ijk*trip_aab[h]+lmn] = dum;
+                    A[offset + ijk*trip_aab[h]+lmn] = dum;
                 }
             }
             offset += trip_aab[h] * trip_aab[h];
@@ -155,7 +152,7 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                     int l = bas_aab_sym[h][lmn][0];
                     int m = bas_aab_sym[h][lmn][1];
                     int n = bas_aab_sym[h][lmn][2];
-                    double dum = (nb-1.0) * u_p[d3aaboff[h] + ijk*trip_aab[h] + lmn];
+                    double dum = (nb-1.0) * u[d3aaboff[h] + ijk*trip_aab[h] + lmn];
                     for ( int p = 0; p < amo_; p++) {
                         int h2 = SymmetryPair(h,symmetry[p]);
                         if ( k == p ) continue;
@@ -165,9 +162,9 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                         int s = 1;
                         if ( p < k ) s = -s;
                         if ( p < n ) s = -s;
-                        dum -= s * u_p[d4aabboff[h2] + ijkp*quartet_aabb[h2]+lmnp];
+                        dum -= s * u[d4aabboff[h2] + ijkp*quartet_aabb[h2]+lmnp];
                     }
-                    A_p[offset + ijk*trip_aab[h]+lmn] = dum;
+                    A[offset + ijk*trip_aab[h]+lmn] = dum;
                 }
             }
             offset += trip_aab[h] * trip_aab[h];
@@ -182,7 +179,7 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                     int l = bas_aab_sym[h][lmn][0];
                     int m = bas_aab_sym[h][lmn][1];
                     int n = bas_aab_sym[h][lmn][2];
-                    double dum = (na-1.0) * u_p[d3bbaoff[h] + ijk*trip_aab[h] + lmn];
+                    double dum = (na-1.0) * u[d3bbaoff[h] + ijk*trip_aab[h] + lmn];
                     for ( int p = 0; p < amo_; p++) {
                         int h2 = SymmetryPair(h,symmetry[p]);
                         if ( k == p ) continue;
@@ -192,9 +189,9 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                         int s = 1;
                         if ( p < k ) s = -s;
                         if ( p < n ) s = -s;
-                        dum -= s * u_p[d4aabboff[h2] + ijkp*quartet_aabb[h2]+lmnp];
+                        dum -= s * u[d4aabboff[h2] + ijkp*quartet_aabb[h2]+lmnp];
                     }
-                    A_p[offset + ijk*trip_aab[h]+lmn] = dum;
+                    A[offset + ijk*trip_aab[h]+lmn] = dum;
                 }
             }
             offset += trip_aab[h] * trip_aab[h];
@@ -214,14 +211,14 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                     int l = bas_aaa_sym[h][lmn][0];
                     int m = bas_aaa_sym[h][lmn][1];
                     int n = bas_aaa_sym[h][lmn][2];
-                    double dum = na * u_p[d3bbboff[h] + ijk*trip_aaa[h] + lmn];
+                    double dum = na * u[d3bbboff[h] + ijk*trip_aaa[h] + lmn];
                     for ( int p = 0; p < amo_; p++) {
                         int h2 = SymmetryPair(h,symmetry[p]);
                         int ijkp = ibas_aaab_sym[h2][i][j][k][p];
                         int lmnp = ibas_aaab_sym[h2][l][m][n][p];
-                        dum -= u_p[d4bbbaoff[h2] + ijkp*quartet_aaab[h2]+lmnp];
+                        dum -= u[d4bbbaoff[h2] + ijkp*quartet_aaab[h2]+lmnp];
                     }
-                    A_p[offset + ijk*trip_aaa[h]+lmn] = dum;
+                    A[offset + ijk*trip_aaa[h]+lmn] = dum;
                 }
             }
             offset += trip_aaa[h] * trip_aaa[h];
@@ -237,7 +234,7 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                     int l = bas_aab_sym[h][lmn][0];
                     int m = bas_aab_sym[h][lmn][1];
                     int n = bas_aab_sym[h][lmn][2];
-                    double dum = (nb - 2.0) * u_p[d3bbaoff[h] + ijk*trip_aab[h] + lmn];
+                    double dum = (nb - 2.0) * u[d3bbaoff[h] + ijk*trip_aab[h] + lmn];
                     for ( int p = 0; p < amo_; p++) {
                         if ( i == p) continue;
                         if ( j == p) continue;
@@ -251,9 +248,9 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                         if ( p < j ) s = -s;
                         if ( p < l ) s = -s;
                         if ( p < m ) s = -s;
-                        dum -= s * u_p[d4bbbaoff[h2] + ijkp*quartet_aaab[h2]+lmnp];
+                        dum -= s * u[d4bbbaoff[h2] + ijkp*quartet_aaab[h2]+lmnp];
                     }
-                    A_p[offset + ijk*trip_aab[h]+lmn] = dum;
+                    A[offset + ijk*trip_aab[h]+lmn] = dum;
                 }
             }
             offset += trip_aab[h] * trip_aab[h];
@@ -271,7 +268,7 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                     int l = bas_aaa_sym[h][lmn][0];
                     int m = bas_aaa_sym[h][lmn][1];
                     int n = bas_aaa_sym[h][lmn][2];
-                    double dum = (nb - 3.0) * u_p[d3bbboff[h] + ijk*trip_aaa[h] + lmn];
+                    double dum = (nb - 3.0) * u[d3bbboff[h] + ijk*trip_aaa[h] + lmn];
                     for ( int p = 0; p < amo_; p++) {
                         if ( i == p) continue;
                         if ( j == p) continue;
@@ -289,9 +286,9 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
                         if ( p < l ) s = -s;
                         if ( p < m ) s = -s;
                         if ( p < n ) s = -s;
-                        dum -= s * u_p[d4bbbboff[h2] + ijkp*quartet_aaaa[h2]+lmnp];
+                        dum -= s * u[d4bbbboff[h2] + ijkp*quartet_aaaa[h2]+lmnp];
                     }
-                    A_p[offset + ijk*trip_aaa[h]+lmn] = dum;
+                    A[offset + ijk*trip_aaa[h]+lmn] = dum;
                 }
             }
             offset += trip_aaa[h] * trip_aaa[h];
@@ -301,10 +298,7 @@ void v2RDMSolver::D4_constraints_Au(SharedVector A,SharedVector u){
 }
 
 // D4 portion of A^T.y 
-void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
-
-    double * A_p = A->pointer();
-    double * u_p = u->pointer();
+void v2RDMSolver::D4_constraints_ATu(double* A,double* u){
 
     int na = nalpha_ - nrstc_ - nfrzc_;
     int nb = nbeta_ - nrstc_ - nfrzc_;
@@ -320,8 +314,8 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                     int l = bas_aaa_sym[h][lmn][0];
                     int m = bas_aaa_sym[h][lmn][1];
                     int n = bas_aaa_sym[h][lmn][2];
-                    double dum = u_p[offset + ijk*trip_aaa[h]+lmn];
-                    A_p[d3aaaoff[h] + ijk*trip_aaa[h] + lmn] += (na - 3.0) * dum;
+                    double dum = u[offset + ijk*trip_aaa[h]+lmn];
+                    A[d3aaaoff[h] + ijk*trip_aaa[h] + lmn] += (na - 3.0) * dum;
                     for ( int p = 0; p < amo_; p++) {
                         if ( i == p) continue;
                         if ( j == p) continue;
@@ -339,7 +333,7 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                         if ( p < l ) s = -s;
                         if ( p < m ) s = -s;
                         if ( p < n ) s = -s;
-                        A_p[d4aaaaoff[h2] + ijkp*quartet_aaaa[h2]+lmnp] -= s * dum;
+                        A[d4aaaaoff[h2] + ijkp*quartet_aaaa[h2]+lmnp] -= s * dum;
                     }
                 }
             }
@@ -359,15 +353,15 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                     int l = bas_aaa_sym[h][lmn][0];
                     int m = bas_aaa_sym[h][lmn][1];
                     int n = bas_aaa_sym[h][lmn][2];
-                    double dum = u_p[offset + ijk*trip_aaa[h]+lmn];
+                    double dum = u[offset + ijk*trip_aaa[h]+lmn];
 
-                    A_p[d3aaaoff[h] + ijk*trip_aaa[h] + lmn] += nb * dum;
+                    A[d3aaaoff[h] + ijk*trip_aaa[h] + lmn] += nb * dum;
 
                     for ( int p = 0; p < amo_; p++) {
                         int h2 = SymmetryPair(h,symmetry[p]);
                         int ijkp = ibas_aaab_sym[h2][i][j][k][p];
                         int lmnp = ibas_aaab_sym[h2][l][m][n][p];
-                        A_p[d4aaaboff[h2] + ijkp*quartet_aaab[h2]+lmnp] -= dum;
+                        A[d4aaaboff[h2] + ijkp*quartet_aaab[h2]+lmnp] -= dum;
                     }
                 }
             }
@@ -383,8 +377,8 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                     int l = bas_aab_sym[h][lmn][0];
                     int m = bas_aab_sym[h][lmn][1];
                     int n = bas_aab_sym[h][lmn][2];
-                    double dum = u_p[offset + ijk*trip_aab[h]+lmn];
-                    A_p[d3aaboff[h] + ijk*trip_aab[h] + lmn] += (na - 2.0) * dum;
+                    double dum = u[offset + ijk*trip_aab[h]+lmn];
+                    A[d3aaboff[h] + ijk*trip_aab[h] + lmn] += (na - 2.0) * dum;
                     for ( int p = 0; p < amo_; p++) {
                         if ( i == p) continue;
                         if ( j == p) continue;
@@ -398,7 +392,7 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                         if ( p < j ) s = -s;
                         if ( p < l ) s = -s;
                         if ( p < m ) s = -s;
-                        A_p[d4aaaboff[h2] + ijkp*quartet_aaab[h2]+lmnp] -= s * dum;
+                        A[d4aaaboff[h2] + ijkp*quartet_aaab[h2]+lmnp] -= s * dum;
                     }
                 }
             }
@@ -418,8 +412,8 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                     int l = bas_aab_sym[h][lmn][0];
                     int m = bas_aab_sym[h][lmn][1];
                     int n = bas_aab_sym[h][lmn][2];
-                    double dum = u_p[offset + ijk*trip_aab[h]+lmn];
-                    A_p[d3aaboff[h] + ijk*trip_aab[h] + lmn] += (nb - 1.0) * dum;
+                    double dum = u[offset + ijk*trip_aab[h]+lmn];
+                    A[d3aaboff[h] + ijk*trip_aab[h] + lmn] += (nb - 1.0) * dum;
                     for ( int p = 0; p < amo_; p++) {
                         if ( k == p ) continue;
                         if ( n == p ) continue;
@@ -429,7 +423,7 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                         int s = 1;
                         if ( p < k ) s = -s;
                         if ( p < n ) s = -s;
-                        A_p[d4aabboff[h2] + ijkp*quartet_aabb[h2]+lmnp] -= s * dum;
+                        A[d4aabboff[h2] + ijkp*quartet_aabb[h2]+lmnp] -= s * dum;
                     }
                 }
             }
@@ -445,8 +439,8 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                     int l = bas_aab_sym[h][lmn][0];
                     int m = bas_aab_sym[h][lmn][1];
                     int n = bas_aab_sym[h][lmn][2];
-                    double dum = u_p[offset + ijk*trip_aab[h]+lmn];
-                    A_p[d3bbaoff[h] + ijk*trip_aab[h] + lmn] += (na - 1.0) * dum;
+                    double dum = u[offset + ijk*trip_aab[h]+lmn];
+                    A[d3bbaoff[h] + ijk*trip_aab[h] + lmn] += (na - 1.0) * dum;
                     for ( int p = 0; p < amo_; p++) {
                         if ( k == p ) continue;
                         if ( n == p ) continue;
@@ -456,7 +450,7 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                         int s = 1;
                         if ( p < k ) s = -s;
                         if ( p < n ) s = -s;
-                        A_p[d4aabboff[h2] + ijkp*quartet_aabb[h2]+lmnp] -= s * dum;
+                        A[d4aabboff[h2] + ijkp*quartet_aabb[h2]+lmnp] -= s * dum;
                     }
                 }
             }
@@ -476,15 +470,15 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                     int l = bas_aaa_sym[h][lmn][0];
                     int m = bas_aaa_sym[h][lmn][1];
                     int n = bas_aaa_sym[h][lmn][2];
-                    double dum = u_p[offset + ijk*trip_aaa[h]+lmn];
+                    double dum = u[offset + ijk*trip_aaa[h]+lmn];
 
-                    A_p[d3bbboff[h] + ijk*trip_aaa[h] + lmn] += na * dum;
+                    A[d3bbboff[h] + ijk*trip_aaa[h] + lmn] += na * dum;
 
                     for ( int p = 0; p < amo_; p++) {
                         int h2 = SymmetryPair(h,symmetry[p]);
                         int ijkp = ibas_aaab_sym[h2][i][j][k][p];
                         int lmnp = ibas_aaab_sym[h2][l][m][n][p];
-                        A_p[d4bbbaoff[h2] + ijkp*quartet_aaab[h2]+lmnp] -= dum;
+                        A[d4bbbaoff[h2] + ijkp*quartet_aaab[h2]+lmnp] -= dum;
                     }
                 }
             }
@@ -500,8 +494,8 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                     int l = bas_aab_sym[h][lmn][0];
                     int m = bas_aab_sym[h][lmn][1];
                     int n = bas_aab_sym[h][lmn][2];
-                    double dum = u_p[offset + ijk*trip_aab[h]+lmn];
-                    A_p[d3bbaoff[h] + ijk*trip_aab[h] + lmn] += (nb - 2.0) * dum;
+                    double dum = u[offset + ijk*trip_aab[h]+lmn];
+                    A[d3bbaoff[h] + ijk*trip_aab[h] + lmn] += (nb - 2.0) * dum;
                     for ( int p = 0; p < amo_; p++) {
                         if ( i == p) continue;
                         if ( j == p) continue;
@@ -515,7 +509,7 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                         if ( p < j ) s = -s;
                         if ( p < l ) s = -s;
                         if ( p < m ) s = -s;
-                        A_p[d4bbbaoff[h2] + ijkp*quartet_aaab[h2]+lmnp] -= s * dum;
+                        A[d4bbbaoff[h2] + ijkp*quartet_aaab[h2]+lmnp] -= s * dum;
                     }
                 }
             }
@@ -535,8 +529,8 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                     int l = bas_aaa_sym[h][lmn][0];
                     int m = bas_aaa_sym[h][lmn][1];
                     int n = bas_aaa_sym[h][lmn][2];
-                    double dum = u_p[offset + ijk*trip_aaa[h]+lmn];
-                    A_p[d3bbboff[h] + ijk*trip_aaa[h] + lmn] += (nb - 3.0) * dum;
+                    double dum = u[offset + ijk*trip_aaa[h]+lmn];
+                    A[d3bbboff[h] + ijk*trip_aaa[h] + lmn] += (nb - 3.0) * dum;
                     for ( int p = 0; p < amo_; p++) {
                         if ( i == p) continue;
                         if ( j == p) continue;
@@ -554,7 +548,7 @@ void v2RDMSolver::D4_constraints_ATu(SharedVector A,SharedVector u){
                         if ( p < l ) s = -s;
                         if ( p < m ) s = -s;
                         if ( p < n ) s = -s;
-                        A_p[d4bbbboff[h2] + ijkp*quartet_aaaa[h2]+lmnp] -= s * dum;
+                        A[d4bbbboff[h2] + ijkp*quartet_aaaa[h2]+lmnp] -= s * dum;
                     }
                 }
             }

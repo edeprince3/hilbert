@@ -59,8 +59,11 @@
 #include <misc/threeindexintegrals.h>
 #include <misc/omp.h>
 
-#include <libsdp/bpsdp_solver.h>
-#include <libsdp/rrsdp_solver.h>
+#include<bpsdp_solver.h>
+#include<rrsdp_solver.h>
+
+//#include <libsdp/bpsdp_solver.h>
+//#include <libsdp/rrsdp_solver.h>
 
 using namespace psi;
 using namespace fnocc;
@@ -102,7 +105,8 @@ void NonsymmetricEigenvalue(long int N, double * A, double * VL, double * VR, do
 
 namespace hilbert{
 
-static void evaluate_Au(SharedVector Au, SharedVector u, void * data) {
+//static void evaluate_Au(SharedVector Au, SharedVector u, void * data) 
+static void evaluate_Au(double * Au, double * u, void * data) {
 
     // reinterpret void * as an instance of v2RDMSolver
     v2RDMSolver* v2rdm = reinterpret_cast<v2RDMSolver*>(data);
@@ -110,11 +114,25 @@ static void evaluate_Au(SharedVector Au, SharedVector u, void * data) {
 
 }
 
-static void evaluate_ATu(SharedVector ATu, SharedVector u, void * data) {
+//static void evaluate_ATu(SharedVector ATu, SharedVector u, void * data) 
+static void evaluate_ATu(double * ATu, double * u, void * data) {
 
     // reinterpret void * as an instance of v2RDMSolver
     v2RDMSolver* v2rdm = reinterpret_cast<v2RDMSolver*>(data);
     v2rdm->bpsdp_ATu(ATu,u);
+
+}
+
+static void bpsdp_monitor(int oiter, int iiter, double energy_primal, double energy_dual, double mu, double primal_error, double dual_error, void * data) {
+
+    outfile->Printf("      %5i %5i %11.6lf %11.6lf %11.6le %7.3lf %10.5le %10.5le\n",
+        oiter,iiter,energy_primal,energy_dual,fabs(energy_primal-energy_dual),mu,primal_error,dual_error);
+
+}
+static void rrsdp_monitor(int oiter, int iiter, double lagrangian, double objective, double mu, double error, double zero, void * data) {
+
+    outfile->Printf("    %12i %12i %12.6lf %12.6lf %12.2le %12.3le\n",
+                oiter,iiter,lagrangian,objective,mu,error);
 
 }
 
@@ -312,18 +330,30 @@ void  v2RDMSolver::common_init(){
     same_a_b_dens_ = false;
 
     // sdp solver
+
     if ( options_.get_str("SDP_SOLVER") == "BPSDP" ) {
 
-        sdp_ = (std::shared_ptr<SDPSolver>)(new BPSDPSolver(n_primal_,n_dual_,options_));
+        libsdp::SDPOptions sdp_options;
+        sdp_options.sdp_objective_convergence = options_.get_double("E_CONVERGENCE");
+        sdp_options.sdp_error_convergence     = options_.get_double("R_CONVERGENCE");
+        sdp_options.cg_convergence            = options_.get_double("CG_CONVERGENCE");
+        sdp_options.cg_maxiter                = options_.get_int("CG_MAXITER");
+        sdp_options.maxiter                   = options_.get_int("MAXITER");
+
+        sdp_ = (std::shared_ptr<libsdp::SDPSolver>)(new libsdp::BPSDPSolver(n_primal_,n_dual_,sdp_options));
 
     }else if ( options_.get_str("SDP_SOLVER") == "RRSDP" ) {
 
-        sdp_ = (std::shared_ptr<SDPSolver>)(new RRSDPSolver(n_primal_,n_dual_,options_));
+        libsdp::SDPOptions sdp_options;
+        sdp_options.sdp_objective_convergence = options_.get_double("E_CONVERGENCE");
+        sdp_options.sdp_error_convergence     = options_.get_double("R_CONVERGENCE");
+        sdp_options.maxiter                   = options_.get_int("MAXITER");
+
+        sdp_ = (std::shared_ptr<libsdp::SDPSolver>)(new libsdp::RRSDPSolver(n_primal_,n_dual_,sdp_options));
 
     }else {
 
         throw PsiException("unknown SDP_SOLVER",__FILE__,__LINE__);
-
     }
 
 }
@@ -1190,6 +1220,7 @@ int v2RDMSolver::TotalSym(int i,int j,int k, int l) {
 // compute the energy!
 double v2RDMSolver::compute_energy() {
 
+
     double start_total_time = omp_get_wtime();
 
     // print guess orbitals in molden format
@@ -1244,11 +1275,22 @@ double v2RDMSolver::compute_energy() {
         local_maxiter = options_.get_int("MU_UPDATE_FREQUENCY");
     }
 
+
+    // need to define progress monitor function
+    libsdp::SDPProgressMonitorFunction sdp_monitor;
+    if ( options_.get_str("SDP_SOLVER") == "BPSDP" ) {
+        sdp_monitor = bpsdp_monitor;
+    }else if ( options_.get_str("SDP_SOLVER") == "RRSDP" ) {
+        sdp_monitor = rrsdp_monitor;
+    }
+
     // for GPC, start with partially solved ensemble problem first, then modify penalty update protocol
     if ( constrain_gpc_ ) {
         constrain_gpc_ = false;
         BuildConstraints();
-        sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
+
+        print_header();
+        sdp_->solve(x->pointer(), b->pointer(), c->pointer(), dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, sdp_monitor, (void*)this);
         constrain_gpc_ = true;
         BuildConstraints();
 
@@ -1269,7 +1311,8 @@ double v2RDMSolver::compute_energy() {
             }
         }
 
-        sdp_->solve(x, b, c, dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, (void*)this);
+        print_header();
+        sdp_->solve(x->pointer(), b->pointer(), c->pointer(), dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, sdp_monitor, (void*)this);
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") && !is_hubbard_ ) {
     
@@ -1463,7 +1506,7 @@ double v2RDMSolver::compute_energy() {
             }
         }
         offset = 0;
-        bpsdp_Au(Ax,x);
+        bpsdp_Au(Ax->pointer(),x->pointer());
         print_gpc_error_ = false;
     }
 
@@ -1478,8 +1521,11 @@ double v2RDMSolver::compute_energy() {
     outfile->Printf("\n");
     outfile->Printf("  ==> Wall time <==\n");
     outfile->Printf("\n");
+/*
+// TODO: should libsdp give me timings?
     outfile->Printf("      Microiterations:            %12.2lf s\n",sdp_->iiter_time());
     outfile->Printf("      Macroiterations:            %12.2lf s\n",sdp_->oiter_time());
+*/
     outfile->Printf("      Orbital optimization:       %12.2lf s\n",orbopt_time_);
     outfile->Printf("      Total:                      %12.2lf s\n",end_total_time - start_total_time);
     outfile->Printf("\n");
@@ -1816,18 +1862,18 @@ void v2RDMSolver::Guess(){
     }
 
     if ( constrain_q2_ ) {
-        Q2_constraints_guess(x);
+        Q2_constraints_guess(x_p);
     }
 
     if ( constrain_g2_ ) {
-        G2_constraints_guess(x);
+        G2_constraints_guess(x_p);
     }
 
     if ( constrain_t1_ ) {
-        T1_constraints_guess(x);
+        T1_constraints_guess(x_p);
     }
     if ( constrain_t2_ ) {
-        T2_constraints_guess(x);
+        T2_constraints_guess(x_p);
     }
 
 }
@@ -2852,10 +2898,10 @@ void v2RDMSolver::BuildConstraints(){
 }
 
 ///Build A dot u where u =[z,c]
-void v2RDMSolver::bpsdp_Au(SharedVector A, SharedVector u){
+void v2RDMSolver::bpsdp_Au(double* A, double* u){
 
     //A->zero();
-    memset((void*)A->pointer(),'\0',n_dual_*sizeof(double));
+    memset((void*)A,'\0',n_dual_*sizeof(double));
 
     offset = 0;
     D2_constraints_Au(A,u);
@@ -2898,10 +2944,10 @@ void v2RDMSolver::bpsdp_Au(SharedVector A, SharedVector u){
 } // end Au
 
 ///Build AT dot u where u =[z,c]
-void v2RDMSolver::bpsdp_ATu(SharedVector A, SharedVector u){
+//void v2RDMSolver::bpsdp_ATu(SharedVector A, SharedVector u)
+void v2RDMSolver::bpsdp_ATu(double * A, double * u){
 
-    //A->zero();
-    memset((void*)A->pointer(),'\0',n_primal_*sizeof(double));
+    memset((void*)A,'\0',n_primal_*sizeof(double));
 
     offset = 0;
     D2_constraints_ATu(A,u);
@@ -3949,6 +3995,36 @@ void v2RDMSolver::set_gpc_maps(){
         throw PsiException("GPCs may not yet be applied to the 2RDM",__FILE__,__LINE__);
     }
     
+
+}
+
+void v2RDMSolver::print_header() {
+
+    outfile->Printf("\n");
+    outfile->Printf("    initial primal energy: %20.12lf\n",C_DDOT(n_primal_,c->pointer(),1,x->pointer(),1));
+    outfile->Printf("\n");
+
+    if ( options_.get_str("SDP_SOLVER") == "BPSDP" ) {
+
+        outfile->Printf("      oiter");
+        outfile->Printf(" iiter");
+        outfile->Printf("        E(p)");
+        outfile->Printf("        E(d)");
+        outfile->Printf("       E(gap)");
+        outfile->Printf("      mu");
+        outfile->Printf("      eps(p)");
+        outfile->Printf("      eps(d)\n");
+
+    }else if ( options_.get_str("SDP_SOLVER") == "RRSDP" ) {
+
+        outfile->Printf("           oiter");
+        outfile->Printf("        iiter");
+        outfile->Printf("            L");
+        outfile->Printf("            E");
+        outfile->Printf("           mu");
+        outfile->Printf("     ||Ax-b||\n");
+
+    }
 
 }
 

@@ -42,10 +42,7 @@ using namespace psi;
 namespace hilbert{
 
 // G2 portion of A.x (with symmetry)
-void v2RDM_DOCISolver::G2_constraints_Au(SharedVector A,SharedVector u){
-
-    double* A_p = A->pointer();
-    double* u_p = u->pointer();
+void v2RDM_DOCISolver::G2_constraints_Au(double* A,double* u){
 
     int aux = 0;
     // Eq (35) ... note AED symmetried
@@ -55,31 +52,31 @@ void v2RDM_DOCISolver::G2_constraints_Au(SharedVector A,SharedVector u){
 
             double dum;
 
-            dum    = -u_p[g2s2off_ + aux + 0];     // - G2s2(ij,ij)
-            dum   +=  u_p[d1off_ + i];             // + D1(i)
-            dum   -=  0.5 * u_p[d2s2off_ + i*amo_+ j];   // - D2s2(ij,ij)
-            dum   -=  0.5 * u_p[d2s2off_ + j*amo_+ i];   // - D2s2(ij,ij)
+            dum    = -u[g2s2off_ + aux + 0];     // - G2s2(ij,ij)
+            dum   +=  u[d1off_ + i];             // + D1(i)
+            dum   -=  0.5 * u[d2s2off_ + i*amo_+ j];   // - D2s2(ij,ij)
+            dum   -=  0.5 * u[d2s2off_ + j*amo_+ i];   // - D2s2(ij,ij)
 
-            A_p[offset + 0] = dum;
+            A[offset + 0] = dum;
 
-            dum    = -u_p[g2s2off_ + aux + 1];     // - G2s2(ij,ij)
-            dum   +=  0.5 * u_p[d2s0off_ + i*amo_+ j];   // + D2s0(ij,ij)
-            dum   +=  0.5 * u_p[d2s0off_ + j*amo_+ i];   // + D2s0(ij,ij)
+            dum    = -u[g2s2off_ + aux + 1];     // - G2s2(ij,ij)
+            dum   +=  0.5 * u[d2s0off_ + i*amo_+ j];   // + D2s0(ij,ij)
+            dum   +=  0.5 * u[d2s0off_ + j*amo_+ i];   // + D2s0(ij,ij)
 
-            A_p[offset + 1] = dum;
+            A[offset + 1] = dum;
 
-            dum    = -u_p[g2s2off_ + aux + 2];     // - G2s2(ij,ij)
-            dum   +=  0.5 * u_p[d2s0off_ + i*amo_+ j];   // + D2s0(ij,ij)
-            dum   +=  0.5 * u_p[d2s0off_ + j*amo_+ i];   // + D2s0(ij,ij)
+            dum    = -u[g2s2off_ + aux + 2];     // - G2s2(ij,ij)
+            dum   +=  0.5 * u[d2s0off_ + i*amo_+ j];   // + D2s0(ij,ij)
+            dum   +=  0.5 * u[d2s0off_ + j*amo_+ i];   // + D2s0(ij,ij)
 
-            A_p[offset + 2] = dum;
+            A[offset + 2] = dum;
 
-            dum    = -u_p[g2s2off_ + aux + 3];     // - G2s2(ij,ij)
-            dum   +=  u_p[d1off_ + j];             // + D1(i)
-            dum   -=  0.5 * u_p[d2s2off_ + i*amo_+ j];   // - D2s2(ij,ij)
-            dum   -=  0.5 * u_p[d2s2off_ + j*amo_+ i];   // - D2s2(ij,ij)
+            dum    = -u[g2s2off_ + aux + 3];     // - G2s2(ij,ij)
+            dum   +=  u[d1off_ + j];             // + D1(i)
+            dum   -=  0.5 * u[d2s2off_ + i*amo_+ j];   // - D2s2(ij,ij)
+            dum   -=  0.5 * u[d2s2off_ + j*amo_+ i];   // - D2s2(ij,ij)
 
-            A_p[offset + 3] = dum;
+            A[offset + 3] = dum;
 
             offset += 2*2;
             aux += 2*2;
@@ -89,15 +86,15 @@ void v2RDM_DOCISolver::G2_constraints_Au(SharedVector A,SharedVector u){
     // G2s0 (note AED symmetrized):
     for (int i = 0; i < amo_; i++) {
         for (int j = 0; j < amo_; j++) {
-            double dum = -u_p[g2s0off_ + i*amo_+j];
+            double dum = -u[g2s0off_ + i*amo_+j];
             if ( i != j ) {
-                dum += 0.5 * u_p[d2s2off_ + i*amo_+j];
-                dum += 0.5 * u_p[d2s2off_ + j*amo_+i];
+                dum += 0.5 * u[d2s2off_ + i*amo_+j];
+                dum += 0.5 * u[d2s2off_ + j*amo_+i];
             }else {
-                dum += u_p[d1off_ + i];
+                dum += u[d1off_ + i];
             }
 
-            A_p[offset + i*amo_+j] = dum;
+            A[offset + i*amo_+j] = dum;
 
         }
     }
@@ -106,10 +103,7 @@ void v2RDM_DOCISolver::G2_constraints_Au(SharedVector A,SharedVector u){
 }
 
 // G2 portion of A^T.y (with symmetry)
-void v2RDM_DOCISolver::G2_constraints_ATu(SharedVector A,SharedVector u){
-
-    double* A_p = A->pointer();
-    double* u_p = u->pointer();
+void v2RDM_DOCISolver::G2_constraints_ATu(double* A,double* u){
 
     // Eq (35) ... note AED symmetrized
     int aux = 0;
@@ -117,30 +111,30 @@ void v2RDM_DOCISolver::G2_constraints_ATu(SharedVector A,SharedVector u){
         for (int j = i + 1; j < amo_; j++) {
             //if ( i == j ) continue;
 
-            double dum = u_p[offset + 0];
+            double dum = u[offset + 0];
 
-            A_p[g2s2off_ + aux + 0]   -= dum;
-            A_p[d1off_ + i]           += dum;
-            A_p[d2s2off_ + i*amo_+j]  -= 0.5 * dum;
-            A_p[d2s2off_ + j*amo_+i]  -= 0.5 * dum;
+            A[g2s2off_ + aux + 0]   -= dum;
+            A[d1off_ + i]           += dum;
+            A[d2s2off_ + i*amo_+j]  -= 0.5 * dum;
+            A[d2s2off_ + j*amo_+i]  -= 0.5 * dum;
 
-            dum = u_p[offset + 1];
+            dum = u[offset + 1];
 
-            A_p[g2s2off_ + aux + 1]   -= dum;
-            A_p[d2s0off_ + i*amo_+ j] += 0.5 * dum;
-            A_p[d2s0off_ + j*amo_+ i] += 0.5 * dum;
+            A[g2s2off_ + aux + 1]   -= dum;
+            A[d2s0off_ + i*amo_+ j] += 0.5 * dum;
+            A[d2s0off_ + j*amo_+ i] += 0.5 * dum;
 
-            dum = u_p[offset + 2];
+            dum = u[offset + 2];
 
-            A_p[g2s2off_ + aux + 2]   -= dum;
-            A_p[d2s0off_ + i*amo_+ j] += 0.5 * dum;
-            A_p[d2s0off_ + j*amo_+ i] += 0.5 * dum;
+            A[g2s2off_ + aux + 2]   -= dum;
+            A[d2s0off_ + i*amo_+ j] += 0.5 * dum;
+            A[d2s0off_ + j*amo_+ i] += 0.5 * dum;
 
-            dum = u_p[offset + 3];
-            A_p[g2s2off_ + aux + 3]   -= dum;
-            A_p[d1off_ + j]           += dum;
-            A_p[d2s2off_ + j*amo_+i]  -= 0.5 * dum;
-            A_p[d2s2off_ + i*amo_+j]  -= 0.5 * dum;
+            dum = u[offset + 3];
+            A[g2s2off_ + aux + 3]   -= dum;
+            A[d1off_ + j]           += dum;
+            A[d2s2off_ + j*amo_+i]  -= 0.5 * dum;
+            A[d2s2off_ + i*amo_+j]  -= 0.5 * dum;
 
             aux    += 2*2;
             offset += 2*2;
@@ -150,13 +144,13 @@ void v2RDM_DOCISolver::G2_constraints_ATu(SharedVector A,SharedVector u){
     // G2s0 ... note AED symmetrized:
     for (int i = 0; i < amo_; i++) {
         for (int j = 0; j < amo_; j++) {
-            double dum = u_p[offset + i*amo_+j];
-            A_p[g2s0off_ + i*amo_+j] -= dum;
+            double dum = u[offset + i*amo_+j];
+            A[g2s0off_ + i*amo_+j] -= dum;
             if ( i != j ) {
-                A_p[d2s2off_ + i*amo_+j] += 0.5 * dum;
-                A_p[d2s2off_ + j*amo_+i] += 0.5 * dum;
+                A[d2s2off_ + i*amo_+j] += 0.5 * dum;
+                A[d2s2off_ + j*amo_+i] += 0.5 * dum;
             }else {
-                A_p[d1off_ + i] += dum;
+                A[d1off_ + i] += dum;
             }
 
         }

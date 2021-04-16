@@ -42,10 +42,7 @@ using namespace psi;
 namespace hilbert{
 
 // T1 portion of A.x (with symmetry)
-void v2RDM_DOCISolver::T1_constraints_Au(SharedVector A,SharedVector u){
-
-    double* A_p = A->pointer();
-    double* u_p = u->pointer();
+void v2RDM_DOCISolver::T1_constraints_Au(double* A,double* u){
 
     // seniority 3, aaa
     int abc = 0;
@@ -53,19 +50,19 @@ void v2RDM_DOCISolver::T1_constraints_Au(SharedVector A,SharedVector u){
         for (int b = a + 1; b < amo_; b++) {
             for (int c = b + 1; c < amo_; c++) {
 
-                double dum = u_p[t1s3aaaoff_ + abc];        // T1(abc)
+                double dum = u[t1s3aaaoff_ + abc];        // T1(abc)
 
-                dum += u_p[d1off_ + a];                  // + D1(a)
-                dum += u_p[d1off_ + b];                  // + D1(b)
-                dum += u_p[d1off_ + c];                  // + D1(c)
-                dum -= 0.5 * u_p[d2s2off_ + a*amo_ + b]; // - 0.5 * D2s2(ab)
-                dum -= 0.5 * u_p[d2s2off_ + b*amo_ + a]; // - 0.5 * D2s2(ba)
-                dum -= 0.5 * u_p[d2s2off_ + b*amo_ + c]; // - 0.5 * D2s2(bc)
-                dum -= 0.5 * u_p[d2s2off_ + c*amo_ + b]; // - 0.5 * D2s2(cb)
-                dum -= 0.5 * u_p[d2s2off_ + a*amo_ + c]; // - 0.5 * D2s2(ac)
-                dum -= 0.5 * u_p[d2s2off_ + c*amo_ + a]; // - 0.5 * D2s2(ca)
+                dum += u[d1off_ + a];                  // + D1(a)
+                dum += u[d1off_ + b];                  // + D1(b)
+                dum += u[d1off_ + c];                  // + D1(c)
+                dum -= 0.5 * u[d2s2off_ + a*amo_ + b]; // - 0.5 * D2s2(ab)
+                dum -= 0.5 * u[d2s2off_ + b*amo_ + a]; // - 0.5 * D2s2(ba)
+                dum -= 0.5 * u[d2s2off_ + b*amo_ + c]; // - 0.5 * D2s2(bc)
+                dum -= 0.5 * u[d2s2off_ + c*amo_ + b]; // - 0.5 * D2s2(cb)
+                dum -= 0.5 * u[d2s2off_ + a*amo_ + c]; // - 0.5 * D2s2(ac)
+                dum -= 0.5 * u[d2s2off_ + c*amo_ + a]; // - 0.5 * D2s2(ca)
 
-                A_p[offset++] = dum;
+                A[offset++] = dum;
 
                 abc++;
 
@@ -79,29 +76,29 @@ void v2RDM_DOCISolver::T1_constraints_Au(SharedVector A,SharedVector u){
         for (int b = a + 1; b < amo_; b++) {
             for (int c = 0; c < amo_; c++) {
 
-                double dum = u_p[t1s3aaboff_ + abc];        // T1(abc)
+                double dum = u[t1s3aaboff_ + abc];        // T1(abc)
 
-                dum += u_p[d1off_ + a];                  // + D1(a)
-                dum += u_p[d1off_ + b];                  // + D1(b)
-                dum += u_p[d1off_ + c];                  // + D1(c)
-                dum -= 0.5 * u_p[d2s2off_ + a*amo_ + b]; // - 0.5 * D2s2(ab)
-                dum -= 0.5 * u_p[d2s2off_ + b*amo_ + a]; // - 0.5 * D2s2(ba)
+                dum += u[d1off_ + a];                  // + D1(a)
+                dum += u[d1off_ + b];                  // + D1(b)
+                dum += u[d1off_ + c];                  // + D1(c)
+                dum -= 0.5 * u[d2s2off_ + a*amo_ + b]; // - 0.5 * D2s2(ab)
+                dum -= 0.5 * u[d2s2off_ + b*amo_ + a]; // - 0.5 * D2s2(ba)
                 if ( b != c ) {
-                    dum -= 0.5 * u_p[d2s2off_ + b*amo_ + c]; // - 0.5 * D2s2(bc)
-                    dum -= 0.5 * u_p[d2s2off_ + c*amo_ + b]; // - 0.5 * D2s2(cb)
+                    dum -= 0.5 * u[d2s2off_ + b*amo_ + c]; // - 0.5 * D2s2(bc)
+                    dum -= 0.5 * u[d2s2off_ + c*amo_ + b]; // - 0.5 * D2s2(cb)
                 }else {
-                    dum -= 0.5 * u_p[d2s0off_ + b*amo_ + c]; // - 0.5 * D2s0(bc)
-                    dum -= 0.5 * u_p[d2s0off_ + c*amo_ + b]; // - 0.5 * D2s0(cb)
+                    dum -= 0.5 * u[d2s0off_ + b*amo_ + c]; // - 0.5 * D2s0(bc)
+                    dum -= 0.5 * u[d2s0off_ + c*amo_ + b]; // - 0.5 * D2s0(cb)
                 }
                 if ( a != c ) {
-                    dum -= 0.5 * u_p[d2s2off_ + a*amo_ + c]; // - 0.5 * D2s2(ac)
-                    dum -= 0.5 * u_p[d2s2off_ + c*amo_ + a]; // - 0.5 * D2s2(ca)
+                    dum -= 0.5 * u[d2s2off_ + a*amo_ + c]; // - 0.5 * D2s2(ac)
+                    dum -= 0.5 * u[d2s2off_ + c*amo_ + a]; // - 0.5 * D2s2(ca)
                 }else {
-                    dum -= 0.5 * u_p[d2s0off_ + a*amo_ + c]; // - 0.5 * D2s0(ac)
-                    dum -= 0.5 * u_p[d2s0off_ + c*amo_ + a]; // - 0.5 * D2s0(ca)
+                    dum -= 0.5 * u[d2s0off_ + a*amo_ + c]; // - 0.5 * D2s0(ac)
+                    dum -= 0.5 * u[d2s0off_ + c*amo_ + a]; // - 0.5 * D2s0(ca)
                 }
 
-                A_p[offset++] = dum;
+                A[offset++] = dum;
 
                 abc++;
 
@@ -125,20 +122,20 @@ void v2RDM_DOCISolver::T1_constraints_Au(SharedVector A,SharedVector u){
                 if ( a > b ) mya--;
                 if ( c > b ) myc--;
 
-                double dum = u_p[t1s1off_ + b*(amo_-1)*(amo_-1) + mya*(amo_-1) + myc]; // T1^b_ac
+                double dum = u[t1s1off_ + b*(amo_-1)*(amo_-1) + mya*(amo_-1) + myc]; // T1^b_ac
 
                 if ( a == c ) {
 
-                    dum += 2.0 * u_p[d1off_ + a];        // + 2 D1(a)
-                    dum +=       u_p[d1off_ + b];        // + D1(b)
-                    dum -= u_p[d2s2off_ + a*amo_ + b];   // - D2s2(ab)
-                    dum -= u_p[d2s2off_ + b*amo_ + a];   // - D2s2(ba)
+                    dum += 2.0 * u[d1off_ + a];        // + 2 D1(a)
+                    dum +=       u[d1off_ + b];        // + D1(b)
+                    dum -= u[d2s2off_ + a*amo_ + b];   // - D2s2(ab)
+                    dum -= u[d2s2off_ + b*amo_ + a];   // - D2s2(ba)
 
                 }
-                dum -= 0.5 * u_p[d2s0off_ + a*amo_ + c]; // - 0.5 * D2s0(ac)
-                dum -= 0.5 * u_p[d2s0off_ + c*amo_ + a]; // - 0.5 * D2s0(ca)
+                dum -= 0.5 * u[d2s0off_ + a*amo_ + c]; // - 0.5 * D2s0(ac)
+                dum -= 0.5 * u[d2s0off_ + c*amo_ + a]; // - 0.5 * D2s0(ca)
 
-                A_p[offset++] = dum;
+                A[offset++] = dum;
 
             }
         }
@@ -147,10 +144,7 @@ void v2RDM_DOCISolver::T1_constraints_Au(SharedVector A,SharedVector u){
 }
 
 // T1 portion of A^T.y (with symmetry)
-void v2RDM_DOCISolver::T1_constraints_ATu(SharedVector A,SharedVector u){
-
-    double* A_p = A->pointer();
-    double* u_p = u->pointer();
+void v2RDM_DOCISolver::T1_constraints_ATu(double* A,double* u){
 
     // seniority 3, aaa
     int abc = 0;
@@ -158,19 +152,19 @@ void v2RDM_DOCISolver::T1_constraints_ATu(SharedVector A,SharedVector u){
         for (int b = a + 1; b < amo_; b++) {
             for (int c = b + 1; c < amo_; c++) {
 
-                double dum = u_p[offset++];
+                double dum = u[offset++];
 
-                A_p[t1s3aaaoff_ + abc] += dum;              // T1(abc)
+                A[t1s3aaaoff_ + abc] += dum;              // T1(abc)
 
-                A_p[d1off_ + a] += dum;                  // + D1(a)
-                A_p[d1off_ + b] += dum;                  // + D1(b)
-                A_p[d1off_ + c] += dum;                  // + D1(c)
-                A_p[d2s2off_ + a*amo_ + b] -= 0.5 * dum; // - 0.5 * D2s2(ab)
-                A_p[d2s2off_ + b*amo_ + a] -= 0.5 * dum; // - 0.5 * D2s2(ba)
-                A_p[d2s2off_ + b*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s2(bc)
-                A_p[d2s2off_ + c*amo_ + b] -= 0.5 * dum; // - 0.5 * D2s2(cb)
-                A_p[d2s2off_ + a*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s2(ac)
-                A_p[d2s2off_ + c*amo_ + a] -= 0.5 * dum; // - 0.5 * D2s2(ca)
+                A[d1off_ + a] += dum;                  // + D1(a)
+                A[d1off_ + b] += dum;                  // + D1(b)
+                A[d1off_ + c] += dum;                  // + D1(c)
+                A[d2s2off_ + a*amo_ + b] -= 0.5 * dum; // - 0.5 * D2s2(ab)
+                A[d2s2off_ + b*amo_ + a] -= 0.5 * dum; // - 0.5 * D2s2(ba)
+                A[d2s2off_ + b*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s2(bc)
+                A[d2s2off_ + c*amo_ + b] -= 0.5 * dum; // - 0.5 * D2s2(cb)
+                A[d2s2off_ + a*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s2(ac)
+                A[d2s2off_ + c*amo_ + a] -= 0.5 * dum; // - 0.5 * D2s2(ca)
 
                 abc++;
 
@@ -184,28 +178,28 @@ void v2RDM_DOCISolver::T1_constraints_ATu(SharedVector A,SharedVector u){
         for (int b = a + 1; b < amo_; b++) {
             for (int c = 0; c < amo_; c++) {
 
-                double dum = u_p[offset++];
+                double dum = u[offset++];
 
-                A_p[t1s3aaboff_ + abc] += dum;        // T1(abc)
+                A[t1s3aaboff_ + abc] += dum;        // T1(abc)
 
-                A_p[d1off_ + a] += dum;                  // + D1(a)
-                A_p[d1off_ + b] += dum;                  // + D1(b)
-                A_p[d1off_ + c] += dum;                  // + D1(c)
-                A_p[d2s2off_ + a*amo_ + b] -= 0.5 * dum; // - 0.5 * D2s2(ab)
-                A_p[d2s2off_ + b*amo_ + a] -= 0.5 * dum; // - 0.5 * D2s2(ba)
+                A[d1off_ + a] += dum;                  // + D1(a)
+                A[d1off_ + b] += dum;                  // + D1(b)
+                A[d1off_ + c] += dum;                  // + D1(c)
+                A[d2s2off_ + a*amo_ + b] -= 0.5 * dum; // - 0.5 * D2s2(ab)
+                A[d2s2off_ + b*amo_ + a] -= 0.5 * dum; // - 0.5 * D2s2(ba)
                 if ( b != c ) {
-                    A_p[d2s2off_ + b*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s2(bc)
-                    A_p[d2s2off_ + c*amo_ + b] -= 0.5 * dum; // - 0.5 * D2s2(cb)
+                    A[d2s2off_ + b*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s2(bc)
+                    A[d2s2off_ + c*amo_ + b] -= 0.5 * dum; // - 0.5 * D2s2(cb)
                 }else {
-                    A_p[d2s0off_ + b*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s0(bc)
-                    A_p[d2s0off_ + c*amo_ + b] -= 0.5 * dum; // - 0.5 * D2s0(cb)
+                    A[d2s0off_ + b*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s0(bc)
+                    A[d2s0off_ + c*amo_ + b] -= 0.5 * dum; // - 0.5 * D2s0(cb)
                 }
                 if ( a != c ) {
-                    A_p[d2s2off_ + a*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s2(ac)
-                    A_p[d2s2off_ + c*amo_ + a] -= 0.5 * dum; // - 0.5 * D2s2(ca)
+                    A[d2s2off_ + a*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s2(ac)
+                    A[d2s2off_ + c*amo_ + a] -= 0.5 * dum; // - 0.5 * D2s2(ca)
                 }else {
-                    A_p[d2s0off_ + a*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s0(ac)
-                    A_p[d2s0off_ + c*amo_ + a] -= 0.5 * dum; // - 0.5 * D2s0(ca)
+                    A[d2s0off_ + a*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s0(ac)
+                    A[d2s0off_ + c*amo_ + a] -= 0.5 * dum; // - 0.5 * D2s0(ca)
                 }
 
                 abc++;
@@ -229,20 +223,20 @@ void v2RDM_DOCISolver::T1_constraints_ATu(SharedVector A,SharedVector u){
                 if ( a > b ) mya--;
                 if ( c > b ) myc--;
 
-                double dum = u_p[offset++];
+                double dum = u[offset++];
 
-                A_p[t1s1off_ + b*(amo_-1)*(amo_-1) + mya*(amo_-1) + myc] += dum; // T1^b_ac
+                A[t1s1off_ + b*(amo_-1)*(amo_-1) + mya*(amo_-1) + myc] += dum; // T1^b_ac
 
                 if ( a == c ) {
                     
-                    A_p[d1off_ + a] += 2.0 * dum;        // + 2 D1(a)
-                    A_p[d1off_ + b] +=       dum;        // + D1(b)
-                    A_p[d2s2off_ + a*amo_ + b] -= dum;   // - D2s2(ab)
-                    A_p[d2s2off_ + b*amo_ + a] -= dum;   // - D2s2(ba)
+                    A[d1off_ + a] += 2.0 * dum;        // + 2 D1(a)
+                    A[d1off_ + b] +=       dum;        // + D1(b)
+                    A[d2s2off_ + a*amo_ + b] -= dum;   // - D2s2(ab)
+                    A[d2s2off_ + b*amo_ + a] -= dum;   // - D2s2(ba)
                 
                 }
-                A_p[d2s0off_ + a*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s0(ac)
-                A_p[d2s0off_ + c*amo_ + a] -= 0.5 * dum; // - 0.5 * D2s0(ca)
+                A[d2s0off_ + a*amo_ + c] -= 0.5 * dum; // - 0.5 * D2s0(ac)
+                A[d2s0off_ + c*amo_ + a] -= 0.5 * dum; // - 0.5 * D2s0(ca)
 
             }
         }

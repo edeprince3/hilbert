@@ -35,73 +35,69 @@ namespace hilbert{
 
 
 // portion of A^T.y corresponding to generalized paulit constraints
-void v2RDMSolver::Generalized_Pauli_3_6_constraints_ATu(SharedVector A,SharedVector u, int state){
+void v2RDMSolver::Generalized_Pauli_3_6_constraints_ATu(double* A,double* u, int state){
 
-    double* A_p = A->pointer();
-    double* u_p = u->pointer();
     double ** orb_p = NatOrbs_[state]->pointer();
 
     // l1 + l6 = 1
-    double dum1 = u_p[ offset++ ];
+    double dum1 = u[ offset++ ];
 
     // l2 + l5 = 1
-    double dum2 = u_p[ offset++ ];
+    double dum2 = u[ offset++ ];
 
     // l3 + l4 = 1
-    double dum3 = u_p[ offset++ ];
+    double dum3 = u[ offset++ ];
 
     // l4 - l5 - l6 <= 0
-    double dum4 = u_p[ offset++ ];
+    double dum4 = u[ offset++ ];
 
 
-    Generalized_Pauli_ATu_term(gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state],dum1 / gpc_rdm_nrm_[state],orb_p,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],1);
-    Generalized_Pauli_ATu_term(gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state],dum2 / gpc_rdm_nrm_[state],orb_p,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],2);
-    Generalized_Pauli_ATu_term(gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state],dum3 / gpc_rdm_nrm_[state],orb_p,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],3);
+    Generalized_Pauli_ATu_term(gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state],dum1 / gpc_rdm_nrm_[state],orb_p,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],1);
+    Generalized_Pauli_ATu_term(gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state],dum2 / gpc_rdm_nrm_[state],orb_p,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],2);
+    Generalized_Pauli_ATu_term(gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state],dum3 / gpc_rdm_nrm_[state],orb_p,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],3);
 
-    Generalized_Pauli_ATu_term(gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state],(dum3+dum4) / gpc_rdm_nrm_[state],orb_p,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],4);
-    Generalized_Pauli_ATu_term(gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state],(dum2-dum4) / gpc_rdm_nrm_[state],orb_p,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],5);
-    Generalized_Pauli_ATu_term(gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state],(dum1-dum4) / gpc_rdm_nrm_[state],orb_p,A_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],6);
+    Generalized_Pauli_ATu_term(gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state],(dum3+dum4) / gpc_rdm_nrm_[state],orb_p,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],4);
+    Generalized_Pauli_ATu_term(gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state],(dum2-dum4) / gpc_rdm_nrm_[state],orb_p,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],5);
+    Generalized_Pauli_ATu_term(gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state],(dum1-dum4) / gpc_rdm_nrm_[state],orb_p,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],6);
 
-    A_p[ gpcoff[state][0] ]  = 0.0;
-    A_p[ gpcoff[state][1] ]  = 0.0;
-    A_p[ gpcoff[state][2] ]  = 0.0;
-    A_p[ gpcoff[state][3] ] += dum4;
+    A[ gpcoff[state][0] ]  = 0.0;
+    A[ gpcoff[state][1] ]  = 0.0;
+    A[ gpcoff[state][2] ]  = 0.0;
+    A[ gpcoff[state][3] ] += dum4;
 
 }
 
 // portion of A.x corresponding to generalized paulit constraints
-void v2RDMSolver::Generalized_Pauli_3_6_constraints_Au(SharedVector A,SharedVector u, int state){
+void v2RDMSolver::Generalized_Pauli_3_6_constraints_Au(double* A,double* u, int state){
 
     int saveoff = offset;
 
-    double* A_p = A->pointer();
-    double* u_p = u->pointer();
     double ** orb_p = NatOrbs_[state]->pointer();
 
-    double l1 = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],1,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state]);
-    double l2 = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],2,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state]);
-    double l3 = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],3,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state]);
-    double l4 = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],4,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state]);
-    double l5 = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],5,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state]);
-    double l6 = Generalized_Pauli_Au_term(orb_p,u_p,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],6,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state]);
+    double l1 = Generalized_Pauli_Au_term(orb_p,u,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],1,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state]);
+    double l2 = Generalized_Pauli_Au_term(orb_p,u,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],2,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state]);
+    double l3 = Generalized_Pauli_Au_term(orb_p,u,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],3,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state]);
+    double l4 = Generalized_Pauli_Au_term(orb_p,u,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],4,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state]);
+    double l5 = Generalized_Pauli_Au_term(orb_p,u,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],5,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state]);
+    double l6 = Generalized_Pauli_Au_term(orb_p,u,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],6,gpc_rdm_nrm_[state],gpc_rdm_sign_a_[state], gpc_rdm_sign_b_[state]);
 
     // l1 + l6 = 1
-    A_p[offset++] = l1 + l6;
+    A[offset++] = l1 + l6;
 
     // l2 + l5 = 1
-    A_p[offset++] = l2 + l5;
+    A[offset++] = l2 + l5;
 
     // l3 + l4 = 1
-    A_p[offset++] = l3 + l4;
+    A[offset++] = l3 + l4;
 
     // l4 - l5 - l6 <= 0
-    A_p[offset++] = u_p[ gpcoff[state][3] ] + l4 - l5 - l6;
+    A[offset++] = u[ gpcoff[state][3] ] + l4 - l5 - l6;
 
     if ( print_gpc_error_ ) {
         outfile->Printf("\n");        outfile->Printf("    ==> Generalized Pauli Constraint Errors <===\n");
         outfile->Printf("\n");
         for (int i = saveoff; i < saveoff+n_gpc_[state]; i++) {
-            outfile->Printf("    %5i %20.12lf %20.12lf %5s\n",i,A_p[i],b->pointer()[i],A_p[i] <= b->pointer()[i] ? "" : "XXX");
+            outfile->Printf("    %5i %20.12lf %20.12lf %5s\n",i,A[i],b->pointer()[i],A[i] <= b->pointer()[i] ? "" : "XXX");
         }
     }
 }

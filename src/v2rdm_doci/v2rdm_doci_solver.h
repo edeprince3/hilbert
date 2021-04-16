@@ -43,7 +43,7 @@
 
 #include <misc/hilbert_psifiles.h>
 
-#include <libsdp/sdp_solver.h>
+#include <sdp_solver.h>
 
 using namespace psi;
 
@@ -59,14 +59,14 @@ class v2RDM_DOCISolver: public Wavefunction{
     virtual bool same_a_b_dens() const { return same_a_b_dens_; }
 
     // public methods
-    void bpsdp_Au(SharedVector A, SharedVector u);
-    void bpsdp_ATu(SharedVector A, SharedVector u);
+    void bpsdp_Au(double* A, double* u);
+    void bpsdp_ATu(double* A, double* u);
     int n_primal(){return dimx_;}
 
   protected:
 
     /// the sdp solver
-    std::shared_ptr<SDPSolver> sdp_;
+    std::shared_ptr<libsdp::SDPSolver> sdp_;
 
     /// constrain T1 to be positive semidefinite?
     bool constrain_t1_;
@@ -219,19 +219,19 @@ class v2RDM_DOCISolver: public Wavefunction{
 
     void Guess();
 
-    void D2_constraints_Au(SharedVector A,SharedVector u);
-    void Q2_constraints_Au(SharedVector A,SharedVector u);
-    void G2_constraints_Au(SharedVector A,SharedVector u);
-    void D3_constraints_Au(SharedVector A,SharedVector u);
-    void T1_constraints_Au(SharedVector A,SharedVector u);
-    void T2_constraints_Au(SharedVector A,SharedVector u);
+    void D2_constraints_Au(double* A,double* u);
+    void Q2_constraints_Au(double* A,double* u);
+    void G2_constraints_Au(double* A,double* u);
+    void D3_constraints_Au(double* A,double* u);
+    void T1_constraints_Au(double* A,double* u);
+    void T2_constraints_Au(double* A,double* u);
 
-    void D2_constraints_ATu(SharedVector A,SharedVector u);
-    void Q2_constraints_ATu(SharedVector A,SharedVector u);
-    void G2_constraints_ATu(SharedVector A,SharedVector u);
-    void D3_constraints_ATu(SharedVector A,SharedVector u);
-    void T1_constraints_ATu(SharedVector A,SharedVector u);
-    void T2_constraints_ATu(SharedVector A,SharedVector u);
+    void D2_constraints_ATu(double* A,double* u);
+    void Q2_constraints_ATu(double* A,double* u);
+    void G2_constraints_ATu(double* A,double* u);
+    void D3_constraints_ATu(double* A,double* u);
+    void T1_constraints_ATu(double* A,double* u);
+    void T2_constraints_ATu(double* A,double* u);
 
     /// SCF energy
     double escf_;
@@ -329,6 +329,10 @@ class v2RDM_DOCISolver: public Wavefunction{
 
     /// read orbitals from a checkpoint file
     void ReadOrbitalsFromCheckpointFile();
+
+    /// print header for sdp iterations
+    void print_header();
+
 };
 
 }

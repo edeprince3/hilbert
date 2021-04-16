@@ -46,7 +46,8 @@
 #include <focas/orbital_optimizer.h>
 #include <misc/hilbert_psifiles.h>
 
-#include <libsdp/sdp_solver.h>
+//#include <libsdp/sdp_solver.h>
+#include<sdp_solver.h>
 
 namespace hilbert{ 
 
@@ -86,10 +87,12 @@ class v2RDMSolver: public Wavefunction{
     double compute_energy();
 
     /// Au function for interfacing with bpsdp solver
-    void bpsdp_Au(SharedVector A, SharedVector u);
+    //void bpsdp_Au(SharedVector A, SharedVector u);
+    void bpsdp_Au(double * tmp_A, double * tmp_u);
 
     /// ATu function for interfacing with bpsdp solver
-    void bpsdp_ATu(SharedVector A, SharedVector u);
+    //void bpsdp_ATu(SharedVector A, SharedVector u);
+    void bpsdp_ATu(double * tmp_A, double * tmp_u);
 
     /// return dimension of the primal solution vector
     int n_primal(){return n_primal_;}
@@ -157,7 +160,7 @@ class v2RDMSolver: public Wavefunction{
 
 
     /// the sdp solver
-    std::shared_ptr<SDPSolver> sdp_;
+    std::shared_ptr<libsdp::SDPSolver> sdp_;
 
     double nalpha_;
     double nbeta_;
@@ -352,32 +355,32 @@ class v2RDMSolver: public Wavefunction{
     void BuildConstraints();
 
     void Guess();
-    void T1_constraints_guess(SharedVector u);
-    void T2_constraints_guess(SharedVector u);
-    void Q2_constraints_guess(SharedVector u);
-    void G2_constraints_guess(SharedVector u);
+    void T1_constraints_guess(double* u);
+    void T2_constraints_guess(double* u);
+    void Q2_constraints_guess(double* u);
+    void G2_constraints_guess(double* u);
 
-    void Spin_constraints_Au(SharedVector A,SharedVector u);
-    void D2_constraints_Au(SharedVector A,SharedVector u);
-    void Q2_constraints_Au(SharedVector A,SharedVector u);
-    void G2_constraints_Au(SharedVector A,SharedVector u);
-    void T1_constraints_Au(SharedVector A,SharedVector u);
-    void T2_constraints_Au(SharedVector A,SharedVector u);
-    void T2_constraints_Au_slow(SharedVector A,SharedVector u);
-    void T2_tilde_constraints_Au(SharedVector A,SharedVector u);
-    void D3_constraints_Au(SharedVector A,SharedVector u);
-    void D4_constraints_Au(SharedVector A,SharedVector u);
+    void Spin_constraints_Au(double* A,double* u);
+    void D2_constraints_Au(double* A,double* u);
+    void Q2_constraints_Au(double* A,double* u);
+    void G2_constraints_Au(double* A,double* u);
+    void T1_constraints_Au(double* A,double* u);
+    void T2_constraints_Au(double* A,double* u);
+    void T2_constraints_Au_slow(double* A,double* u);
+    void T2_tilde_constraints_Au(double* A,double* u);
+    void D3_constraints_Au(double* A,double* u);
+    void D4_constraints_Au(double* A,double* u);
 
-    void Spin_constraints_ATu(SharedVector A,SharedVector u);
-    void D2_constraints_ATu(SharedVector A,SharedVector u);
-    void Q2_constraints_ATu(SharedVector A,SharedVector u);
-    void G2_constraints_ATu(SharedVector A,SharedVector u);
-    void T1_constraints_ATu(SharedVector A,SharedVector u);
-    void T2_constraints_ATu(SharedVector A,SharedVector u);
-    void T2_constraints_ATu_slow(SharedVector A,SharedVector u);
-    void T2_tilde_constraints_ATu(SharedVector A,SharedVector u);
-    void D3_constraints_ATu(SharedVector A,SharedVector u);
-    void D4_constraints_ATu(SharedVector A,SharedVector u);
+    void Spin_constraints_ATu(double* A,double* u);
+    void D2_constraints_ATu(double* A,double* u);
+    void Q2_constraints_ATu(double* A,double* u);
+    void G2_constraints_ATu(double* A,double* u);
+    void T1_constraints_ATu(double* A,double* u);
+    void T2_constraints_ATu(double* A,double* u);
+    void T2_constraints_ATu_slow(double* A,double* u);
+    void T2_tilde_constraints_ATu(double* A,double* u);
+    void D3_constraints_ATu(double* A,double* u);
+    void D4_constraints_ATu(double* A,double* u);
 
 
     // do enforce gpcs?
@@ -414,21 +417,21 @@ class v2RDMSolver: public Wavefunction{
     void set_gpc_rdm_nrm();
 
     /// generalized Pauli constraints
-    void Generalized_Pauli_constraints_Au(SharedVector A,SharedVector u, int state);
-    void Generalized_Pauli_3_8_constraints_Au(SharedVector A,SharedVector u, int state);
-    void Generalized_Pauli_4_8_constraints_Au(SharedVector A,SharedVector u, int state);
-    void Generalized_Pauli_3_6_constraints_Au(SharedVector A,SharedVector u, int state);
-    void Generalized_Pauli_3_10_constraints_Au(SharedVector A,SharedVector u, int state);
-    void Generalized_Pauli_4_10_constraints_Au(SharedVector A,SharedVector u, int state);
-    void Generalized_Pauli_5_10_constraints_Au(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_constraints_Au(double* A,double* u, int state);
+    void Generalized_Pauli_3_8_constraints_Au(double* A,double* u, int state);
+    void Generalized_Pauli_4_8_constraints_Au(double* A,double* u, int state);
+    void Generalized_Pauli_3_6_constraints_Au(double* A,double* u, int state);
+    void Generalized_Pauli_3_10_constraints_Au(double* A,double* u, int state);
+    void Generalized_Pauli_4_10_constraints_Au(double* A,double* u, int state);
+    void Generalized_Pauli_5_10_constraints_Au(double* A,double* u, int state);
 
-    void Generalized_Pauli_constraints_ATu(SharedVector A,SharedVector u, int state);
-    void Generalized_Pauli_3_8_constraints_ATu(SharedVector A,SharedVector u, int state);
-    void Generalized_Pauli_4_8_constraints_ATu(SharedVector A,SharedVector u, int state);
-    void Generalized_Pauli_3_6_constraints_ATu(SharedVector A,SharedVector u, int state);
-    void Generalized_Pauli_3_10_constraints_ATu(SharedVector A,SharedVector u, int state);
-    void Generalized_Pauli_4_10_constraints_ATu(SharedVector A,SharedVector u, int state);
-    void Generalized_Pauli_5_10_constraints_ATu(SharedVector A,SharedVector u, int state);
+    void Generalized_Pauli_constraints_ATu(double* A,double* u, int state);
+    void Generalized_Pauli_3_8_constraints_ATu(double* A,double* u, int state);
+    void Generalized_Pauli_4_8_constraints_ATu(double* A,double* u, int state);
+    void Generalized_Pauli_3_6_constraints_ATu(double* A,double* u, int state);
+    void Generalized_Pauli_3_10_constraints_ATu(double* A,double* u, int state);
+    void Generalized_Pauli_4_10_constraints_ATu(double* A,double* u, int state);
+    void Generalized_Pauli_5_10_constraints_ATu(double* A,double* u, int state);
 
     std::vector<std::shared_ptr<Matrix> > NatOrbs_;
     void SortedNaturalOrbitals(int state);
@@ -607,6 +610,10 @@ class v2RDMSolver: public Wavefunction{
 
     /// break down energy into components
     void EnergyByComponent(double &kinetic, double &potential, double &two_electron_energy);
+
+    /// print header for sdp iterations
+    void print_header();
+
 
 };
 

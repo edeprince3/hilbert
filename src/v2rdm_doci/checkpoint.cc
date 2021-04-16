@@ -38,7 +38,7 @@
 
 #include <misc/omp.h>
 
-#include <libsdp/bpsdp_solver.h>
+#include <bpsdp_solver.h>
 
 using namespace psi;
 
@@ -62,10 +62,10 @@ void v2RDM_DOCISolver::WriteCheckpointFile() {
     psio->write_entry(PSIF_V2RDM_CHECKPOINT,"PRIMAL",(char*)x->pointer(),dimx_*sizeof(double));
 
     // y
-    psio->write_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 1",(char*)sdp_->get_y()->pointer(),nconstraints_*sizeof(double));
+    psio->write_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 1",(char*)sdp_->get_y(),nconstraints_*sizeof(double));
 
     // z
-    psio->write_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 2",(char*)sdp_->get_z()->pointer(),dimx_*sizeof(double));
+    psio->write_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 2",(char*)sdp_->get_z(),dimx_*sizeof(double));
 
     // mo/mo' transformation matrix
     psio_address addr = PSIO_ZERO;
@@ -109,13 +109,13 @@ void v2RDM_DOCISolver::ReadFromCheckpointFile() {
     // y
     std::shared_ptr<Vector> y (new Vector(nconstraints_));
     psio->read_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 1",(char*)y->pointer(),nconstraints_*sizeof(double));
-    sdp_->set_y(y);
+    sdp_->set_y(y->pointer());
     y.reset();
 
     // z
     std::shared_ptr<Vector> z (new Vector(dimx_));
     psio->read_entry(PSIF_V2RDM_CHECKPOINT,"DUAL 2",(char*)z->pointer(),dimx_*sizeof(double));
-    sdp_->set_z(z);
+    sdp_->set_z(z->pointer());
     z.reset();
 
     psio->close(PSIF_V2RDM_CHECKPOINT,1);

@@ -58,11 +58,6 @@ add_psi4_plugin(hilbert
     src/misc/integraltransform_tpdm_unrestricted.cc
     src/misc/threeindexintegrals.cc
 
-    src/libsdp/cg_solver.cc
-    src/libsdp/sdp_solver.cc
-    src/libsdp/bpsdp_solver.cc
-    src/libsdp/rrsdp_solver.cc
-
     src/focas/update_transformation_matrix.cc
     src/focas/orbital_optimizer.cc
     src/focas/C_files/orbopt_energy.cc
@@ -151,9 +146,16 @@ target_link_libraries(hilbert PRIVATE ${LBFGS_LIBRARY})
 set(EXTERNAL_INCLUDE "${PROJECT_SOURCE_DIR}/external/include")
 target_include_directories(hilbert PRIVATE ${EXTERNAL_INCLUDE})
 
+# link libsdp
+#target_link_libraries(hilbert PRIVATE /edfs/users/deprince/edeprince3/libsdp/libsdp.so)
+# link liblbfgs and find header
+set(SDP_LIBRARY "${PROJECT_SOURCE_DIR}/external/lib/libsdp.so")
+target_link_libraries(hilbert PRIVATE ${SDP_LIBRARY})
+
 # hilbert module headers
 target_include_directories(hilbert PRIVATE "${PROJECT_SOURCE_DIR}/src")
 
+add_dependencies(hilbert libsdp_external)
 add_dependencies(hilbert liblbfgs_external)
 
 install(DIRECTORY ${hilbert_BINARY_DIR}/

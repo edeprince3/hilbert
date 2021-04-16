@@ -42,29 +42,27 @@ using namespace psi;
 namespace hilbert{
 
 // D2 portion of A^T.y ( and D1 / Q1 ) 
-void v2RDM_DOCISolver::D2_constraints_ATu(SharedVector A,SharedVector u){
-    double* A_p = A->pointer();
-    double* u_p = u->pointer();
+void v2RDM_DOCISolver::D2_constraints_ATu(double* A,double* u){
 
     // Traces
     // Tr(D2s2) seniority-2
     for (int i = 0; i < amo_; i++){
         for (int j = 0; j < amo_; j++){
             if ( i==j ) continue;
-            A_p[d2s2off_ + i*amo_+j] += u_p[offset];
+            A[d2s2off_ + i*amo_+j] += u[offset];
         }
     }
     offset++;
 
     // Tr(D2s0) seniority-0
     for (int i = 0; i < amo_; i++){
-        A_p[d2s0off_ + i*amo_+i] += u_p[offset];
+        A[d2s0off_ + i*amo_+i] += u[offset];
     }
     offset++;
 
     // Tr(D1a)
     for (int i = 0; i < amo_; i++){
-        A_p[d1off_ + i] += u_p[offset];
+        A[d1off_ + i] += u[offset];
     }
     offset++;
 
@@ -72,28 +70,28 @@ void v2RDM_DOCISolver::D2_constraints_ATu(SharedVector A,SharedVector u){
 
     // contraction: D2s2 -> D1 a seniority-2
     for (int i = 0; i < amo_; i++){
-        A_p[d1off_ + i] += (na-1.0)*u_p[offset + i];
+        A[d1off_ + i] += (na-1.0)*u[offset + i];
         for (int j = 0; j < amo_; j++){
             if (i==j) continue; 
-            A_p[d2s2off_ + i*amo_ + j] -= u_p[offset + i];
+            A[d2s2off_ + i*amo_ + j] -= u[offset + i];
         }
     }
     offset += amo_;
 
     // contraction: D2s2 -> D1 b seniority-2
     for (int i = 0; i < amo_; i++){
-        A_p[d1off_ + i] += (na-1.0)*u_p[offset + i];
+        A[d1off_ + i] += (na-1.0)*u[offset + i];
         for (int j = 0; j < amo_; j++){
             if (i==j) continue; 
-            A_p[d2s2off_ + j*amo_ + i] -= u_p[offset + i];
+            A[d2s2off_ + j*amo_ + i] -= u[offset + i];
         }
     }
     offset += amo_;
 
     //contract D2s0 -> D1 a seniority-0
     for (int i = 0; i < amo_; i++){
-        A_p[d1off_ + i]          += u_p[offset + i];
-        A_p[d2s0off_ + i*amo_+i] -= u_p[offset + i];
+        A[d1off_ + i]          += u[offset + i];
+        A[d2s0off_ + i*amo_+i] -= u[offset + i];
     }
     offset += amo_;
 
@@ -101,10 +99,10 @@ void v2RDM_DOCISolver::D2_constraints_ATu(SharedVector A,SharedVector u){
     for (int i = 0; i < amo_; i++){
         for (int j = 0; j < amo_; j++){
             if ( i == j ) {
-                A_p[d2s2off_ + i*amo_ + i] += u_p[offset+i*amo_+i];
+                A[d2s2off_ + i*amo_ + i] += u[offset+i*amo_+i];
             }else {
-                A_p[d2s2off_ + i*amo_ + j] += u_p[offset+i*amo_+j];
-                A_p[d2s2off_ + j*amo_ + i] -= u_p[offset+i*amo_+j];
+                A[d2s2off_ + i*amo_ + j] += u[offset+i*amo_+j];
+                A[d2s2off_ + j*amo_ + i] -= u[offset+i*amo_+j];
             }
         }
     }
@@ -113,10 +111,7 @@ void v2RDM_DOCISolver::D2_constraints_ATu(SharedVector A,SharedVector u){
 }
 
 // D2 portion of A.x (and D1/Q1) 
-void v2RDM_DOCISolver::D2_constraints_Au(SharedVector A,SharedVector u){
-
-    double* A_p = A->pointer();
-    double* u_p = u->pointer();
+void v2RDM_DOCISolver::D2_constraints_Au(double* A,double* u){
 
     // Traces
     // Tr(D2s2) seniority-2
@@ -124,55 +119,55 @@ void v2RDM_DOCISolver::D2_constraints_Au(SharedVector A,SharedVector u){
     for (int i = 0; i < amo_; i++){
         for (int j = 0; j < amo_; j++){
             if ( i==j ) continue;
-            sums2 += u_p[d2s2off_ + i*amo_ + j];
+            sums2 += u[d2s2off_ + i*amo_ + j];
         }
     }
-    A_p[offset] = sums2;
+    A[offset] = sums2;
     offset++;
 
     // Tr(D2s0) seniority-0
     double sums0 =0.0;
     for (int i = 0; i < amo_; i++){
-        sums0 += u_p[d2s0off_ + i*amo_ + i];
+        sums0 += u[d2s0off_ + i*amo_ + i];
     }
-    A_p[offset] = sums0;
+    A[offset] = sums0;
     offset++;
 
     // Tr(D1a)
     double sums1 =0.0;
     for (int i = 0; i < amo_; i++){
-        sums1 += u_p[d1off_ + i];
+        sums1 += u[d1off_ + i];
     }
-    A_p[offset] = sums1;
+    A[offset] = sums1;
     offset++;
 
     int na = nalpha_;
 
     // contraction: D2s2 -> D1 a seniority-2
     for (int i = 0; i < amo_; i++){
-        double sum = (na-1.0)*u_p[d1off_ + i];
+        double sum = (na-1.0)*u[d1off_ + i];
         for (int j = 0; j < amo_; j++){
             if (i==j) continue; 
-            sum -= u_p[d2s2off_ + i*amo_ + j];
+            sum -= u[d2s2off_ + i*amo_ + j];
         }
-        A_p[offset + i] = sum;
+        A[offset + i] = sum;
     }
     offset += amo_;
 
     // contraction: D2s2 -> D1 b seniority-2
     for (int i = 0; i < amo_; i++){
-        double sum = (na-1.0)*u_p[d1off_ + i];
+        double sum = (na-1.0)*u[d1off_ + i];
         for (int j = 0; j < amo_; j++){
             if (i==j) continue; 
-            sum -= u_p[d2s2off_ + j*amo_ + i];
+            sum -= u[d2s2off_ + j*amo_ + i];
         }
-        A_p[offset + i] = sum;
+        A[offset + i] = sum;
     }
     offset += amo_;
 
     //contract D2s0 -> D1 a seniority-0
     for (int i = 0; i < amo_; i++){
-        A_p[offset+i] = u_p[d1off_ + i] - u_p[d2s0off_ + i*amo_+i];
+        A[offset+i] = u[d1off_ + i] - u[d2s0off_ + i*amo_+i];
     }
     offset += amo_;
 
@@ -180,9 +175,9 @@ void v2RDM_DOCISolver::D2_constraints_Au(SharedVector A,SharedVector u){
     for (int i = 0; i < amo_; i++){
         for (int j = 0; j < amo_; j++){
             if ( i == j ) {
-                A_p[offset+i*amo_+i] = u_p[d2s2off_ + i*amo_ + i];
+                A[offset+i*amo_+i] = u[d2s2off_ + i*amo_ + i];
             }else {
-                A_p[offset+i*amo_+j] = u_p[d2s2off_ + i*amo_ + j] - u_p[d2s2off_ + j*amo_+i];
+                A[offset+i*amo_+j] = u[d2s2off_ + i*amo_ + j] - u[d2s2off_ + j*amo_+i];
             }
         }
     }
