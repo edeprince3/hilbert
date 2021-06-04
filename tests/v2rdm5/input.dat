@@ -13,6 +13,7 @@ n 1 r
 }
 
 set {
+  ints_tolerance 0.0
   basis cc-pvdz
   scf_type pk
   d_convergence      1e-10
