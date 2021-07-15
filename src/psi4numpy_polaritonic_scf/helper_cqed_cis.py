@@ -16,7 +16,7 @@ import numpy as np
 import scipy.linalg as la
 import time
 
-def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val):
+def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=True):
     """ Computes the QED-CIS energy and wavefunction
 
         Arguments
@@ -192,81 +192,85 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val):
     # <0|\Phi_0| H |\Phi_0>0>
     
     # constant terms in the diagonals
-    H_00 = scf_e + d_c 
+    H_constants = scf_e
+    H_dse = d_c
+    H_blc = 0.0
     
     
     # add 1-electron contributions to diagonals
     for i in range(0,ndocc):
         # dipole terms scaled by dc_offset term
-        H_00 += dc_offset * lam[0] * mu_cmo_x[i,i]       
-        H_00 += dc_offset * lam[1] * mu_cmo_y[i,i]         
-        H_00 += dc_offset * lam[2] * mu_cmo_z[i,i]
+        H_dse += dc_offset * lam[0] * mu_cmo_x[i,i]       
+        H_dse += dc_offset * lam[1] * mu_cmo_y[i,i]         
+        H_dse += dc_offset * lam[2] * mu_cmo_z[i,i]
         
         # quadrupole terms
-        H_00 += 0.5 * lam[0] * lam[0] * Q_cmo_xx[i,i]     
-        H_00 += 0.5 * lam[1] * lam[1] * Q_cmo_yy[i,i]  
-        H_00 += 0.5 * lam[2] * lam[2] * Q_cmo_zz[i,i] 
-        H_00 += lam[0] * lam[1] * Q_cmo_xy[i,i]
-        H_00 += lam[0] * lam[2] * Q_cmo_xz[i,i]
-        H_00 += lam[1] * lam[2] * Q_cmo_yz[i,i]
+        H_dse += 0.5 * lam[0] * lam[0] * Q_cmo_xx[i,i]     
+        H_dse += 0.5 * lam[1] * lam[1] * Q_cmo_yy[i,i]  
+        H_dse += 0.5 * lam[2] * lam[2] * Q_cmo_zz[i,i] 
+        H_dse += lam[0] * lam[1] * Q_cmo_xy[i,i]
+        H_dse += lam[0] * lam[2] * Q_cmo_xz[i,i]
+        H_dse += lam[1] * lam[2] * Q_cmo_yz[i,i]
         
     # add 2-electron contributions to diagonals
     for i in range(0,ndocc):
         for j in range(i+1, ndocc):
             # diagonal terms (xx, yy, zz)
             # xx
-            H_00 += lam[0] * lam[0] * mu_cmo_x[i,i] * mu_cmo_x[j,j]
-            H_00 -= 0.5 * lam[0] * lam[0] * mu_cmo_x[i,j] * mu_cmo_x[j,i]
+            H_dse += lam[0] * lam[0] * mu_cmo_x[i,i] * mu_cmo_x[j,j]
+            H_dse -= 0.5 * lam[0] * lam[0] * mu_cmo_x[i,j] * mu_cmo_x[j,i]
             
             # yy
-            H_00 += lam[1] * lam[1] * mu_cmo_y[i,i] * mu_cmo_y[j,j]
-            H_00 -= 0.5 * lam[1] * lam[1] * mu_cmo_y[i,j] * mu_cmo_y[j,i]
+            H_dse += lam[1] * lam[1] * mu_cmo_y[i,i] * mu_cmo_y[j,j]
+            H_dse -= 0.5 * lam[1] * lam[1] * mu_cmo_y[i,j] * mu_cmo_y[j,i]
             
             # zz
-            H_00 += lam[2] * lam[2] * mu_cmo_z[i,i] * mu_cmo_z[j,j]
-            H_00 -= 0.5 * lam[2] * lam[2] * mu_cmo_z[i,j] * mu_cmo_z[j,i]
+            H_dse += lam[2] * lam[2] * mu_cmo_z[i,i] * mu_cmo_z[j,j]
+            H_dse -= 0.5 * lam[2] * lam[2] * mu_cmo_z[i,j] * mu_cmo_z[j,i]
 
             # off-diagonal terms (xy, xz, yz)
             # xy 
-            H_00 += lam[0] * lam[1] * mu_cmo_x[i,i] * mu_cmo_y[j,j]
-            H_00 -= 0.5 * lam[0] * lam[1] * mu_cmo_x[i,j] * mu_cmo_y[j,i]
+            H_dse += lam[0] * lam[1] * mu_cmo_x[i,i] * mu_cmo_y[j,j]
+            H_dse -= 0.5 * lam[0] * lam[1] * mu_cmo_x[i,j] * mu_cmo_y[j,i]
 
             # yx
-            H_00 += lam[1] * lam[0] * mu_cmo_y[i,i] * mu_cmo_x[j,j]
-            H_00 -= 0.5 * lam[1] * lam[0] * mu_cmo_y[i,j] * mu_cmo_x[j,i]
+            H_dse += lam[1] * lam[0] * mu_cmo_y[i,i] * mu_cmo_x[j,j]
+            H_dse -= 0.5 * lam[1] * lam[0] * mu_cmo_y[i,j] * mu_cmo_x[j,i]
             
             # xz
-            H_00 += lam[0] * lam[2] * mu_cmo_x[i,i] * mu_cmo_z[j,j]
-            H_00 -= 0.5 * lam[0] * lam[2] * mu_cmo_x[i,j] * mu_cmo_z[j,i]
+            H_dse += lam[0] * lam[2] * mu_cmo_x[i,i] * mu_cmo_z[j,j]
+            H_dse -= 0.5 * lam[0] * lam[2] * mu_cmo_x[i,j] * mu_cmo_z[j,i]
 
             # zx
-            H_00 += lam[2] * lam[0] * mu_cmo_z[i,i] * mu_cmo_x[j,j]
-            H_00 -= 0.5 * lam[2] * lam[0] * mu_cmo_z[i,j] * mu_cmo_x[j,i]
+            H_dse += lam[2] * lam[0] * mu_cmo_z[i,i] * mu_cmo_x[j,j]
+            H_dse -= 0.5 * lam[2] * lam[0] * mu_cmo_z[i,j] * mu_cmo_x[j,i]
             
             # yz
-            H_00 += lam[1] * lam[2] * mu_cmo_y[i,i] * mu_cmo_z[j,j]
-            H_00 -= 0.5 * lam[1] * lam[2] * mu_cmo_y[i,j] * mu_cmo_z[j,i]
+            H_dse += lam[1] * lam[2] * mu_cmo_y[i,i] * mu_cmo_z[j,j]
+            H_dse -= 0.5 * lam[1] * lam[2] * mu_cmo_y[i,j] * mu_cmo_z[j,i]
 
             # zy
-            H_00 += lam[2] * lam[1] * mu_cmo_z[i,i] * mu_cmo_y[j,j]
-            H_00 -= 0.5 * lam[2] * lam[1] * mu_cmo_z[i,j] * mu_cmo_y[j,i]
+            H_dse += lam[2] * lam[1] * mu_cmo_z[i,i] * mu_cmo_y[j,j]
+            H_dse -= 0.5 * lam[2] * lam[1] * mu_cmo_z[i,j] * mu_cmo_y[j,i]
         
-    H_11 = H_00 + omega_val
-    HCIS[0,0] = H_00
-    HCIS[1,1] = H_11
+    HCIS[0,0] = H_constants  
+    HCIS[1,1] = H_constants + omega_val
+    if include_dse:
+        HCIS[0,0] += H_dse
+        HCIS[1,1] += H_dse
     
-    H_10 = l_dot_mu_exp
+    H_blc = l_dot_mu_exp
     # now sum over occupied orbitals
     for i in range (0, ndocc):
-        H_10 -= lam[0] * mu_cmo_x[i,i]
-        H_10 -= lam[1] * mu_cmo_y[i,i]
-        H_10 -= lam[1] * mu_cmo_z[i,i]
+        H_blc -= lam[0] * mu_cmo_x[i,i]
+        H_blc -= lam[1] * mu_cmo_y[i,i]
+        H_blc -= lam[1] * mu_cmo_z[i,i]
         
-    H_10 *= np.sqrt(omega_val / 2)
+    H_blc *= np.sqrt(omega_val / 2)
     
     ### off-diagonals for this block are the same!
-    HCIS[0,1] = H_10
-    HCIS[1,0] = H_10
+    HCIS[0,1] = H_blc
+    HCIS[1,0] = H_blc
     
     
     # elements corresponding to <s|<\Phi_i^a| H | \Phi_0|t> and <s|<\Phi_0| H | \Phi_i^a|t> go here!
@@ -278,75 +282,80 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val):
                 
                 
                 for t in range(0,2):
-                    Hterm = 0.
+                    H_dse = 0.
                     if s==t:
                         # quadrupole terms 
                         # xx
-                        Hterm +=  0.5 * lam[0] * lam[0] * Q_cmo_xx[i,a]
+                        H_dse +=  0.5 * lam[0] * lam[0] * Q_cmo_xx[i,a]
                         # yy
-                        Hterm += 0.5 * lam[1] * lam[1] * Q_cmo_yy[i,a]
+                        H_dse += 0.5 * lam[1] * lam[1] * Q_cmo_yy[i,a]
                         # zz
-                        Hterm += 0.5 * lam[2] * lam[2] * Q_cmo_zz[i,a]
+                        H_dse += 0.5 * lam[2] * lam[2] * Q_cmo_zz[i,a]
                         # xy
-                        Hterm += lam[0] * lam[1] * Q_cmo_xy[i,a]
+                        H_dse += lam[0] * lam[1] * Q_cmo_xy[i,a]
                         # xz 
-                        Hterm += lam[0] * lam[2] * Q_cmo_xz[i,a]
+                        H_dse += lam[0] * lam[2] * Q_cmo_xz[i,a]
                         # yz 
-                        Hterm += lam[1] * lam[2] * Q_cmo_yz[i,a]
+                        H_dse += lam[1] * lam[2] * Q_cmo_yz[i,a]
                         
                         # 1e dipole terms scaled by dipole-offset 
                         # x
-                        Hterm += dc_offset * lam[0] * mu_cmo_x[i,a]
+                        H_dse += dc_offset * lam[0] * mu_cmo_x[i,a]
                         # y
-                        Hterm += dc_offset * lam[1] * mu_cmo_y[i,a]
+                        H_dse += dc_offset * lam[1] * mu_cmo_y[i,a]
                         # z
-                        Hterm += dc_offset * lam[2] * mu_cmo_z[i,a]
+                        H_dse += dc_offset * lam[2] * mu_cmo_z[i,a]
                         
                         # 2e dipole terms
                         for j in range(0, ndocc):
                             # xx 
-                            Hterm += lam[0] * lam[0] * mu_cmo_x[i,a] * mu_cmo_x[j,j]
-                            Hterm -= 0.5 * lam[0] * lam[0] * mu_cmo_x[i,j] * mu_cmo_x[j,a]
+                            H_dse += lam[0] * lam[0] * mu_cmo_x[i,a] * mu_cmo_x[j,j]
+                            H_dse -= 0.5 * lam[0] * lam[0] * mu_cmo_x[i,j] * mu_cmo_x[j,a]
                             
                             # yy
-                            Hterm += lam[1] * lam[1] * mu_cmo_y[i,a] * mu_cmo_y[j,j]
-                            Hterm -= 0.5 * lam[1] * lam[1] * mu_cmo_y[i,j] * mu_cmo_y[j,a]
+                            H_dse += lam[1] * lam[1] * mu_cmo_y[i,a] * mu_cmo_y[j,j]
+                            H_dse -= 0.5 * lam[1] * lam[1] * mu_cmo_y[i,j] * mu_cmo_y[j,a]
                             
                             # zz
-                            Hterm += lam[2] * lam[2] * mu_cmo_z[i,a] * mu_cmo_z[j,j]
-                            Hterm -= 0.5 * lam[2] * lam[2] * mu_cmo_z[i,j] * mu_cmo_y[j,a]
+                            H_dse += lam[2] * lam[2] * mu_cmo_z[i,a] * mu_cmo_z[j,j]
+                            H_dse -= 0.5 * lam[2] * lam[2] * mu_cmo_z[i,j] * mu_cmo_y[j,a]
 
                             # xy
-                            Hterm += lam[0] * lam[1] * mu_cmo_x[i,a] * mu_cmo_y[j,j]
-                            Hterm -= 0.5 * lam[0] * lam[1] * mu_cmo_x[i,j] * mu_cmo_y[j,a]
+                            H_dse += lam[0] * lam[1] * mu_cmo_x[i,a] * mu_cmo_y[j,j]
+                            H_dse -= 0.5 * lam[0] * lam[1] * mu_cmo_x[i,j] * mu_cmo_y[j,a]
                             
                             # yx
-                            Hterm += lam[1] * lam[0] * mu_cmo_y[i,a] * mu_cmo_x[j,j]
-                            Hterm -= 0.5 * lam[1] * lam[0] * mu_cmo_y[i,j] * mu_cmo_x[j,a]
+                            H_dse += lam[1] * lam[0] * mu_cmo_y[i,a] * mu_cmo_x[j,j]
+                            H_dse -= 0.5 * lam[1] * lam[0] * mu_cmo_y[i,j] * mu_cmo_x[j,a]
                             
                             # xz
-                            Hterm += lam[0] * lam[2] * mu_cmo_x[i,a] * mu_cmo_z[j,j]
-                            Hterm -= 0.5 * lam[0] * lam[0] * mu_cmo_z[i,j] * mu_cmo_z[j,a]
+                            H_dse += lam[0] * lam[2] * mu_cmo_x[i,a] * mu_cmo_z[j,j]
+                            H_dse -= 0.5 * lam[0] * lam[0] * mu_cmo_z[i,j] * mu_cmo_z[j,a]
                             
                             # zx
-                            Hterm += lam[2] * lam[0] * mu_cmo_z[i,a] * mu_cmo_x[j,j]
-                            Hterm -= 0.5 * lam[2] * lam[0] * mu_cmo_z[i,j] * mu_cmo_x[j,a]
+                            H_dse += lam[2] * lam[0] * mu_cmo_z[i,a] * mu_cmo_x[j,j]
+                            H_dse -= 0.5 * lam[2] * lam[0] * mu_cmo_z[i,j] * mu_cmo_x[j,a]
                             
                             # yz
-                            Hterm += lam[1] * lam[2] * mu_cmo_y[i,a] * mu_cmo_z[j,j]
-                            Hterm -= 0.5 * lam[1] * lam[2] * mu_cmo_y[i,j] * mu_cmo_z[j,a]
+                            H_dse += lam[1] * lam[2] * mu_cmo_y[i,a] * mu_cmo_z[j,j]
+                            H_dse -= 0.5 * lam[1] * lam[2] * mu_cmo_y[i,j] * mu_cmo_z[j,a]
                             
                             # zy
-                            Hterm += lam[2] * lam[1] * mu_cmo_z[i,a] * mu_cmo_y[j,j]
-                            Hterm -= 0.5 * lam[2] * lam[1] * mu_cmo_z[i,j] * mu_cmo_y[j,a]
+                            H_dse += lam[2] * lam[1] * mu_cmo_z[i,a] * mu_cmo_y[j,j]
+                            H_dse -= 0.5 * lam[2] * lam[1] * mu_cmo_z[i,j] * mu_cmo_y[j,a]
 
                     else:
-                        Hterm = lam[0] * mu_cmo_x[i,a]
-                        Hterm += lam[1] * mu_cmo_y[i,a]
-                        Hterm += lam[2] * mu_cmo_z[i,a]
-                        Hterm *= np.sqrt(omega_val/2)
-                HCIS[ias,t] = Hterm
-                HCIS[t,ias] = Hterm
+                        H_blc = lam[0] * mu_cmo_x[i,a]
+                        H_blc += lam[1] * mu_cmo_y[i,a]
+                        H_blc += lam[2] * mu_cmo_z[i,a]
+                        H_blc *= np.sqrt(omega_val/2)
+
+                if include_dse:
+                    HCIS[ias,t] = H_blc + H_dse
+                    HCIS[t,ias] = H_blc + H_dse
+                else:
+                    HCIS[ias,t] = H_blc
+                    HCIS[t,ias] = H_blc
           
                 
     # elements corresponding to <s|<\Phi_i^a| H | \Phi_j^b|t>
@@ -359,120 +368,127 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val):
                     for b in range(0, nvirt):
                         for t in range(0,2):
                             jbt = 2*(j*nvirt + b) + t + 2
-                            Hterm = 0.
+                            H_dse = 0.
+                            H_blc = 0.
+                            H_elec = 0.
 
                             # most restrictive constraint
                             if s==t and i==j and a==b:
-                                Hterm +=  d_c + eps_v[a] - eps_o[i]
+                                H_dse +=  d_c
+                                H_elec += eps_v[a]
+                                H_elec -= eps_o[i]
 
                             if s==t and i==j:
                                 # quadrupole terms
                                 # xx
-                                Hterm += 0.5 * lam[0] * lam[0] * Q_cmo_xx[a,b]
+                                H_dse += 0.5 * lam[0] * lam[0] * Q_cmo_xx[a,b]
                                 # yy
-                                Hterm += 0.5 * lam[1] * lam[1] * Q_cmo_yy[a,b]
+                                H_dse += 0.5 * lam[1] * lam[1] * Q_cmo_yy[a,b]
                                 # zz
-                                Hterm += 0.5 * lam[2] * lam[2] * Q_cmo_zz[a,b]
+                                H_dse += 0.5 * lam[2] * lam[2] * Q_cmo_zz[a,b]
                                 # xy
-                                Hterm += lam[0] * lam[1] * Q_cmo_xy[a,b]
+                                H_dse += lam[0] * lam[1] * Q_cmo_xy[a,b]
                                 # xz
-                                Hterm += lam[0] * lam[2] * Q_cmo_xz[a,b]
+                                H_dse += lam[0] * lam[2] * Q_cmo_xz[a,b]
                                 # yz
-                                Hterm += lam[1] * lam[2] * Q_cmo_xz[a,b]
+                                H_dse += lam[1] * lam[2] * Q_cmo_xz[a,b]
 
                                 # scaled dipole terms
                                 # x
-                                Hterm += dc_offset * lam[0] * mu_cmo_x[a,b]
+                                H_dse += dc_offset * lam[0] * mu_cmo_x[a,b]
                                 # y
-                                Hterm += dc_offset * lam[1] * mu_cmo_y[a,b]
+                                H_dse += dc_offset * lam[1] * mu_cmo_y[a,b]
                                 # z 
-                                Hterm += dc_offset * lam[2] * mu_cmo_z[a,b]
+                                H_dse += dc_offset * lam[2] * mu_cmo_z[a,b]
 
                             if s==t and a==b:
                                 # quadrupole terms
                                 # xx
-                                Hterm -= 0.5 * lam[0] * lam[0] * Q_cmo_xx[i,j]
+                                H_dse -= 0.5 * lam[0] * lam[0] * Q_cmo_xx[i,j]
                                 # yy
-                                Hterm -= 0.5 * lam[1] * lam[1] * Q_cmo_yy[i,j]
+                                H_dse -= 0.5 * lam[1] * lam[1] * Q_cmo_yy[i,j]
                                 # zz
-                                Hterm -= 0.5 * lam[2] * lam[2] * Q_cmo_zz[i,j]
+                                H_dse -= 0.5 * lam[2] * lam[2] * Q_cmo_zz[i,j]
                                 # xy
-                                Hterm -= lam[0] * lam[1] * Q_cmo_xy[i,j]
+                                H_dse -= lam[0] * lam[1] * Q_cmo_xy[i,j]
                                 # xz
-                                Hterm -= lam[0] * lam[2] * Q_cmo_xz[i,j]
+                                H_dse -= lam[0] * lam[2] * Q_cmo_xz[i,j]
                                 # yz
-                                Hterm -= lam[1] * lam[2] * Q_cmo_xz[i,j]
+                                H_dse -= lam[1] * lam[2] * Q_cmo_xz[i,j]
 
                                 # scaled dipole terms
                                 # x
-                                Hterm -= dc_offset * lam[0] * mu_cmo_x[i,j]
+                                H_dse -= dc_offset * lam[0] * mu_cmo_x[i,j]
                                 # y
-                                Hterm -= dc_offset * lam[1] * mu_cmo_y[i,j]
+                                H_dse -= dc_offset * lam[1] * mu_cmo_y[i,j]
                                 # z 
-                                Hterm -= dc_offset * lam[2] * mu_cmo_z[i,j]
+                                H_dse -= dc_offset * lam[2] * mu_cmo_z[i,j]
 
 
                             if s==t:
                                 # 2-e dipole terms
                                 # xx
-                                Hterm += lam[0] * lam[0] * mu_cmo_x[i,a] * mu_cmo_x[j,b]
-                                Hterm -= 0.5 * lam[0] * lam[0] * mu_cmo_x[i,j] * mu_cmo_x[a,b]
+                                H_dse += lam[0] * lam[0] * mu_cmo_x[i,a] * mu_cmo_x[j,b]
+                                H_dse -= 0.5 * lam[0] * lam[0] * mu_cmo_x[i,j] * mu_cmo_x[a,b]
 
                                 # yy
-                                Hterm += lam[1] * lam[1] * mu_cmo_y[i,a] * mu_cmo_y[j,b]
-                                Hterm -= 0.5 * lam[1] * lam[1] * mu_cmo_y[i,j] * mu_cmo_y[a,b]
+                                H_dse += lam[1] * lam[1] * mu_cmo_y[i,a] * mu_cmo_y[j,b]
+                                H_dse -= 0.5 * lam[1] * lam[1] * mu_cmo_y[i,j] * mu_cmo_y[a,b]
                                 # zz
-                                Hterm += lam[2] * lam[2] * mu_cmo_z[i,a] * mu_cmo_z[j,b]
-                                Hterm -= 0.5 * lam[2] * lam[2] * mu_cmo_z[i,j] * mu_cmo_z[a,b]
+                                H_dse += lam[2] * lam[2] * mu_cmo_z[i,a] * mu_cmo_z[j,b]
+                                H_dse -= 0.5 * lam[2] * lam[2] * mu_cmo_z[i,j] * mu_cmo_z[a,b]
                                 
                                 # xy
-                                Hterm += lam[0] * lam[1] * mu_cmo_x[i,a] * mu_cmo_y[j,b]
-                                Hterm -= 0.5 * lam[0] * lam[1] * mu_cmo_x[i,j] * mu_cmo_y[a,b]
+                                H_dse += lam[0] * lam[1] * mu_cmo_x[i,a] * mu_cmo_y[j,b]
+                                H_dse -= 0.5 * lam[0] * lam[1] * mu_cmo_x[i,j] * mu_cmo_y[a,b]
 
                                 # yx
-                                Hterm += lam[1] * lam[0] * mu_cmo_y[i,a] * mu_cmo_x[j,b]
-                                Hterm -= 0.5 * lam[1] * lam[0] * mu_cmo_y[i,j] * mu_cmo_x[a,b]
+                                H_dse += lam[1] * lam[0] * mu_cmo_y[i,a] * mu_cmo_x[j,b]
+                                H_dse -= 0.5 * lam[1] * lam[0] * mu_cmo_y[i,j] * mu_cmo_x[a,b]
 
                                 # xz
-                                Hterm += lam[0] * lam[2] * mu_cmo_x[i,a] * mu_cmo_z[j,b]
-                                Hterm -= 0.5 * lam[0] * lam[2] * mu_cmo_x[i,j] * mu_cmo_z[a,b]
+                                H_dse += lam[0] * lam[2] * mu_cmo_x[i,a] * mu_cmo_z[j,b]
+                                H_dse -= 0.5 * lam[0] * lam[2] * mu_cmo_x[i,j] * mu_cmo_z[a,b]
 
                                 # zx
-                                Hterm += lam[2] * lam[0] * mu_cmo_z[i,a] * mu_cmo_x[j,b]
-                                Hterm -= 0.5 * lam[2] * lam[0] * mu_cmo_z[i,j] * mu_cmo_x[a,b]
+                                H_dse += lam[2] * lam[0] * mu_cmo_z[i,a] * mu_cmo_x[j,b]
+                                H_dse -= 0.5 * lam[2] * lam[0] * mu_cmo_z[i,j] * mu_cmo_x[a,b]
 
                                 # yz
-                                Hterm += lam[1] * lam[2] * mu_cmo_y[i,a] * mu_cmo_z[j,b]
-                                Hterm -= 0.5 * lam[1] * lam[2] * mu_cmo_y[i,j] * mu_cmo_z[a,b]
+                                H_dse += lam[1] * lam[2] * mu_cmo_y[i,a] * mu_cmo_z[j,b]
+                                H_dse -= 0.5 * lam[1] * lam[2] * mu_cmo_y[i,j] * mu_cmo_z[a,b]
 
                                 # zy
-                                Hterm += lam[2] * lam[1] * mu_cmo_z[i,a] * mu_cmo_y[j,b]
-                                Hterm -= 0.5 * lam[2] * lam[1] * mu_cmo_z[i,j] * mu_cmo_y[a,b]
+                                H_dse += lam[2] * lam[1] * mu_cmo_z[i,a] * mu_cmo_y[j,b]
+                                H_dse -= 0.5 * lam[2] * lam[1] * mu_cmo_z[i,j] * mu_cmo_y[a,b]
 
                                 # 2e integral terms
-                                Hterm += 2 * ovov[i, a, j, b] - oovv[i,j,a,b]
+                                H_elec += 2 * ovov[i, a, j, b] - oovv[i,j,a,b]
 
                             if (s==t+1 or s+1==t) and i==j and a==b:
                                 # constant l dot mu term
-                                Hterm += np.sqrt(omega_val/2) * l_dot_mu_exp
+                                H_blc += np.sqrt(omega_val/2) * l_dot_mu_exp
                             if (s==t+1 or s+1==t) and a==b:
                                 # dipole coupling terms
                                 # x
-                                Hterm += np.sqrt(omega_val/2) * lam[0] * mu_cmo_x[i,j]
+                                H_blc += np.sqrt(omega_val/2) * lam[0] * mu_cmo_x[i,j]
                                 # y
-                                Hterm += np.sqrt(omega_val/2) * lam[1] * mu_cmo_y[i,j]
+                                H_blc += np.sqrt(omega_val/2) * lam[1] * mu_cmo_y[i,j]
                                 # z
-                                Hterm += np.sqrt(omega_val/2) * lam[2] * mu_cmo_z[i,j]
+                                H_blc += np.sqrt(omega_val/2) * lam[2] * mu_cmo_z[i,j]
                             if (s==t+1 or s+1==t) and i==j:
                                 # dipole coupling terms
                                 # x
-                                Hterm -= np.sqrt(omega_val/2) * lam[0] * mu_cmo_x[a,b]
+                                H_blc -= np.sqrt(omega_val/2) * lam[0] * mu_cmo_x[a,b]
                                 # y
-                                Hterm -= np.sqrt(omega_val/2) * lam[1] * mu_cmo_y[a,b]
+                                H_blc -= np.sqrt(omega_val/2) * lam[1] * mu_cmo_y[a,b]
                                 # z
-                                Hterm -= np.sqrt(omega_val/2) * lam[2] * mu_cmo_z[a,b]
+                                H_blc -= np.sqrt(omega_val/2) * lam[2] * mu_cmo_z[a,b]
 
-                            HCIS[ias,jbt] = Hterm
+                            if include_dse:
+                                HCIS[ias,jbt] = H_elec + H_blc + H_dse
+                            else:
+                                HCIS[ias,jbt] = H_elec + H_blc
     #print("now formed")                        
     #print(HCIS)
     # now diagonalize H
