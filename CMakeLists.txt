@@ -108,6 +108,9 @@ add_psi4_plugin(hilbert
     src/v2rdm_casscf/checkpoint.cc
     src/v2rdm_casscf/d2.cc
     src/v2rdm_casscf/d3.cc
+    src/v2rdm_casscf/e3.cc
+    src/v2rdm_casscf/f3.cc
+    src/v2rdm_casscf/q3.cc
     src/v2rdm_casscf/d4.cc
     src/v2rdm_casscf/extended_koopmans.cc
     src/v2rdm_casscf/fcidump.cc

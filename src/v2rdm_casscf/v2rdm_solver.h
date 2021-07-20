@@ -177,6 +177,15 @@ class v2RDMSolver: public Wavefunction{
     /// constraint T2 = E3 + F3 to be positive semidefinite?
     bool constrain_t2_;
 
+    /// constraint E3 to be positive semidefinite?
+    bool constrain_e3_;
+
+    /// constraint F3 to be positive semidefinite?
+    bool constrain_f3_;
+
+    /// constraint Q3 to be positive semidefinite?
+    bool constrain_q3_;
+
     /// keep d3 positive semidefinite and constrain D3->D2 mapping?
     bool constrain_d3_;
 
@@ -275,6 +284,18 @@ class v2RDMSolver: public Wavefunction{
     int * t2bbboff;
     int * t2aaboff;
     int * t2bbaoff;
+    int * e3aaaoff;
+    int * e3bbboff;
+    int * e3aaboff;
+    int * e3bbaoff;
+    int * f3aaaoff;
+    int * f3bbboff;
+    int * f3aaboff;
+    int * f3bbaoff;
+    int * q3aaaoff;
+    int * q3bbboff;
+    int * q3aaboff;
+    int * q3bbaoff;
     int * d3aaaoff;
     int * d3bbboff;
     int * d3aaboff;
@@ -368,6 +389,9 @@ class v2RDMSolver: public Wavefunction{
     void T2_constraints_Au(double* A,double* u);
     void T2_constraints_Au_slow(double* A,double* u);
     void T2_tilde_constraints_Au(double* A,double* u);
+    void E3_constraints_Au(double* A,double* u);
+    void F3_constraints_Au(double* A,double* u);
+    void Q3_constraints_Au(double* A,double* u);
     void D3_constraints_Au(double* A,double* u);
     void D4_constraints_Au(double* A,double* u);
 
@@ -379,6 +403,9 @@ class v2RDMSolver: public Wavefunction{
     void T2_constraints_ATu(double* A,double* u);
     void T2_constraints_ATu_slow(double* A,double* u);
     void T2_tilde_constraints_ATu(double* A,double* u);
+    void E3_constraints_ATu(double* A,double* u);
+    void F3_constraints_ATu(double* A,double* u);
+    void Q3_constraints_ATu(double* A,double* u);
     void D3_constraints_ATu(double* A,double* u);
     void D4_constraints_ATu(double* A,double* u);
 
