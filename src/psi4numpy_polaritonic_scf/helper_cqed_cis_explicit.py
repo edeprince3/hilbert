@@ -139,14 +139,8 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
     
     # \lambda \cdot \mu_{nuc}
     l_dot_mu_nuc = lam[0] * mu_nuc_x + lam[1] * mu_nuc_y + lam[2] * mu_nuc_z
-
     # \lambda \cdot < \mu > where <\mu> contains electronic and nuclear contributions
     l_dot_mu_exp = lam[0] * mu_exp_x + lam[1] * mu_exp_y + lam[2] * mu_exp_z
-
-    # \lambda \cdot \mu_{el}
-    l_dot_mu_el =  lam[0] * mu_cmo_x 
-    l_dot_mu_el += lam[1] * mu_cmo_y
-    l_dot_mu_el += lam[2] * mu_cmo_z
     
     # dipole constants to add to E_RHF
     #  0.5 * (\lambda \cdot \mu_{nuc})** 2 
@@ -176,18 +170,7 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
     Q_cmo_yy = np.dot(C.T, Q_ao_yy).dot(C)
     Q_cmo_yz = np.dot(C.T, Q_ao_yz).dot(C)
     Q_cmo_zz = np.dot(C.T, Q_ao_zz).dot(C)
-
-    # sum all terms of the quadrupole terms together and account
-    # for the negative sign and the factor of 1/2
-    Q_PF =  lam[0] * lam[0] * Q_cmo_xx
-    Q_PF += lam[1] * lam[1] * Q_cmo_yy
-    Q_PF += lam[2] * lam[2] * Q_cmo_zz
-    Q_PF += 2 * lam[0] * lam[1] * Q_cmo_xy
-    Q_PF += 2 * lam[0] * lam[2] * Q_cmo_xz
-    Q_PF += 2 * lam[1] * lam[2] * Q_cmo_yz
-
-    Q_PF *= -0.5
-
+    
     # build the (ov|ov) integrals:
     ovov = np.asarray(mints.mo_eri(Co, Cv, Co, Cv))
     
@@ -217,10 +200,17 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
     # add 1-electron contributions to diagonals
     for i in range(0,ndocc):
         # dipole terms scaled by dc_offset term
-        H_dse += l_dot_mu_el[i,i]
+        H_dse += dc_offset * lam[0] * mu_cmo_x[i,i]       
+        H_dse += dc_offset * lam[1] * mu_cmo_y[i,i]         
+        H_dse += dc_offset * lam[2] * mu_cmo_z[i,i]
         
         # quadrupole terms
-        H_dse += Q_PF[i,i]
+        H_dse += 0.5 * lam[0] * lam[0] * Q_cmo_xx[i,i]     
+        H_dse += 0.5 * lam[1] * lam[1] * Q_cmo_yy[i,i]  
+        H_dse += 0.5 * lam[2] * lam[2] * Q_cmo_zz[i,i] 
+        H_dse += lam[0] * lam[1] * Q_cmo_xy[i,i]
+        H_dse += lam[0] * lam[2] * Q_cmo_xz[i,i]
+        H_dse += lam[1] * lam[2] * Q_cmo_yz[i,i]
         
     # add 2-electron contributions to diagonals
     for i in range(0,ndocc):
@@ -272,8 +262,10 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
     H_blc = l_dot_mu_exp
     # now sum over occupied orbitals
     for i in range (0, ndocc):
-        H_blc -= l_dot_mu_el[i,i]
-
+        H_blc -= lam[0] * mu_cmo_x[i,i]
+        H_blc -= lam[1] * mu_cmo_y[i,i]
+        H_blc -= lam[1] * mu_cmo_z[i,i]
+        
     H_blc *= np.sqrt(omega_val / 2)
     
     ### off-diagonals for this block are the same!
@@ -294,11 +286,25 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
                     if s==t:
                         # quadrupole terms 
                         # xx
-                        H_dse +=  Q_PF[i,a]
+                        H_dse +=  0.5 * lam[0] * lam[0] * Q_cmo_xx[i,a]
+                        # yy
+                        H_dse += 0.5 * lam[1] * lam[1] * Q_cmo_yy[i,a]
+                        # zz
+                        H_dse += 0.5 * lam[2] * lam[2] * Q_cmo_zz[i,a]
+                        # xy
+                        H_dse += lam[0] * lam[1] * Q_cmo_xy[i,a]
+                        # xz 
+                        H_dse += lam[0] * lam[2] * Q_cmo_xz[i,a]
+                        # yz 
+                        H_dse += lam[1] * lam[2] * Q_cmo_yz[i,a]
                         
                         # 1e dipole terms scaled by dipole-offset 
                         # x
-                        H_dse += dc_offset * l_dot_mu_el[i,a]
+                        H_dse += dc_offset * lam[0] * mu_cmo_x[i,a]
+                        # y
+                        H_dse += dc_offset * lam[1] * mu_cmo_y[i,a]
+                        # z
+                        H_dse += dc_offset * lam[2] * mu_cmo_z[i,a]
                         
                         # 2e dipole terms
                         for j in range(0, ndocc):
