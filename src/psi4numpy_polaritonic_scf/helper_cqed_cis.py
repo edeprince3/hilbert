@@ -177,16 +177,13 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
     Q_cmo_yz = np.dot(C.T, Q_ao_yz).dot(C)
     Q_cmo_zz = np.dot(C.T, Q_ao_zz).dot(C)
 
-    # sum all terms of the quadrupole terms together and account
-    # for the negative sign and the factor of 1/2
+    # sum all terms of the quadrupole terms together
     Q_PF =  lam[0] * lam[0] * Q_cmo_xx
     Q_PF += lam[1] * lam[1] * Q_cmo_yy
     Q_PF += lam[2] * lam[2] * Q_cmo_zz
     Q_PF += 2 * lam[0] * lam[1] * Q_cmo_xy
     Q_PF += 2 * lam[0] * lam[2] * Q_cmo_xz
     Q_PF += 2 * lam[1] * lam[2] * Q_cmo_yz
-
-    Q_PF *= -0.5
 
     # build the (ov|ov) integrals:
     ovov = np.asarray(mints.mo_eri(Co, Cv, Co, Cv))
@@ -217,58 +214,25 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
     # add 1-electron contributions to diagonals
     for i in range(0,ndocc):
         # dipole terms scaled by dc_offset term
-        H_dse += l_dot_mu_el[i,i]
+        H_dse += dc_offset * l_dot_mu_el[i,i]
         
         # quadrupole terms
-        H_dse += Q_PF[i,i]
+        H_dse -= 0.5 * Q_PF[i,i]
         
     # add 2-electron contributions to diagonals
     for i in range(0,ndocc):
         for j in range(i+1, ndocc):
             # diagonal terms (xx, yy, zz)
             # xx
-            H_dse += lam[0] * lam[0] * mu_cmo_x[i,i] * mu_cmo_x[j,j]
-            H_dse -= 0.5 * lam[0] * lam[0] * mu_cmo_x[i,j] * mu_cmo_x[j,i]
+            H_dse += 2 * l_dot_mu_el[i,i] * l_dot_mu_el[j,j] 
+            H_dse -= l_dot_mu_el[i,j] * l_dot_mu_el[j,i]
             
-            # yy
-            H_dse += lam[1] * lam[1] * mu_cmo_y[i,i] * mu_cmo_y[j,j]
-            H_dse -= 0.5 * lam[1] * lam[1] * mu_cmo_y[i,j] * mu_cmo_y[j,i]
-            
-            # zz
-            H_dse += lam[2] * lam[2] * mu_cmo_z[i,i] * mu_cmo_z[j,j]
-            H_dse -= 0.5 * lam[2] * lam[2] * mu_cmo_z[i,j] * mu_cmo_z[j,i]
-
-            # off-diagonal terms (xy, xz, yz)
-            # xy 
-            H_dse += lam[0] * lam[1] * mu_cmo_x[i,i] * mu_cmo_y[j,j]
-            H_dse -= 0.5 * lam[0] * lam[1] * mu_cmo_x[i,j] * mu_cmo_y[j,i]
-
-            # yx
-            H_dse += lam[1] * lam[0] * mu_cmo_y[i,i] * mu_cmo_x[j,j]
-            H_dse -= 0.5 * lam[1] * lam[0] * mu_cmo_y[i,j] * mu_cmo_x[j,i]
-            
-            # xz
-            H_dse += lam[0] * lam[2] * mu_cmo_x[i,i] * mu_cmo_z[j,j]
-            H_dse -= 0.5 * lam[0] * lam[2] * mu_cmo_x[i,j] * mu_cmo_z[j,i]
-
-            # zx
-            H_dse += lam[2] * lam[0] * mu_cmo_z[i,i] * mu_cmo_x[j,j]
-            H_dse -= 0.5 * lam[2] * lam[0] * mu_cmo_z[i,j] * mu_cmo_x[j,i]
-            
-            # yz
-            H_dse += lam[1] * lam[2] * mu_cmo_y[i,i] * mu_cmo_z[j,j]
-            H_dse -= 0.5 * lam[1] * lam[2] * mu_cmo_y[i,j] * mu_cmo_z[j,i]
-
-            # zy
-            H_dse += lam[2] * lam[1] * mu_cmo_z[i,i] * mu_cmo_y[j,j]
-            H_dse -= 0.5 * lam[2] * lam[1] * mu_cmo_z[i,j] * mu_cmo_y[j,i]
+   
         
-    HCIS[0,0] = H_constants  
-    HCIS[1,1] = H_constants + omega_val
-    if include_dse:
-        HCIS[0,0] += H_dse
-        HCIS[1,1] += H_dse
-    
+    HCIS[0,0] = H_constants + H_dse
+    HCIS[1,1] = H_constants + H_dse + omega_val
+
+    # bilinear e-p term appears in <0|<\Phi_0 | H | \Phi_0>|1> and <1|\Phi_0 | H | \Phi_0>|0> elements
     H_blc = l_dot_mu_exp
     # now sum over occupied orbitals
     for i in range (0, ndocc):
@@ -291,65 +255,27 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
                 
                 for t in range(0,2):
                     H_dse = 0.
+                    H_blc = 0.
                     if s==t:
                         # quadrupole terms 
-                        # xx
-                        H_dse +=  Q_PF[i,a]
+                        H_dse -= 0.5 * Q_PF[i,a]
                         
                         # 1e dipole terms scaled by dipole-offset 
-                        # x
                         H_dse += dc_offset * l_dot_mu_el[i,a]
                         
                         # 2e dipole terms
                         for j in range(0, ndocc):
-                            # xx 
-                            H_dse += lam[0] * lam[0] * mu_cmo_x[i,a] * mu_cmo_x[j,j]
-                            H_dse -= 0.5 * lam[0] * lam[0] * mu_cmo_x[i,j] * mu_cmo_x[j,a]
-                            
-                            # yy
-                            H_dse += lam[1] * lam[1] * mu_cmo_y[i,a] * mu_cmo_y[j,j]
-                            H_dse -= 0.5 * lam[1] * lam[1] * mu_cmo_y[i,j] * mu_cmo_y[j,a]
-                            
-                            # zz
-                            H_dse += lam[2] * lam[2] * mu_cmo_z[i,a] * mu_cmo_z[j,j]
-                            H_dse -= 0.5 * lam[2] * lam[2] * mu_cmo_z[i,j] * mu_cmo_y[j,a]
-
-                            # xy
-                            H_dse += lam[0] * lam[1] * mu_cmo_x[i,a] * mu_cmo_y[j,j]
-                            H_dse -= 0.5 * lam[0] * lam[1] * mu_cmo_x[i,j] * mu_cmo_y[j,a]
-                            
-                            # yx
-                            H_dse += lam[1] * lam[0] * mu_cmo_y[i,a] * mu_cmo_x[j,j]
-                            H_dse -= 0.5 * lam[1] * lam[0] * mu_cmo_y[i,j] * mu_cmo_x[j,a]
-                            
-                            # xz
-                            H_dse += lam[0] * lam[2] * mu_cmo_x[i,a] * mu_cmo_z[j,j]
-                            H_dse -= 0.5 * lam[0] * lam[0] * mu_cmo_z[i,j] * mu_cmo_z[j,a]
-                            
-                            # zx
-                            H_dse += lam[2] * lam[0] * mu_cmo_z[i,a] * mu_cmo_x[j,j]
-                            H_dse -= 0.5 * lam[2] * lam[0] * mu_cmo_z[i,j] * mu_cmo_x[j,a]
-                            
-                            # yz
-                            H_dse += lam[1] * lam[2] * mu_cmo_y[i,a] * mu_cmo_z[j,j]
-                            H_dse -= 0.5 * lam[1] * lam[2] * mu_cmo_y[i,j] * mu_cmo_z[j,a]
-                            
-                            # zy
-                            H_dse += lam[2] * lam[1] * mu_cmo_z[i,a] * mu_cmo_y[j,j]
-                            H_dse -= 0.5 * lam[2] * lam[1] * mu_cmo_z[i,j] * mu_cmo_y[j,a]
+                            H_dse += 2 * l_dot_mu_el[i,a] * l_dot_mu_el[j,j]
+                            H_dse -= l_dot_mu_el[i,j] * l_dot_mu_el[j,a]
 
                     else:
-                        H_blc = lam[0] * mu_cmo_x[i,a]
-                        H_blc += lam[1] * mu_cmo_y[i,a]
-                        H_blc += lam[2] * mu_cmo_z[i,a]
-                        H_blc *= np.sqrt(omega_val/2)
+                        H_dse = 0.
+                        H_blc = np.sqrt(omega_val/2) * l_dot_mu_el[i,a]
 
-                if include_dse:
+
                     HCIS[ias,t] = H_blc + H_dse
                     HCIS[t,ias] = H_blc + H_dse
-                else:
-                    HCIS[ias,t] = H_blc
-                    HCIS[t,ias] = H_blc
+
           
                 
     # elements corresponding to <s|<\Phi_i^a| H | \Phi_j^b|t>
@@ -362,6 +288,7 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
                     for b in range(0, nvirt):
                         for t in range(0,2):
                             jbt = 2*(j*nvirt + b) + t + 2
+
                             H_dse = 0.
                             H_blc = 0.
                             H_elec = 0.
@@ -374,87 +301,22 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
 
                             if s==t and i==j:
                                 # quadrupole terms
-                                # xx
-                                H_dse += 0.5 * lam[0] * lam[0] * Q_cmo_xx[a,b]
-                                # yy
-                                H_dse += 0.5 * lam[1] * lam[1] * Q_cmo_yy[a,b]
-                                # zz
-                                H_dse += 0.5 * lam[2] * lam[2] * Q_cmo_zz[a,b]
-                                # xy
-                                H_dse += lam[0] * lam[1] * Q_cmo_xy[a,b]
-                                # xz
-                                H_dse += lam[0] * lam[2] * Q_cmo_xz[a,b]
-                                # yz
-                                H_dse += lam[1] * lam[2] * Q_cmo_xz[a,b]
+                                H_dse -= 0.5 * Q_PF[a,b]
 
                                 # scaled dipole terms
-                                # x
-                                H_dse += dc_offset * lam[0] * mu_cmo_x[a,b]
-                                # y
-                                H_dse += dc_offset * lam[1] * mu_cmo_y[a,b]
-                                # z 
-                                H_dse += dc_offset * lam[2] * mu_cmo_z[a,b]
+                                H_dse += dc_offset * l_dot_mu_el[a,b]
 
                             if s==t and a==b:
                                 # quadrupole terms
-                                # xx
-                                H_dse -= 0.5 * lam[0] * lam[0] * Q_cmo_xx[i,j]
-                                # yy
-                                H_dse -= 0.5 * lam[1] * lam[1] * Q_cmo_yy[i,j]
-                                # zz
-                                H_dse -= 0.5 * lam[2] * lam[2] * Q_cmo_zz[i,j]
-                                # xy
-                                H_dse -= lam[0] * lam[1] * Q_cmo_xy[i,j]
-                                # xz
-                                H_dse -= lam[0] * lam[2] * Q_cmo_xz[i,j]
-                                # yz
-                                H_dse -= lam[1] * lam[2] * Q_cmo_xz[i,j]
+                                H_dse += 0.5 * Q_PF[i,j]
 
                                 # scaled dipole terms
-                                # x
-                                H_dse -= dc_offset * lam[0] * mu_cmo_x[i,j]
-                                # y
-                                H_dse -= dc_offset * lam[1] * mu_cmo_y[i,j]
-                                # z 
-                                H_dse -= dc_offset * lam[2] * mu_cmo_z[i,j]
-
+                                H_dse -= dc_offset * l_dot_mu_el[i,j]
 
                             if s==t:
                                 # 2-e dipole terms
-                                # xx
-                                H_dse += lam[0] * lam[0] * mu_cmo_x[i,a] * mu_cmo_x[j,b]
-                                H_dse -= 0.5 * lam[0] * lam[0] * mu_cmo_x[i,j] * mu_cmo_x[a,b]
-
-                                # yy
-                                H_dse += lam[1] * lam[1] * mu_cmo_y[i,a] * mu_cmo_y[j,b]
-                                H_dse -= 0.5 * lam[1] * lam[1] * mu_cmo_y[i,j] * mu_cmo_y[a,b]
-                                # zz
-                                H_dse += lam[2] * lam[2] * mu_cmo_z[i,a] * mu_cmo_z[j,b]
-                                H_dse -= 0.5 * lam[2] * lam[2] * mu_cmo_z[i,j] * mu_cmo_z[a,b]
-                                
-                                # xy
-                                H_dse += lam[0] * lam[1] * mu_cmo_x[i,a] * mu_cmo_y[j,b]
-                                H_dse -= 0.5 * lam[0] * lam[1] * mu_cmo_x[i,j] * mu_cmo_y[a,b]
-
-                                # yx
-                                H_dse += lam[1] * lam[0] * mu_cmo_y[i,a] * mu_cmo_x[j,b]
-                                H_dse -= 0.5 * lam[1] * lam[0] * mu_cmo_y[i,j] * mu_cmo_x[a,b]
-
-                                # xz
-                                H_dse += lam[0] * lam[2] * mu_cmo_x[i,a] * mu_cmo_z[j,b]
-                                H_dse -= 0.5 * lam[0] * lam[2] * mu_cmo_x[i,j] * mu_cmo_z[a,b]
-
-                                # zx
-                                H_dse += lam[2] * lam[0] * mu_cmo_z[i,a] * mu_cmo_x[j,b]
-                                H_dse -= 0.5 * lam[2] * lam[0] * mu_cmo_z[i,j] * mu_cmo_x[a,b]
-
-                                # yz
-                                H_dse += lam[1] * lam[2] * mu_cmo_y[i,a] * mu_cmo_z[j,b]
-                                H_dse -= 0.5 * lam[1] * lam[2] * mu_cmo_y[i,j] * mu_cmo_z[a,b]
-
-                                # zy
-                                H_dse += lam[2] * lam[1] * mu_cmo_z[i,a] * mu_cmo_y[j,b]
-                                H_dse -= 0.5 * lam[2] * lam[1] * mu_cmo_z[i,j] * mu_cmo_y[a,b]
+                                H_dse += 2 * l_dot_mu_el[i,a] * l_dot_mu_el[j,b]
+                                H_dse -= l_dot_mu_el[i,j] * l_dot_mu_el[a,b]
 
                                 # 2e integral terms
                                 H_elec += 2 * ovov[i, a, j, b] - oovv[i,j,a,b]
@@ -464,25 +326,13 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
                                 H_blc += np.sqrt(omega_val/2) * l_dot_mu_exp
                             if (s==t+1 or s+1==t) and a==b:
                                 # dipole coupling terms
-                                # x
-                                H_blc += np.sqrt(omega_val/2) * lam[0] * mu_cmo_x[i,j]
-                                # y
-                                H_blc += np.sqrt(omega_val/2) * lam[1] * mu_cmo_y[i,j]
-                                # z
-                                H_blc += np.sqrt(omega_val/2) * lam[2] * mu_cmo_z[i,j]
+                                H_blc += np.sqrt(omega_val/2) * l_dot_mu_el[i,j]
                             if (s==t+1 or s+1==t) and i==j:
                                 # dipole coupling terms
-                                # x
-                                H_blc -= np.sqrt(omega_val/2) * lam[0] * mu_cmo_x[a,b]
-                                # y
-                                H_blc -= np.sqrt(omega_val/2) * lam[1] * mu_cmo_y[a,b]
-                                # z
-                                H_blc -= np.sqrt(omega_val/2) * lam[2] * mu_cmo_z[a,b]
+                                H_blc -= np.sqrt(omega_val/2) * l_dot_mu_el[a,b]
 
-                            if include_dse:
-                                HCIS[ias,jbt] = H_elec + H_blc + H_dse
-                            else:
-                                HCIS[ias,jbt] = H_elec + H_blc
+                            HCIS[ias, jbt] = H_elec + H_blc + H_dse
+
     #print("now formed")                        
     #print(HCIS)
     # now diagonalize H
