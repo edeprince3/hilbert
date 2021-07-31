@@ -1,28 +1,27 @@
-/*
- *@BEGIN LICENSE
- *
- * v2RDM-CASSCF, a plugin to:
- *
- * Psi4: an open-source quantum chemistry software package
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Copyright (c) 2014, The Florida State University. All rights reserved.
- *
- *@END LICENSE
- *
+/* 
+ *  @BEGIN LICENSE
+ * 
+ *  Hilbert: a space for quantum chemistry plugins to Psi4 
+ * 
+ *  Copyright (c) 2020 by its authors (LICENSE).
+ * 
+ *  The copyrights for code used from other parties are included in
+ *  the corresponding files.
+ * 
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ * 
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ * 
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ * 
+ *  @END LICENSE
  */
 
 #ifndef V2RDM_SOLVER_H
@@ -171,19 +170,19 @@ class v2RDMSolver: public Wavefunction{
     /// constrain G2 to be positive semidefinite?
     bool constrain_g2_;
 
-    /// constraint T1 = D3 + Q3 to be positive semidefinite?
+    /// constrain T1 = D3 + Q3 to be positive semidefinite?
     bool constrain_t1_;
 
-    /// constraint T2 = E3 + F3 to be positive semidefinite?
+    /// constrain T2 = E3 + F3 to be positive semidefinite?
     bool constrain_t2_;
 
-    /// constraint E3 to be positive semidefinite?
+    /// constrain E3 to be positive semidefinite?
     bool constrain_e3_;
 
-    /// constraint F3 to be positive semidefinite?
+    /// constrain F3 to be positive semidefinite?
     bool constrain_f3_;
 
-    /// constraint Q3 to be positive semidefinite?
+    /// constrain Q3 to be positive semidefinite?
     bool constrain_q3_;
 
     /// keep d3 positive semidefinite and constrain D3->D2 mapping?
