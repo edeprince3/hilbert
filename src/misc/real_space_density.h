@@ -62,23 +62,12 @@
 #include <psi4/libpsio/psio.hpp>
 #include <psi4/libpsi4util/PsiOutStream.h>
 
+// tpdm and opdm structs live here
+#include <v2rdm_casscf/v2rdm_solver.h>
+
 using namespace psi;
 
-namespace hilbert{ namespace real_space_density{
-
-struct tpdm {
-    int i;
-    int j;
-    int k;
-    int l;
-    double val;
-};
-
-struct opdm {
-    int i;
-    int j;
-    double val;
-};
+namespace hilbert{ 
 
 class RealSpaceDensity: public Wavefunction{
 
@@ -95,6 +84,9 @@ class RealSpaceDensity: public Wavefunction{
 
     // return grid points (z)
     std::shared_ptr<Vector> grid_z() { return grid_z_; }
+
+    // return grid weights (w)
+    std::shared_ptr<Vector> grid_w() { return grid_w_; }
 
     // return density (rho_a + rho_b) on grid 
     std::shared_ptr<Vector> rho() { return rho_; }
@@ -238,6 +230,6 @@ class RealSpaceDensity: public Wavefunction{
 
 };
 
-}} // end of namespaces
+} // end of namespaces
 
 #endif

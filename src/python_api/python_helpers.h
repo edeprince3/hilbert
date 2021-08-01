@@ -32,9 +32,30 @@
 #include <doci/doci_solver.h>
 #include <pp2rdm/pp2rdm_solver.h>
 #include <p2rdm/p2rdm_solver.h>
+#include <misc/real_space_density.h>
 
 namespace hilbert{
 
+class RealSpaceDensityHelper{
+
+  public:
+
+    RealSpaceDensityHelper(SharedWavefunction reference_wavefunction,Options & options);
+    ~RealSpaceDensityHelper();
+    std::vector<double> grid_x();
+    std::vector<double> grid_y();
+    std::vector<double> grid_z();
+    std::vector<double> grid_w();
+    std::vector<double> rho();
+    std::vector<double> rho_a();
+    std::vector<double> rho_b();
+
+  protected:
+
+    /// the RealSpaceDensity class 
+    std::shared_ptr<RealSpaceDensity> real_space_density;
+
+};
 class DOCIHelper{
 
   public:

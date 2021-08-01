@@ -90,10 +90,14 @@
 // openmp
 #include <misc/omp.h>
 
+// tpdm and opdm structs live here
+#include <v2rdm_casscf/v2rdm_solver.h>
+
+
 using namespace psi;
 using namespace fnocc;
 
-namespace hilbert{ namespace real_space_density {
+namespace hilbert{ 
 
 // the RealSpaceDensity class derives from the Wavefunction class and inherits its members
 RealSpaceDensity::RealSpaceDensity(std::shared_ptr<Wavefunction> reference_wavefunction,Options & options_):
@@ -111,6 +115,7 @@ RealSpaceDensity::~RealSpaceDensity() {
 void RealSpaceDensity::common_init() {
 
     reference_energy_ = Process::environment.globals["V2RDM TOTAL ENERGY"];
+
     
     shallow_copy(reference_wavefunction_);
 
@@ -182,7 +187,7 @@ void RealSpaceDensity::common_init() {
 
     // restricted orbitals, unrestricted rdms
 // TODO get these from reference wave function
-    same_a_b_orbs_ = true;
+    same_a_b_orbs_ = false;
     same_a_b_dens_ = false;
 
     // symmetry of orbitals:
@@ -474,12 +479,12 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(int p, tpdm * D2ab, int nab,
             pi += super_phi_->pointer(hi)[p][ii] * 
                   super_phi_->pointer(hj)[q][jj] * 
                   super_phi_->pointer(hk)[p][kk] * 
-                  super_phi_->pointer(hl)[q][ll] * D2ab[n].val * 0.5;
+                  super_phi_->pointer(hl)[q][ll] * D2ab[n].value * 0.5;
 
             pi += super_phi_->pointer(hi)[q][ii] * 
                   super_phi_->pointer(hj)[p][jj] * 
                   super_phi_->pointer(hk)[q][kk] * 
-                  super_phi_->pointer(hl)[p][ll] * D2ab[n].val * 0.5;
+                  super_phi_->pointer(hl)[p][ll] * D2ab[n].value * 0.5;
 
         }
         for (int n = 0; n < naa; n++) {
@@ -502,7 +507,7 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(int p, tpdm * D2ab, int nab,
             pi += super_phi_->pointer(hi)[p][ii] * 
                   super_phi_->pointer(hj)[q][jj] * 
                   super_phi_->pointer(hk)[p][kk] * 
-                  super_phi_->pointer(hl)[q][ll] * D2aa[n].val * 0.5;
+                  super_phi_->pointer(hl)[q][ll] * D2aa[n].value * 0.5;
 
         }
         for (int n = 0; n < nbb; n++) {
@@ -525,7 +530,7 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(int p, tpdm * D2ab, int nab,
             pi += super_phi_->pointer(hi)[p][ii] * 
                   super_phi_->pointer(hj)[q][jj] * 
                   super_phi_->pointer(hk)[p][kk] * 
-                  super_phi_->pointer(hl)[q][ll] * D2bb[n].val * 0.5;
+                  super_phi_->pointer(hl)[q][ll] * D2bb[n].value * 0.5;
 
         }
         double nxc = (2.0 * pi - rho_p[p] * rho_p[q]) / rho_p[p];
@@ -574,7 +579,7 @@ void RealSpaceDensity::BuildPiFast(tpdm * D2ab, int nab) {
             dum += super_phi_->pointer(hi)[p][ii] * 
                    super_phi_->pointer(hj)[p][jj] * 
                    super_phi_->pointer(hk)[p][kk] * 
-                   super_phi_->pointer(hl)[p][ll] * D2ab[n].val;
+                   super_phi_->pointer(hl)[p][ll] * D2ab[n].value;
 
         }
 
@@ -635,7 +640,7 @@ void RealSpaceDensity::BuildPiFast(tpdm * D2ab, int nab) {
                        super_phi_->pointer(hi)[p][ii] *
                        super_phi_->pointer(hj)[p][jj] *
                        super_phi_->pointer(hk)[p][kk] * 
-                       super_phi_x_->pointer(hl)[p][ll] ) * D2ab[n].val;
+                       super_phi_x_->pointer(hl)[p][ll] ) * D2ab[n].value;
 
             dum_y += ( super_phi_y_->pointer(hi)[p][ii] *
                        super_phi_->pointer(hj)[p][jj] *
@@ -655,7 +660,7 @@ void RealSpaceDensity::BuildPiFast(tpdm * D2ab, int nab) {
                        super_phi_->pointer(hi)[p][ii] *
                        super_phi_->pointer(hj)[p][jj] *
                        super_phi_->pointer(hk)[p][kk] * 
-                       super_phi_y_->pointer(hl)[p][ll] ) * D2ab[n].val;
+                       super_phi_y_->pointer(hl)[p][ll] ) * D2ab[n].value;
 
             dum_z += ( super_phi_z_->pointer(hi)[p][ii] *
                        super_phi_->pointer(hj)[p][jj] *
@@ -675,7 +680,7 @@ void RealSpaceDensity::BuildPiFast(tpdm * D2ab, int nab) {
                        super_phi_->pointer(hi)[p][ii] *
                        super_phi_->pointer(hj)[p][jj] *
                        super_phi_->pointer(hk)[p][kk] * 
-                       super_phi_z_->pointer(hl)[p][ll] ) * D2ab[n].val;
+                       super_phi_z_->pointer(hl)[p][ll] ) * D2ab[n].value;
 
         }
 
@@ -728,7 +733,7 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
             int jj = j - pitzer_offset_[hj];
 
             duma += super_phi_->pointer(hi)[p][ii] *
-                    super_phi_->pointer(hj)[p][jj] * opdm_a_[n].val;
+                    super_phi_->pointer(hj)[p][jj] * opdm_a_[n].value;
 
         }
         rho_ap[p] = duma;
@@ -747,7 +752,7 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
             int jj = j - pitzer_offset_[hj];
 
             dumb += super_phi_->pointer(hi)[p][ii] *
-                    super_phi_->pointer(hj)[p][jj] * opdm_b_[n].val;
+                    super_phi_->pointer(hj)[p][jj] * opdm_b_[n].value;
 
         }
         rho_bp[p] = dumb;
@@ -813,17 +818,17 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
             int jj = j - pitzer_offset_[hj];
             
             duma_x += ( super_phi_x_->pointer(hi)[p][ii] * super_phi_->pointer(hj)[p][jj] 
-                    +   super_phi_->pointer(hi)[p][ii] * super_phi_x_->pointer(hj)[p][jj] ) * opdm_a_[n].val;
+                    +   super_phi_->pointer(hi)[p][ii] * super_phi_x_->pointer(hj)[p][jj] ) * opdm_a_[n].value;
 
             duma_y += ( super_phi_y_->pointer(hi)[p][ii] * super_phi_->pointer(hj)[p][jj] 
-                    +   super_phi_->pointer(hi)[p][ii] * super_phi_y_->pointer(hj)[p][jj] ) * opdm_a_[n].val;
+                    +   super_phi_->pointer(hi)[p][ii] * super_phi_y_->pointer(hj)[p][jj] ) * opdm_a_[n].value;
 
             duma_z += ( super_phi_z_->pointer(hi)[p][ii] * super_phi_->pointer(hj)[p][jj] 
-                    +   super_phi_->pointer(hi)[p][ii] * super_phi_z_->pointer(hj)[p][jj] ) * opdm_a_[n].val;
+                    +   super_phi_->pointer(hi)[p][ii] * super_phi_z_->pointer(hj)[p][jj] ) * opdm_a_[n].value;
 
             dumta  += ( super_phi_x_->pointer(hi)[p][ii] * super_phi_x_->pointer(hj)[p][jj] 
     	        +   super_phi_y_->pointer(hi)[p][ii] * super_phi_y_->pointer(hj)[p][jj]
-                    +   super_phi_z_->pointer(hi)[p][ii] * super_phi_z_->pointer(hj)[p][jj] ) * opdm_a_[n].val;
+                    +   super_phi_z_->pointer(hi)[p][ii] * super_phi_z_->pointer(hj)[p][jj] ) * opdm_a_[n].value;
         }
 
         // rho'_b(r)
@@ -845,17 +850,17 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
             int jj = j - pitzer_offset_[hj];
             
             dumb_x += ( super_phi_x_->pointer(hi)[p][ii] * super_phi_->pointer(hj)[p][jj] 
-                    +   super_phi_->pointer(hi)[p][ii] * super_phi_x_->pointer(hj)[p][jj] ) * opdm_b_[n].val;
+                    +   super_phi_->pointer(hi)[p][ii] * super_phi_x_->pointer(hj)[p][jj] ) * opdm_b_[n].value;
             
             dumb_y += ( super_phi_y_->pointer(hi)[p][ii] * super_phi_->pointer(hj)[p][jj] 
-                    +   super_phi_->pointer(hi)[p][ii] * super_phi_y_->pointer(hj)[p][jj] ) * opdm_b_[n].val;
+                    +   super_phi_->pointer(hi)[p][ii] * super_phi_y_->pointer(hj)[p][jj] ) * opdm_b_[n].value;
             
             dumb_z += ( super_phi_z_->pointer(hi)[p][ii] * super_phi_->pointer(hj)[p][jj] 
-                    +   super_phi_->pointer(hi)[p][ii] * super_phi_z_->pointer(hj)[p][jj] ) * opdm_b_[n].val;
+                    +   super_phi_->pointer(hi)[p][ii] * super_phi_z_->pointer(hj)[p][jj] ) * opdm_b_[n].value;
 
             dumtb  += ( super_phi_x_->pointer(hi)[p][ii] * super_phi_x_->pointer(hj)[p][jj] 
     	        +   super_phi_y_->pointer(hi)[p][ii] * super_phi_y_->pointer(hj)[p][jj]
-                    +   super_phi_z_->pointer(hi)[p][ii] * super_phi_z_->pointer(hj)[p][jj] ) * opdm_b_[n].val;
+                    +   super_phi_z_->pointer(hi)[p][ii] * super_phi_z_->pointer(hj)[p][jj] ) * opdm_b_[n].value;
         }
 
         rho_a_xp[p] = duma_x;
@@ -929,7 +934,7 @@ void RealSpaceDensity::ReadOPDM() {
         int ii = i - pitzer_offset_[hi];
         int jj = j - pitzer_offset_[hi];
 
-        Da_->pointer(hi)[ii][jj] = opdm_a_[n].val;
+        Da_->pointer(hi)[ii][jj] = opdm_a_[n].value;
 
     }
 
@@ -959,7 +964,7 @@ void RealSpaceDensity::ReadOPDM() {
         int ii = i - pitzer_offset_[hi];
         int jj = j - pitzer_offset_[hi];
 
-        Db_->pointer(hi)[ii][jj] = opdm_b_[n].val;
+        Db_->pointer(hi)[ii][jj] = opdm_b_[n].value;
 
     }
 
@@ -1035,4 +1040,4 @@ void RealSpaceDensity::ReadTPDM() {
 
 }
 
-}} //end namespaces
+} //end namespaces

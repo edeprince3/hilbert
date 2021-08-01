@@ -35,6 +35,7 @@
 #include <doci/doci_solver.h>
 #include <pp2rdm/pp2rdm_solver.h>
 #include <p2rdm/p2rdm_solver.h>
+#include <misc/real_space_density.h>
 
 using namespace psi;
 
@@ -44,6 +45,17 @@ using namespace pybind11::literals;
 namespace hilbert{
 
 void export_HilbertHelper(py::module& m) {
+
+    // real space density
+    py::class_<RealSpaceDensityHelper, std::shared_ptr<RealSpaceDensityHelper> >(m, "RealSpaceDensityHelper")
+        .def(py::init<std::shared_ptr<Wavefunction>,Options &>())
+        .def("grid_x", &RealSpaceDensityHelper::grid_x)
+        .def("grid_y", &RealSpaceDensityHelper::grid_y)
+        .def("grid_z", &RealSpaceDensityHelper::grid_z)
+        .def("grid_w", &RealSpaceDensityHelper::grid_w)
+        .def("rho", &RealSpaceDensityHelper::rho)
+        .def("rho_a", &RealSpaceDensityHelper::rho_a)
+        .def("rho_b", &RealSpaceDensityHelper::rho_b);
 
     // doci
     py::class_<DOCIHelper, std::shared_ptr<DOCIHelper> >(m, "DOCIHelper")
@@ -95,6 +107,61 @@ PYBIND11_MODULE(hilbert, m) {
     m.doc() = "Python API of Hilbert";
     export_HilbertHelper(m);
 }
+
+// begin real space density
+
+RealSpaceDensityHelper::RealSpaceDensityHelper(SharedWavefunction reference_wavefunction,Options & options)
+{
+    real_space_density = (std::shared_ptr<RealSpaceDensity>)(new RealSpaceDensity(reference_wavefunction,options));
+}
+
+RealSpaceDensityHelper::~RealSpaceDensityHelper()
+{
+}
+
+std::vector<double> RealSpaceDensityHelper::grid_x() {
+    std::shared_ptr<Vector> vec = real_space_density->grid_x();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::grid_y() {
+    std::shared_ptr<Vector> vec = real_space_density->grid_y();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::grid_z() {
+    std::shared_ptr<Vector> vec = real_space_density->grid_z();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::grid_w() {
+    std::shared_ptr<Vector> vec = real_space_density->grid_w();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho() {
+    std::shared_ptr<Vector> vec = real_space_density->rho();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_a() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_a();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_b() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_b();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+
 
 // begin DOCI
 
