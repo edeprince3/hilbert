@@ -101,10 +101,10 @@ RealSpaceDensity::RealSpaceDensity(std::shared_ptr<Wavefunction> reference_wavef
 
     reference_wavefunction_ = reference_wavefunction;
     common_init();
+    build_density();
 }
 
 RealSpaceDensity::~RealSpaceDensity() {
-
 }
 
 // initialize members of the RealSpaceDensity class
@@ -438,23 +438,11 @@ void RealSpaceDensity::TransformPhiMatrixAOMO(std::shared_ptr<Matrix> phi_in, st
     }
 }
 
-double RealSpaceDensity::compute_energy() {
+void RealSpaceDensity::build_density() {
     
     // read 1- and 2-RDM from disk and build rho(r), rho'(r), pi(r), and pi'(r)
-
-// TODO GET RID OF REFERENCE TYPE
-    if ( options_.get_str("MCPDFT_REFERENCE") == "V2RDM" ) {
-
-        ReadOPDM();
-        ReadTPDM();
-
-    }else {
-
-        throw PsiException("invalid MCPDFT_REFERENCE type",__FILE__,__LINE__);
-
-    }
-
-    return 0.0;
+    ReadOPDM();
+    ReadTPDM();
 }
 
 void RealSpaceDensity::BuildExchangeCorrelationHole(int p, tpdm * D2ab, int nab, tpdm * D2aa, int naa, tpdm * D2bb, int nbb) {

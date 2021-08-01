@@ -86,8 +86,28 @@ class RealSpaceDensity: public Wavefunction{
 
     RealSpaceDensity(std::shared_ptr<psi::Wavefunction> reference_wavefunction,Options & options);
     ~RealSpaceDensity();
+
+    // return grid points (x)
+    std::shared_ptr<Vector> grid_x() { return grid_x_; }
+
+    // return grid points (y)
+    std::shared_ptr<Vector> grid_y() { return grid_y_; }
+
+    // return grid points (z)
+    std::shared_ptr<Vector> grid_z() { return grid_z_; }
+
+    // return density (rho_a + rho_b) on grid 
+    std::shared_ptr<Vector> rho() { return rho_; }
+
+    // return density (rho_a) on grid 
+    std::shared_ptr<Vector> rho_a() { return rho_a_; }
+
+    // return density (rho_b) on grid 
+    std::shared_ptr<Vector> rho_b() { return rho_b_; }
+
     void common_init();
-    double compute_energy();
+    void build_density();
+
     virtual bool same_a_b_orbs() const { return same_a_b_orbs_; }
     virtual bool same_a_b_dens() const { return same_a_b_dens_; }
 
