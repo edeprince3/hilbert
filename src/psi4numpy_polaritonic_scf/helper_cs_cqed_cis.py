@@ -1,5 +1,5 @@
 """
-Helper function for CQED_RHF
+Helper function for CQED_CIS in the coherent state basis optimized by cqed_rhf
 
 """
 
@@ -15,8 +15,9 @@ import psi4
 import numpy as np
 import scipy.linalg as la
 import time
+from helper_cqed_rhf import *
 
-def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=True):
+def cs_cqed_cis(lam, molecule_string, psi4_options_dict, omega_val):
     """ Computes the QED-CIS energy and wavefunction
 
         Arguments
@@ -32,14 +33,14 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
 
         Returns
         -------
-        psi4_cis_energy : float
+        psi4_scf_energy : float
             Ground state energy from canonical RHF wavefunction from
 
         cqed_cis_energy : float
-            Ground state energy of the CQED_RHF wavefunction
+            Array of excitation energies computed from cs_cqed_cis Hamiltonian
 
         cqed_cis_wavefunction : 1 x nocc * nvirt * nphoton array of floats
-            Transformation vectors corresponding to the CQED_RHF orbitals
+            cs_cqed_cis eigenvectors
 
         Example
         -------
@@ -51,10 +52,19 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
     # define options for the calculation
     psi4.set_options(psi4_options_dict)
     # run psi4 to get ordinary scf energy and wavefunction object
-    scf_e, wfn = psi4.energy('scf', return_wfn=True)
+    #scf_e, wfn = psi4.energy('scf', return_wfn=True)
+
+    # run cqed_rhf method
+    cqed_rhf_dict = cqed_rhf(lam, molecule_string)
     
-    # ==> Nuclear Repulsion Energy <==
-    E_nuc = mol.nuclear_repulsion_energy()
+    # grab necessary quantities from cqed_rhf_dict
+    scf_e  = cqed_rhf_dict['rhf_energy']
+    cqed_scf_e = cqed_rhf_dict['cqed_rhf_energy']
+    wfn = cqed_rhf_dict['psi4_wfn']
+    C = cqed_rhf_dict['cqed_rhf_transformation_vectors']
+    eps = cqed_rhf_dict['cqed_rhf_orbital_energies']
+    cqed_rhf_dipole_moment = cqed_rhf_dict['cqed_rhf_dipole_moment']
+
     nmo = wfn.nmo()
 
     # Create instance of MintsHelper class
@@ -70,35 +80,36 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
     
     # number of virtual orbitals
     nvirt   = nmo - ndocc
+
+    # need to update the Co and Cv core matrix objects so we can
+    # utlize psi4s fast integral transformation!
+
+    # first collect rhf wfn object as dictionary
+    wfn_dict = psi4.core.Wavefunction.to_file(wfn)
     
-    # grab all transformation vectors and store to a numpy array!
-    C = np.asarray(wfn.Ca())
-    
-    # occupied orbitals:
+    # Get orbitals from CQED
+    wfn_dict['matrix']['Ca'] = C
+    wfn_dict['matrix']['Cb'] = C
+    # update wfn object
+    wfn = psi4.core.Wavefunction.from_file(wfn_dict) 
+
+    # occupied orbitals as psi4 objects but they correspond to CQED-RHF orbitals
     Co = wfn.Ca_subset("AO", "OCC")
     
-    # virtual orbitals:
+    # virtual orbitals same way
     Cv = wfn.Ca_subset("AO", "VIR")
     
-    # grab all transformation vectors and store to a numpy array!
-    C = np.asarray(wfn.Ca())
-    
-    # orbital energies
-    eps     = np.asarray(wfn.epsilon_a())
-    
-    # ==> Nuclear Repulsion Energy <==
-    E_nuc = mol.nuclear_repulsion_energy()
-    
-    print("\nNumber of occupied orbitals: %d" % ndocc)
-    
-    # 2 electron integrals in ao basis
-    #I = np.asarray(mints.ao_eri())
-
-    # 2 electron integrals in mo basis
+    # 2 electron integrals in CQED-RHF basis
     ovov = np.asarray(mints.mo_eri(Co, Cv, Co, Cv))
     
     # build the (oo|vv) integrals:
     oovv = np.asarray(mints.mo_eri(Co, Co, Cv, Cv))
+
+    # strip out occupied orbital energies, eps_o spans 0..ndocc-1
+    eps_o = eps[:ndocc]
+    
+    # strip out virtual orbital energies, eps_v spans 0..nvirt-1
+    eps_v = eps[ndocc:]
     
     # Extra terms for Pauli-Fierz Hamiltonian
     # nuclear dipole
@@ -132,7 +143,13 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
     mu_exp_x += mu_nuc_x
     mu_exp_y += mu_nuc_y
     mu_exp_z += mu_nuc_z
-        
+    
+    # also have the dipole moment expectation value from the cqed_rhf_dict...
+    # check to see if it matches!
+    assert(np.isclose(mu_exp_x, cqed_rhf_dipole_moment[0]))
+    assert(np.isclose(mu_exp_y, cqed_rhf_dipole_moment[1]))
+    assert(np.isclose(mu_exp_z, cqed_rhf_dipole_moment[2]))
+
     # We need to carry around the electric field dotted into the nuclear dipole moment
     # and the electric field dotted into the RHF electronic dipole expectation value...
     # so let's compute them here!
@@ -153,6 +170,9 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
     #      - (\lambda \cdot <\mu> ) ( \lambda \cdot \mu_{nuc})
     # +0.5 * (\lambda \cdot <\mu>) ** 2
     d_c = 0.5 * l_dot_mu_nuc **2 - l_dot_mu_nuc * l_dot_mu_exp + 0.5 * l_dot_mu_exp ** 2
+
+    # again check to see if this thing is close to what we have from CQED-RHF calculation!
+    assert np.isclose(d_c, cqed_rhf_dict['Nuclear Dipolar Energy'])
     
     # quadrupole arrays
     # Q_ao_xx[0,0] would correspond to the integral
@@ -185,153 +205,65 @@ def cqed_cis(lam, molecule_string, psi4_options_dict, omega_val, include_dse=Tru
     Q_PF += 2 * lam[0] * lam[2] * Q_cmo_xz
     Q_PF += 2 * lam[1] * lam[2] * Q_cmo_yz
 
-    # build the (ov|ov) integrals:
-    ovov = np.asarray(mints.mo_eri(Co, Cv, Co, Cv))
-    
-    # build the (oo|vv) integrals:
-    oovv = np.asarray(mints.mo_eri(Co, Co, Cv, Cv))
-    # strip out occupied orbital energies, eps_o spans 0..ndocc-1
-    eps_o = eps[:ndocc]
-    
-    # strip out virtual orbital energies, eps_v spans 0..nvirt-1
-    eps_v = eps[ndocc:]
 
-    # create Hamiltonian
-    HCIS = np.zeros((2 + ndocc * nvirt * 2, 2 + ndocc * nvirt * 2))
+
+    # create Hamiltonian for elements H[ias, jbt]
+    HCIS = np.zeros((ndocc * nvirt * 2 + 2, ndocc * nvirt * 2 + 2))
+
+    HCIS[0,0] = d_c
+    HCIS[1,1] = np.sqrt(1) * omega_val + d_c
+
     
     # (\lambda \cdot \mu_nuc - \lambda \cdot <\mu>) term
     dc_offset = l_dot_mu_nuc - l_dot_mu_exp
-    
-    # elements corresponding to <s|<\Phi_0 | H | \Phi_0>|t> go here
-    # <0|\Phi_0| H |\Phi_0>0>
-    
-    # constant terms in the diagonals
-    H_constants = scf_e
-    H_dse = d_c
-    H_blc = 0.0
-    
-    
-    # add 1-electron contributions to diagonals
-    for i in range(0,ndocc):
-        # dipole terms scaled by dc_offset term
-        H_dse += dc_offset * l_dot_mu_el[i,i]
-        
-        # quadrupole terms
-        H_dse -= 0.5 * Q_PF[i,i]
-        
-    # add 2-electron contributions to diagonals
-    for i in range(0,ndocc):
-        for j in range(i+1, ndocc):
-            # diagonal terms (xx, yy, zz)
-            # xx
-            H_dse += 2 * l_dot_mu_el[i,i] * l_dot_mu_el[j,j] 
-            H_dse -= l_dot_mu_el[i,j] * l_dot_mu_el[j,i]
-            
-   
-        
-    HCIS[0,0] = H_constants + H_dse
-    HCIS[1,1] = H_constants + H_dse + omega_val
 
-    # bilinear e-p term appears in <0|<\Phi_0 | H | \Phi_0>|1> and <1|\Phi_0 | H | \Phi_0>|0> elements
-    H_blc = l_dot_mu_exp
-    # now sum over occupied orbitals
-    for i in range (0, ndocc):
-        H_blc -= l_dot_mu_el[i,i]
-
-    H_blc *= np.sqrt(omega_val / 2)
-    
-    ### off-diagonals for this block are the same!
-    HCIS[0,1] = H_blc
-    HCIS[1,0] = H_blc
-    
-    
-    # elements corresponding to <s|<\Phi_i^a| H | \Phi_0|t> and <s|<\Phi_0| H | \Phi_i^a|t> go here!
-    for i in range(0, ndocc):
-        for a in range(0, nvirt):
-            for s in range(0,2):
-                # offset by 2 to account for the <s|<\Phi_0| H|\Phi_0>|t> block
-                ias = 2*(i*nvirt + a) + s + 2
-                
-                
+    # elements corresponding to <s|<\Phi_0 | H | \Phi_i^a>|t>
+    for s in range(0,2):
+        for i in range(0,ndocc):
+            for a in range(0,nvirt):
+                A = a + ndocc
                 for t in range(0,2):
-                    H_dse = 0.
-                    H_blc = 0.
-                    if s==t:
-                        # quadrupole terms 
-                        H_dse -= 0.5 * Q_PF[i,a]
-                        
-                        # 1e dipole terms scaled by dipole-offset 
-                        H_dse += dc_offset * l_dot_mu_el[i,a]
-                        
-                        # 2e dipole terms
-                        for j in range(0, ndocc):
-                            H_dse += 2 * l_dot_mu_el[i,a] * l_dot_mu_el[j,j]
-                            H_dse -= l_dot_mu_el[i,j] * l_dot_mu_el[j,a]
+                    iat = 2*(i*nvirt + a) + t + 2
+                    HCIS[s,iat] = -np.sqrt(omega_val/2) *  l_dot_mu_el[i,A] * (s==t+1)
+                    HCIS[s,iat] -= np.sqrt(omega_val/2) *  l_dot_mu_el[i,A] * (s+1==t)
+                    HCIS[iat,s] = -np.sqrt(omega_val/2) *  l_dot_mu_el[i,A] * (s==t+1)
+                    HCIS[iat,s] -= np.sqrt(omega_val/2) *  l_dot_mu_el[i,A] * (s+1==t)
+    
 
-                    else:
-                        H_dse = 0.
-                        H_blc = np.sqrt(omega_val/2) * l_dot_mu_el[i,a]
-
-
-                    HCIS[ias,t] = H_blc + H_dse
-                    HCIS[t,ias] = H_blc + H_dse
-
-          
-                
     # elements corresponding to <s|<\Phi_i^a| H | \Phi_j^b|t>
     for i in range(0, ndocc):
         for a in range(0, nvirt):
+            A = a+ndocc
             for s in range(0,2):
                 ias = 2*(i*nvirt + a) + s + 2
                 
                 for j in range(0, ndocc):
                     for b in range(0, nvirt):
+                        B = b+ndocc
                         for t in range(0,2):
                             jbt = 2*(j*nvirt + b) + t + 2
-
-                            H_dse = 0.
-                            H_blc = 0.
-                            H_elec = 0.
-
-                            # most restrictive constraint
-                            if s==t and i==j and a==b:
-                                H_dse +=  d_c
-                                H_elec += eps_v[a]
-                                H_elec -= eps_o[i]
-
-                            if s==t and i==j:
-                                # quadrupole terms
-                                H_dse -= 0.5 * Q_PF[a,b]
-
-                                # scaled dipole terms
-                                H_dse += dc_offset * l_dot_mu_el[a,b]
-
-                            if s==t and a==b:
-                                # quadrupole terms
-                                H_dse += 0.5 * Q_PF[i,j]
-
-                                # scaled dipole terms
-                                H_dse -= dc_offset * l_dot_mu_el[i,j]
-
-                            if s==t:
-                                # 2-e dipole terms
-                                H_dse += 2 * l_dot_mu_el[i,a] * l_dot_mu_el[j,b]
-                                H_dse -= l_dot_mu_el[i,j] * l_dot_mu_el[a,b]
-
-                                # 2e integral terms
-                                H_elec += 2 * ovov[i, a, j, b] - oovv[i,j,a,b]
-
-                            if (s==t+1 or s+1==t) and i==j and a==b:
-                                # constant l dot mu term
-                                H_blc += np.sqrt(omega_val/2) * l_dot_mu_exp
-                            if (s==t+1 or s+1==t) and a==b:
-                                # dipole coupling terms
-                                H_blc += np.sqrt(omega_val/2) * l_dot_mu_el[i,j]
-                            if (s==t+1 or s+1==t) and i==j:
-                                # dipole coupling terms
-                                H_blc -= np.sqrt(omega_val/2) * l_dot_mu_el[a,b]
-
-                            HCIS[ias, jbt] = H_elec + H_blc + H_dse
+                            # ERIs
+                            HCIS[ias,jbt] =  (2.0 * ovov[i, a, j, b] - oovv[i, j, a, b]) * (s==t)
+                            # 2-electron dipole terms
+                            # ordinary
+                            HCIS[ias,jbt] += (2.0 * l_dot_mu_el[i,A] * l_dot_mu_el[j,B]) * (s==t)
+                            # exchange
+                            HCIS[ias,jbt] -= l_dot_mu_el[i,j] * l_dot_mu_el[A,B] * (s==t)
+                            # 1-electron orbital energies
+                            HCIS[ias,jbt] += eps_v[a] * (s==t) * (a==b) * (i==j)
+                            HCIS[ias,jbt] -= eps_o[i] * (s==t) * (a==b) * (i==j)
+                            # photonic and dipole energy term
+                            HCIS[ias,jbt] += (omega_val * np.sqrt(t) + d_c) * (s==t) * (i==j) * (a==b)
+                            # 1-electron dipole and quadrupole terms
+                            HCIS[ias,jbt] += (dc_offset * l_dot_mu_el[A,B] - 0.5 * Q_PF[A,B]) * (s==t) * (i==j)
+                            HCIS[ias,jbt] -= (dc_offset * l_dot_mu_el[i,j] - 0.5 * Q_PF[i,j]) * (s==t) * (a==b)
+                            # bilinear coupling
+                            HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_exp * (i==j) * (a==b) * (s==t+1)
+                            HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_exp * (i==j) * (a==b) * (s+1==t)
+                            HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (a==b) * (s==t+1)
+                            HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (a==b) * (s+1==t)
+                            HCIS[ias,jbt] -= np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (i==j) * (s==t+1)
+                            HCIS[ias,jbt] -= np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (i==j) * (s+1==t)
 
     #print("now formed")                        
     #print(HCIS)

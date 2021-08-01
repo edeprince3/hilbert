@@ -16,7 +16,7 @@ import numpy as np
 import scipy.linalg as la
 import time
 
-def cqed_rhf(lambda_vector, molecule_string, print_scf_data=False):
+def cqed_rhf(lambda_vector, molecule_string):
     """ Computes the QED-RHF energy and density 
 
         Arguments
@@ -27,8 +27,10 @@ def cqed_rhf(lambda_vector, molecule_string, print_scf_data=False):
         molecule_string : string
             specifies the molecular geometry
 
-        print_scf_iterations : bool (optional)
-            specifies if we should print details from the SCF iterations.  default is False
+        self_consistent_dipole : bool (optional)
+            specifies if the dipole moment expectation value should be updated within the SCF iterations
+            'False' will simply use the RHF dipole expectation value throughout
+            defaults to True if no argument passed
 
         Returns
         -------
@@ -50,6 +52,7 @@ def cqed_rhf(lambda_vector, molecule_string, print_scf_data=False):
     mol = psi4.geometry(molecule_string)
     # run psi4 to get ordinary scf energy and wavefunction object
     psi4_rhf_energy, wfn = psi4.energy('scf', return_wfn=True)
+    print(psi4_rhf_energy)
 
     # Create instance of MintsHelper class
     mints = psi4.core.MintsHelper(wfn.basisset())
@@ -163,7 +166,7 @@ def cqed_rhf(lambda_vector, molecule_string, print_scf_data=False):
     # form guess density
     D = np.einsum("pi,qi->pq", Cocc, Cocc)  # [Szabo:1996] Eqn. 3.145, pp. 139
 
-    
+    print("\nStart SCF iterations:\n")
     t = time.time()
     E = 0.0
     Enuc = mol.nuclear_repulsion_energy()
@@ -171,17 +174,15 @@ def cqed_rhf(lambda_vector, molecule_string, print_scf_data=False):
     Dold = np.zeros_like(D)
     E_1el_crhf = np.einsum("pq,pq->", H_0 + H_0, D)
     E_1el = np.einsum("pq,pq->", H + H, D)
-    if print_scf_data:
-        print("\nStarting SCF iterations:\n")
-        print("Canonical RHF One-electron energy = %4.16f" % E_1el_crhf)
-        print("CQED-RHF One-electron energy      = %4.16f" % E_1el)
-        print("Nuclear repulsion energy          = %4.16f" % Enuc)
-        print("Dipole energy                     = %4.16f" % d_c )
+    print("Canonical RHF One-electron energy = %4.16f" % E_1el_crhf)
+    print("CQED-RHF One-electron energy = %4.16f" % E_1el)
+    print("Nuclear repulsion energy = %4.16f" % Enuc)
+    print("Dipole energy = %4.16f" % d_c )
 
     # Set convergence criteria
     maxiter = 500
-    E_conv = 1.0e-8
-    D_conv = 1.0e-8
+    E_conv = 1.0e-6
+    D_conv = 5.0e-5
     t = time.time()
     for SCF_ITER in range(1, maxiter + 1):
 
@@ -205,12 +206,10 @@ def cqed_rhf(lambda_vector, molecule_string, print_scf_data=False):
         # SCF energy and update: [Szabo:1996], Eqn. 3.184, pp. 150
         SCF_E = np.einsum("pq,pq->", F + H, D) + Enuc + d_c
 
-        if print_scf_data:
-            print(
-                "SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E"
-                % (SCF_ITER, SCF_E, (SCF_E - Eold), dRMS)
-            )
-        
+        print(
+            "SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E"
+            % (SCF_ITER, SCF_E, (SCF_E - Eold), dRMS)
+        )
         if (abs(SCF_E - Eold) < E_conv) and (dRMS < D_conv):
             break
 
@@ -259,15 +258,28 @@ def cqed_rhf(lambda_vector, molecule_string, print_scf_data=False):
         if SCF_ITER == maxiter:
             psi4.core.clean()
             raise Exception("Maximum number of SCF cycles exceeded.")
+            
+    print("Performed QED-RHF on the following molecule")
+    print(molecule_string)
+    print("Total time for SCF iterations: %.3f seconds \n" % (time.time() - t))
 
-    if print_scf_data:       
-        print("Performed QED-RHF on the following molecule")
-        print(molecule_string)
-        print("Electric field vector is (%.3f" % lambda_vector[0], "%.3f" % lambda_vector[1], "%.3f)\n" % lambda_vector[2])
-        print("Total time for SCF iterations: %.3f seconds \n" % (time.time() - t))
-        print("QED-RHF   energy: %.8f hartree" % SCF_E)
-        print("Psi4  SCF energy: %.8f hartree" % psi4_rhf_energy)
-        deltaE = (SCF_E-psi4_rhf_energy) * 27.211
-        print("Change in Energy: %.8f eV" % deltaE)
+    print("QED-RHF   energy: %.8f hartree" % SCF_E)
+    print("Psi4  SCF energy: %.8f hartree" % psi4_rhf_energy)
 
-    return psi4_rhf_energy, SCF_E, C
+    # create dictionary to return various data
+    cqed_rhf_dict = {
+        'rhf_energy' : psi4_rhf_energy,
+        'cqed_rhf_energy' : SCF_E,
+        'cqed_rhf_transformation_vectors' : C,
+        'cqed_rhf_density_matrix' : D,
+        'cqed_rhf_orbital_energies' : e, 
+        'psi4_wfn' : wfn, 
+        'cqed_rhf_dipole_moment' : np.array([mu_exp_x, mu_exp_y, mu_exp_z]),
+        'nuclear_dipole_moment' : np.array([mu_nuc_x, mu_nuc_y, mu_nuc_z]),
+        'Pauli-Fierz Dipole Matrix' : d_PF,
+        'Pauli-Fierz Quadrupole Matrix' : Q_PF,
+        'Nuclear Dipolar Energy' : d_c,
+        'Nuclear Repulsion Energy' : Enuc 
+    }
+
+    return cqed_rhf_dict
