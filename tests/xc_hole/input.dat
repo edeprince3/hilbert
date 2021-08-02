@@ -1,0 +1,55 @@
+#! visualize exchange-correlation hole in N2(6,6) / PQG
+
+# job description:
+#print('        N2 / cc-pVDZ / DQG(6,6), scf_type = DF, rNN = 1.1 A')
+
+memory 8 gb
+
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule n2 {
+0 1
+n 0.0 0.0 0.0
+n 0.0 0.0 1.1
+}
+
+set {
+  basis cc-pvdz
+  scf_type df
+  d_convergence      1e-10
+  maxiter 500
+  restricted_docc [ 2, 0, 0, 0, 0, 2, 0, 0 ]
+  active          [ 1, 0, 1, 1, 0, 1, 1, 1 ]
+}
+
+set hilbert {
+  maxiter 20000
+  orbopt_maxiter 20
+  positivity dqg
+  r_convergence  1e-5
+  e_convergence  1e-6
+  opdm_write_full true
+  tpdm_write_full true
+}
+
+
+#set dft_spherical_points 5810
+#set dft_radial_points 100
+
+en,wfn = energy('v2rdm-casscf',return_wfn=True)
+
+density = hilbert.density_analysis(ref_wfn=wfn)
+
+x = density.grid_x()
+y = density.grid_y()
+z = density.grid_z()
+rho = density.rho()
+rho_a = density.rho_a()
+rho_b = density.rho_b()
+xc_hole = density.xc_hole(0.0,0.0,0.0)
+for i in range(0,len(xc_hole)):
+    if ( abs(x[i]) < 1e-6 ):
+        print(y[i],z[i],rho[i],rho_a[i],rho_b[i],xc_hole[i])
+
+
