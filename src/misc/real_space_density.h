@@ -89,7 +89,7 @@ class RealSpaceDensity: public Wavefunction{
     std::shared_ptr<Vector> grid_w() { return grid_w_; }
 
     // return xc hole on grid 
-    std::shared_ptr<Vector> xc_hole() { return xc_hole_; }
+    std::shared_ptr<Vector> xc_hole(double x, double y, double z);
 
     // return density (rho_a + rho_b) on grid 
     std::shared_ptr<Vector> rho() { return rho_; }
@@ -232,7 +232,7 @@ class RealSpaceDensity: public Wavefunction{
     void BuildPiFast(tpdm * D2ab, int nab);
 
     /// build exchange correlation hole
-    void BuildExchangeCorrelationHole(int p, tpdm * D2ab, int nab, tpdm * D2aa, int naa, tpdm * D2bb, int nbb);
+    void BuildExchangeCorrelationHole(size_t p);
 
 };
 

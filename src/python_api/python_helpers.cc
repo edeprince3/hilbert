@@ -162,8 +162,8 @@ std::vector<double> RealSpaceDensityHelper::rho_b() {
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;
 }
-std::vector<double> RealSpaceDensityHelper::xc_hole() {
-    std::shared_ptr<Vector> vec = real_space_density->xc_hole();
+std::vector<double> RealSpaceDensityHelper::xc_hole(double x, double y, double z) {
+    std::shared_ptr<Vector> vec = real_space_density->xc_hole(x,y,z);
     double * vec_p = vec->pointer();
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;

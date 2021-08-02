@@ -450,7 +450,45 @@ void RealSpaceDensity::build_density() {
     ReadTPDM();
 }
 
-void RealSpaceDensity::BuildExchangeCorrelationHole(int p, tpdm * D2ab, int nab, tpdm * D2aa, int naa, tpdm * D2bb, int nbb) {
+void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> Build Exchange-Correlation Hole ...");
+
+    std::shared_ptr<PSIO> psio (new PSIO());
+
+    if ( !psio->exists(PSIF_V2RDM_D2AB) ) throw PsiException("No D2ab on disk",__FILE__,__LINE__);
+    if ( !psio->exists(PSIF_V2RDM_D2AA) ) throw PsiException("No D2ab on disk",__FILE__,__LINE__);
+    if ( !psio->exists(PSIF_V2RDM_D2BB) ) throw PsiException("No D2ab on disk",__FILE__,__LINE__);
+
+    psio_address addr_ab = PSIO_ZERO;
+
+    // ab
+    psio->open(PSIF_V2RDM_D2AB,PSIO_OPEN_OLD);
+    long int nab;
+    psio->read_entry(PSIF_V2RDM_D2AB,"length",(char*)&nab,sizeof(long int));
+    tpdm * D2ab = (tpdm *)malloc(nab * sizeof(tpdm));
+    memset((void*)D2ab,'\0',nab * sizeof(tpdm));
+    psio->read_entry(PSIF_V2RDM_D2AB,"D2ab",(char*)D2ab,nab * sizeof(tpdm));
+    psio->close(PSIF_V2RDM_D2AB,1);
+
+    // aa
+    psio->open(PSIF_V2RDM_D2AA,PSIO_OPEN_OLD);
+    long int naa;
+    psio->read_entry(PSIF_V2RDM_D2AA,"length",(char*)&naa,sizeof(long int));
+    tpdm * D2aa = (tpdm *)malloc(naa * sizeof(tpdm));
+    memset((void*)D2aa,'\0',naa * sizeof(tpdm));
+    psio->read_entry(PSIF_V2RDM_D2AA,"D2aa",(char*)D2aa,naa * sizeof(tpdm));
+    psio->close(PSIF_V2RDM_D2AA,1);
+
+    // bb
+    psio->open(PSIF_V2RDM_D2BB,PSIO_OPEN_OLD);
+    long int nbb;
+    psio->read_entry(PSIF_V2RDM_D2BB,"length",(char*)&nbb,sizeof(long int));
+    tpdm * D2bb = (tpdm *)malloc(nbb * sizeof(tpdm));
+    memset((void*)D2bb,'\0',nbb * sizeof(tpdm));
+    psio->read_entry(PSIF_V2RDM_D2BB,"D2bb",(char*)D2bb,nbb * sizeof(tpdm));
+    psio->close(PSIF_V2RDM_D2BB,1);
 
     double integral = 0.0;
     double * rho_p = rho_->pointer();
@@ -547,8 +585,15 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(int p, tpdm * D2ab, int nab,
         integral += nxc * w_p[q];
 
     }
-    //printf("%20.12lf\n",integral);
+
+    outfile->Printf(" Done. <==\n");
+
+    //printf("integral over xc hole (should be -1): %20.12lf\n",integral);
     //exit(0);
+
+    free(D2ab);
+    free(D2aa);
+    free(D2bb);
 
 }
 
@@ -1010,45 +1055,32 @@ void RealSpaceDensity::ReadTPDM() {
     BuildPiFast(d2,nab);
     outfile->Printf(" Done. <==\n");
 
-    
-    outfile->Printf("\n");
-    outfile->Printf("    ==> Build Exchange-Correlation Hole ...");
+    free(d2);
+}
 
-    // aa
-    psio->open(PSIF_V2RDM_D2AA,PSIO_OPEN_OLD);
-    long int naa;
-    psio->read_entry(PSIF_V2RDM_D2AA,"length",(char*)&naa,sizeof(long int));
-    tpdm * d2aa = (tpdm *)malloc(naa * sizeof(tpdm));
-    memset((void*)d2aa,'\0',naa * sizeof(tpdm));
-    psio->read_entry(PSIF_V2RDM_D2AA,"D2aa",(char*)d2aa,naa * sizeof(tpdm));
-    psio->close(PSIF_V2RDM_D2AA,1);
+std::shared_ptr<Vector> RealSpaceDensity::xc_hole(double x, double y, double z) {
 
-    // bb
-    psio->open(PSIF_V2RDM_D2BB,PSIO_OPEN_OLD);
-    long int nbb;
-    psio->read_entry(PSIF_V2RDM_D2BB,"length",(char*)&nbb,sizeof(long int));
-    tpdm * d2bb = (tpdm *)malloc(nbb * sizeof(tpdm));
-    memset((void*)d2bb,'\0',nbb * sizeof(tpdm));
-    psio->read_entry(PSIF_V2RDM_D2BB,"D2bb",(char*)d2bb,nbb * sizeof(tpdm));
-    psio->close(PSIF_V2RDM_D2BB,1);
-
-    int myp = 0;
+    // find appropriate grid point
     double * x_p = grid_x_->pointer();
     double * y_p = grid_y_->pointer();
     double * z_p = grid_z_->pointer();
-    for (int p = 0; p < phi_points_; p++) {
-        if ( fabs(x_p[p] - 0.0) > 1e-6 ) continue;
-        if ( fabs(y_p[p] - 0.0) > 1e-6 ) continue;
-        if ( fabs(z_p[p] - 0.0) > 1e-6 ) continue;
-        myp = p;
+
+    int p = 0;
+    double min = 9e9;
+    for (int myp = 0; myp < phi_points_; myp++) {
+        double dx = x_p[myp] - x;
+        double dy = y_p[myp] - y;
+        double dz = z_p[myp] - z;
+        double r2 = dx*dx + dy*dy + dz*dz;
+        if ( r2 < min ) {
+            min = r2;
+            p = myp;
+        }
     }
- 
-    BuildExchangeCorrelationHole(myp,d2,nab,d2aa,naa,d2bb,nbb);
-
-    outfile->Printf(" Done. <==\n");
-
-    free(d2);
-
+    //printf("closest point: %20.12lf %20.12lf %20.12lf\n",x_p[p],y_p[p],z_p[p]);
+    BuildExchangeCorrelationHole(p);
+    return xc_hole_;
 }
+
 
 } //end namespaces
