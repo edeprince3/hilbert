@@ -88,6 +88,9 @@ class RealSpaceDensity: public Wavefunction{
     // return grid weights (w)
     std::shared_ptr<Vector> grid_w() { return grid_w_; }
 
+    // return xc hole on grid 
+    std::shared_ptr<Vector> xc_hole() { return xc_hole_; }
+
     // return density (rho_a + rho_b) on grid 
     std::shared_ptr<Vector> rho() { return rho_; }
 
@@ -179,6 +182,9 @@ class RealSpaceDensity: public Wavefunction{
 
     /// read v2RDM 1-RDM from disk
     void ReadOPDM();
+
+    /// exchange-correlation hole
+    std::shared_ptr<Vector> xc_hole_;
 
     /// alpha-spin density
     std::shared_ptr<Vector> rho_a_;

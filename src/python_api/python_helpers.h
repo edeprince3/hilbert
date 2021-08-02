@@ -49,6 +49,7 @@ class RealSpaceDensityHelper{
     std::vector<double> rho();
     std::vector<double> rho_a();
     std::vector<double> rho_b();
+    std::vector<double> xc_hole();
 
   protected:
 

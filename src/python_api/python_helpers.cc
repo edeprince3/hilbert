@@ -55,7 +55,8 @@ void export_HilbertHelper(py::module& m) {
         .def("grid_w", &RealSpaceDensityHelper::grid_w)
         .def("rho", &RealSpaceDensityHelper::rho)
         .def("rho_a", &RealSpaceDensityHelper::rho_a)
-        .def("rho_b", &RealSpaceDensityHelper::rho_b);
+        .def("rho_b", &RealSpaceDensityHelper::rho_b)
+        .def("xc_hole", &RealSpaceDensityHelper::xc_hole);
 
     // doci
     py::class_<DOCIHelper, std::shared_ptr<DOCIHelper> >(m, "DOCIHelper")
@@ -157,6 +158,12 @@ std::vector<double> RealSpaceDensityHelper::rho_a() {
 }
 std::vector<double> RealSpaceDensityHelper::rho_b() {
     std::shared_ptr<Vector> vec = real_space_density->rho_b();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::xc_hole() {
+    std::shared_ptr<Vector> vec = real_space_density->xc_hole();
     double * vec_p = vec->pointer();
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;

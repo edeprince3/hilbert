@@ -455,6 +455,10 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(int p, tpdm * D2ab, int nab,
     double integral = 0.0;
     double * rho_p = rho_->pointer();
     double * w_p   = grid_w_->pointer();
+
+    xc_hole_.reset();
+    xc_hole_ = (std::shared_ptr<Vector>)(new Vector(phi_points_));
+    double * xc_hole_p = xc_hole_->pointer();
     for (int q = 0; q < phi_points_; q++) {
 
         // pi(r,r') = D(mu,nu; lambda,sigma) * phi(r,mu) * phi(r',nu) * phi(r,lambda) * phi(r',sigma)
@@ -538,11 +542,13 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(int p, tpdm * D2ab, int nab,
         //printf("%20.12lf %20.12lf %20.12lf %20.12lf\n",grid_x_->pointer()[q],grid_y_->pointer()[q],grid_z_->pointer()[q],nxc);
         //}
 
+        xc_hole_p[q] = nxc;
+
         integral += nxc * w_p[q];
 
     }
-    printf("%20.12lf\n",integral);
-    exit(0);
+    //printf("%20.12lf\n",integral);
+    //exit(0);
 
 }
 
@@ -1004,7 +1010,10 @@ void RealSpaceDensity::ReadTPDM() {
     BuildPiFast(d2,nab);
     outfile->Printf(" Done. <==\n");
 
-/*
+    
+    outfile->Printf("\n");
+    outfile->Printf("    ==> Build Exchange-Correlation Hole ...");
+
     // aa
     psio->open(PSIF_V2RDM_D2AA,PSIO_OPEN_OLD);
     long int naa;
@@ -1035,7 +1044,9 @@ void RealSpaceDensity::ReadTPDM() {
     }
  
     BuildExchangeCorrelationHole(myp,d2,nab,d2aa,naa,d2bb,nbb);
-*/
+
+    outfile->Printf(" Done. <==\n");
+
     free(d2);
 
 }
