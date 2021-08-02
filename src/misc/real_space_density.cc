@@ -447,7 +447,7 @@ void RealSpaceDensity::build_density() {
     
     // read 1- and 2-RDM from disk and build rho(r), rho'(r), pi(r), and pi'(r)
     ReadOPDM();
-    ReadTPDM();
+
 }
 
 void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
@@ -1028,7 +1028,7 @@ void RealSpaceDensity::ReadOPDM() {
     free(opdm_b_);
 }
 
-void RealSpaceDensity::ReadTPDM() {
+void RealSpaceDensity::BuildPiFromDisk() {
 
     std::shared_ptr<PSIO> psio (new PSIO());
 

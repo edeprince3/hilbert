@@ -177,10 +177,10 @@ class RealSpaceDensity: public Wavefunction{
     /// transform the orbital labels in phi/phi_x/... from the AO to the MO basis
     void TransformPhiMatrixAOMO(std::shared_ptr<Matrix> phi_in, std::shared_ptr<Matrix> phi_out);
 
-    /// read v2RDM 2-RDM from disk
-    void ReadTPDM();
+    /// read 2-RDM from disk and build on-top pair density
+    void BuildPiFromDisk();
 
-    /// read v2RDM 1-RDM from disk
+    /// read 1-RDM from disk
     void ReadOPDM();
 
     /// exchange-correlation hole
