@@ -81,6 +81,7 @@ void export_HilbertHelper(py::module& m) {
     // v2rdm-casscf
     py::class_<v2RDMHelper, std::shared_ptr<v2RDMHelper> >(m, "v2RDMHelper")
         .def(py::init<std::shared_ptr<Wavefunction>,Options &>())
+        .def(py::init<int,int,int,std::vector<double>,std::vector<double>,std::shared_ptr<Wavefunction>,Options &>())
         .def("set_orbitals", &v2RDMHelper::set_orbitals)
         .def("get_orbitals", &v2RDMHelper::get_orbitals)
         .def("get_opdm", &v2RDMHelper::get_opdm)
@@ -232,8 +233,14 @@ double v2RDM_DOCIHelper::compute_energy() {
 
 // begin v2RDM
 
+// default constructor for molecular or hubbard hamiltonian
 v2RDMHelper::v2RDMHelper(SharedWavefunction reference_wavefunction,Options & options){
     v2rdm = (std::shared_ptr<v2RDMSolver>)(new v2RDMSolver(reference_wavefunction,options));
+}
+
+// constructor for externally-defined hamiltonian
+v2RDMHelper::v2RDMHelper(int nalpha, int nbeta, int nmo, std::vector<double> h, std::vector<double> g, SharedWavefunction reference_wavefunction, Options & options) {
+    v2rdm = (std::shared_ptr<v2RDMSolver>)(new v2RDMSolver(nalpha,nbeta,nmo,h,g,reference_wavefunction,options));
 }
 
 v2RDMHelper::~v2RDMHelper(){
