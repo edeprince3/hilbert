@@ -85,7 +85,7 @@ class v2RDMSolver: public Wavefunction{
     v2RDMSolver(SharedWavefunction reference_wavefunction,Options & options);
 
     /// constructor for externally-defined hamiltonian
-    v2RDMSolver(int nalpha, int nbeta, int nmo, std::vector<double> h, std::vector<double> g, SharedWavefunction reference_wavefunction, Options & options);
+    v2RDMSolver(int nalpha, int nbeta, int nmo, std::vector<double> h, std::vector<double> g, Options & options);
 
     ~v2RDMSolver();
 

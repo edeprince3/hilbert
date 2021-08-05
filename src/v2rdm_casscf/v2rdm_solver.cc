@@ -150,11 +150,8 @@ v2RDMSolver::v2RDMSolver(int nalpha,
                          int nmo, 
                          std::vector<double> h,
                          std::vector<double> g,
-                         SharedWavefunction reference_wavefunction,
                          Options & options):
     Wavefunction(options){
-
-    reference_wavefunction_ = reference_wavefunction;
 
     nalpha_ = nalpha;
     nbeta_  = nbeta;
@@ -374,19 +371,26 @@ void  v2RDMSolver::common_init(){
 
     // don't change the length of this filename
     orbopt_outfile_ = (char*)malloc(120*sizeof(char));
-    std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".orbopt";
-    strcpy(orbopt_outfile_,filename.c_str());
-    if ( options_.get_bool("ORBOPT_WRITE") ) {
-        FILE * fp = fopen(orbopt_outfile_,"w");
-        fclose(fp);
+
+    if ( !is_external_hamiltonian_) {
+
+        std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".orbopt";
+        strcpy(orbopt_outfile_,filename.c_str());
+        if ( options_.get_bool("ORBOPT_WRITE") ) {
+            FILE * fp = fopen(orbopt_outfile_,"w");
+            fclose(fp);
+        }
+
     }
 
     // initialize timers and iteration counters
     orbopt_iter_total_ = 0;
     orbopt_time_       = 0.0;
 
-// GG initialize orbopt_ class
-    orbopt_ = (std::shared_ptr<OrbitalOptimizer>)(new OrbitalOptimizer(reference_wavefunction_,options_));
+    // initialize orbopt_ class (but not for externally-obtained hamiltonians)
+    if ( !is_external_hamiltonian_ ) {
+        orbopt_ = (std::shared_ptr<OrbitalOptimizer>)(new OrbitalOptimizer(reference_wavefunction_,options_));
+    }
 
     // allocate memory for orbital lagrangian (TODO: make these smaller)
     X_               = (double*)malloc(nmo_*nmo_*sizeof(double));
@@ -940,6 +944,7 @@ void v2RDMSolver::initialize_with_hubbard_hamiltonian() {
 
 void v2RDMSolver::initialize_with_external_hamiltonian() {
 
+printf("hi there\n");fflush(stdout);
     is_df_        = false;
 
     // these are set in the constructor
@@ -988,11 +993,11 @@ void v2RDMSolver::initialize_with_external_hamiltonian() {
     rstvpi_[0]   = 0;
     amopi_[0]    = nmo_;
 
-    // molecule ... not sure what to do with this
-    molecule_ = reference_wavefunction_->molecule();
+    // molecule ... not sure what to do with this ... doesn't seem safe to just not initialize it
+    //molecule_ = reference_wavefunction_->molecule();
 
-    // need somewhere to store gradient, if required
-    gradient_ =  reference_wavefunction_->matrix_factory()->create_shared_matrix("Total gradient", molecule_->natom(), 3);
+    // need somewhere to store gradient, if required ... doesn't seem safe to just not initialize it
+    //gradient_ =  reference_wavefunction_->matrix_factory()->create_shared_matrix("Total gradient", molecule_->natom(), 3);
 
     if (options_["FROZEN_DOCC"].has_changed()) {
         throw PsiException("FROZEN_DOCC is incompatible with external Hamiltonian.",__FILE__,__LINE__);
@@ -1451,13 +1456,13 @@ double v2RDMSolver::compute_energy() {
     if ( options_.get_bool("NAT_ORBS") || options_.get_bool("FCIDUMP") || options_.get_bool("EXTENDED_KOOPMANS") ) {
         ComputeNaturalOrbitals();
     }
-    if ( options_.get_bool("MOLDEN_WRITE") ) {
+    if ( options_.get_bool("MOLDEN_WRITE") && !is_hubbard_ && !is_external_hamiltonian_ ) {
         WriteMoldenFile();
     }
-    if ( options_.get_bool("EXTENDED_KOOPMANS") ) {
+    if ( options_.get_bool("EXTENDED_KOOPMANS") && !is_hubbard_ && !is_external_hamiltonian_ ) {
         ExtendedKoopmans();
     }
-    if ( options_.get_bool("FCIDUMP") ) {
+    if ( options_.get_bool("FCIDUMP") && !is_hubbard_ && !is_external_hamiltonian_ ) {
         FCIDUMP();
     }
     if ( options_.get_bool("PRINT_RDMS") ) {
