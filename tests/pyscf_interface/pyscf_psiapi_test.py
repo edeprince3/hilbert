@@ -31,6 +31,7 @@ def v2rdm_psi4():
       'maxiter':         500,
     })
     psi4.set_module_options('hilbert', {
+      #'sdp_solver':      'rrsdp',
       'positivity':      'dqg',
       'r_convergence':   1e-5,
       'e_convergence':   1e-4,
@@ -78,6 +79,7 @@ def v2rdm_pyscf():
 
     # hilbert options
     psi4.set_module_options('hilbert', {
+      #'sdp_solver':      'rrsdp',
       'positivity':      'dqg',
       'r_convergence':   1e-5,
       'e_convergence':   1e-4,
@@ -105,4 +107,6 @@ if __name__ == "__main__":
     print("    v2RDM with Psi4 integrals:  %20.12f" % (energy_psi4))
     print("    v2RDM with PySCF integrals: %20.12f" % (energy_pyscf + enuc))
     print()
+
+    assert np.isclose(energy_psi4,energy_pyscf + enuc,atol=1e-5)
 
