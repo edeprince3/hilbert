@@ -49,6 +49,8 @@ void v2RDMSolver::GetIntegrals() {
     SharedMatrix K1;
     if ( is_hubbard_ ) {
         K1 = GetOEI_hubbard();
+    }else if ( is_external_hamiltonian_ ) {
+        K1 = GetOEI_external();
     }else {
         K1 = GetOEI();
     }
@@ -126,7 +128,7 @@ void v2RDMSolver::GetIntegrals() {
         offset += ( nmopi_[h] - frzvpi_[h] ) * ( nmopi_[h] - frzvpi_[h] + 1 ) / 2;
     }
 
-    if ( !is_df_ && !is_hubbard_ ) {
+    if ( !is_df_ && !is_hubbard_ && !is_external_hamiltonian_ ) {
         // read tei's from disk
         GetTEIFromDisk();
     }
@@ -288,6 +290,13 @@ double v2RDMSolver::TEI(int i, int j, int k, int l, int h) {
         }else {
             dum = 0.0;
         }
+
+    }else if ( is_external_hamiltonian_ ) {
+
+        double * c_p = c->pointer();
+        int ik = ibas_ab_sym[0][i][k];
+        int jl = ibas_ab_sym[0][j][l];
+        dum = c_p[d2aboff[0] + ik * gems_ab[0] + jl];
 
     }else {
 

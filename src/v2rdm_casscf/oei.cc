@@ -59,6 +59,21 @@ SharedMatrix v2RDMSolver::GetOEI() {
     return K1;
 }
 
+SharedMatrix v2RDMSolver::GetOEI_external() {
+
+    std::shared_ptr<Matrix> h (new Matrix(amo_,amo_));
+    double ** h_p = h->pointer();
+    double * c_p = c->pointer();
+    for (int i = 0; i < amo_; i++) {
+        for (int j = 0; j < amo_; j++) {
+            // assuming these were copied to appropriate place in constructor...
+            h_p[i][j] = c_p[d1aoff[0]+i*amo_+j];
+        }
+    }
+
+    return h;
+
+}
 SharedMatrix v2RDMSolver::GetOEI_hubbard() {
 
     std::shared_ptr<Matrix> h (new Matrix(amo_,amo_));

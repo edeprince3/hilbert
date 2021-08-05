@@ -125,7 +125,11 @@ class v2RDMHelper{
 
   public:
 
+    /// default constructor for molecular or hubbard hamiltonian
     v2RDMHelper(SharedWavefunction reference_wavefunction,Options & options);
+
+    /// constructor for externally-defined hamiltonian
+    v2RDMHelper(int nalpha, int nbeta, int nmo, std::vector<double> h, std::vector<double> g, Options & options);
     ~v2RDMHelper();
     void common_init();
 
