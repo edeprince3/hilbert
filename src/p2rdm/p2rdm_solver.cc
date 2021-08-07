@@ -1101,7 +1101,7 @@ void p2RDMSolver::Normalization() {
                         dum += tempt[c*o*o*v + a*o*o + k*o + i];
                     }
                 }
-                Ivo[a * o + i] = dum; // heyhey
+                Ivo[a * o + i] = dum;
             }
         }
 
