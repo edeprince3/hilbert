@@ -369,7 +369,7 @@ void p2RDMSolver::evaluate_residual() {
                         dum += tempt[c*o*o*v + a*o*o + k*o + i];
                     }
                 }
-                Ivo[a * o + i] = dum;
+                Ivo[a * o + i] = dum; //heyhey
             }
         }
 
@@ -388,6 +388,53 @@ void p2RDMSolver::evaluate_residual() {
         free(Iv);
         free(Ivo);
 
+
+    }else if ( options_.get_str("P2RDM_TYPE") == "CEPA(1)" ) {
+
+        // (ai|bj)
+        F_DGEMM('n', 't', o * v, o * v, nQ_, 1.0, Qvo_, o * v, Qvo_, o * v, 0.0, integrals, o * v);
+
+        for (int a = 0; a < v; a++) {
+            for (int b = 0; b < v; b++) {
+                for (int i = 0; i < o; i++) {
+                    for (int j = 0; j < o; j++) {
+                        int abij = a*o*o*v+b*o*o+i*o+j;
+                        int abji = a*o*o*v+b*o*o+j*o+i;
+                        int aibj = a*o*o*v+i*o*v+b*o+j;
+                        tempt[abij] = (2.0 * t2_[abij] - t2_[abji]) / t0_[abij] * integrals[aibj];
+                    }
+                }
+            }
+        }
+
+        double * Io = (double*)malloc(o*sizeof(double));
+
+        for (int i = 0; i < o; i++) {
+            double dum = 0.0;
+            for (int c = 0; c < v; c++) {
+                for (int d = 0; d < v; d++) {
+                    for (int l = 0; l < o; l++) {
+                        dum += tempt[c*o*o*v + d*o*o + i*o + l];
+                    }
+                    for (int k = 0; k < o; k++) {
+                        dum += tempt[c*o*o*v + d*o*o + k*o + i];
+                    }
+                }
+            }
+            Io[i] = 0.25 * dum;
+        }
+
+        for (int a = 0; a < v; a++) {
+            for (int b = 0; b < v; b++) {
+                for (int i = 0; i < o; i++) {
+                    for (int j = 0; j < o; j++) {
+                        r2_[a*o*o*v + b*o*o + i*o + j] -= t2_[a*o*o*v + b*o*o + i*o + j] * (Io[i] + Io[j]);
+                    }
+                }
+            }
+        }
+ 
+        free(Io);
 
     }else if ( options_.get_str("P2RDM_TYPE") == "CID" ) {
 
