@@ -540,6 +540,10 @@ void v2RDMSolver::ComputeNaturalOrbitals() {
 
     if ( options_.get_bool("FCIDUMP") || options_.get_bool("EXTENDED_KOOPMANS") ) {
 
+        if ( is_hubbard_ || is_external_hamiltonian_ ) {
+            throw PsiException("FCIDUMP and EXTENDED_KOOPMANS don't work with hubbard or external hamiltonians",__FILE__,__LINE__);
+        }
+
         if ( is_df_ ) {
             free(Qmo_);
 

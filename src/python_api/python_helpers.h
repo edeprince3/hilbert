@@ -32,9 +32,31 @@
 #include <doci/doci_solver.h>
 #include <pp2rdm/pp2rdm_solver.h>
 #include <p2rdm/p2rdm_solver.h>
+#include <misc/real_space_density.h>
 
 namespace hilbert{
 
+class RealSpaceDensityHelper{
+
+  public:
+
+    RealSpaceDensityHelper(SharedWavefunction reference_wavefunction,Options & options);
+    ~RealSpaceDensityHelper();
+    std::vector<double> grid_x();
+    std::vector<double> grid_y();
+    std::vector<double> grid_z();
+    std::vector<double> grid_w();
+    std::vector<double> rho();
+    std::vector<double> rho_a();
+    std::vector<double> rho_b();
+    std::vector<double> xc_hole(double x, double y, double z);
+
+  protected:
+
+    /// the RealSpaceDensity class 
+    std::shared_ptr<RealSpaceDensity> real_space_density;
+
+};
 class DOCIHelper{
 
   public:
@@ -103,7 +125,11 @@ class v2RDMHelper{
 
   public:
 
+    /// default constructor for molecular or hubbard hamiltonian
     v2RDMHelper(SharedWavefunction reference_wavefunction,Options & options);
+
+    /// constructor for externally-defined hamiltonian
+    v2RDMHelper(int nalpha, int nbeta, int nmo, std::vector<double> h, std::vector<double> g, Options & options);
     ~v2RDMHelper();
     void common_init();
 

@@ -79,8 +79,15 @@ enum GeneralizedPauliConstraint {
 
 class v2RDMSolver: public Wavefunction{
   public:
+
+    /// default constructor for molecular or hubbard hamiltonian
     v2RDMSolver(SharedWavefunction reference_wavefunction,Options & options);
+
+    /// constructor for externally-defined hamiltonian
+    v2RDMSolver(int nalpha, int nbeta, int nmo, std::vector<double> h, std::vector<double> g, Options & options);
+
     ~v2RDMSolver();
+
     void common_init();
 
     double compute_energy();
@@ -139,11 +146,20 @@ class v2RDMSolver: public Wavefunction{
     /// hubbard hamiltonian?
     bool is_hubbard_;
 
+    /// externally-defined hamiltonian?
+    bool is_external_hamiltonian_;
+
     /// set up problem for molecular hamiltonian
     void initialize_with_molecular_hamiltonian();
 
     /// set up problem for 1D hubbard hamiltonian
     void initialize_with_hubbard_hamiltonian();
+
+    /// set up problem for external hamiltonian
+    void initialize_with_external_hamiltonian();
+
+    /// initialize things common to molecular / hubbard / external hamiltonians
+    void initialize_common_elements();
 
     /// set constraints
     void set_constraints();
@@ -259,6 +275,9 @@ class v2RDMSolver: public Wavefunction{
 
     /// returns matrix of one-electron hubbard parameter
     SharedMatrix GetOEI_hubbard();
+
+    /// returns matrix of one-electron integrals associated with external hamiltonian
+    SharedMatrix GetOEI_external();
 
     /// offsets
     int * d1aoff;

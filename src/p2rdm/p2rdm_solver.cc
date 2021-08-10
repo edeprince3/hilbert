@@ -91,7 +91,10 @@ p2RDMSolver::~p2RDMSolver()
 
 void  p2RDMSolver::common_init(){
 
-    if ( options_.get_str("P2RDM_TYPE") != "K" && options_.get_str("P2RDM_TYPE") != "CEPA(0)" && options_.get_str("P2RDM_TYPE") != "CID") {
+    if ( options_.get_str("P2RDM_TYPE") != "K" 
+      && options_.get_str("P2RDM_TYPE") != "CEPA(0)" 
+      && options_.get_str("P2RDM_TYPE") != "CEPA(1)" 
+      && options_.get_str("P2RDM_TYPE") != "CID") {
         throw PsiException("invalid p2rdm type",__FILE__,__LINE__);
     }
 
@@ -1116,6 +1119,52 @@ void p2RDMSolver::Normalization() {
         free(Io);
         free(Iv);
         free(Ivo);
+        free(tempt);
+
+    }else if ( options_.get_str("P2RDM_TYPE") == "CEPA(1)" ) {
+
+        double * Io = (double*)malloc(o*sizeof(double));
+
+        double * tempt = (double*)malloc(o*o*v*v*sizeof(double));
+
+        for (int a = 0; a < v; a++) {
+            for (int b = 0; b < v; b++) {
+                for (int i = 0; i < o; i++) {
+                    for (int j = 0; j < o; j++) {
+                        int abij = a*o*o*v+b*o*o+i*o+j;
+                        int abji = a*o*o*v+b*o*o+j*o+i;
+                        tempt[abij] = t2_[abij] * (2.0 * t2_[abij] - t2_[abji]);
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < o; i++) {
+            double dum = 0.0;
+            for (int c = 0; c < v; c++) {
+                for (int d = 0; d < v; d++) {
+                    for (int l = 0; l < o; l++) {
+                        dum += tempt[c*o*o*v + d*o*o + i*o + l];
+                    }
+                    for (int k = 0; k < o; k++) {
+                        dum += tempt[c*o*o*v + d*o*o + k*o + i];
+                    }
+                }
+            }
+            Io[i] = 0.25 * dum;
+        }
+
+        for (int a = 0; a < v; a++) {
+            for (int b = 0; b < v; b++) {
+                for (int i = 0; i < o; i++) {
+                    for (int j = 0; j < o; j++) {
+                        t0_[a*o*o*v + b*o*o + i*o + j] = sqrt(1.0 - Io[i] - Io[j]);
+
+                    }
+                }
+            }
+        }
+        free(Io);
         free(tempt);
 
     }else if ( options_.get_str("P2RDM_TYPE") == "CID" ) {

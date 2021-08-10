@@ -135,10 +135,63 @@ static void rrsdp_monitor(int oiter, int iiter, double lagrangian, double object
 
 }
 
+// default constructor for molecular or hubbard hamiltonian
 v2RDMSolver::v2RDMSolver(SharedWavefunction reference_wavefunction,Options & options):
     Wavefunction(options){
     reference_wavefunction_ = reference_wavefunction;
+    is_external_hamiltonian_ = false;
     common_init();
+}
+
+// constructor for externally-defined hamiltonian
+v2RDMSolver::v2RDMSolver(int nalpha, 
+                         int nbeta, 
+                         int nmo, 
+                         std::vector<double> h,
+                         std::vector<double> g,
+                         Options & options):
+    Wavefunction(options){
+
+    nalpha_ = nalpha;
+    nbeta_  = nbeta;
+    nmo_    = nmo;
+    nso_    = nmo;
+
+    is_external_hamiltonian_ = true;
+
+    common_init();
+
+    // copy integrals into place (assuming c1 symmetry)
+    double * c_p = c->pointer();
+    for (int i = 0; i < amo_; i++) {
+        for (int j = 0; j < amo_; j++) {
+            c_p[d1aoff[0] + i * amo_ + j] = h[i*amo_+j];
+            c_p[d1boff[0] + i * amo_ + j] = h[i*amo_+j];
+        }
+    }
+    for (int ij = 0; ij < gems_ab[0]; ij++) {
+        int i = bas_ab_sym[0][ij][0];
+        int j = bas_ab_sym[0][ij][1];
+        for (int kl = 0; kl < gems_ab[0]; kl++) {
+            int k = bas_ab_sym[0][kl][0];
+            int l = bas_ab_sym[0][kl][1];
+            // (ik|jl) > <ij|kl>
+            c_p[d2aboff[0] + ij * gems_ab[0] + kl] = g[i*amo_*amo_*amo_+k*amo_*amo_+j*amo_+l];
+        }
+    }
+    for (int ij = 0; ij < gems_aa[0]; ij++) {
+        int i = bas_aa_sym[0][ij][0];
+        int j = bas_aa_sym[0][ij][1];
+        for (int kl = 0; kl < gems_aa[0]; kl++) {
+            int k = bas_aa_sym[0][kl][0];
+            int l = bas_aa_sym[0][kl][1];
+            // (ik|jl)-(il|jk) > <ij||kl>
+            double val =  g[i*amo_*amo_*amo_+k*amo_*amo_+j*amo_+l] - g[i*amo_*amo_*amo_+l*amo_*amo_+j*amo_+k];
+            c_p[d2aaoff[0] + ij * gems_aa[0] + kl] = val;
+            c_p[d2bboff[0] + ij * gems_aa[0] + kl] = val;
+        }
+    }
+
 }
 
 v2RDMSolver::~v2RDMSolver()
@@ -249,7 +302,14 @@ void  v2RDMSolver::common_init(){
     outfile->Printf("\n");
     outfile->Printf("  ==> Hamiltonian type <==\n");
     outfile->Printf("\n");
-    outfile->Printf("        %s\n",is_hubbard_ ? "Hubbard" : "molecular");
+    if ( is_hubbard_ ) {
+        outfile->Printf("        Hubbard\n");
+    }else if ( is_external_hamiltonian_ ) {
+        outfile->Printf("        externally-defined\n");
+    }else {
+        outfile->Printf("        molecular\n");
+    }
+    //outfile->Printf("        %s\n",is_hubbard_ ? "Hubbard" : "molecular");
 
     outfile->Printf("\n");
     outfile->Printf("  ==> Convergence parameters <==\n");
@@ -266,14 +326,18 @@ void  v2RDMSolver::common_init(){
         is_df_ = true;
     }
 
-    // molecular hamiltonian
-    if ( !is_hubbard_ ) {
+    // initialization depends on hamiltonian type
+    if ( is_hubbard_ ) {
 
-        initialize_with_molecular_hamiltonian();
+        initialize_with_hubbard_hamiltonian();
+
+    }else if ( is_external_hamiltonian_ ) {
+
+        initialize_with_external_hamiltonian();
 
     }else {
 
-        initialize_with_hubbard_hamiltonian();
+        initialize_with_molecular_hamiltonian();
 
     }
     
@@ -324,19 +388,26 @@ void  v2RDMSolver::common_init(){
 
     // don't change the length of this filename
     orbopt_outfile_ = (char*)malloc(120*sizeof(char));
-    std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".orbopt";
-    strcpy(orbopt_outfile_,filename.c_str());
-    if ( options_.get_bool("ORBOPT_WRITE") ) {
-        FILE * fp = fopen(orbopt_outfile_,"w");
-        fclose(fp);
+
+    if ( !is_external_hamiltonian_) {
+
+        std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".orbopt";
+        strcpy(orbopt_outfile_,filename.c_str());
+        if ( options_.get_bool("ORBOPT_WRITE") ) {
+            FILE * fp = fopen(orbopt_outfile_,"w");
+            fclose(fp);
+        }
+
     }
 
     // initialize timers and iteration counters
     orbopt_iter_total_ = 0;
     orbopt_time_       = 0.0;
 
-// GG initialize orbopt_ class
-    orbopt_ = (std::shared_ptr<OrbitalOptimizer>)(new OrbitalOptimizer(reference_wavefunction_,options_));
+    // initialize orbopt_ class (but not for externally-obtained hamiltonians)
+    if ( !is_external_hamiltonian_ ) {
+        orbopt_ = (std::shared_ptr<OrbitalOptimizer>)(new OrbitalOptimizer(reference_wavefunction_,options_));
+    }
 
     // allocate memory for orbital lagrangian (TODO: make these smaller)
     X_               = (double*)malloc(nmo_*nmo_*sizeof(double));
@@ -630,43 +701,17 @@ void v2RDMSolver::initialize_with_molecular_hamiltonian() {
     // set the wavefunction name
     name_ = "V2RDM CASSCF";
 
-    // NOTE! the following functions must be modified when coding new constraints
-
-    // set_constraints():     determine applied constraints from options object
-    // determine_n_primal():  determine primal variable dimension associated with applied constraints
-    // determine_n_dual():    determine dual variable dimension associated with applied constraints
-    // determine_n_primal_offsets(): set block dimenssions and offsets in primal vector for each rdm block
-    // set_gpc_maps(): set maps between rdm elements and d1-like gpc objects. only relevent if constrain_gpc = true
-
-    // set constraints
-    set_constraints();
-
-    // build mapping arrays and determine the number of geminals per block. constraints must be set before calling
-    build_mapping_arrays();
-
-    // number of primal variables (dimension of x)
-    determine_n_primal();
-
-    // number of constraints (dimension of y)
-    determine_n_dual();
-
-    // set primal block dimensions and offsets in x for each spin/symmetry block of rdms
-    set_primal_offsets();
-
-    if ( constrain_gpc_ ) {
-        set_gpc_maps();
+    // mo-mo transformation matrix
+    newMO_ = (SharedMatrix)(new Matrix(reference_wavefunction_->Ca()));
+    newMO_->zero();
+    for (int h = 0; h < nirrep_; h++) {
+        for (int i = 0; i < nmopi_[h]; i++) {
+            newMO_->pointer(h)[i][i] = 1.0;
+        }
     }
 
-    // print orbitals per irrep in each space
-    outfile->Printf("  ==> Active space details <==\n");
-    outfile->Printf("\n");
-    outfile->Printf("        Number of frozen core orbitals:         %5i\n",nfrzc_);
-    outfile->Printf("        Number of restricted occupied orbitals: %5i\n",nrstc_);
-    outfile->Printf("        Number of active occupied orbitals:     %5i\n",ndoccact);
-    outfile->Printf("        Number of active virtual orbitals:      %5i\n",nvirt);
-    outfile->Printf("        Number of restricted virtual orbitals:  %5i\n",nrstv_);
-    outfile->Printf("        Number of frozen virtual orbitals:      %5i\n",nfrzv_);
-    outfile->Printf("\n");
+    // initialize some quantities common to molecular / hubbard / external hamiltonians
+    initialize_common_elements();
 
     std::vector<std::string> labels = reference_wavefunction_->molecule()->irrep_labels();
     outfile->Printf("        Irrep:           ");
@@ -734,149 +779,6 @@ void v2RDMSolver::initialize_with_molecular_hamiltonian() {
     outfile->Printf("        exact diagonal Hessian:             %5s\n",options_.get_bool("ORBOPT_EXACT_DIAGONAL_HESSIAN") ? "true" : "false");
     outfile->Printf("        number of DIIS vectors:             %5i\n",options_.get_int("ORBOPT_NUM_DIIS_VECTORS"));
     outfile->Printf("        print iteration info:               %5s\n",options_.get_bool("ORBOPT_WRITE") ? "true" : "false");
-
-    outfile->Printf("\n");
-    outfile->Printf("  ==> Memory requirements <==\n");
-    outfile->Printf("\n");
-    int nd2   = 0;
-    int ng2    = 0;
-    int nt1    = 0;
-    int nt2    = 0;
-    int maxgem = 0;
-    for (int h = 0; h < nirrep_; h++) {
-        nd2 +=     gems_ab[h]*gems_ab[h];
-        nd2 += 2 * gems_aa[h]*gems_aa[h];
-
-        ng2 +=     gems_ab[h] * gems_ab[h]; // G2ab
-        ng2 +=     gems_ab[h] * gems_ab[h]; // G2ba
-        ng2 += 4 * gems_ab[h] * gems_ab[h]; // G2aa
-
-        if ( gems_ab[h] > maxgem ) {
-            maxgem = gems_ab[h];
-        }
-        if ( constrain_g2_ ) {
-            if ( 2*gems_ab[h] > maxgem ) {
-                maxgem = 2*gems_ab[h];
-            }
-        }
-
-        if ( constrain_t1_ ) {
-            nt1 += trip_aaa[h] * trip_aaa[h]; // T1aaa
-            nt1 += trip_aaa[h] * trip_aaa[h]; // T1bbb
-            nt1 += trip_aab[h] * trip_aab[h]; // T1aab
-            nt1 += trip_aab[h] * trip_aab[h]; // T1bba
-            if ( trip_aab[h] > maxgem ) {
-                maxgem = trip_aab[h];
-            }
-        }
-
-        if ( constrain_t2_ ) {
-            nt2 += (trip_aab[h]+trip_aba[h]) * (trip_aab[h]+trip_aba[h]); // T2aaa
-            nt2 += (trip_aab[h]+trip_aba[h]) * (trip_aab[h]+trip_aba[h]); // T2bbb
-            nt2 += trip_aab[h] * trip_aab[h]; // T2aab
-            nt2 += trip_aab[h] * trip_aab[h]; // T2bba
-
-            if ( trip_aab[h]+trip_aaa[h] > maxgem ) {
-                maxgem = trip_aab[h]+trip_aaa[h];
-            }
-        }
-
-    }
-
-    outfile->Printf("        D2:                       %7.2lf mb\n",nd2 * 8.0 / 1024.0 / 1024.0);
-    if ( constrain_q2_ ) {
-        outfile->Printf("        Q2:                       %7.2lf mb\n",nd2 * 8.0 / 1024.0 / 1024.0);
-    }
-    if ( constrain_g2_ ) {
-        outfile->Printf("        G2:                       %7.2lf mb\n",ng2 * 8.0 / 1024.0 / 1024.0);
-    }
-    if ( constrain_d3_ ) {
-        outfile->Printf("        D3:                       %7.2lf mb\n",nt1 * 8.0 / 1024.0 / 1024.0);
-    }
-    if ( constrain_d4_ ) {
-        outfile->Printf("        D4:                       %7.2lf mb\n",nt1 * 8.0 / 1024.0 / 1024.0);
-    }
-    if ( constrain_t1_ ) {
-        outfile->Printf("        T1:                       %7.2lf mb\n",nt1 * 8.0 / 1024.0 / 1024.0);
-    }
-    if ( constrain_t2_ ) {
-        outfile->Printf("        T2:                       %7.2lf mb\n",nt2 * 8.0 / 1024.0 / 1024.0);
-    }
-    outfile->Printf("\n");
-
-    // we have 4 arrays the size of x and 4 the size of y
-    // in addition, we need to store 3 times whatever the largest
-    // block of x is for the diagonalization step
-    // integrals:
-    //     K2a, K2b
-    // casscf:
-    //     4-index integrals (no permutational symmetry)
-    //     3-index integrals
-
-    double tot = 4.0*n_primal_ + 4.0*n_dual_ + 3.0*maxgem*maxgem;
-    tot += nd2; // for K2a, K2b
-
-    // for casscf, need d2 and 3- or 4-index integrals
-
-    // storage requirements for full d2
-    for (int h = 0; h < nirrep_; h++) {
-        tot += gems_plus_core[h] * ( gems_plus_core[h] + 1 ) / 2;
-    }
-    if ( is_df_ ) {
-        // storage requirements for df integrals
-        nQ_ = Process::environment.globals["NAUX (SCF)"];
-        if ( options_.get_str("SCF_TYPE") == "DF" ) {
-            std::shared_ptr<BasisSet> primary = reference_wavefunction_->basisset();
-            std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
-
-            nQ_ = auxiliary->nbf();
-            Process::environment.globals["NAUX (SCF)"] = nQ_;
-        }
-        tot += (long int)nQ_*(long int)nmo_*((long int)nmo_+1)/2;
-    }else {
-        // storage requirements for four-index integrals
-        for (int h = 0; h < nirrep_; h++) {
-            tot += (long int)gems_full[h] * ( (long int)gems_full[h] + 1L ) / 2L;
-        }
-    }
-
-    // memory available after allocating all we need for v2RDM-CASSCF
-    available_memory_ = memory_ - tot * 8L;
-
-    outfile->Printf("        Total number of variables:     %10i\n",n_primal_);
-    outfile->Printf("        Total number of constraints:   %10i\n",n_dual_);
-    outfile->Printf("        Total memory requirements:     %7.2lf mb\n",tot * 8.0 / 1024.0 / 1024.0);
-    outfile->Printf("\n");
-
-    if ( tot * 8.0 > (double)memory_ ) {
-        outfile->Printf("\n");
-        outfile->Printf("        Not enough memory!\n");
-        outfile->Printf("\n");
-        if ( !is_df_ ) {
-            outfile->Printf("        Either increase the available memory by %7.2lf mb\n",(8.0 * tot - memory_)/1024.0/1024.0);
-            outfile->Printf("        or try scf_type = df or scf_type = cd\n");
-
-        }else {
-            outfile->Printf("        Increase the available memory by %7.2lf mb.\n",(8.0 * tot - memory_)/1024.0/1024.0);
-        }
-        outfile->Printf("\n");
-        throw PsiException("Not enough memory",__FILE__,__LINE__);
-    }
-
-    // mo-mo transformation matrix
-    newMO_ = (SharedMatrix)(new Matrix(reference_wavefunction_->Ca()));
-    newMO_->zero();
-    for (int h = 0; h < nirrep_; h++) {
-        for (int i = 0; i < nmopi_[h]; i++) {
-            newMO_->pointer(h)[i][i] = 1.0;
-        }
-    }
-
-    orbopt_transformation_matrix_ = (double*)malloc((nmo_-nfrzc_-nfrzv_)*(nmo_-nfrzc_-nfrzv_)*sizeof(double));
-    memset((void*)orbopt_transformation_matrix_,'\0',(nmo_-nfrzc_-nfrzv_)*(nmo_-nfrzc_-nfrzv_)*sizeof(double));
-    for (int i = 0; i < nmo_-nfrzc_-nfrzv_; i++) {
-        orbopt_transformation_matrix_[i*(nmo_-nfrzc_-nfrzv_)+i] = 1.0;
-    }
 
     //  if restarting, need to grab Ca_ from disk before integral transformation
     // checkpoint file
@@ -1036,6 +938,152 @@ void v2RDMSolver::initialize_with_hubbard_hamiltonian() {
 
     // set the wavefunction name
     name_ = "V2RDM CASSCF";
+
+    // mo-mo transformation matrix
+    newMO_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
+    newMO_->zero();
+    for (int h = 0; h < nirrep_; h++) {
+        for (int i = 0; i < nmopi_[h]; i++) {
+            newMO_->pointer(h)[i][i] = 1.0;
+        }
+    }
+
+    // initialize some quantities common to molecular / hubbard / external hamiltonians
+    initialize_common_elements();
+
+    //  if restarting, need to grab Ca_ from disk before integral transformation
+    // checkpoint file
+    if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
+        throw PsiException("RESTART_FROM_CHECKPOINT_FILE is incompatible with Hubbard Hamiltonian.",__FILE__,__LINE__);
+    }
+
+}
+
+void v2RDMSolver::initialize_with_external_hamiltonian() {
+
+printf("hi there\n");fflush(stdout);
+    is_df_        = false;
+
+    // these are set in the constructor
+    //nalpha_       = options_.get_int("N_HUBBARD_SPINS") / 2;
+    //nbeta_        = options_.get_int("N_HUBBARD_SPINS") / 2;
+
+    enuc_         = 0.0;
+    escf_         = 0.0;
+    efzc_         = 0.0;
+
+    // these are set in the constructor
+    //nso_          = options_.get_int("N_HUBBARD_SITES");
+    //nmo_          = options_.get_int("N_HUBBARD_SITES");
+    amo_          = nmo_;
+    nfrzc_        = 0;
+    nfrzv_        = 0;
+    nrstc_        = 0;
+    nrstv_        = 0;
+
+    int ms = (int)nalpha_ - (int)nbeta_;
+    multiplicity_ = 2 * ms + 1;
+
+    nirrep_       = 1;
+
+    nalphapi_ = Dimension(nirrep_,"Number of alpha electrons per irrep");
+    nbetapi_  = Dimension(nirrep_,"Number of beta electrons per irrep");
+    doccpi_   = Dimension(nirrep_,"Number of doubly occupied orbitals per irrep");
+    soccpi_   = Dimension(nirrep_,"Number of singly occupied orbitals per irrep");
+    frzcpi_   = Dimension(nirrep_,"Number of frozen core orbitals per irrep");
+    frzvpi_   = Dimension(nirrep_,"Number of frozen virtual orbitals per irrep");
+    nmopi_    = Dimension(nirrep_,"Number of molecular orbitals per irrep");
+    nsopi_    = Dimension(nirrep_,"Number of symmetry orbitals per irrep");
+    rstcpi_   = (int*)malloc(nirrep_*sizeof(int));
+    rstvpi_   = (int*)malloc(nirrep_*sizeof(int));
+    amopi_    = (int*)malloc(nirrep_*sizeof(int));
+
+    nalphapi_[0] = (int)nalpha_;
+    nbetapi_[0]  = (int)nbeta_;
+    doccpi_[0]   = (int)nalpha_;
+    soccpi_[0]   = 0;
+    frzcpi_[0]   = 0;
+    frzvpi_[0]   = 0;
+    nmopi_[0]    = nmo_;
+    nsopi_[0]    = nso_;
+    rstcpi_[0]   = 0;
+    rstvpi_[0]   = 0;
+    amopi_[0]    = nmo_;
+
+    // molecule ... not sure what to do with this ... doesn't seem safe to just not initialize it
+    //molecule_ = reference_wavefunction_->molecule();
+
+    // need somewhere to store gradient, if required ... doesn't seem safe to just not initialize it
+    //gradient_ =  reference_wavefunction_->matrix_factory()->create_shared_matrix("Total gradient", molecule_->natom(), 3);
+
+    if (options_["FROZEN_DOCC"].has_changed()) {
+        throw PsiException("FROZEN_DOCC is incompatible with external Hamiltonian.",__FILE__,__LINE__);
+    }
+    if (options_["RESTRICTED_DOCC"].has_changed()) {
+        throw PsiException("RESTRICTED_DOCC is incompatible with external Hamiltonian.",__FILE__,__LINE__);
+    }
+    if (options_["RESTRICTED_UOCC"].has_changed()) {
+        throw PsiException("RESTRICTED_UOCC is incompatible with external Hamiltonian.",__FILE__,__LINE__);
+    }
+    if (options_["FROZEN_UOCC"].has_changed()) {
+        throw PsiException("FROZEN_UOCC is incompatible with external Hamiltonian.",__FILE__,__LINE__);
+    }
+    if ( options_["ACTIVE"].has_changed() ) {
+        throw PsiException("ACTIVE is incompatible with external Hamiltonian.",__FILE__,__LINE__);
+    }
+    if ( options_.get_bool("LOCALIZE_ORBITALS") ) {
+        throw PsiException("LOCALIZE_ORBITALS is incompatible with external Hamiltonian.",__FILE__,__LINE__);
+    }
+    if ( options_["FRACTIONAL_CHARGE"].has_changed() ) {
+        throw PsiException("FRACTIONAL_CHARGE is incompatible with external Hamiltonian.",__FILE__,__LINE__);
+    }
+
+    AO2SO_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
+
+    Ca_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
+    Cb_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
+
+    S_  = (SharedMatrix)(new Matrix(nmo_,nmo_));
+
+    Fa_  = (SharedMatrix)(new Matrix(nmo_,nmo_));
+    Fb_  = (SharedMatrix)(new Matrix(nmo_,nmo_));
+
+    Da_  = (SharedMatrix)(new Matrix(nmo_,nmo_));
+    Db_  = (SharedMatrix)(new Matrix(nmo_,nmo_));
+
+    // Lagrangian matrix
+    Lagrangian_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
+
+    epsilon_a_= SharedVector(new Vector(nirrep_, nmopi_));
+    epsilon_b_= SharedVector(new Vector(nirrep_, nmopi_));
+
+    // memory is from process::environment
+    memory_ = Process::environment.get_memory();
+
+    // set the wavefunction name
+    name_ = "V2RDM CASSCF";
+
+    // mo-mo transformation matrix
+    newMO_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
+    newMO_->zero();
+    for (int h = 0; h < nirrep_; h++) {
+        for (int i = 0; i < nmopi_[h]; i++) {
+            newMO_->pointer(h)[i][i] = 1.0;
+        }
+    }
+
+    // initialize some quantities common to molecular / hubbard / external hamiltonians
+    initialize_common_elements();
+
+    //  if restarting, need to grab Ca_ from disk before integral transformation
+    // checkpoint file
+    if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
+        throw PsiException("RESTART_FROM_CHECKPOINT_FILE is incompatible with external Hamiltonian.",__FILE__,__LINE__);
+    }
+
+}
+
+void v2RDMSolver::initialize_common_elements() {
 
     // NOTE! the following functions must be modified when coding new constraints
 
@@ -1204,25 +1252,10 @@ void v2RDMSolver::initialize_with_hubbard_hamiltonian() {
         throw PsiException("Not enough memory",__FILE__,__LINE__);
     }
 
-    // mo-mo transformation matrix
-    newMO_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
-    newMO_->zero();
-    for (int h = 0; h < nirrep_; h++) {
-        for (int i = 0; i < nmopi_[h]; i++) {
-            newMO_->pointer(h)[i][i] = 1.0;
-        }
-    }
-
     orbopt_transformation_matrix_ = (double*)malloc((nmo_-nfrzc_-nfrzv_)*(nmo_-nfrzc_-nfrzv_)*sizeof(double));
     memset((void*)orbopt_transformation_matrix_,'\0',(nmo_-nfrzc_-nfrzv_)*(nmo_-nfrzc_-nfrzv_)*sizeof(double));
     for (int i = 0; i < nmo_-nfrzc_-nfrzv_; i++) {
         orbopt_transformation_matrix_[i*(nmo_-nfrzc_-nfrzv_)+i] = 1.0;
-    }
-
-    //  if restarting, need to grab Ca_ from disk before integral transformation
-    // checkpoint file
-    if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" ) {
-        throw PsiException("RESTART_FROM_CHECKPOINT_FILE is incompatible with Hubbard Hamiltonian.",__FILE__,__LINE__);
     }
 
 }
@@ -1241,7 +1274,7 @@ double v2RDMSolver::compute_energy() {
     double start_total_time = omp_get_wtime();
 
     // print guess orbitals in molden format
-    if ( options_.get_bool("GUESS_ORBITALS_WRITE") && !is_hubbard_ ) {
+    if ( options_.get_bool("GUESS_ORBITALS_WRITE") && !is_hubbard_ && !is_external_hamiltonian_) {
 
         std::shared_ptr<MoldenWriter> molden(new MoldenWriter(reference_wavefunction_));
         std::shared_ptr<Vector> zero (new Vector("",nirrep_,nmopi_));
@@ -1271,7 +1304,7 @@ double v2RDMSolver::compute_energy() {
     Guess();
 
     // checkpoint file
-    if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" && !is_hubbard_ ) {
+    if ( options_.get_str("RESTART_FROM_CHECKPOINT_FILE") != "" && !is_hubbard_ && !is_external_hamiltonian_) {
         ReadFromCheckpointFile();
     }
 
@@ -1288,7 +1321,7 @@ double v2RDMSolver::compute_energy() {
     int orbopt_iter = 0;
 
     int local_maxiter = options_.get_bool("OPTIMIZE_ORBITALS") ? options_.get_int("ORBOPT_FREQUENCY") : options_.get_int("MU_UPDATE_FREQUENCY");
-    if ( is_hubbard_ ) {
+    if ( is_hubbard_ || is_external_hamiltonian_ ) {
         local_maxiter = options_.get_int("MU_UPDATE_FREQUENCY");
     }
 
@@ -1331,7 +1364,7 @@ double v2RDMSolver::compute_energy() {
         print_header();
         sdp_->solve(x->pointer(), b->pointer(), c->pointer(), dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, sdp_monitor, (void*)this);
 
-        if ( options_.get_bool("OPTIMIZE_ORBITALS") && !is_hubbard_ ) {
+        if ( options_.get_bool("OPTIMIZE_ORBITALS") && !is_hubbard_  && !is_external_hamiltonian_) {
     
             double start = omp_get_wtime();
             RotateOrbitals();
@@ -1388,7 +1421,7 @@ double v2RDMSolver::compute_energy() {
     outfile->Printf("      nb:                        %20.6lf\n", nb);
     outfile->Printf("      v2RDM total spin [S(S+1)]: %20.6lf\n", 0.5 * (na + nb) + ms*ms - s2);
     outfile->Printf("\n");
-    if ( !is_hubbard_ ) {
+    if ( !is_hubbard_ && !is_external_hamiltonian_ ) {
         double kinetic, potential, two_electron_energy;
         EnergyByComponent(kinetic,potential,two_electron_energy);
 
@@ -1440,13 +1473,13 @@ double v2RDMSolver::compute_energy() {
     if ( options_.get_bool("NAT_ORBS") || options_.get_bool("FCIDUMP") || options_.get_bool("EXTENDED_KOOPMANS") ) {
         ComputeNaturalOrbitals();
     }
-    if ( options_.get_bool("MOLDEN_WRITE") ) {
+    if ( options_.get_bool("MOLDEN_WRITE") && !is_hubbard_ && !is_external_hamiltonian_ ) {
         WriteMoldenFile();
     }
-    if ( options_.get_bool("EXTENDED_KOOPMANS") ) {
+    if ( options_.get_bool("EXTENDED_KOOPMANS") && !is_hubbard_ && !is_external_hamiltonian_ ) {
         ExtendedKoopmans();
     }
-    if ( options_.get_bool("FCIDUMP") ) {
+    if ( options_.get_bool("FCIDUMP") && !is_hubbard_ && !is_external_hamiltonian_ ) {
         FCIDUMP();
     }
     if ( options_.get_bool("PRINT_RDMS") ) {

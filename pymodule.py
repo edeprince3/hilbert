@@ -421,6 +421,46 @@ def run_jellium_scf(name, **kwargs):
 
     return jellium_scf_wfn
 
+def density_analysis(**kwargs):
+    r"""Function to evaluate real-space density"""
+
+    kwargs = p4util.kwargs_lower(kwargs)
+
+    psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
+
+    ref_wfn = kwargs.get('ref_wfn', None)
+    if ref_wfn is None:
+        raise ValidationError("""Error: density_analysis requires a reference wave function.""" )
+
+    func = 'M06-2X'
+    ref_molecule = kwargs.get('molecule', psi4.core.get_active_molecule())
+    base_wfn = psi4.core.Wavefunction.build(ref_molecule, psi4.core.get_global_option('BASIS'))
+    new_wfn = proc.scf_wavefunction_factory('M06-2X', base_wfn, 'UKS')
+
+    # push reference orbitals onto new wave function 
+    for irrep in range (0,ref_wfn.Ca().nirrep()):
+        new_wfn.Ca().nph[irrep][:,:] = ref_wfn.Ca().nph[irrep][:,:]
+        new_wfn.Cb().nph[irrep][:,:] = ref_wfn.Cb().nph[irrep][:,:]
+
+    # push reference energies onto new wave function
+    for irrep in range (0,ref_wfn.epsilon_a().nirrep()):
+        new_wfn.epsilon_a().nph[irrep][:] = ref_wfn.epsilon_a().nph[irrep][:]
+        new_wfn.epsilon_b().nph[irrep][:] = ref_wfn.epsilon_b().nph[irrep][:]
+
+    # grab options object
+    options = psi4.core.get_options()
+    options.set_current_module('HILBERT')
+
+    # evaluate doci energy
+    # build real-space density
+    import hilbert
+    real_space_density = hilbert.RealSpaceDensityHelper(new_wfn,options)
+
+    # Call the Psi4 plugin
+    # Please note that setting the reference wavefunction in this way is ONLY for plugins
+    #mcpdft_wfn = psi4.core.plugin('mcpdft.so', ref_wfn)
+
+    return real_space_density
 
 # Integration with driver routines
 

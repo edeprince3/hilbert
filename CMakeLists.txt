@@ -28,6 +28,8 @@ add_psi4_plugin(hilbert
 
     src/python_api/python_helpers.cc
 
+    src/misc/real_space_density.cc
+
     src/polaritonic_scf/hf.cc
     src/polaritonic_scf/rhf.cc
     src/polaritonic_scf/uhf.cc
