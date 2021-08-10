@@ -205,13 +205,22 @@ int read_options(std::string name, Options& options)
         options.add_int("MU_UPDATE_FREQUENCY",1000);
 
         /*- The type of 2-positivity computation -*/
-        options.add_str("POSITIVITY", "DQG", "DQG D DQ DG DQGT1 DQGT2 DQGT1T2");
+        options.add_str("POSITIVITY", "DQG", "DQG D DQ DG DQGT1 DQGT2 DQGT1T2 3POS");
 
         /*- Do enforce generalized pauli constraints -*/ 
         options.add_str("GPC_CONSTRAINTS","NONE", "NONE 1RDM 2RDM");
 
-        /*- Do constrain D3/D2 mapping? -*/
+        /*- Do constrain D3 to D2 mapping? -*/
         options.add_bool("CONSTRAIN_D3",false);
+
+        /*- Do constrain E3 to D3 mapping? -*/
+        options.add_bool("CONSTRAIN_E3",false);
+
+        /*- Do constrain F3 to D3 mapping? -*/
+        options.add_bool("CONSTRAIN_F3",false);
+
+        /*- Do constrain Q3 to D3 mapping? -*/
+        options.add_bool("CONSTRAIN_Q3",false);
 
         /*- convergence for conjugate gradient solver. currently not used. -*/
         options.add_double("CG_CONVERGENCE", 1e-9);
