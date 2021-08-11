@@ -1,9 +1,9 @@
 
     -----------------------------------------------------------------------
           Psi4: An Open-Source Ab Initio Electronic Structure Package
-                               Psi4 1.4a2.dev1054 
+                               Psi4 1.4rc3.dev3 
 
-                         Git: Rev {master} 673fe5b dirty
+                         Git: Rev {master} 10a2019 
 
 
     D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
@@ -30,11 +30,11 @@
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Wednesday, 25 November 2020 10:59AM
+    Psi4 started on: Wednesday, 11 August 2021 03:06PM
 
-    Process ID: 46850
-    Host:       Alberts-MacBook-Pro.local
-    PSIDATADIR: /Users/deprince/software/psi4/install/share/psi4
+    Process ID: 588544
+    Host:       ed11
+    PSIDATADIR: /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4
     Memory:     500.0 MiB
     Threads:    1
     
@@ -45,7 +45,6 @@
 #     Define either externally or here, then import plugin.
 sys.path.insert(0, '../../..')
 import hilbert 
-#memory 10 gb
 
 molecule h2 {
 
@@ -90,22 +89,23 @@ activate(h2)
 set reference uhf
 en = energy('polaritonic-uccsd') 
 
-ref = -76.234653553147
+ref = -76.234654392333 #-76.234653553147
 compare_values(ref, en, 8, "UCCSD total energy") # TEST
 --------------------------------------------------------------------------
+Warning: As of v1.5, the ~/.psi4rc file will no longer be read into Psi4 input.
 
-Scratch directory: /tmp/
+Scratch directory: /scratch/deprince/scratch/
 
-*** tstart() called on Alberts-MacBook-Pro.local
-*** at Wed Nov 25 10:59:00 2020
+*** tstart() called on ed11
+*** at Wed Aug 11 15:06:35 2021
 
    => Loading Basis Set <=
 
     Name: CC-PVDZ
     Role: ORBITAL
     Keyword: BASIS
-    atoms 1   entry O          line   198 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz.gbs 
-    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz.gbs 
+    atoms 1   entry O          line   198 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz.gbs 
+    atoms 2-3 entry H          line    22 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz.gbs 
 
 
          ---------------------------------------------------------
@@ -150,14 +150,14 @@ Scratch directory: /tmp/
   Guess Type is SAD.
   Energy threshold   = 1.00e-12
   Density threshold  = 1.00e-12
-  Integral threshold = 0.00e+00
+  Integral threshold = 1.00e-12
 
   ==> Primary Basis <==
 
   Basis Set: CC-PVDZ
     Blend: CC-PVDZ
     Number of shells: 12
-    Number of basis function: 24
+    Number of basis functions: 24
     Number of Cartesian functions: 25
     Spherical Harmonics?: true
     Max angular momentum: 2
@@ -167,8 +167,8 @@ Scratch directory: /tmp/
     Name: (CC-PVDZ AUX)
     Role: JKFIT
     Keyword: DF_BASIS_SCF
-    atoms 1   entry O          line   221 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz-jkfit.gbs 
-    atoms 2-3 entry H          line    51 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 1   entry O          line   221 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 2-3 entry H          line    51 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
 
   ==> Integral Setup <==
 
@@ -190,7 +190,7 @@ Scratch directory: /tmp/
   Basis Set: (CC-PVDZ AUX)
     Blend: CC-PVDZ-JKFIT
     Number of shells: 42
-    Number of basis function: 116
+    Number of basis functions: 116
     Number of Cartesian functions: 131
     Spherical Harmonics?: true
     Max angular momentum: 3
@@ -215,29 +215,29 @@ Scratch directory: /tmp/
 
                            Total Energy        Delta E     RMS |[F,P]|
 
-   @DF-UHF iter SAD:   -75.45137243475020   -7.54514e+01   0.00000e+00 
-   @DF-UHF iter   1:   -75.94580099112508   -4.94429e-01   1.74038e-02 DIIS
-   @DF-UHF iter   2:   -75.99964867099625   -5.38477e-02   1.04495e-02 DIIS
-   @DF-UHF iter   3:   -76.02091630759767   -2.12676e-02   9.59211e-04 DIIS
-   @DF-UHF iter   4:   -76.02136941091487   -4.53103e-04   2.41284e-04 DIIS
-   @DF-UHF iter   5:   -76.02139623764067   -2.68267e-05   4.32356e-05 DIIS
-   @DF-UHF iter   6:   -76.02139743202625   -1.19439e-06   6.70672e-06 DIIS
-   @DF-UHF iter   7:   -76.02139746368489   -3.16586e-08   1.07122e-06 DIIS
-   @DF-UHF iter   8:   -76.02139746459258   -9.07690e-10   2.63034e-07 DIIS
-   @DF-UHF iter   9:   -76.02139746465463   -6.20446e-11   4.16358e-08 DIIS
-   @DF-UHF iter  10:   -76.02139746465592   -1.29319e-12   3.60702e-09 DIIS
-   @DF-UHF iter  11:   -76.02139746465593   -1.42109e-14   5.95158e-10 DIIS
-   @DF-UHF iter  12:   -76.02139746465596   -2.84217e-14   3.13163e-11 DIIS
-   @DF-UHF iter  13:   -76.02139746465591    5.68434e-14   4.90865e-12 DIIS
-   @DF-UHF iter  14:   -76.02139746465592   -1.42109e-14   4.55677e-13 DIIS
+   @DF-UHF iter SAD:   -75.45137243475145   -7.54514e+01   0.00000e+00 
+   @DF-UHF iter   1:   -75.94580099112633   -4.94429e-01   1.74038e-02 DIIS
+   @DF-UHF iter   2:   -75.99964867099754   -5.38477e-02   1.04495e-02 DIIS
+   @DF-UHF iter   3:   -76.02091630759899   -2.12676e-02   9.59211e-04 DIIS
+   @DF-UHF iter   4:   -76.02136941091635   -4.53103e-04   2.41284e-04 DIIS
+   @DF-UHF iter   5:   -76.02139623764207   -2.68267e-05   4.32356e-05 DIIS
+   @DF-UHF iter   6:   -76.02139743202757   -1.19439e-06   6.70672e-06 DIIS
+   @DF-UHF iter   7:   -76.02139746368633   -3.16588e-08   1.07122e-06 DIIS
+   @DF-UHF iter   8:   -76.02139746459389   -9.07562e-10   2.63034e-07 DIIS
+   @DF-UHF iter   9:   -76.02139746465596   -6.20730e-11   4.16358e-08 DIIS
+   @DF-UHF iter  10:   -76.02139746465728   -1.32161e-12   3.60702e-09 DIIS
+   @DF-UHF iter  11:   -76.02139746465727    1.42109e-14   5.95158e-10 DIIS
+   @DF-UHF iter  12:   -76.02139746465735   -8.52651e-14   3.13159e-11 DIIS
+   @DF-UHF iter  13:   -76.02139746465727    8.52651e-14   4.90814e-12 DIIS
+   @DF-UHF iter  14:   -76.02139746465727    0.00000e+00   4.55572e-13 DIIS
   Energy and wave function converged.
 
 
   ==> Post-Iterations <==
 
-   @Spin Contamination Metric:   3.552713679E-15
+   @Spin Contamination Metric:  -5.329070518E-15
    @S^2 Expected:                0.000000000E+00
-   @S^2 Observed:                3.552713679E-15
+   @S^2 Observed:               -5.329070518E-15
    @S   Expected:                0.000000000E+00
    @S   Observed:                0.000000000E+00
 
@@ -279,14 +279,14 @@ Scratch directory: /tmp/
     DOCC [     5 ]
     SOCC [     0 ]
 
-  @DF-UHF Final Energy:   -76.02139746465592
+  @DF-UHF Final Energy:   -76.02139746465727
 
    => Energetics <=
 
     Nuclear Repulsion Energy =              8.8014655645634061
-    One-Electron Energy =                -122.4453031356081141
-    Two-Electron Energy =                  37.6224401063887939
-    Total Energy =                        -76.0213974646559194
+    One-Electron Energy =                -122.4453031356085830
+    Two-Electron Energy =                  37.6224401063879199
+    Total Energy =                        -76.0213974646572694
 
   UHF NO Occupations:
   HONO-2 :    3  A 2.0000000
@@ -309,39 +309,39 @@ Properties computed using the SCF density matrix
      X:     0.0000      Y:     0.0000      Z:     1.0191
 
   Electronic Dipole Moment: [e a0]
-     X:    -0.0000      Y:    -0.0000      Z:    -0.1945
+     X:     0.0000      Y:    -0.0000      Z:    -0.1945
 
   Dipole Moment: [e a0]
-     X:    -0.0000      Y:    -0.0000      Z:     0.8246     Total:     0.8246
+     X:     0.0000      Y:    -0.0000      Z:     0.8246     Total:     0.8246
 
   Dipole Moment: [D]
-     X:    -0.0000      Y:    -0.0000      Z:     2.0958     Total:     2.0958
+     X:     0.0000      Y:    -0.0000      Z:     2.0958     Total:     2.0958
 
 
-*** tstop() called on Alberts-MacBook-Pro.local at Wed Nov 25 10:59:00 2020
+*** tstop() called on ed11 at Wed Aug 11 15:06:36 2021
 Module time:
-	user time   =       0.25 seconds =       0.00 minutes
+	user time   =       0.28 seconds =       0.00 minutes
 	system time =       0.01 seconds =       0.00 minutes
-	total time  =          0 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
 Total time:
-	user time   =       0.25 seconds =       0.00 minutes
+	user time   =       0.28 seconds =       0.00 minutes
 	system time =       0.01 seconds =       0.00 minutes
-	total time  =          0 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
    => Loading Basis Set <=
 
     Name: (CC-PVDZ AUX)
     Role: JKFIT
     Keyword: DF_BASIS_SCF
-    atoms 1   entry O          line   221 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz-jkfit.gbs 
-    atoms 2-3 entry H          line    51 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 1   entry O          line   221 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 2-3 entry H          line    51 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
 
    => Loading Basis Set <=
 
     Name: (CC-PVDZ AUX)
     Role: RIFIT
     Keyword: DF_BASIS_CC
-    atoms 1   entry O          line   235 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz-ri.gbs 
-    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/install/share/psi4/basis/cc-pvdz-ri.gbs 
+    atoms 1   entry O          line   235 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-ri.gbs 
+    atoms 2-3 entry H          line    19 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-ri.gbs 
 
 
 Reading options from the HILBERT block
@@ -536,29 +536,33 @@ Calling plugin hilbert.so.
 
 
 
-    Guess energy:      -76.021397464651
+    Guess energy:      -76.021397464653
 
     ==>  Begin SCF Iterations <==
 
      Iter               energy                   dE          RMS |[F,P]| 
-        0     -76.016328206230       0.005069258421       0.000115424894
-        1     -76.016332483501      -0.000004277271       0.000054731310
-        2     -76.016333211005      -0.000000727504       0.000026134522
-        3     -76.016334297778      -0.000001086773       0.000007219095
-        4     -76.016334128450       0.000000169329       0.000001209742
-        5     -76.016334274354      -0.000000145905       0.000000121765
-        6     -76.016334290777      -0.000000016423       0.000000022845
-        7     -76.016334290725       0.000000000052       0.000000004835
-        8     -76.016334290631       0.000000000094       0.000000000819
-        9     -76.016334290626       0.000000000005       0.000000000827
-       10     -76.016334290631      -0.000000000005       0.000000000150
-       11     -76.016334290629       0.000000000002       0.000000000031
-       12     -76.016334290631      -0.000000000002       0.000000000007
-       13     -76.016334290631       0.000000000000       0.000000000001
+        0     -76.016328206231       0.005069258421       0.000115424894
+        1     -76.016332483502      -0.000004277271       0.000054731310
+        2     -76.016333211006      -0.000000727504       0.000026134522
+        3     -76.016334297780      -0.000001086774       0.000007219095
+        4     -76.016334128451       0.000000169329       0.000001209742
+        5     -76.016334274356      -0.000000145905       0.000000121765
+        6     -76.016334290779      -0.000000016423       0.000000022845
+        7     -76.016334290727       0.000000000052       0.000000004835
+        8     -76.016334290633       0.000000000094       0.000000000819
+        9     -76.016334290627       0.000000000005       0.000000000827
+       10     -76.016334290633      -0.000000000005       0.000000000150
+       11     -76.016334290630       0.000000000002       0.000000000031
+       12     -76.016334290632      -0.000000000002       0.000000000007
+       13     -76.016334290632       0.000000000000       0.000000000001
 
     SCF iterations converged!
 
-    * Polaritonic UHF total energy:     -76.016334290631
+    * Polaritonic UHF total energy:     -76.016334290632
+
+    <S^2> Expected:       0.000000000000
+    <S^2> Observed:       0.000000000000
+
 
  #  #
  Irrep: 1
@@ -714,7 +718,7 @@ Calling plugin hilbert.so.
         molecular
 
 
-    Required memory:              25.2 mb
+    Required memory:              18.3 mb
 
   ==> DF Tensor (by Rob Parrish) <==
 
@@ -723,7 +727,7 @@ Calling plugin hilbert.so.
   Basis Set: CC-PVDZ
     Blend: CC-PVDZ
     Number of shells: 12
-    Number of basis function: 24
+    Number of basis functions: 24
     Number of Cartesian functions: 25
     Spherical Harmonics?: true
     Max angular momentum: 2
@@ -733,7 +737,7 @@ Calling plugin hilbert.so.
   Basis Set: (CC-PVDZ AUX)
     Blend: CC-PVDZ-RI
     Number of shells: 30
-    Number of basis function: 84
+    Number of basis functions: 84
     Number of Cartesian functions: 96
     Spherical Harmonics?: true
     Max angular momentum: 3
@@ -752,32 +756,30 @@ Calling plugin hilbert.so.
     ==>  Begin CCSD Iterations <==
 
      Iter               energy                   dE                 |dT| 
-        0      -0.208719510991      -0.208719510991       0.459092285158
-        1      -0.213328526257      -0.004609015266       0.062389302988
-        2      -0.217695586702      -0.004367060445       0.021880538599
-        3      -0.218306705043      -0.000611118340       0.006339378856
-        4      -0.218320743069      -0.000014038026       0.001518176511
-        5      -0.218318645999       0.000002097070       0.000446762250
-        6      -0.218318941224      -0.000000295225       0.000159856096
-        7      -0.218319382121      -0.000000440897       0.000043086150
-        8      -0.218319278889       0.000000103233       0.000010601309
-        9      -0.218319270942       0.000000007947       0.000005075707
-       10      -0.218319265140       0.000000005802       0.000002956028
-       11      -0.218319263498       0.000000001642       0.000000267761
-       12      -0.218319262804       0.000000000695       0.000000064239
-       13      -0.218319262697       0.000000000106       0.000000016967
-       14      -0.218319262553       0.000000000144       0.000000006472
-       15      -0.218319262522       0.000000000032       0.000000002086
-       16      -0.218319262515       0.000000000007       0.000000000258
-       17      -0.218319262517      -0.000000000002       0.000000000049
-       18      -0.218319262517      -0.000000000000       0.000000000012
+        0      -0.208719510989      -0.208719510989       0.459092285158
+        1      -0.213328526254      -0.004609015266       0.062395988267
+        2      -0.217683074562      -0.004354548308       0.022042753745
+        3      -0.218304416868      -0.000621342305       0.006398297178
+        4      -0.218322408252      -0.000017991384       0.001629962394
+        5      -0.218319439780       0.000002968472       0.000477130999
+        6      -0.218319761000      -0.000000321220       0.000169041968
+        7      -0.218320229315      -0.000000468314       0.000045647342
+        8      -0.218320121160       0.000000108155       0.000010315831
+        9      -0.218320113348       0.000000007812       0.000005027090
+       10      -0.218320103141       0.000000010207       0.000002937643
+       11      -0.218320101304       0.000000001837       0.000000262709
+       12      -0.218320101683      -0.000000000379       0.000000056400
+       13      -0.218320101673       0.000000000010       0.000000015538
+       14      -0.218320101695      -0.000000000022       0.000000005103
+       15      -0.218320101701      -0.000000000005       0.000000001564
+       16      -0.218320101701      -0.000000000001       0.000000000378
 
     CCSD iterations converged!
 
-    * Polaritonic UCCSD total energy:     -76.234653553147
+    * Polaritonic UCCSD total energy:     -76.234654392333
     UCCSD total energy....................................................................PASSED
 
-    Psi4 stopped on: Wednesday, 25 November 2020 10:59AM
-    Psi4 wall time for execution: 0:00:04.00
+    Psi4 stopped on: Wednesday, 11 August 2021 03:06PM
+    Psi4 wall time for execution: 0:00:04.57
 
 *** Psi4 exiting successfully. Buy a developer a beer!

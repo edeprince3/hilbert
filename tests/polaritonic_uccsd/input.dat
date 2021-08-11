@@ -46,5 +46,5 @@ activate(h2)
 set reference uhf
 en = energy('polaritonic-uccsd') 
 
-ref = -76.234653553147
+ref = -76.234654392333 #-76.234653553147
 compare_values(ref, en, 8, "UCCSD total energy") # TEST
