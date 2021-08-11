@@ -3039,8 +3039,9 @@ void PolaritonicUCCSD::residual_u2() {
         for (size_t f = 0; f < v_; f++) {
             for (size_t m = 0; m < o_; m++) {
                 for (size_t n = 0; n < o_; n++) {
-                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp2_[e*o_*o_*v_+f*o_*o_+n*o_+m];
-                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] += tmp2_[e*o_*o_*v_+f*o_*o_+m*o_+n];
+                    // fixed sign bug here 8/11/21
+                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] += tmp2_[e*o_*o_*v_+f*o_*o_+n*o_+m];
+                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp2_[e*o_*o_*v_+f*o_*o_+m*o_+n];
                 }
             }
         }
@@ -3963,6 +3964,23 @@ void PolaritonicUCCSD::residual_u2() {
         }
     }
 
+/*
+    // additional term from revised pdaggerq ... missing in PRX 10, 041043
+    //    - P(m,n) 1.00000 d-(i,a) t2(e,f,i,m) u1(a,n) u0
+    tmp1 = make_2Dtensor(world, o_, o_, false);
+    tmp1("i, n") = ta_dp_ov("i, a") * ta_u1("a, n");
+    tmp("e, f, m, n") = tmp1("i, n")*ta_t2("e, f, i, m") * u0_[0];
+    ta_ru2("e, f, m, n") -= tmp("e, f, m, n");
+    ta_ru2("e, f, m, n") += tmp("e, f, n, m");
+
+    // + P(e,f) 1.00000 d-(i,a) t2(a,f,m,n) u1(e,i) u0
+    tmp1 = make_2Dtensor(world, v_, v_, false);
+    tmp1("e, a") = ta_dp_ov("i, a") * ta_u1("e, i");
+    tmp("e, f, m, n") = tmp1("e, a")*ta_t2("a, f, m, n") * u0_[0];
+    ta_ru2("e, f, m, n") += tmp("e, f, m, n");
+    ta_ru2("e, f, m, n") -= tmp("f, e, n, m");
+*/
+
 }
 
 // 
@@ -4012,6 +4030,12 @@ void PolaritonicUCCSD::residual_u0() {
                 r0 += fp[i][a+o_] * u1_[a*o_+i];
             }
         }
+
+        // additional term from revised pdaggerq ... missing in PRX 10, 041043
+        //     - 1.00000 d-(i,a) u1(a,i) u0
+/*
+        r0 -= ta_dp_ov("i, a").dot(ta_u1("a, i"))*u0_[0];
+*/
 
     }
 
