@@ -200,10 +200,10 @@ void PolaritonicHF::initialize_cavity() {
     double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
 
     quadrupole[0]->scale(0.5 * lambda_x * lambda_x);
-    quadrupole[1]->scale(0.5 * lambda_x * lambda_y);
-    quadrupole[2]->scale(0.5 * lambda_x * lambda_z);
+    quadrupole[1]->scale(1.0 * lambda_x * lambda_y); // scaled by 2 for xy + yx
+    quadrupole[2]->scale(1.0 * lambda_x * lambda_z); // scaled by 2 for xz + zx
     quadrupole[3]->scale(0.5 * lambda_y * lambda_y);
-    quadrupole[4]->scale(0.5 * lambda_y * lambda_z);
+    quadrupole[4]->scale(1.0 * lambda_y * lambda_z); // scaled by 2 for yz + zy
     quadrupole[5]->scale(0.5 * lambda_z * lambda_z);
 
     quadrupole_scaled_sum_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
