@@ -71,8 +71,6 @@ void PolaritonicRCIS::common_init() {
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *******************************************************\n");
 
-    throw PsiException("polaritonic rcis needs to be updated to work in coherent-state basis.",__FILE__,__LINE__);
-
     // ensure scf_type df
     if ( options_.get_str("SCF_TYPE") != "DF" ) {
         throw PsiException("polaritonic rcis only works with scf_type df for now",__FILE__,__LINE__);
@@ -136,6 +134,7 @@ double PolaritonicRCIS::compute_energy() {
     if ( n_photon_states_ > 1 ) {
         update_cavity_terms();
     }
+printf("total dipole: %20.12lf\n",tot_dip_z_);
 
     // transform dipole integrals to MO basis
     dipole_[0]->transform(Ca_);
@@ -167,7 +166,7 @@ double PolaritonicRCIS::compute_energy() {
     if ( n_photon_states_ > 1 ) {
         HCavity_z->pointer()[1][1] = cavity_frequency_[2];
     }
-    if ( n_photon_states_ > 1 ) {
+    if ( n_photon_states_ > 2 ) {
         throw PsiException("polaritonic CIS does not work with N_PHOTON_STATES > 2",__FILE__,__LINE__);
     }
 
@@ -196,6 +195,15 @@ double PolaritonicRCIS::compute_energy() {
 
                                 // dipole self energy contribution
                                 hp[ian][jbm] += lambda_z * lambda_z * (2.0 * dz[i][a+o]*dz[j][b+o] - dz[i][j]*dz[a+o][b+o]);
+
+                                // coherent-state basis terms ... no factor of 1/2, i think
+                                if ( i == j && a != b ) {
+                                    hp[ian][jbm] -= lambda_z * lambda_z * dz[a+o][b+o] * tot_dip_z_;
+                                }
+                                if ( i != j && a == b ) {
+                                    hp[ian][jbm] -= lambda_z * lambda_z * dz[i][j] * tot_dip_z_;
+                                }
+
                             }
 
                             if ( i == j && a != b && n == m + 1 ) {
@@ -212,6 +220,15 @@ double PolaritonicRCIS::compute_energy() {
 
                             if ( i != j && a == b && n == m - 1 ) {
                                 hp[ian][jbm] -= sqrt(2.0) * coupling_factor_z * sqrt(n) * dz[i][j];
+                            }
+
+                            // coherent-state terms ... affects diagonals in electronic basis
+                            if ( i != j && a == b && n == m + 1 ) {
+                                hp[ian][jbm] += coupling_factor_z * sqrt(n+1) * tot_dip_z_;
+                            }
+
+                            if ( i != j && a == b && n == m - 1 ) {
+                                hp[ian][jbm] += coupling_factor_z * sqrt(n) * tot_dip_z_;
                             }
 
                         }
@@ -242,7 +259,7 @@ double PolaritonicRCIS::compute_energy() {
         }
     }
 
-    // now, couple |0,n> to all other |0,m>
+    // now, couple |0,n> to all other |0,m> ... really just updating diagonals
     for (int n = 0; n < n_photon_states_; n++) {
         for (int m = 0; m < n_photon_states_; m++) {
             hp[off+n][off+m] += HCavity_z->pointer()[n][m];
