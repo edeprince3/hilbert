@@ -222,13 +222,13 @@ printf("total dipole: %20.12lf\n",tot_dip_z_);
                                 hp[ian][jbm] -= sqrt(2.0) * coupling_factor_z * sqrt(n) * dz[i][j];
                             }
 
-                            // coherent-state terms ... affects diagonals in electronic basis
+                            // coherent-state terms ... affects diagonals in electronic basis .. should these get sqrt(2.0), too?
                             if ( i != j && a == b && n == m + 1 ) {
-                                hp[ian][jbm] += coupling_factor_z * sqrt(n+1) * tot_dip_z_;
+                                hp[ian][jbm] += sqrt(2.0) * coupling_factor_z * sqrt(n+1) * tot_dip_z_;
                             }
 
                             if ( i != j && a == b && n == m - 1 ) {
-                                hp[ian][jbm] += coupling_factor_z * sqrt(n) * tot_dip_z_;
+                                hp[ian][jbm] += sqrt(2.0) * coupling_factor_z * sqrt(n) * tot_dip_z_;
                             }
 
                         }
