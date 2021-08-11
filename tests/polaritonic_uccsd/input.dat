@@ -39,6 +39,8 @@ set hilbert {
   polaritonic_cc_include_u0 true
   polaritonic_cc_include_u1 true
   polaritonic_cc_include_u2 true
+
+  r_convergence 1e-12
 }
 
 activate(h2)
@@ -46,5 +48,5 @@ activate(h2)
 set reference uhf
 en = energy('polaritonic-uccsd') 
 
-ref = -76.234654392333 #-76.234653553147
+ref = -76.234654403463 #-76.234654392333 #-76.234653553147
 compare_values(ref, en, 8, "UCCSD total energy") # TEST

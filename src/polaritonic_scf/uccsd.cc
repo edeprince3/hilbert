@@ -3964,7 +3964,7 @@ void PolaritonicUCCSD::residual_u2() {
         }
     }
 
-    // additional term from revised pdaggerq ... missing in PRX 10, 041043
+    // additional term from revised pdaggerq ... missing in PRX 10, 041043 (2020)
     //    - P(m,n) 1.00000 d-(i,a) t2(e,f,i,m) u1(a,n) u0
     //   
     //  or
@@ -4074,7 +4074,7 @@ void PolaritonicUCCSD::residual_u0() {
             }
         }
 
-        // additional term from revised pdaggerq ... missing in PRX 10, 041043
+        // additional term from revised pdaggerq ... missing in PRX 10, 041043 (2020)
         //     - 1.00000 d-(i,a) u1(a,i) u0
         for (size_t i = 0; i < o_; i++) {
             for (size_t a = 0; a < v_; a++) {

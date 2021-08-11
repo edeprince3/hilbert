@@ -30,9 +30,9 @@
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Wednesday, 11 August 2021 03:06PM
+    Psi4 started on: Wednesday, 11 August 2021 04:06PM
 
-    Process ID: 588544
+    Process ID: 594484
     Host:       ed11
     PSIDATADIR: /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4
     Memory:     500.0 MiB
@@ -82,6 +82,8 @@ set hilbert {
   polaritonic_cc_include_u0 true
   polaritonic_cc_include_u1 true
   polaritonic_cc_include_u2 true
+
+  r_convergence 1e-12
 }
 
 activate(h2)
@@ -89,7 +91,7 @@ activate(h2)
 set reference uhf
 en = energy('polaritonic-uccsd') 
 
-ref = -76.234654392333 #-76.234653553147
+ref = -76.234654403463 #-76.234654392333 #-76.234653553147
 compare_values(ref, en, 8, "UCCSD total energy") # TEST
 --------------------------------------------------------------------------
 Warning: As of v1.5, the ~/.psi4rc file will no longer be read into Psi4 input.
@@ -97,7 +99,7 @@ Warning: As of v1.5, the ~/.psi4rc file will no longer be read into Psi4 input.
 Scratch directory: /scratch/deprince/scratch/
 
 *** tstart() called on ed11
-*** at Wed Aug 11 15:06:35 2021
+*** at Wed Aug 11 16:06:18 2021
 
    => Loading Basis Set <=
 
@@ -318,13 +320,13 @@ Properties computed using the SCF density matrix
      X:     0.0000      Y:    -0.0000      Z:     2.0958     Total:     2.0958
 
 
-*** tstop() called on ed11 at Wed Aug 11 15:06:36 2021
+*** tstop() called on ed11 at Wed Aug 11 16:06:19 2021
 Module time:
-	user time   =       0.28 seconds =       0.00 minutes
+	user time   =       0.31 seconds =       0.01 minutes
 	system time =       0.01 seconds =       0.00 minutes
 	total time  =          1 seconds =       0.02 minutes
 Total time:
-	user time   =       0.28 seconds =       0.00 minutes
+	user time   =       0.31 seconds =       0.01 minutes
 	system time =       0.01 seconds =       0.00 minutes
 	total time  =          1 seconds =       0.02 minutes
    => Loading Basis Set <=
@@ -748,7 +750,7 @@ Calling plugin hilbert.so.
     No. alpha electrons:                5
     No. beta electrons:                 5
     e_convergence:              1.000e-12
-    r_convergence:              1.000e-05
+    r_convergence:              1.000e-12
     maxiter:                          500
 
 
@@ -758,28 +760,32 @@ Calling plugin hilbert.so.
      Iter               energy                   dE                 |dT| 
         0      -0.208719510989      -0.208719510989       0.459092285158
         1      -0.213328526254      -0.004609015266       0.062395988267
-        2      -0.217683074562      -0.004354548308       0.022042753745
-        3      -0.218304416868      -0.000621342305       0.006398297178
-        4      -0.218322408252      -0.000017991384       0.001629962394
-        5      -0.218319439780       0.000002968472       0.000477130999
-        6      -0.218319761000      -0.000000321220       0.000169041968
-        7      -0.218320229315      -0.000000468314       0.000045647342
-        8      -0.218320121160       0.000000108155       0.000010315831
-        9      -0.218320113348       0.000000007812       0.000005027090
-       10      -0.218320103141       0.000000010207       0.000002937643
-       11      -0.218320101304       0.000000001837       0.000000262709
-       12      -0.218320101683      -0.000000000379       0.000000056400
-       13      -0.218320101673       0.000000000010       0.000000015538
-       14      -0.218320101695      -0.000000000022       0.000000005103
-       15      -0.218320101701      -0.000000000005       0.000000001564
-       16      -0.218320101701      -0.000000000001       0.000000000378
+        2      -0.217683074071      -0.004354547816       0.022042760054
+        3      -0.218304562033      -0.000621487962       0.006397027076
+        4      -0.218322402052      -0.000017840019       0.001627818372
+        5      -0.218319451121       0.000002950931       0.000476122982
+        6      -0.218319772291      -0.000000321170       0.000168890392
+        7      -0.218320241328      -0.000000469037       0.000045566188
+        8      -0.218320132217       0.000000109111       0.000010300760
+        9      -0.218320124444       0.000000007774       0.000005010876
+       10      -0.218320114209       0.000000010235       0.000002928168
+       11      -0.218320112394       0.000000001815       0.000000261708
+       12      -0.218320112798      -0.000000000404       0.000000056257
+       13      -0.218320112800      -0.000000000003       0.000000015528
+       14      -0.218320112822      -0.000000000022       0.000000005131
+       15      -0.218320112827      -0.000000000005       0.000000001574
+       16      -0.218320112828      -0.000000000000       0.000000000374
+       17      -0.218320112830      -0.000000000003       0.000000000040
+       18      -0.218320112831      -0.000000000001       0.000000000012
+       19      -0.218320112831      -0.000000000000       0.000000000003
+       20      -0.218320112831      -0.000000000000       0.000000000001
 
     CCSD iterations converged!
 
-    * Polaritonic UCCSD total energy:     -76.234654392333
+    * Polaritonic UCCSD total energy:     -76.234654403463
     UCCSD total energy....................................................................PASSED
 
-    Psi4 stopped on: Wednesday, 11 August 2021 03:06PM
-    Psi4 wall time for execution: 0:00:04.57
+    Psi4 stopped on: Wednesday, 11 August 2021 04:06PM
+    Psi4 wall time for execution: 0:00:07.26
 
 *** Psi4 exiting successfully. Buy a developer a beer!
