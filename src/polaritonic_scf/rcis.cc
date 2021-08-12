@@ -207,28 +207,28 @@ printf("total dipole: %20.12lf\n",tot_dip_z_);
                             }
 
                             if ( i == j && a != b && n == m + 1 ) {
-                                hp[ian][jbm] -= sqrt(2.0) * coupling_factor_z * sqrt(n+1) * dz[a+o][b+o];
+                                hp[ian][jbm] -= coupling_factor_z * sqrt(n+1) * dz[a+o][b+o];
                             }
 
                             if ( i == j && a != b && n == m - 1 ) {
-                                hp[ian][jbm] -= sqrt(2.0) * coupling_factor_z * sqrt(n) * dz[a+o][b+o];
+                                hp[ian][jbm] -= coupling_factor_z * sqrt(n) * dz[a+o][b+o];
                             }
 
                             if ( i != j && a == b && n == m + 1 ) {
-                                hp[ian][jbm] -= sqrt(2.0) * coupling_factor_z * sqrt(n+1) * dz[i][j];
+                                hp[ian][jbm] -= coupling_factor_z * sqrt(n+1) * dz[i][j];
                             }
 
                             if ( i != j && a == b && n == m - 1 ) {
-                                hp[ian][jbm] -= sqrt(2.0) * coupling_factor_z * sqrt(n) * dz[i][j];
+                                hp[ian][jbm] -= coupling_factor_z * sqrt(n) * dz[i][j];
                             }
 
-                            // coherent-state terms ... affects diagonals in electronic basis .. should these get sqrt(2.0), too?
+                            // more coherent-state terms ... these affect diagonals in electronic basis
                             if ( i != j && a == b && n == m + 1 ) {
-                                hp[ian][jbm] += sqrt(2.0) * coupling_factor_z * sqrt(n+1) * tot_dip_z_;
+                                hp[ian][jbm] += coupling_factor_z * sqrt(n+1) * tot_dip_z_;
                             }
 
                             if ( i != j && a == b && n == m - 1 ) {
-                                hp[ian][jbm] += sqrt(2.0) * coupling_factor_z * sqrt(n) * tot_dip_z_;
+                                hp[ian][jbm] += coupling_factor_z * sqrt(n) * tot_dip_z_;
                             }
 
                         }
