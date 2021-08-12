@@ -3039,8 +3039,9 @@ void PolaritonicUCCSD::residual_u2() {
         for (size_t f = 0; f < v_; f++) {
             for (size_t m = 0; m < o_; m++) {
                 for (size_t n = 0; n < o_; n++) {
-                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp2_[e*o_*o_*v_+f*o_*o_+n*o_+m];
-                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] += tmp2_[e*o_*o_*v_+f*o_*o_+m*o_+n];
+                    // fixed sign bug here 8/11/21
+                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] += tmp2_[e*o_*o_*v_+f*o_*o_+n*o_+m];
+                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp2_[e*o_*o_*v_+f*o_*o_+m*o_+n];
                 }
             }
         }
@@ -3963,6 +3964,66 @@ void PolaritonicUCCSD::residual_u2() {
         }
     }
 
+    // additional term from revised pdaggerq ... missing in PRX 10, 041043 (2020)
+    //    - P(m,n) 1.00000 d-(i,a) t2(e,f,i,m) u1(a,n) u0
+    //   
+    //  or
+    //   
+    //      P(m,n) 1.00000 d-(i,a) t2(e,f,m,i) u1(a,n) u0
+
+    // I(i,n) = d-(i,a) u1(a,n) 
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < o_; i++) {
+        for (size_t n = 0; n < o_; n++) {
+            double dum = 0.0;
+            for (size_t a = 0; a < v_; a++) {
+                dum += dp[i][a+o_] * u1_[a*o_+n];
+            }
+            tmp1_[i*o_+n] = dum;
+        }
+    }
+    // r'(e,f,m,n) = u0 I(i,n) t2(e,f,m,i)
+    F_DGEMM('n','n',o_,o_*v_*v_,o_,u0_[0],tmp1_,o_,t2_,o_,0.0,tmp2_,o_);
+#pragma omp parallel for schedule(static)
+    for (size_t e = 0; e < v_; e++) {
+        for (size_t f = 0; f < v_; f++) {
+            for (size_t m = 0; m < o_; m++) {
+                for (size_t n = 0; n < o_; n++) {
+                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] += tmp2_[e*o_*o_*v_+f*o_*o_+m*o_+n];
+                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp2_[e*o_*o_*v_+f*o_*o_+n*o_+m];
+                }
+            }
+        }
+    }
+
+    // + P(e,f) 1.00000 d-(i,a) t2(a,f,m,n) u1(e,i) u0
+
+    // I(e,a) = d-(i,a) u1(e,i)
+    // r'(e,f,m,n) = u0 t2(a,f,m,n) I(e,a)
+#pragma omp parallel for schedule(static)
+    for (size_t a = 0; a < v_; a++) {
+        for (size_t e = 0; e < v_; e++) {
+            double dum = 0.0;
+            for (size_t i = 0; i < o_; i++) {
+                dum += dp[i][a+o_] * u1_[e*o_+i];
+            }
+            tmp1_[e*v_+a] = dum;
+        }
+    }
+    // r'(e,f,m,n) = u0 t2(a,f,m,n) I(e,a)
+    F_DGEMM('n','n',o_*o_*v_,v_,v_,u0_[0],t2_,o_*o_*v_,tmp1_,v_,0.0,tmp2_,o_*o_*v_);
+#pragma omp parallel for schedule(static)
+    for (size_t e = 0; e < v_; e++) {
+        for (size_t f = 0; f < v_; f++) {
+            for (size_t m = 0; m < o_; m++) {
+                for (size_t n = 0; n < o_; n++) {
+                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] += tmp2_[e*o_*o_*v_+f*o_*o_+m*o_+n];
+                    ru2_[e*o_*o_*v_+f*o_*o_+m*o_+n] -= tmp2_[f*o_*o_*v_+e*o_*o_+m*o_+n];
+                }
+            }
+        }
+    }
+
 }
 
 // 
@@ -4010,6 +4071,14 @@ void PolaritonicUCCSD::residual_u0() {
         for (size_t i = 0; i < o_; i++) {
             for (size_t a = 0; a < v_; a++) {
                 r0 += fp[i][a+o_] * u1_[a*o_+i];
+            }
+        }
+
+        // additional term from revised pdaggerq ... missing in PRX 10, 041043 (2020)
+        //     - 1.00000 d-(i,a) u1(a,i) u0
+        for (size_t i = 0; i < o_; i++) {
+            for (size_t a = 0; a < v_; a++) {
+                r0 -= dp[i][a+o_] * u1_[a*o_+i] * u0_[0];
             }
         }
 

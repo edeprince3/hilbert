@@ -156,8 +156,8 @@ void PolaritonicHF::initialize_cavity() {
           throw PsiException("The CAVITY E array has the wrong dimensions",__FILE__,__LINE__);
        for (int i = 0; i < 3; i++) cavity_frequency_[i] = options_["CAVITY_FREQUENCY"][i].to_double();
     }else{
-       cavity_frequency_[0] = 2.042/27.21138;  // Energy for the Au nanoparticle taken from Gray's paper
-       cavity_frequency_[1] = 2.042/27.21138;
+       cavity_frequency_[0] = 0.0;
+       cavity_frequency_[1] = 0.0;
        cavity_frequency_[2] = 2.042/27.21138;
     }
 
@@ -169,9 +169,28 @@ void PolaritonicHF::initialize_cavity() {
           throw PsiException("The CAVITY_COUPLING_STRENGTH array has the wrong dimensions",__FILE__,__LINE__);
        for (int i = 0; i < 3; i++) cavity_coupling_strength_[i] = options_["CAVITY_COUPLING_STRENGTH"][i].to_double();
     }else{
-       cavity_coupling_strength_[0] = 2990.0/2.54175;
-       cavity_coupling_strength_[1] = 2990.0/2.54175;
+       cavity_coupling_strength_[0] = 0.0;
+       cavity_coupling_strength_[1] = 0.0;
        cavity_coupling_strength_[2] = 2990.0/2.54175;
+    }
+
+    // CCSD currently won't work with any polarization other that z. 
+    // throw an exception here to be safe for now. 
+    // 
+    // TODO: verify whether or not RHF/ROHF/UHF/CIS work correctly with non-z-polarized 
+    // modes.  if so, move this exception to the CCSD code.
+    // 
+    if ( fabs(cavity_coupling_strength_[0]) > 1e-12 ) {
+        throw PsiException("cQED codes currently only work with z-polarized modes",__FILE__,__LINE__);
+    }
+    if ( fabs(cavity_coupling_strength_[1]) > 1e-12 ) {
+        throw PsiException("cQED codes currently only work with z-polarized modes",__FILE__,__LINE__);
+    }
+    if ( fabs(cavity_frequency_[0]) > 1e-12 ) {
+        throw PsiException("cQED codes currently only work with z-polarized modes",__FILE__,__LINE__);
+    }
+    if ( fabs(cavity_frequency_[1]) > 1e-12 ) {
+        throw PsiException("cQED codes currently only work with z-polarized modes",__FILE__,__LINE__);
     }
 
     // get nuclear contribution to the molecular total dipole moment
@@ -200,10 +219,10 @@ void PolaritonicHF::initialize_cavity() {
     double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
 
     quadrupole[0]->scale(0.5 * lambda_x * lambda_x);
-    quadrupole[1]->scale(0.5 * lambda_x * lambda_y);
-    quadrupole[2]->scale(0.5 * lambda_x * lambda_z);
+    quadrupole[1]->scale(1.0 * lambda_x * lambda_y); // scaled by 2 for xy + yx
+    quadrupole[2]->scale(1.0 * lambda_x * lambda_z); // scaled by 2 for xz + zx
     quadrupole[3]->scale(0.5 * lambda_y * lambda_y);
-    quadrupole[4]->scale(0.5 * lambda_y * lambda_z);
+    quadrupole[4]->scale(1.0 * lambda_y * lambda_z); // scaled by 2 for yz + zy
     quadrupole[5]->scale(0.5 * lambda_z * lambda_z);
 
     quadrupole_scaled_sum_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
