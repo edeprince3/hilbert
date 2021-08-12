@@ -69,8 +69,8 @@ void PolaritonicUHF::common_init() {
     same_a_b_dens_ = false;
 
     // ensure scf_type df
-    if ( options_.get_str("SCF_TYPE") != "DF" ) {
-        throw PsiException("polaritonic uhf only works with scf_type df for now",__FILE__,__LINE__);
+    if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" ) {
+        throw PsiException("polaritonic uhf only works with scf_type df or cd",__FILE__,__LINE__);
     }
 
     // ensure running in c1 symmetry
@@ -98,40 +98,68 @@ double PolaritonicUHF::compute_energy() {
     // get primary basis:
     std::shared_ptr<BasisSet> primary = reference_wavefunction_->get_basisset("ORBITAL");
 
-    // get auxiliary basis:
-    std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
-
-    // total number of auxiliary basis functions
-    int nQ = auxiliary->nbf();
-
     // JK object
-    std::shared_ptr<DiskDFJK> jk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary));
+    std::shared_ptr<JK> jk;
 
-    // memory for jk (say, 80% of what is available)
-    jk->set_memory(0.8 * memory_);
+    int nQ = 0;
+    if ( options_.get_str("SCF_TYPE") == "DF" ) {
 
-    // integral cutoff
-    jk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
+        // get auxiliary basis:
+        std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
 
-    // Do J/K, Not wK 
-    jk->set_do_J(true);
-    jk->set_do_K(true);
-    jk->set_do_wK(false);
+        // total number of auxiliary basis functions
+        nQ = auxiliary->nbf();
 
-    jk->initialize();
+        std::shared_ptr<DiskDFJK> myjk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary));
+
+        // memory for jk (say, 80% of what is available)
+        myjk->set_memory(0.8 * memory_);
+
+        // integral cutoff
+        myjk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
+
+        // Do J/K, Not wK 
+        myjk->set_do_J(true);
+        myjk->set_do_K(true);
+        myjk->set_do_wK(false);
+
+        myjk->initialize();
+
+        jk = myjk;
+
+    }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
+
+        std::shared_ptr<CDJK> myjk = (std::shared_ptr<CDJK>)(new CDJK(primary,options_.get_double("CHOLESKY_TOLERANCE")));
+
+        // memory for jk (say, 80% of what is available)
+        myjk->set_memory(0.8 * memory_);
+
+        // integral cutoff
+        myjk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
+
+        // Do J/K, Not wK 
+        myjk->set_do_J(true);
+        myjk->set_do_K(true);
+        myjk->set_do_wK(false);
+
+        myjk->initialize();
+
+        jk = myjk;
+
+    }
 
     // grab some input options_
     double e_convergence = options_.get_double("E_CONVERGENCE");
     double d_convergence = options_.get_double("D_CONVERGENCE");
     int maxiter          = options_.get_int("MAXITER");
 
-    if ( options_.get_bool("HUBBARD_HAMILTONIAN") ) {
-        return true;
-    }
-
     outfile->Printf("\n");
     outfile->Printf("    No. basis functions:            %5i\n",nso_);
-    outfile->Printf("    No. auxiliary basis functions:  %5i\n",nQ);
+    if ( options_.get_str("SCF_TYPE") == "DF" ) {
+        outfile->Printf("    No. auxiliary basis functions:  %5i\n",nQ);
+    }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
+        outfile->Printf("    cholesky_tolerance:             %5le\n",options_.get_double("CHOLESKY_TOLERANCE"));
+    }
     outfile->Printf("    No. alpha electrons:            %5i\n",nalpha_);
     outfile->Printf("    No. beta electrons:             %5i\n",nbeta_);
     outfile->Printf("    e_convergence:             %10.3le\n",e_convergence);
@@ -139,6 +167,7 @@ double PolaritonicUHF::compute_energy() {
     outfile->Printf("    maxiter:                        %5i\n",maxiter);
     outfile->Printf("\n");
     outfile->Printf("\n");
+
 
     // allocate memory for eigenvectors and eigenvalues of the overlap matrix
     std::shared_ptr<Matrix> Sevec ( new Matrix(nso_,nso_) );
