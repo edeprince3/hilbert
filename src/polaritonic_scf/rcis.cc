@@ -196,38 +196,50 @@ printf("total dipole: %20.12lf\n",tot_dip_z_);
                                 // dipole self energy contribution
                                 hp[ian][jbm] += lambda_z * lambda_z * (2.0 * dz[i][a+o]*dz[j][b+o] - dz[i][j]*dz[a+o][b+o]);
 
-                                // coherent-state basis terms ... no factor of 1/2, i think
-                                if ( i == j && a != b ) {
-                                    hp[ian][jbm] -= lambda_z * lambda_z * dz[a+o][b+o] * tot_dip_z_;
-                                }
-                                if ( i != j && a == b ) {
-                                    hp[ian][jbm] -= lambda_z * lambda_z * dz[i][j] * tot_dip_z_;
-                                }
+                                // coherent-state basis terms ... actually, these should be contained in orbital energies
+                                //if ( i == j ) {
+                                //    hp[ian][jbm] -= lambda_z * lambda_z * dz[a+o][b+o] * tot_dip_z_;
+                                //}
+                                //if ( a == b ) {
+                                //    hp[ian][jbm] -= lambda_z * lambda_z * dz[i][j] * tot_dip_z_;
+                                //}
 
                             }
 
-                            if ( i == j && a != b && n == m + 1 ) {
+                            if ( i == j && n == m + 1 ) {
                                 hp[ian][jbm] -= coupling_factor_z * sqrt(n+1) * dz[a+o][b+o];
                             }
 
-                            if ( i == j && a != b && n == m - 1 ) {
+                            if ( i == j && n == m - 1 ) {
                                 hp[ian][jbm] -= coupling_factor_z * sqrt(n) * dz[a+o][b+o];
                             }
 
-                            if ( i != j && a == b && n == m + 1 ) {
-                                hp[ian][jbm] -= coupling_factor_z * sqrt(n+1) * dz[i][j];
+                            if ( a == b && n == m + 1 ) {
+                                hp[ian][jbm] += coupling_factor_z * sqrt(n+1) * dz[i][j];
                             }
 
-                            if ( i != j && a == b && n == m - 1 ) {
-                                hp[ian][jbm] -= coupling_factor_z * sqrt(n) * dz[i][j];
+                            if ( a == b && n == m - 1 ) {
+                                hp[ian][jbm] += coupling_factor_z * sqrt(n) * dz[i][j];
+                            }
+
+                            if ( a == b && i == j && n == m + 1 ) {
+                                for (int k = 0; k < o; k++) {
+                                    hp[ian][jbm] -= coupling_factor_z * sqrt(n+1) * dz[k][k];
+                                }
+                            }
+
+                            if ( a == b && i == j && n == m - 1 ) {
+                                for (int k = 0; k < o; k++) {
+                                    hp[ian][jbm] -= coupling_factor_z * sqrt(n) * dz[k][k];
+                                }
                             }
 
                             // more coherent-state terms ... these affect diagonals in electronic basis
-                            if ( i != j && a == b && n == m + 1 ) {
+                            if ( i == j && a == b && n == m + 1 ) {
                                 hp[ian][jbm] += coupling_factor_z * sqrt(n+1) * tot_dip_z_;
                             }
 
-                            if ( i != j && a == b && n == m - 1 ) {
+                            if ( i == j && a == b && n == m - 1 ) {
                                 hp[ian][jbm] += coupling_factor_z * sqrt(n) * tot_dip_z_;
                             }
 
@@ -279,7 +291,8 @@ printf("total dipole: %20.12lf\n",tot_dip_z_);
             double dum = eigvec->pointer()[j][i];
             photon_weight += dum*dum;
         }
-        printf(" %20.12lf %20.12lf",energy_ + eigval->pointer()[i],photon_weight);
+        //printf(" %20.12lf %20.12lf",energy_ + eigval->pointer()[i],photon_weight);
+        printf(" %20.12lf %20.12lf\n",energy_ + eigval->pointer()[i],photon_weight);
     }
     printf("\n");
     fflush(stdout);
