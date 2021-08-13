@@ -139,6 +139,10 @@ void ThreeIndexIntegrals(std::shared_ptr<Wavefunction> ref, long int &nQ, long i
         psio->write(PSIF_DCC_QSO, "(Q|mn) Integrals", (char*) tmp1, sizeof(double) * rowdims[row] * nso * nso,addr,&addr);
         psio->write(PSIF_DCC_QMO, "(Q|mn) Integrals", (char*) tmp1, sizeof(double) * rowdims[row] * nn1mo,addr2,&addr2);
     }
+    addr = PSIO_ZERO;
+    for (long int row = 0; row < nrows; row++) {
+        psio->write(PSIF_DCC_QSO, "(Q|mn) Half-Transformed Integrals", (char*) tmp1, sizeof(double) * rowdims[row] * nso * nso,addr,&addr);
+    }
     psio->close(PSIF_DCC_QSO,1);
     psio->close(PSIF_DCC_QMO,1);
 
@@ -196,7 +200,7 @@ void ThreeIndexIntegrals(std::shared_ptr<Wavefunction> ref, long int &nQ, long i
         }
 
         // write
-        psio->write(PSIF_DCC_QSO, "(Q|mn) Integrals", (char*) tmp1, sizeof(double) * nso*nmo * rowdims[row],addr2,&addr2);
+        psio->write(PSIF_DCC_QSO, "(Q|mn) Half-Transformed Integrals", (char*) tmp1, sizeof(double) * nso*nmo * rowdims[row],addr2,&addr2);
     }
     // transform second index:
     addr  = PSIO_ZERO;
@@ -204,7 +208,7 @@ void ThreeIndexIntegrals(std::shared_ptr<Wavefunction> ref, long int &nQ, long i
     psio->open(PSIF_DCC_QMO,PSIO_OPEN_OLD);
     for (long int row = 0; row < nrows; row++) {
         // read
-        psio->read(PSIF_DCC_QSO, "(Q|mn) Integrals", (char*) tmp1, sizeof(double) * nso*nmo * rowdims[row],addr,&addr);
+        psio->read(PSIF_DCC_QSO, "(Q|mn) Half-Transformed Integrals", (char*) tmp1, sizeof(double) * nso*nmo * rowdims[row],addr,&addr);
 
         // transform second index:
         F_DGEMM('n','n',nmo,nmo*rowdims[row],nso,1.0,&(myCa->pointer()[0][0]),nmo,tmp1,nso,0.0,tmp2,nmo);

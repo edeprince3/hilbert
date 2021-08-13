@@ -89,7 +89,7 @@ class PolaritonicUCCSD: public PolaritonicHF {
     std::shared_ptr<Matrix> oe_cavity_terms_;
 
     /// number of auxiliary basis functions
-    size_t nQ_;
+    long int nQ_;
 
     /// temporary container 1
     double * tmp1_;

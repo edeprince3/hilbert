@@ -273,40 +273,40 @@ printf("total dipole: %20.12lf\n",tot_dip_z_);
                             }
 
                             if ( i == j && n == m + 1 ) {
-                                hp[ian][jbm] -= coupling_factor_z * sqrt(n+1) * dz[a+o][b+o];
-                            }
-
-                            if ( i == j && n == m - 1 ) {
                                 hp[ian][jbm] -= coupling_factor_z * sqrt(n) * dz[a+o][b+o];
                             }
 
-                            if ( a == b && n == m + 1 ) {
-                                hp[ian][jbm] += coupling_factor_z * sqrt(n+1) * dz[i][j];
+                            if ( i == j && n == m - 1 ) {
+                                hp[ian][jbm] -= coupling_factor_z * sqrt(m) * dz[a+o][b+o];
                             }
 
-                            if ( a == b && n == m - 1 ) {
+                            if ( a == b && n == m + 1 ) {
                                 hp[ian][jbm] += coupling_factor_z * sqrt(n) * dz[i][j];
                             }
 
-                            if ( a == b && i == j && n == m + 1 ) {
-                                for (int k = 0; k < o; k++) {
-                                    hp[ian][jbm] -= coupling_factor_z * sqrt(n+1) * dz[k][k];
-                                }
+                            if ( a == b && n == m - 1 ) {
+                                hp[ian][jbm] += coupling_factor_z * sqrt(m) * dz[i][j];
                             }
 
-                            if ( a == b && i == j && n == m - 1 ) {
+                            if ( a == b && i == j && n == m + 1 ) {
                                 for (int k = 0; k < o; k++) {
                                     hp[ian][jbm] -= coupling_factor_z * sqrt(n) * dz[k][k];
                                 }
                             }
 
+                            if ( a == b && i == j && n == m - 1 ) {
+                                for (int k = 0; k < o; k++) {
+                                    hp[ian][jbm] -= coupling_factor_z * sqrt(m) * dz[k][k];
+                                }
+                            }
+
                             // more coherent-state terms ... these affect diagonals in electronic basis
                             if ( i == j && a == b && n == m + 1 ) {
-                                hp[ian][jbm] += coupling_factor_z * sqrt(n+1) * tot_dip_z_;
+                                hp[ian][jbm] += coupling_factor_z * sqrt(n) * tot_dip_z_;
                             }
 
                             if ( i == j && a == b && n == m - 1 ) {
-                                hp[ian][jbm] += coupling_factor_z * sqrt(n) * tot_dip_z_;
+                                hp[ian][jbm] += coupling_factor_z * sqrt(m) * tot_dip_z_;
                             }
 
                         }
