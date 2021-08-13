@@ -39,9 +39,16 @@
 // jk object
 #include <psi4/libfock/jk.h>
 
+#include <psi4/psifiles.h>
+#include <psi4/libtrans/integraltransform.h>
+
+
 #include "rcis.h"
 
 #include <misc/blas.h>
+#include <misc/hilbert_psifiles.h>
+#include <misc/omp.h>
+#include <misc/threeindexintegrals.h>
 
 using namespace psi;
 using namespace fnocc;
@@ -72,7 +79,7 @@ void PolaritonicRCIS::common_init() {
     outfile->Printf( "        *******************************************************\n");
 
     // ensure scf_type df
-    if ( options_.get_str("SCF_TYPE") != "DF" ) {
+    if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" ) {
         throw PsiException("polaritonic rcis only works with scf_type df for now",__FILE__,__LINE__);
     }
 
@@ -89,46 +96,105 @@ void PolaritonicRCIS::common_init() {
     // get primary basis:
     std::shared_ptr<BasisSet> primary = reference_wavefunction_->get_basisset("ORBITAL");
 
-    // get auxiliary basis:
-    std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
-
-    // total number of auxiliary basis functions
-    int nQ = auxiliary->nbf();
-
     int o = nalpha_;
     int v = nso_ - nalpha_;
-    std::shared_ptr<DFTensor> DF (new DFTensor(primary,auxiliary,Ca_,o,v,o,v,options_));
 
-    std::shared_ptr<Matrix> tmpoo = DF->Qoo();
-    std::shared_ptr<Matrix> tmpov = DF->Qov();
-    std::shared_ptr<Matrix> tmpvv = DF->Qvv();
+    nQ_ = 0;
+    if ( options_.get_str("SCF_TYPE") == "DF" ) {
 
-    double ** Qoo = tmpoo->pointer();
-    double ** Qov = tmpov->pointer();
-    double ** Qvv = tmpvv->pointer();
+        // get auxiliary basis:
+        std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
 
-    int1_ = (double*)malloc(o*o*v*v*sizeof(double));
-    int2_ = (double*)malloc(o*o*v*v*sizeof(double));
+        // total number of auxiliary basis functions
+        nQ_ = auxiliary->nbf();
 
-    memset((void*)int1_,'\0',o*o*v*v*sizeof(double));
-    memset((void*)int2_,'\0',o*o*v*v*sizeof(double));
+        std::shared_ptr<DFTensor> DF (new DFTensor(primary,auxiliary,Ca_,o,v,o,v,options_));
 
-    F_DGEMM('n','t',o*v,o*v,nQ,1.0,&(Qov[0][0]),o*v,&(Qov[0][0]),o*v,0.0,int1_,o*v);
-    F_DGEMM('n','t',v*v,o*o,nQ,1.0,&(Qvv[0][0]),v*v,&(Qoo[0][0]),o*o,0.0,int2_,v*v);
+        std::shared_ptr<Matrix> tmpoo = DF->Qoo();
+        std::shared_ptr<Matrix> tmpov = DF->Qov();
+        std::shared_ptr<Matrix> tmpvv = DF->Qvv();
+
+        double ** Qoo = tmpoo->pointer();
+        double ** Qov = tmpov->pointer();
+        double ** Qvv = tmpvv->pointer();
+
+        int1_ = (double*)malloc(o*o*v*v*sizeof(double));
+        int2_ = (double*)malloc(o*o*v*v*sizeof(double));
+
+        memset((void*)int1_,'\0',o*o*v*v*sizeof(double));
+        memset((void*)int2_,'\0',o*o*v*v*sizeof(double));
+
+        F_DGEMM('n','t',o*v,o*v,nQ_,1.0,&(Qov[0][0]),o*v,&(Qov[0][0]),o*v,0.0,int1_,o*v);
+        F_DGEMM('n','t',v*v,o*o,nQ_,1.0,&(Qvv[0][0]),v*v,&(Qoo[0][0]),o*o,0.0,int2_,v*v);
+
+    }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
+
+        //outfile->Printf("    ==> Transform three-index integrals <==\n");
+        //outfile->Printf("\n");
+
+        double start = omp_get_wtime();
+        ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
+
+        double * Qmo = (double*)malloc(nmo_*(nmo_+1)/2*nQ_*sizeof(double));
+        memset((void*)Qmo,'\0',nmo_*(nmo_+1)/2*nQ_*sizeof(double));
+
+        std::shared_ptr<PSIO> psio(new PSIO());
+        psio->open(PSIF_DCC_QMO,PSIO_OPEN_OLD);
+        psio->read_entry(PSIF_DCC_QMO,"(Q|mn) Integrals",(char*)Qmo,sizeof(double)*nQ_ * nmo_*(nmo_+1)/2);
+        psio->close(PSIF_DCC_QMO,1);
+
+        double end = omp_get_wtime();
+
+        double * Qoo = (double*)malloc(o*o*nQ_*sizeof(double));
+        double * Qov = (double*)malloc(o*v*nQ_*sizeof(double));
+        double * Qvv = (double*)malloc(v*v*nQ_*sizeof(double));
+
+        for (size_t Q = 0; Q < nQ_; Q++) {
+            for (size_t i = 0; i < o; i++) {
+                for (size_t j = 0; j < o; j++) {
+                    Qoo[Q*o*o+i*o+j] = Qmo[Q*nmo_*(nmo_+1)/2+INDEX(i,j)];
+                }
+            }
+            for (size_t i = 0; i < o; i++) {
+                for (size_t a = 0; a < v; a++) {
+                    Qov[Q*o*v+i*v+a] = Qmo[Q*nmo_*(nmo_+1)/2+INDEX(i,a+o)];
+                }
+            }
+            for (size_t a = 0; a < v; a++) {
+                for (size_t b = 0; b < v; b++) {
+                    Qvv[Q*v*v+a*v+b] = Qmo[Q*nmo_*(nmo_+1)/2+INDEX(a+o,b+o)];
+                }
+            }
+        }
+
+        free(Qmo);
+
+        //outfile->Printf("\n");
+        //outfile->Printf("        Time for integral transformation:  %7.2lf s\n",end-start);
+        //outfile->Printf("\n");
+
+        int1_ = (double*)malloc(o*o*v*v*sizeof(double));
+        int2_ = (double*)malloc(o*o*v*v*sizeof(double));
+
+        memset((void*)int1_,'\0',o*o*v*v*sizeof(double));
+        memset((void*)int2_,'\0',o*o*v*v*sizeof(double));
+
+        F_DGEMM('n','t',o*v,o*v,nQ_,1.0,Qov,o*v,Qov,o*v,0.0,int1_,o*v);
+        F_DGEMM('n','t',v*v,o*o,nQ_,1.0,Qvv,v*v,Qoo,o*o,0.0,int2_,v*v);
+
+        free(Qoo);
+        free(Qov);
+        free(Qvv);
+
+    }
 
 }
 
 double PolaritonicRCIS::compute_energy() {
 
-    // get auxiliary basis:
-    std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
-
-    // total number of auxiliary basis functions
-    int nQ = auxiliary->nbf();
-
     outfile->Printf("\n");
     outfile->Printf("    No. basis functions:            %5i\n",nso_);
-    outfile->Printf("    No. auxiliary basis functions:  %5i\n",nQ);
+    outfile->Printf("    No. auxiliary basis functions:  %5i\n",nQ_);
     outfile->Printf("    No. electrons:                  %5i\n",nalpha_ + nbeta_);
 
     if ( n_photon_states_ > 1 ) {
