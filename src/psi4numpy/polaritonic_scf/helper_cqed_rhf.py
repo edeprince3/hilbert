@@ -124,6 +124,8 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     mu_exp_y += mu_nuc_y
     mu_exp_z += mu_nuc_z
 
+    rhf_dipole_moment = np.array([mu_exp_x, mu_exp_y, mu_exp_z])
+
     # We need to carry around the electric field dotted into the nuclear dipole moment
     # and the electric field dotted into the RHF electronic dipole expectation value
     # see prefactor to sum of Line 3 of Eq. (9) in [McTague:2021:]
@@ -277,6 +279,7 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
         'CQED-RHF DENSITY MATRIX' : D,
         'CQED-RHF EPS' : e, 
         'PSI4 WFN' : wfn, 
+        'RHF DIPOLE MOMENT' : rhf_dipole_moment,
         'CQED-RHF DIPOLE MOMENT' : np.array([mu_exp_x, mu_exp_y, mu_exp_z]),
         'NUCLEAR DIPOLE MOMENT' : np.array([mu_nuc_x, mu_nuc_y, mu_nuc_z]),
         'DIPOLE ENERGY' : d_c,

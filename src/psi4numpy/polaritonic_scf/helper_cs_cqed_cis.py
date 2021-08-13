@@ -19,7 +19,7 @@ import psi4
 import numpy as np
 import scipy.linalg as la
 import time
-from .helper_cqed_rhf import cqed_rhf
+from helper_cqed_rhf import cqed_rhf
 
 def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
     """ Computes the QED-RHF energy and density 
@@ -162,9 +162,29 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
     # create Hamiltonian for elements H[ias, jbt]
     HCIS = np.zeros((ndocc * nvirt * 2 + 2, ndocc * nvirt * 2 + 2), dtype=complex)
 
-    HCIS[0,0] = d_c
-    HCIS[1,1] = np.sqrt(1) * omega_val + d_c
+    HCIS[0,0] = 0.
+    HCIS[1,1] = np.sqrt(1) * omega_val 
 
+    #// now, couple |0,n+1> and |0,n-1> to |ia,n>
+    #int off = o * v * n_photon_states_;
+    #for (int i = 0; i < o; i++) {
+    #    for (int a = 0; a < v; a++) {
+    #        for (int n = 0; n < n_photon_states_; n++) {
+    #            int ian = i * v * n_photon_states_ + a * n_photon_states_ + n;
+    #            // case 1
+    #            if ( n < n_photon_states_ - 1 ) {
+    #                hp[ian][off+n+1] = -sqrt(2.0) * coupling_factor_z * sqrt(n+1) * dz[i][a+o];
+    #                hp[off+n+1][ian] = -sqrt(2.0) * coupling_factor_z * sqrt(n+1) * dz[i][a+o];
+    #            }
+
+    #            // case 2
+    #            if ( n > 0 ) {
+    #                hp[ian][off+n-1] = -sqrt(2.0) * coupling_factor_z * sqrt(n) * dz[i][a+o];
+    #                hp[off+n-1][ian] = -sqrt(2.0) * coupling_factor_z * sqrt(n) * dz[i][a+o];
+    #            }
+    #        }
+    #    }
+    #}
 
     # elements corresponding to <s|<\Phi_0 | H | \Phi_i^a>|t>
     for s in range(0,2):
@@ -173,10 +193,10 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
                 A = a + ndocc
                 for t in range(0,2):
                     iat = 2*(i*nvirt + a) + t + 2
-                    HCIS[s,iat] = -np.sqrt(omega_val/2) *  l_dot_mu_el[i,A] * (s==t+1)
-                    HCIS[s,iat] -= np.sqrt(omega_val/2) *  l_dot_mu_el[i,A] * (s+1==t)
-                    HCIS[iat,s] = -np.sqrt(omega_val/2) *  l_dot_mu_el[i,A] * (s==t+1)
-                    HCIS[iat,s] -= np.sqrt(omega_val/2) *  l_dot_mu_el[i,A] * (s+1==t)
+                    HCIS[s,iat] = - 2 * np.sqrt(omega_val/2) * np.sqrt(t+1) * l_dot_mu_el[i,A] * (s==t+1) / np.sqrt(2)
+                    HCIS[s,iat] -= 2 * np.sqrt(omega_val/2) * np.sqrt(t) * l_dot_mu_el[i,A] * (s==t-1) / np.sqrt(2)
+                    HCIS[iat,s] = - 2 * np.sqrt(omega_val/2) * np.sqrt(s+1) * l_dot_mu_el[i,A] * (s+1==t) / np.sqrt(2)
+                    HCIS[iat,s] -= 2 * np.sqrt(omega_val/2) * np.sqrt(s) * l_dot_mu_el[i,A] * (s-1==t) / np.sqrt(2)
     
 
     # elements corresponding to <s|<\Phi_i^a| H | \Phi_j^b|t>
@@ -202,14 +222,41 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
                             HCIS[ias,jbt] += eps_v[a] * (s==t) * (a==b) * (i==j)
                             HCIS[ias,jbt] -= eps_o[i] * (s==t) * (a==b) * (i==j)
                             # photonic and dipole energy term
-                            HCIS[ias,jbt] += (omega_val * np.sqrt(t) + d_c) * (s==t) * (i==j) * (a==b)
-                            # bilinear coupling
-                            HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_exp * (i==j) * (a==b) * (s==t+1)
-                            HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_exp * (i==j) * (a==b) * (s+1==t)
-                            HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (a==b) * (s==t+1)
-                            HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (a==b) * (s+1==t)
-                            HCIS[ias,jbt] -= np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (i==j) * (s==t+1)
-                            HCIS[ias,jbt] -= np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (i==j) * (s+1==t)
+                            HCIS[ias,jbt] += (omega_val * np.sqrt(t)) * (s==t) * (i==j) * (a==b)
+                            # bilinear coupling - off-diagonals first
+                            HCIS[ias,jbt] += np.sqrt(t+1) * np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (s==t+1) * (a==b)
+                            HCIS[ias,jbt] += np.sqrt(t) * np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (s==t-1) * (a==b)
+                            HCIS[ias,jbt] -= np.sqrt(t+1) * np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (s==t+1) * (i==j)
+                            HCIS[ias,jbt] -= np.sqrt(t) * np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (s==t-1) * (i==j)
+
+                            # now handle diagonal in electronic term
+                            if (a==b and i==j and s==t+1):
+                                # l dot <mu> term
+                                HCIS[ias,jbt] += np.sqrt(t+1) * np.sqrt(omega_val/2) * l_dot_mu_exp
+                                # l dot mu terms
+                                for k in range(0,ndocc):
+                                    # sum over occupied indices
+                                    HCIS[ias,jbt] -= np.sqrt(t+1) * np.sqrt(omega_val/2) * l_dot_mu_el[k,k]
+                                # subtract off mu_ii term and add mu_aa
+                                #HCIS[ias,jbt] += np.sqrt(t+1) * np.sqrt(omega_val/2) * (l_dot_mu_el[i,i] - l_dot_mu_el[A,A])
+
+                            # now handle diagonal in electronic term
+                            if (a==b and i==j and s==t-1):
+                                # l dot <mu> term
+                                HCIS[ias,jbt] += np.sqrt(t) * np.sqrt(omega_val/2) * l_dot_mu_exp
+                                # l dot mu terms
+                                for k in range(0,ndocc):
+                                    # sum over occupied indices
+                                    HCIS[ias,jbt] -= np.sqrt(t) * np.sqrt(omega_val/2) * l_dot_mu_el[k,k]
+                                # subtract off mu_ii term and add mu_aa
+                                #HCIS[ias,jbt] += np.sqrt(t) * np.sqrt(omega_val/2) * (l_dot_mu_el[i,i] - l_dot_mu_el[A,A])
+                            
+                            #HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_exp * (i==j) * (a==b) * (s==t+1)
+                            #HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_exp * (i==j) * (a==b) * (s+1==t)
+                            #HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (a==b) * (i!=j) * (s==t+1)
+                            #HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (a==b) * (i!=j) * (s+1==t)
+                            #HCIS[ias,jbt] -= np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (i==j) * (a!=b) * (s==t+1)
+                            #HCIS[ias,jbt] -= np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (i==j) * (a!=b) * (s+1==t)
 
     #print("now formed")                        
     #print(HCIS)
