@@ -36,11 +36,13 @@
 #include <psi4/libmints/basisset.h>
 #include <psi4/lib3index/dftensor.h>
 #include <psi4/libqt/qt.h>
+#include <psi4/psifiles.h>
 
 #include "uccsd.h"
 
 #include <misc/blas.h>
 #include <misc/hilbert_psifiles.h>
+#include <misc/threeindexintegrals.h>
 
 using namespace psi;
 using namespace fnocc;
@@ -474,7 +476,7 @@ std::shared_ptr<Matrix> PolaritonicUCCSD::hubbard_hartree_fock() {
 void PolaritonicUCCSD::initialize_with_molecular_hamiltonian() {
 
     // ensure scf_type df
-    if ( options_.get_str("SCF_TYPE") != "DF" ) {
+    if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" ) {
         throw PsiException("polaritonic uhf only works with scf_type df for now",__FILE__,__LINE__);
     }
 
@@ -500,11 +502,22 @@ void PolaritonicUCCSD::initialize_with_molecular_hamiltonian() {
 
     // memory requirements:
 
-    // get auxiliary basis:
-    std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_CC");
+    if ( options_.get_str("SCF_TYPE") == "DF" ) {
+        // get auxiliary basis:
+        std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_CC");
 
-    // total number of auxiliary basis functions
-    nQ_ = auxiliary->nbf();
+        // total number of auxiliary basis functions
+        nQ_ = auxiliary->nbf();
+
+    }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
+
+        std::shared_ptr<PSIO> psio(new PSIO());
+
+        psio->open(PSIF_DFSCF_BJ,PSIO_OPEN_OLD);
+        psio->read_entry(PSIF_DFSCF_BJ, "length", (char*)&nQ_, sizeof(long int));
+        psio->close(PSIF_DFSCF_BJ,1);
+
+    }
 
     size_t required_memory = 0;
     required_memory += ccamps_dim_ * 4L;         // amplitudes, residual, diis storage
@@ -695,27 +708,37 @@ void PolaritonicUCCSD::initialize_with_molecular_hamiltonian() {
 // write three-index integrals to disk (file PSIF_DCC_QSO)
 void PolaritonicUCCSD::write_three_index_ints() {
 
-    // get primary basis:
-    std::shared_ptr<BasisSet> primary = reference_wavefunction_->get_basisset("ORBITAL");
+    if ( options_.get_str("SCF_TYPE") == "DF" ) {
 
-    // get auxiliary basis:
-    std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_CC");
+        // get primary basis:
+        std::shared_ptr<BasisSet> primary = reference_wavefunction_->get_basisset("ORBITAL");
 
-    // total number of auxiliary basis functions
-    nQ_ = auxiliary->nbf();
+        // get auxiliary basis:
+        std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_CC");
 
-    // three-index integrals
-    std::shared_ptr<DFTensor> DF (new DFTensor(primary,auxiliary,Ca_,nalpha_,nso_-nalpha_,nalpha_,nso_-nalpha_,options_));
+        // total number of auxiliary basis functions
+        nQ_ = auxiliary->nbf();
 
-    std::shared_ptr<Matrix> tmp_so = DF->Qso();
-    double ** tmp_so_p = tmp_so->pointer();
+        // three-index integrals
+        std::shared_ptr<DFTensor> DF (new DFTensor(primary,auxiliary,Ca_,nalpha_,nso_-nalpha_,nalpha_,nso_-nalpha_,options_));
 
-    // write Qso to disk
-    auto psio = std::make_shared<PSIO>();
+        std::shared_ptr<Matrix> tmp_so = DF->Qso();
+        double ** tmp_so_p = tmp_so->pointer();
 
-    psio->open(PSIF_DCC_QSO, PSIO_OPEN_NEW);
-    psio->write_entry(PSIF_DCC_QSO, "Qso CC", (char*)&(tmp_so_p[0][0]), nQ_ * nso_ * nso_ * sizeof(double));
-    psio->close(PSIF_DCC_QSO, 1);
+        // write Qso to disk
+        auto psio = std::make_shared<PSIO>();
+
+        psio->open(PSIF_DCC_QSO, PSIO_OPEN_NEW);
+        psio->write_entry(PSIF_DCC_QSO, "(Q|mn) Integrals", (char*)&(tmp_so_p[0][0]), nQ_ * nso_ * nso_ * sizeof(double));
+        psio->close(PSIF_DCC_QSO, 1);
+
+    }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
+
+        // note that this function also transforms Qso -> Qmo, which is 
+        // not necessary. oh, well.
+        ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
+
+    }
 
 }
 
@@ -988,7 +1011,7 @@ double PolaritonicUCCSD::t1_transformation_molecular_hamiltonian(std::shared_ptr
     auto psio = std::make_shared<PSIO>();
 
     psio->open(PSIF_DCC_QSO, PSIO_OPEN_OLD);
-    psio->read_entry(PSIF_DCC_QSO, "Qso CC", (char*)Qmo, nQ_ * nso_ * nso_ * sizeof(double));
+    psio->read_entry(PSIF_DCC_QSO, "(Q|mn) Integrals", (char*)Qmo, nQ_ * nso_ * nso_ * sizeof(double));
     psio->close(PSIF_DCC_QSO, 1);
 
     memset((void*)tmp1_,'\0',ns*ns*nQ_*sizeof(double));

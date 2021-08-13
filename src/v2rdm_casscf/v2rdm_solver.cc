@@ -790,7 +790,7 @@ void v2RDMSolver::initialize_with_molecular_hamiltonian() {
 
     // if using 3-index integrals, transform them before allocating any memory integrals, transform
     if ( is_df_ ) {
-        outfile->Printf("    ==> Transform three-electron integrals <==\n");
+        outfile->Printf("    ==> Transform three-index integrals <==\n");
         outfile->Printf("\n");
 
         double start = omp_get_wtime();

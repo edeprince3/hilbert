@@ -49,6 +49,7 @@ class PolaritonicRCIS: public PolaritonicHF {
 
     double * int1_;
     double * int2_;
+    long int nQ_;
 
 };
 
