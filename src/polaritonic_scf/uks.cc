@@ -71,7 +71,7 @@ void PolaritonicUKS::common_init() {
     outfile->Printf( "        *******************************************************\n");
 
     // ensure scf_type df
-    if ( options_.get_str("SCF_TYPE") != "DF" ) {
+    if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" ) {
         throw PsiException("polaritonic uks only works with scf_type df for now",__FILE__,__LINE__);
     }
 
@@ -107,12 +107,6 @@ double PolaritonicUKS::compute_energy() {
     // get primary basis:
     std::shared_ptr<BasisSet> primary = reference_wavefunction_->get_basisset("ORBITAL");
 
-    // get auxiliary basis:
-    std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
-
-    // total number of auxiliary basis functions
-    int nQ = auxiliary->nbf();
-
     // determine the DFT functional and initialize the potential object
     psi::scf::HF* scfwfn = (psi::scf::HF*)reference_wavefunction_.get();
     std::shared_ptr<SuperFunctional> functional = scfwfn->functional();
@@ -124,32 +118,79 @@ double PolaritonicUKS::compute_energy() {
     potential->print_header();
 
     // JK object
-    std::shared_ptr<DiskDFJK> jk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary));
+    std::shared_ptr<JK> jk;
 
-    // memory for jk (say, 80% of what is available)
-    jk->set_memory(0.8 * memory_);
+    int nQ = 0;
+    bool is_x_lrc = false;
+    if ( options_.get_str("SCF_TYPE") == "DF" ) {
 
-    // integral cutoff
-    jk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
+        // get auxiliary basis:
+        std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
 
-    // Do J/K/wK?
-    bool is_x_lrc  = functional->is_x_lrc();
-    //if ( options_["IP_FITTING"].has_changed() ) {
-    //    if ( options_.get_bool("IP_FITTING") ) {
-    //        is_x_lrc = true;
-    //    }
-    //}
-    double x_omega = functional->x_omega();
-    if ( options_["DFT_OMEGA"].has_changed() ) {
-        x_omega = options_.get_double("DFT_OMEGA");
+        // total number of auxiliary basis functions
+        nQ = auxiliary->nbf();
+
+        std::shared_ptr<DiskDFJK> myjk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary));
+
+        // memory for jk (say, 80% of what is available)
+        myjk->set_memory(0.8 * memory_);
+
+        // integral cutoff
+        myjk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
+
+        // Do J/K/wK?
+        is_x_lrc  = functional->is_x_lrc();
+        //if ( options_["IP_FITTING"].has_changed() ) {
+        //    if ( options_.get_bool("IP_FITTING") ) {
+        //        is_x_lrc = true;
+        //    }
+        //}
+        double x_omega = functional->x_omega();
+        if ( options_["DFT_OMEGA"].has_changed() ) {
+            x_omega = options_.get_double("DFT_OMEGA");
+        }
+
+        myjk->set_do_J(true);
+        myjk->set_do_K(functional->is_x_hybrid());
+        myjk->set_do_wK(is_x_lrc);
+        myjk->set_omega(x_omega);
+
+        myjk->initialize();
+
+        jk = myjk;
+
+    }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
+
+        std::shared_ptr<CDJK> myjk = (std::shared_ptr<CDJK>)(new CDJK(primary,options_.get_double("CHOLESKY_TOLERANCE")));
+
+        // memory for jk (say, 80% of what is available)
+        myjk->set_memory(0.8 * memory_);
+
+        // integral cutoff
+        myjk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
+
+        // Do J/K/wK?
+        is_x_lrc  = functional->is_x_lrc();
+        //if ( options_["IP_FITTING"].has_changed() ) {
+        //    if ( options_.get_bool("IP_FITTING") ) {
+        //        is_x_lrc = true;
+        //    }
+        //}
+        double x_omega = functional->x_omega();
+        if ( options_["DFT_OMEGA"].has_changed() ) {
+            x_omega = options_.get_double("DFT_OMEGA");
+        }
+
+        myjk->set_do_J(true);
+        myjk->set_do_K(functional->is_x_hybrid());
+        myjk->set_do_wK(is_x_lrc);
+        myjk->set_omega(x_omega);
+
+        myjk->initialize();
+
+        jk = myjk;
+
     }
-
-    jk->set_do_J(true);
-    jk->set_do_K(functional->is_x_hybrid());
-    jk->set_do_wK(is_x_lrc);
-    jk->set_omega(x_omega);
-
-    jk->initialize();
 
     // grab some input options_
     double e_convergence = options_.get_double("E_CONVERGENCE");
@@ -158,7 +199,11 @@ double PolaritonicUKS::compute_energy() {
 
     outfile->Printf("\n");
     outfile->Printf("    No. basis functions:            %5i\n",nso_);
-    outfile->Printf("    No. auxiliary basis functions:  %5i\n",nQ);
+    if ( options_.get_str("SCF_TYPE") == "DF" ) {
+        outfile->Printf("    No. auxiliary basis functions:  %5i\n",nQ);
+    }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
+        outfile->Printf("    cholesky_tolerance:             %5le\n",options_.get_double("CHOLESKY_TOLERANCE"));
+    }
     outfile->Printf("    No. alpha electrons:            %5i\n",nalpha_);
     outfile->Printf("    No. beta electrons:             %5i\n",nbeta_);
     outfile->Printf("    e_convergence:             %10.3le\n",e_convergence);
