@@ -132,7 +132,7 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
     mu_ao_y = np.asarray(mints.ao_dipole()[1])
     mu_ao_z = np.asarray(mints.ao_dipole()[2])
     
-    # transform dipole array to canonical MO basis from ordinary RHF (no photon)
+    # transform dipole array to CQED-RHF basis
     mu_cmo_x = np.dot(C.T, mu_ao_x).dot(C)
     mu_cmo_y = np.dot(C.T, mu_ao_y).dot(C)
     mu_cmo_z = np.dot(C.T, mu_ao_z).dot(C)
@@ -144,7 +144,7 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
         l_dot_mu_exp += lambda_vector[i] * cqed_rhf_dipole_moment[i]
 
     # \lambda \cdot \mu_{el}
-    # e.g. line 4,5,7, and 8 of Eq. (18) in [McTague:2021:]
+    # e.g. line 4 Eq. (18) in [McTague:2021:]
     l_dot_mu_el =  lambda_vector[0] * mu_cmo_x 
     l_dot_mu_el += lambda_vector[1] * mu_cmo_y
     l_dot_mu_el += lambda_vector[2] * mu_cmo_z
@@ -156,50 +156,38 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
     # Eq. (14) of [McTague:2021:]
     d_c = 0.5 * l_dot_mu_nuc ** 2 - l_dot_mu_nuc * l_dot_mu_exp + 0.5 * l_dot_mu_exp ** 2
 
-    # check to see if this thing is close to what we have from CQED-RHF calculation!
+    # check to see if d_c what we have from CQED-RHF calculation
     assert np.isclose(d_c, cqed_rhf_dict['DIPOLE ENERGY'])
 
     # create Hamiltonian for elements H[ias, jbt]
-    HCIS = np.zeros((ndocc * nvirt * 2 + 2, ndocc * nvirt * 2 + 2), dtype=complex)
+    Htot = np.zeros((ndocc * nvirt * 2 + 2, ndocc * nvirt * 2 + 2), dtype=complex)
+    Hep = np.zeros((ndocc * nvirt * 2 + 2, ndocc * nvirt * 2 + 2), dtype=complex)
+    H1e = np.zeros((ndocc * nvirt * 2 + 2, ndocc * nvirt * 2 + 2), dtype=complex)
+    H2e = np.zeros((ndocc * nvirt * 2 + 2, ndocc * nvirt * 2 + 2), dtype=complex)
+    H2edp = np.zeros((ndocc * nvirt * 2 + 2, ndocc * nvirt * 2 + 2), dtype=complex)
+    Hp = np.zeros((ndocc * nvirt * 2 + 2, ndocc * nvirt * 2 + 2), dtype=complex)
 
-    HCIS[0,0] = 0.
-    HCIS[1,1] = np.sqrt(1) * omega_val 
-
-    #// now, couple |0,n+1> and |0,n-1> to |ia,n>
-    #int off = o * v * n_photon_states_;
-    #for (int i = 0; i < o; i++) {
-    #    for (int a = 0; a < v; a++) {
-    #        for (int n = 0; n < n_photon_states_; n++) {
-    #            int ian = i * v * n_photon_states_ + a * n_photon_states_ + n;
-    #            // case 1
-    #            if ( n < n_photon_states_ - 1 ) {
-    #                hp[ian][off+n+1] = -sqrt(2.0) * coupling_factor_z * sqrt(n+1) * dz[i][a+o];
-    #                hp[off+n+1][ian] = -sqrt(2.0) * coupling_factor_z * sqrt(n+1) * dz[i][a+o];
-    #            }
-
-    #            // case 2
-    #            if ( n > 0 ) {
-    #                hp[ian][off+n-1] = -sqrt(2.0) * coupling_factor_z * sqrt(n) * dz[i][a+o];
-    #                hp[off+n-1][ian] = -sqrt(2.0) * coupling_factor_z * sqrt(n) * dz[i][a+o];
-    #            }
-    #        }
-    #    }
-    #}
+    # elements corresponding to <s|<\Phi_0 | H | \Phi_0>|t>
+    # Eq. (16) of [McTague:2021:]
+    Hp[0,0] = 0.
+    Hp[1,1] = omega_val 
 
     # elements corresponding to <s|<\Phi_0 | H | \Phi_i^a>|t>
+    # Eq. (17) of [McTague:2021:]
     for s in range(0,2):
         for i in range(0,ndocc):
             for a in range(0,nvirt):
                 A = a + ndocc
                 for t in range(0,2):
                     iat = 2*(i*nvirt + a) + t + 2
-                    HCIS[s,iat] = - 2 * np.sqrt(omega_val/2) * np.sqrt(t+1) * l_dot_mu_el[i,A] * (s==t+1) / np.sqrt(2)
-                    HCIS[s,iat] -= 2 * np.sqrt(omega_val/2) * np.sqrt(t) * l_dot_mu_el[i,A] * (s==t-1) / np.sqrt(2)
-                    HCIS[iat,s] = - 2 * np.sqrt(omega_val/2) * np.sqrt(s+1) * l_dot_mu_el[i,A] * (s+1==t) / np.sqrt(2)
-                    HCIS[iat,s] -= 2 * np.sqrt(omega_val/2) * np.sqrt(s) * l_dot_mu_el[i,A] * (s-1==t) / np.sqrt(2)
+                    Hep[s,iat] = -np.sqrt(omega_val) * np.sqrt(t+1) * l_dot_mu_el[i,A] * (s==t+1) 
+                    Hep[s,iat] -= np.sqrt(omega_val) * np.sqrt(t) * l_dot_mu_el[i,A] * (s==t-1) 
+                    Hep[iat,s] = -np.sqrt(omega_val) * np.sqrt(s+1) * l_dot_mu_el[i,A] * (s+1==t) 
+                    Hep[iat,s] -= np.sqrt(omega_val) * np.sqrt(s) * l_dot_mu_el[i,A] * (s-1==t) 
     
 
     # elements corresponding to <s|<\Phi_i^a| H | \Phi_j^b|t>
+    # Eq. (18) of [McTague:2021:]
     for i in range(0, ndocc):
         for a in range(0, nvirt):
             A = a+ndocc
@@ -212,76 +200,107 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
                         for t in range(0,2):
                             jbt = 2*(j*nvirt + b) + t + 2
                             # ERIs
-                            HCIS[ias,jbt] =  (2.0 * ovov[i, a, j, b] - oovv[i, j, a, b]) * (s==t)
+                            H2e[ias,jbt] =  (2.0 * ovov[i, a, j, b] - oovv[i, j, a, b]) * (s==t)
                             # 2-electron dipole terms
                             # ordinary
-                            HCIS[ias,jbt] += (2.0 * l_dot_mu_el[i,A] * l_dot_mu_el[j,B]) * (s==t)
+                            H2edp[ias,jbt] += (2.0 * l_dot_mu_el[i,A] * l_dot_mu_el[j,B]) * (s==t)
                             # exchange
-                            HCIS[ias,jbt] -= l_dot_mu_el[i,j] * l_dot_mu_el[A,B] * (s==t)
+                            H2edp[ias,jbt] -= l_dot_mu_el[i,j] * l_dot_mu_el[A,B] * (s==t)
                             # orbital energies from CQED-RHF
-                            HCIS[ias,jbt] += eps_v[a] * (s==t) * (a==b) * (i==j)
-                            HCIS[ias,jbt] -= eps_o[i] * (s==t) * (a==b) * (i==j)
+                            H1e[ias,jbt] += eps_v[a] * (s==t) * (a==b) * (i==j)
+                            H1e[ias,jbt] -= eps_o[i] * (s==t) * (a==b) * (i==j)
                             # photonic and dipole energy term
-                            HCIS[ias,jbt] += (omega_val * np.sqrt(t)) * (s==t) * (i==j) * (a==b)
+                            Hp[ias,jbt] += (omega_val * t) * (s==t) * (i==j) * (a==b)
                             # bilinear coupling - off-diagonals first
-                            HCIS[ias,jbt] += np.sqrt(t+1) * np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (s==t+1) * (a==b)
-                            HCIS[ias,jbt] += np.sqrt(t) * np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (s==t-1) * (a==b)
-                            HCIS[ias,jbt] -= np.sqrt(t+1) * np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (s==t+1) * (i==j)
-                            HCIS[ias,jbt] -= np.sqrt(t) * np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (s==t-1) * (i==j)
-
+                            Hep[ias,jbt] += np.sqrt(t+1) * np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (s==t+1) * (a==b) 
+                            Hep[ias,jbt] += np.sqrt(t) * np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (s==t-1) * (a==b) 
+                            Hep[ias,jbt] -= np.sqrt(t+1) * np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (s==t+1) * (i==j)
+                            Hep[ias,jbt] -= np.sqrt(t) * np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (s==t-1) * (i==j)
                             # now handle diagonal in electronic term
                             if (a==b and i==j and s==t+1):
                                 # l dot <mu> term
-                                HCIS[ias,jbt] += np.sqrt(t+1) * np.sqrt(omega_val/2) * l_dot_mu_exp
+                                Hep[ias,jbt] += np.sqrt(t+1) * np.sqrt(omega_val/2) * l_dot_mu_exp
                                 # l dot mu terms
                                 for k in range(0,ndocc):
                                     # sum over occupied indices
-                                    HCIS[ias,jbt] -= np.sqrt(t+1) * np.sqrt(omega_val/2) * l_dot_mu_el[k,k]
-                                # subtract off mu_ii term and add mu_aa
-                                #HCIS[ias,jbt] += np.sqrt(t+1) * np.sqrt(omega_val/2) * (l_dot_mu_el[i,i] - l_dot_mu_el[A,A])
+                                    Hep[ias,jbt] -= np.sqrt(t+1) * np.sqrt(omega_val/2) * l_dot_mu_el[k,k]
+
 
                             # now handle diagonal in electronic term
                             if (a==b and i==j and s==t-1):
                                 # l dot <mu> term
-                                HCIS[ias,jbt] += np.sqrt(t) * np.sqrt(omega_val/2) * l_dot_mu_exp
+                                Hep[ias,jbt] += np.sqrt(t) * np.sqrt(omega_val/2) * l_dot_mu_exp
                                 # l dot mu terms
                                 for k in range(0,ndocc):
                                     # sum over occupied indices
-                                    HCIS[ias,jbt] -= np.sqrt(t) * np.sqrt(omega_val/2) * l_dot_mu_el[k,k]
-                                # subtract off mu_ii term and add mu_aa
-                                #HCIS[ias,jbt] += np.sqrt(t) * np.sqrt(omega_val/2) * (l_dot_mu_el[i,i] - l_dot_mu_el[A,A])
-                            
-                            #HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_exp * (i==j) * (a==b) * (s==t+1)
-                            #HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_exp * (i==j) * (a==b) * (s+1==t)
-                            #HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (a==b) * (i!=j) * (s==t+1)
-                            #HCIS[ias,jbt] += np.sqrt(omega_val/2) * l_dot_mu_el[i,j] * (a==b) * (i!=j) * (s+1==t)
-                            #HCIS[ias,jbt] -= np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (i==j) * (a!=b) * (s==t+1)
-                            #HCIS[ias,jbt] -= np.sqrt(omega_val/2) * l_dot_mu_el[A,B] * (i==j) * (a!=b) * (s+1==t)
-
-    #print("now formed")                        
-    #print(HCIS)
+                                    Hep[ias,jbt] -= np.sqrt(t) * np.sqrt(omega_val/2) * l_dot_mu_el[k,k]
+    # Form Htot from sum of all terms
+    Htot = Hp + Hep + H1e + H2e + H2edp
     # now diagonalize H
     # use eigh if Hermitian
     if np.isclose(np.imag(omega_val),0,1e-6):
-        ECIS, CCIS = np.linalg.eigh(HCIS)
-    # use eig if not-Hermitian... note will not
-    # return both the left and right eigenvectos
-    # but the equivalent scipy routine will...
-    # need to do a bit more searching to figure out 
-    # what we want to do with L and R vecs!
+        ECIS, CCIS = np.linalg.eigh(Htot)
+    # use eig if not-Hermitian.  Note that
+    # numpy eig just returns the left eigenvectors
+    # and does not sort the eigenvalues
     else:
-        ECIS, CCIS = np.linalg.eig(HCIS)
+        ECIS, CCIS = np.linalg.eig(Htot)
         idx = ECIS.argsort()
         ECIS = ECIS[idx]
         CCIS = CCIS[:,idx]
 
+    # ENERGY DECOMPOSITION ANALYSIS
+    C_LP_star = np.conj(CCIS[:,1].T)
+    C_UP_star = np.conj(CCIS[:,2])
+    C_LP = CCIS[:,1]
+    C_UP = CCIS[:,2]
 
+    Htot_on_LP = np.dot(Htot, C_LP)
+    Hp_on_LP = np.dot(Hp, C_LP)
+    Hep_on_LP = np.dot(Hep, C_LP)
+    H1e_on_LP = np.dot(H1e, C_LP)
+    H2e_on_LP = np.dot(H2e, C_LP)
+    H2edp_on_LP = np.dot(H2edp, C_LP)
+
+    Htot_on_UP = np.dot(Htot, C_UP)
+    Hp_on_UP = np.dot(Hp, C_UP)
+    Hep_on_UP = np.dot(Hep, C_UP)
+    H1e_on_UP = np.dot(H1e, C_UP)
+    H2e_on_UP = np.dot(H2e, C_UP)
+    H2edp_on_UP = np.dot(H2edp, C_UP)
+
+    Etot_LP = np.dot(C_LP_star, Htot_on_LP)
+    Ep_LP = np.dot(C_LP_star, Hp_on_LP)
+    Eep_LP = np.dot(C_LP_star, Hep_on_LP)
+    E1e_LP = np.dot(C_LP_star, H1e_on_LP)
+    E2e_LP = np.dot(C_LP_star, H2e_on_LP)
+    E2edp_LP = np.dot(C_LP_star, H2edp_on_LP)
+
+    Etot_UP = np.dot(C_UP_star, Htot_on_UP)
+    Ep_UP = np.dot(C_UP_star, Hp_on_UP)
+    Eep_UP = np.dot(C_UP_star, Hep_on_UP)
+    E1e_UP = np.dot(C_UP_star, H1e_on_UP)
+    E2e_UP = np.dot(C_UP_star, H2e_on_UP)
+    E2edp_UP = np.dot(C_UP_star, H2edp_on_UP)
+
+    assert(np.isclose(Etot_LP, ECIS[1]))
+    assert(np.isclose(Etot_UP, ECIS[2]))
 
     cqed_cis_dict = {
                 'RHF ENERGY' : scf_e,
                 'CQED-RHF ENERGY' : cqed_scf_e,
                 'CQED-CIS ENERGY' : ECIS,
-                'CQED-CIS L VECTORS' : CCIS
+                'CQED-CIS L VECTORS' : CCIS,
+                'LP PHOTONIC ENERGY' : Ep_LP,
+                'UP PHOTONIC ENERGY' : Ep_UP,
+                'LP ELECTRON-PHOTON ENERGY' : Eep_LP,
+                'UP ELECTRON-PHOTON ENERGY' : Eep_UP,
+                'LP 1E ENERGY' : E1e_LP,
+                'UP 1E ENERGY' : E1e_UP,
+                'LP 2E ENERGY' : E2e_LP,
+                'UP 2E ENERGY' : E2e_UP,
+                'LP 2E DIPOLE ENERGY' : E2edp_LP,
+                'UP 2E DIPOLE ENERGY' : E2edp_UP
     }
 
     return cqed_cis_dict

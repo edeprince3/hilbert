@@ -104,20 +104,6 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     mu_exp_x = np.einsum("pq,pq->", 2 * mu_ao_x, D)
     mu_exp_y = np.einsum("pq,pq->", 2 * mu_ao_y, D)
     mu_exp_z = np.einsum("pq,pq->", 2 * mu_ao_z, D)
-    # transform dipole array to canonical MO basis from ordinary RHF (no photon)
-    #mu_cmo_x = np.dot(C.T, mu_ao_x).dot(C)
-    #mu_cmo_y = np.dot(C.T, mu_ao_y).dot(C)
-    #mu_cmo_z = np.dot(C.T, mu_ao_z).dot(C)
-
-    # compute components of electronic dipole moment <mu> from ordinary RHF (no photon)
-    #mu_exp_x = 0.0
-    #mu_exp_y = 0.0
-    #mu_exp_z = 0.0
-    #for i in range(0, ndocc):
-        # double because this is only alpha terms
-    #    mu_exp_x += 2 * mu_cmo_x[i, i]
-    #    mu_exp_y += 2 * mu_cmo_y[i, i]
-    #    mu_exp_z += 2 * mu_cmo_z[i, i]
 
     # need to add the nuclear term to the sum over the electronic dipole integrals
     mu_exp_x += mu_nuc_x
@@ -271,10 +257,28 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     print("Total time for SCF iterations: %.3f seconds \n" % (time.time() - t))
     print("QED-RHF   energy: %.8f hartree" % SCF_E)
     print("Psi4  SCF energy: %.8f hartree" % psi4_rhf_energy)
+
+    rhf_one_e_cont = 2 * H_0 # note using H_0 which is just T + V, and does not include Q_PF and d_PF
+    rhf_two_e_cont = J * 2 - K # note using just J and K that would contribute to ordinary RHF 2-electron energy
+    pf_two_e_cont = 2 * M - N
+
+    SCF_E_One = np.einsum("pq,pq->", rhf_one_e_cont, D)
+    SCF_E_Two = np.einsum("pq,pq->", rhf_two_e_cont, D)
+    CQED_SCF_E_Two = np.einsum("pq,pq->", pf_two_e_cont, D)
+
+    CQED_SCF_E_D_PF = np.einsum("pq,pq->", 2 * d_PF, D)
+    CQED_SCF_E_Q_PF = np.einsum("pq,pq->", 2 * Q_PF, D)
+
+    assert np.isclose(SCF_E_One + SCF_E_Two + CQED_SCF_E_D_PF + CQED_SCF_E_Q_PF + CQED_SCF_E_Two, SCF_E-d_c-Enuc) 
     
     cqed_rhf_dict = {
         'RHF ENERGY' : psi4_rhf_energy,
         'CQED-RHF ENERGY' : SCF_E,
+        '1E ENERGY' : SCF_E_One,
+        '2E ENERGY' : SCF_E_Two,
+        '1E DIPOLE ENERGY' : CQED_SCF_E_D_PF,
+        '1E QUADRUPOLE ENERGY' : CQED_SCF_E_Q_PF,
+        '2E DIPOLE ENERGY' : CQED_SCF_E_Two,
         'CQED-RHF C' : C,
         'CQED-RHF DENSITY MATRIX' : D,
         'CQED-RHF EPS' : e, 
