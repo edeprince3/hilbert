@@ -1,0 +1,10 @@
+src/psi4numpy/polaritonic_scf/.ipynb_checkpoints/*
+src/psi4numpy/polaritonic_scf/__pycache__/*
+src/psi4numpy/polaritonic_scf/*.clean
+.DS_Store
+src/.DS_SStore
+src/psi4numpy)polaritonic_scf/.DS_Store
+src/psi4numpy_polaritonic_scf/.ipynb_checkpoints/*
+.ipynb_checkpoints/*
+*.dat
+src/psi4numpy_polaritonic_scf/nax_forjay/*
