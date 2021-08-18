@@ -1,15 +1,13 @@
 import psi4
-import os
-from ..helper_cs_cqed_cis import cs_cqed_cis
+from helper_cs_cqed_cis import cs_cqed_cis
 from psi4.driver.procrouting.response.scf_response import tdscf_excitations
 import numpy as np
-import pytest
 
 
 numpy_memory = 2
 
 
-def test_cqed_cis():
+def test_cqed_cis_no_field():
     # dictionary for psi4 options for test calculations
     psi4_options_dict = {
         'basis': 'cc-pVDZ',
@@ -49,8 +47,46 @@ def test_cqed_cis():
     assert np.isclose(cqed_cis_e[6], psi4_excitation_e[2])
     assert np.isclose(cqed_cis_e[8], psi4_excitation_e[3])
     assert np.isclose(cqed_cis_e[10], psi4_excitation_e[4])
+    return True
+def test_cs_cqed_cis_with_field():
+
+    # options dict
+    options_dict = {'basis': 'cc-pVDZ',
+        'save_jk': True,
+        'scf_type' : 'pk',
+        'e_convergence' : 1e-12,
+        'd_convergence' : 1e-12
+    }
+
+    molstr = """
+    0 1
+        O      0.000000000000   0.000000000000  -0.068516219320
+        H      0.000000000000  -0.790689573744   0.543701060715
+        H      0.000000000000   0.790689573744   0.543701060715
+    no_reorient
+    symmetry c1
+    """
+
+    lam = np.array([0., 0., 0.05])
+    om = 2./27.21138602
+
+    expected_eigenvalues = np.array([-76.016613491776,-75.943171858458,-75.696248394443,-75.634194182018,-75.611459823919])
+    cqed_dict = cs_cqed_cis(lam, om, molstr, options_dict)
+
+    computed_eigenvalues = cqed_dict['CQED-CIS ENERGY']+cqed_dict['CQED-RHF ENERGY']
+    assert np.allclose(expected_eigenvalues, computed_eigenvalues[:5])
+    return True
 
 
+if test_cqed_cis_no_field():
+    print("CQED_CIS WITH NO FIELD PASSED!\n")
+else:
+    print("CQED_CIS WITH NO FIELD FAILED!\n")
+
+if test_cs_cqed_cis_with_field():
+    print("CQED_CIS WITH FIELD PASSED!\n")
+else:
+    print("CQED_CIS WITH FIELD FAILED!\n")
 
 
 
