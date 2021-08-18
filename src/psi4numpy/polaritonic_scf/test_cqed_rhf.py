@@ -51,12 +51,6 @@ def test_cqed_rhf():
 
     assert np.isclose(naf_dict['CQED-RHF ENERGY'], expected_NaF,5e-5)
     assert np.isclose(nacl_dict['CQED-RHF ENERGY'], expected_NaCl,5e-5)
-    return True
-
-if test_cqed_rhf():
-    print("CQED_RHF PASSED!\n")
-else:
-    print("CQED_RHF FAILED!\n")
 
 
 

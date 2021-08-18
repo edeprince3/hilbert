@@ -18,7 +18,6 @@ __date__      = "2021-01-15"
 import psi4
 import numpy as np
 import time
-
 def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     """ Computes the QED-RHF energy and density 
 

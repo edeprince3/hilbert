@@ -47,7 +47,7 @@ def test_cqed_cis_no_field():
     assert np.isclose(cqed_cis_e[6], psi4_excitation_e[2])
     assert np.isclose(cqed_cis_e[8], psi4_excitation_e[3])
     assert np.isclose(cqed_cis_e[10], psi4_excitation_e[4])
-    return True
+
 def test_cs_cqed_cis_with_field():
 
     # options dict
@@ -75,18 +75,17 @@ def test_cs_cqed_cis_with_field():
 
     computed_eigenvalues = cqed_dict['CQED-CIS ENERGY']+cqed_dict['CQED-RHF ENERGY']
     assert np.allclose(expected_eigenvalues, computed_eigenvalues[:5])
-    return True
 
 
-if test_cqed_cis_no_field():
-    print("CQED_CIS WITH NO FIELD PASSED!\n")
-else:
-    print("CQED_CIS WITH NO FIELD FAILED!\n")
-
-if test_cs_cqed_cis_with_field():
-    print("CQED_CIS WITH FIELD PASSED!\n")
-else:
-    print("CQED_CIS WITH FIELD FAILED!\n")
+#if test_cqed_cis_no_field():
+#    print("CQED_CIS WITH NO FIELD PASSED!\n")
+#else:
+#    print("CQED_CIS WITH NO FIELD FAILED!\n")
+#
+#if test_cs_cqed_cis_with_field():
+#    print("CQED_CIS WITH FIELD PASSED!\n")
+#else:
+#    print("CQED_CIS WITH FIELD FAILED!\n")
 
 
 
