@@ -527,7 +527,7 @@ void PolaritonicUCCSD::initialize_with_molecular_hamiltonian() {
     required_memory += o_*o_*o_*v_;              // <jk||ia>
     required_memory += o_*o_*o_*v_;              // <ia||jk>
     required_memory += o_*o_*o_*o_;              // <ij||kl>
-    required_memory += o_*o_*v_*v_ * 2L;         // tmp2_, tmp3_
+    required_memory += o_*o_*v_*v_;              // tmp2_
     required_memory += nQ_*(o_+v_)*(o_+v_) * 2L; // three-index integrals: Qmo, Qoo, Qov, Qvo, Qvv
     //required_memory += v_*v_*v_*v_;              // <ab||cd>
     //required_memory += o_*v_*v_*v_;              // <ab||ic>
@@ -548,6 +548,14 @@ void PolaritonicUCCSD::initialize_with_molecular_hamiltonian() {
     if ( nQ_*ns*ns > dim ) {
         dim = nQ_*ns*ns;
     }
+
+    // tmp3 needs to be max o^2v^2 NQov
+    size_t dim_tmp3 = o_*o_*v_*v_;
+    if ( nQ_*o_*v_ > dim_tmp3 ) {
+        dim_tmp3 = nQ_*o_*v_;
+    }
+    required_memory += dim_tmp3;                 // tmp3_
+
     required_memory += dim;                      // tmp1_
 
     outfile->Printf("\n");
@@ -567,9 +575,9 @@ void PolaritonicUCCSD::initialize_with_molecular_hamiltonian() {
     memset((void*)tmp1_,'\0',dim*sizeof(double));
 
     tmp2_ = (double*)malloc(o_*o_*v_*v_*sizeof(double));
-    tmp3_ = (double*)malloc(o_*o_*v_*v_*sizeof(double));
+    tmp3_ = (double*)malloc(dim_tmp3*sizeof(double));
     memset((void*)tmp2_,'\0',o_*o_*v_*v_*sizeof(double));
-    memset((void*)tmp3_,'\0',o_*o_*v_*v_*sizeof(double));
+    memset((void*)tmp3_,'\0',dim_tmp3*sizeof(double));
 
     // three-index integral containers
     Qoo_ = (double*)malloc(nQ_*o_*o_*sizeof(double));
