@@ -208,6 +208,20 @@ double PolaritonicUHF::compute_energy() {
     Da_->copy(Fprime);
 */
 
+    if (options_.get_bool("GUESS_MIX")) {
+        if (Ca_->nirrep() == 1) {
+            outfile->Printf("  Mixing alpha HOMO/LUMO orbitals (%d,%d)\n\n", nalpha_, nalpha_ + 1);
+            Ca_->rotate_columns(0, nalpha_ - 1, nalpha_, M_PI * 0.25);
+            Cb_->rotate_columns(0, nbeta_ - 1, nbeta_, -M_PI * 0.25);
+            // Construct density from C
+            C_DGEMM('n','t',nso_,nso_,nalpha_,1.0,&(Ca_->pointer()[0][0]),nso_,&(Ca_->pointer()[0][0]),nso_,0.0,&(Da_->pointer()[0][0]),nso_);
+            C_DGEMM('n','t',nso_,nso_,nbeta_,1.0,&(Cb_->pointer()[0][0]),nso_,&(Cb_->pointer()[0][0]),nso_,0.0,&(Db_->pointer()[0][0]),nso_);
+        } else {
+            throw PsiException("Warning: cannot mix alpha HOMO/LUMO orbitals. Run in C1 symmetry.", __FILE__, __LINE__);
+                                 
+        }
+    }
+
     energy_  = enuc_ + average_electric_dipole_self_energy_;
     energy_ += 0.5 * Da_->vector_dot(h);
     energy_ += 0.5 * Db_->vector_dot(h);
