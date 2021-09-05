@@ -449,13 +449,38 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
     }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_UCCSD") {
 
-        std::shared_ptr<PolaritonicUHF> uhf (new PolaritonicUHF(ref_wfn,options));
-        double energy = uhf->compute_energy();
+        if ( options.get_str("REFERENCE") == "UHF") {
 
-        std::shared_ptr<PolaritonicUCCSD> uccsd (new PolaritonicUCCSD((std::shared_ptr<Wavefunction>)uhf,options));
-        energy = uccsd->compute_energy();
+            std::shared_ptr<PolaritonicUHF> uhf (new PolaritonicUHF(ref_wfn,options));
+            double energy = uhf->compute_energy();
 
-        return (std::shared_ptr<Wavefunction>)uccsd;
+            std::shared_ptr<PolaritonicUCCSD> uccsd (new PolaritonicUCCSD((std::shared_ptr<Wavefunction>)uhf,options));
+            energy = uccsd->compute_energy();
+            return (std::shared_ptr<Wavefunction>)uccsd;
+
+        }else if ( options.get_str("REFERENCE") == "ROHF" ) {
+
+            std::shared_ptr<PolaritonicROHF> rohf (new PolaritonicROHF(ref_wfn,options));
+            double energy = rohf->compute_energy();
+
+            std::shared_ptr<PolaritonicUCCSD> uccsd (new PolaritonicUCCSD((std::shared_ptr<Wavefunction>)rohf,options));
+            energy = uccsd->compute_energy();
+            return (std::shared_ptr<Wavefunction>)uccsd;
+
+        }else if ( options.get_str("REFERENCE") == "RHF" ) {
+
+            std::shared_ptr<PolaritonicRHF> rhf (new PolaritonicRHF(ref_wfn,options));
+            double energy = rhf->compute_energy();
+
+            std::shared_ptr<PolaritonicUCCSD> uccsd (new PolaritonicUCCSD((std::shared_ptr<Wavefunction>)rhf,options));
+            energy = uccsd->compute_energy();
+            return (std::shared_ptr<Wavefunction>)uccsd;
+
+        }else {
+
+            throw PsiException("unknown REFERENCE for polaritonic UHF",__FILE__,__LINE__);
+
+        }
 
     }else {
 
