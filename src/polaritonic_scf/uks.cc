@@ -87,6 +87,30 @@ void PolaritonicUKS::common_init() {
     same_a_b_orbs_ = false;
     same_a_b_dens_ = false;
 
+    n_photon_states_ = options_.get_int("N_PHOTON_STATES");
+
+    // cavity Hamiltonian in basis of photon number states
+    HCavity_x_               = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+    HCavity_y_               = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+    HCavity_z_               = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+
+    // molecule->cavity interactoin Hamiltonian in basis of photon number states
+    HCavityInteraction_x_    = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+    HCavityInteraction_y_    = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+    HCavityInteraction_z_    = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+
+    // total cavity Hamiltonian in basis of photon number states
+    HCavityTotal_x_          = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+    HCavityTotal_y_          = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+    HCavityTotal_z_          = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+
+    // cavity dipole operator in basis of photon number states
+    CavityDipole_x_          = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+    CavityDipole_y_          = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+    CavityDipole_z_          = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+
+    use_coherent_state_basis_ = options_.get_bool("USE_COHERENT_STATE_BASIS");
+
 }
 
 double PolaritonicUKS::compute_energy() {
@@ -281,6 +305,9 @@ double PolaritonicUKS::compute_energy() {
     int iter = 0;
     do {
 
+        // w <b*b>
+        double cavity_energy = 0.0;
+
         e_last = energy_;
 
         // grab occupied orbitals (the first nalpha)
@@ -365,6 +392,20 @@ double PolaritonicUKS::compute_energy() {
 
             update_cavity_terms();
 
+            if ( !use_coherent_state_basis_ ) {
+
+                // build and diagonalize cavity hamiltonian (for canonical basis only)
+                cavity_energy = build_cavity_hamiltonian();
+
+                // photon -> electron contribution (for canonical basis only)
+                // 
+                // -(w/2)^1/2 lambda.mu_e < mu_p >
+                // 
+                std::shared_ptr<Matrix> V = (std::shared_ptr<Matrix>)(new Matrix(dipole_scaled_sum_));
+                V->scale(-sqrt(0.5 * cavity_frequency_[2])*CavityDipole_z_->pointer()[0][0]);
+                oei->add(V);
+            }
+
             // dipole self energy:
 
             // e-n term 
@@ -405,12 +446,17 @@ double PolaritonicUKS::compute_energy() {
             Fb_->add(dipole_Ja);
             Fb_->add(dipole_Jb);
             Fb_->subtract(dipole_Kb);
+
         }
 
         Fa_->add(oei);
         Fb_->add(oei);
 
         // evaluate the current energy, E = D(H+F) + Enuc
+        // 
+        // note that, in canonical basis, average_electric_dipole_self_energy_ 
+        // only contains nuclear contributions
+        // 
         energy_  = enuc_ + average_electric_dipole_self_energy_;
 
         energy_ += Da_->vector_dot(oei);
@@ -445,6 +491,11 @@ double PolaritonicUKS::compute_energy() {
         double exchange_correlation_energy = 0.0;
         if (functional->needs_xc()) {
             energy_ += potential->quadrature_values()["FUNCTIONAL"];
+        }
+
+        // if using canonical basis, add w <b*b>
+        if ( !use_coherent_state_basis_ ) {
+            energy_ += cavity_energy; 
         }
 
         // dele
@@ -514,6 +565,146 @@ double PolaritonicUKS::compute_energy() {
     epsilon_b_->print();
 
     return energy_;
+
+}
+
+/* 
+ * build_cavity_hamiltonian():
+ *
+ * Build the cavity Hamiltonian, the molecule->cavity interaction
+ * Hamiltonian, and the cavity dipole moment operator in the
+ * basis of photon number states.  Transform all three operators
+ * to the basis that diagonalizes the total cavity Hamiltonian
+ * (the sum of the cavity Hamiltonian and the molecule->cavity
+ * Hamiltonian) and returns its lowest eigenvalue (in z-direction)
+*/
+double PolaritonicUKS::build_cavity_hamiltonian(){
+
+    // First, build the cavity dipole moment operator 
+    // in the basis of photon number states ( n_photon_states_ )
+
+    int nS = n_photon_states_;
+
+    CavityDipole_x_->zero();
+    CavityDipole_y_->zero();
+    CavityDipole_z_->zero();
+
+    for (int A=0; A<nS-1; A++){
+        //CavityDipole_x_->pointer()[A+1][A] += cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A+1);
+        //CavityDipole_x_->pointer()[A][A+1] += cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A+1);
+        //CavityDipole_y_->pointer()[A+1][A] += cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A+1);
+        //CavityDipole_y_->pointer()[A][A+1] += cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A+1);
+        //CavityDipole_z_->pointer()[A+1][A] += cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
+        //CavityDipole_z_->pointer()[A][A+1] += cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
+        CavityDipole_x_->pointer()[A+1][A] += sqrt(A+1);
+        CavityDipole_x_->pointer()[A][A+1] += sqrt(A+1);
+        CavityDipole_y_->pointer()[A+1][A] += sqrt(A+1);
+        CavityDipole_y_->pointer()[A][A+1] += sqrt(A+1);
+        CavityDipole_z_->pointer()[A+1][A] += sqrt(A+1);
+        CavityDipole_z_->pointer()[A][A+1] += sqrt(A+1);
+    }
+
+    // Build the cavity Hamiltonian operator in the basis of 
+    // photon number states ( n_photon_states_ )
+
+    HCavity_x_->zero();
+    HCavity_y_->zero();
+    HCavity_z_->zero();
+
+    for (int A=0; A<nS; A++){
+        HCavity_x_->pointer()[A][A] = A*cavity_frequency_[0];
+        HCavity_y_->pointer()[A][A] = A*cavity_frequency_[1];
+        HCavity_z_->pointer()[A][A] = A*cavity_frequency_[2];
+    }
+
+    // Evaluate the electronic contribute to the molecule's dipole moment
+
+    double e_dip_x = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1); 
+    double e_dip_y = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1); 
+    double e_dip_z = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+    if ( same_a_b_dens_ ) {
+        e_dip_x *= 2.0;
+        e_dip_y *= 2.0;
+        e_dip_z *= 2.0;
+    }else {
+        e_dip_x += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1); 
+        e_dip_y += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1); 
+        e_dip_z += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+    }
+
+    // Build the molecule->cavity interaction Hamiltonian operator 
+    // in the basis of photon number states ( n_photon_states_ )
+
+    HCavityInteraction_x_->zero();
+    HCavityInteraction_y_->zero();
+    HCavityInteraction_z_->zero();
+
+    for (int A = 0; A<nS; A++) {
+        if (A < nS - 1) {
+
+            HCavityInteraction_x_->pointer()[A][A+1] = -(e_dip_x + nuc_dip_x_) * cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A+1);
+            HCavityInteraction_y_->pointer()[A][A+1] = -(e_dip_y + nuc_dip_y_) * cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A+1);
+            HCavityInteraction_z_->pointer()[A][A+1] = -(e_dip_z + nuc_dip_z_) * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
+
+        }
+
+        if (A > 0) {
+
+            HCavityInteraction_x_->pointer()[A][A-1] = -(e_dip_x + nuc_dip_x_) * cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A);
+            HCavityInteraction_y_->pointer()[A][A-1] = -(e_dip_y + nuc_dip_y_) * cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A);
+            HCavityInteraction_z_->pointer()[A][A-1] = -(e_dip_z + nuc_dip_z_) * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A);
+        }
+    }
+
+    // Build the total cavity Hamiltonian
+
+    HCavityTotal_x_->copy(HCavity_x_);
+    HCavityTotal_y_->copy(HCavity_y_);
+    HCavityTotal_z_->copy(HCavity_z_);
+    HCavityTotal_x_->add(HCavityInteraction_x_);
+    HCavityTotal_y_->add(HCavityInteraction_y_);
+    HCavityTotal_z_->add(HCavityInteraction_z_);
+
+    // Diagonalize total cavity Hamiltonian and transform cavity
+    // Hamiltonian, molecule->cavity interaction Hamiltonian, and
+    // cavity dipole moment operator to the basis that diagonalizes
+    // the total cavity Hamiltonian
+    std::shared_ptr<Matrix> eigvec (new Matrix(n_photon_states_,n_photon_states_));
+    std::shared_ptr<Vector> eigval (new Vector(n_photon_states_));
+
+    // x
+    HCavityTotal_x_->diagonalize(eigvec, eigval);
+    HCavity_x_->transform(eigvec);
+    HCavityInteraction_x_->transform(eigvec);
+    CavityDipole_x_->transform(eigvec);
+    double ex = eigval->pointer()[0];
+
+    // y
+    HCavityTotal_y_->diagonalize(eigvec, eigval);
+    HCavity_y_->transform(eigvec);
+    HCavityInteraction_y_->transform(eigvec);
+    CavityDipole_y_->transform(eigvec);
+    double ey = eigval->pointer()[0];
+
+    // z
+    HCavityTotal_z_->diagonalize(eigvec, eigval);
+    HCavity_z_->transform(eigvec);
+    HCavityInteraction_z_->transform(eigvec);
+    CavityDipole_z_->transform(eigvec);
+    double ez = eigval->pointer()[0];
+
+    if ( print_cavity_properties_ ) {
+        outfile->Printf("\n");
+        outfile->Printf("    ==> Cavity Properties <==\n");
+        outfile->Printf("\n");
+
+        outfile->Printf("        Energy x: %20.12lf    Dipole x: %20.12lf\n",ex,CavityDipole_x_->pointer()[0][0]);
+        outfile->Printf("        Energy y: %20.12lf    Dipole y: %20.12lf\n",ey,CavityDipole_y_->pointer()[0][0]);
+        outfile->Printf("        Energy z: %20.12lf    Dipole z: %20.12lf\n",ez,CavityDipole_z_->pointer()[0][0]);
+        outfile->Printf("\n");
+    }
+
+    return ez;
 
 }
 
