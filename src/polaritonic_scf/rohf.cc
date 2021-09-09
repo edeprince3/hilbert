@@ -78,6 +78,11 @@ void PolaritonicROHF::common_init() {
         throw PsiException("polaritonic rohf only works with c1 symmetry for now.",__FILE__,__LINE__);
     }
 
+    // this code only works in the coheren-state basis
+    if ( !options_.get_bool("USE_COHERENT_STATE_BASIS") ) {
+        throw PsiException("polaritonic rohf only works within the coherent-state basis",__FILE__,__LINE__);
+    }
+
 }
 
 double PolaritonicROHF::compute_energy() {
