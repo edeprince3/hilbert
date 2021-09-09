@@ -329,9 +329,15 @@ void PolaritonicHF::update_cavity_terms(){
     // 
     // n-<d> contribution: lambda . (dn - <d>)
     double nuc_dipdot = 0.0;
-    nuc_dipdot += lambda_x * ( nuc_dip_x_ - (int)( use_coherent_state_basis_ ) * tot_dip_x_ );
-    nuc_dipdot += lambda_y * ( nuc_dip_y_ - (int)( use_coherent_state_basis_ ) * tot_dip_y_ );
-    nuc_dipdot += lambda_z * ( nuc_dip_z_ - (int)( use_coherent_state_basis_ ) * tot_dip_z_ );
+    if ( use_coherent_state_basis_ ) {
+        nuc_dipdot += lambda_x * ( nuc_dip_x_ - tot_dip_x_ );
+        nuc_dipdot += lambda_y * ( nuc_dip_y_ - tot_dip_y_ );
+        nuc_dipdot += lambda_z * ( nuc_dip_z_ - tot_dip_z_ );
+    }else {
+        nuc_dipdot += lambda_x * nuc_dip_x_;
+        nuc_dipdot += lambda_y * nuc_dip_y_;
+        nuc_dipdot += lambda_z * nuc_dip_z_;
+    }
 
     // e-(n-<d>) contribution 0.5 * 2 (lambda . de) ( lambda . (dn - <d>) )
     scaled_e_n_dipole_squared_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));

@@ -493,9 +493,16 @@ double PolaritonicUKS::compute_energy() {
             energy_ += potential->quadrature_values()["FUNCTIONAL"];
         }
 
-        // if using canonical basis, add w <b*b>
+        // if using canonical basis, add additional terms
         if ( !use_coherent_state_basis_ ) {
+
+            // w <b*b> 
             energy_ += cavity_energy; 
+
+            // -(w/2)^1/2 lambda.mu_n <b* + b> 
+            double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+            energy_ += -sqrt(0.5 * cavity_frequency_[2]) * lambda_z * nuc_dip_z_ * CavityDipole_z_->pointer()[0][0];
+
         }
 
         // dele
@@ -596,10 +603,10 @@ double PolaritonicUKS::build_cavity_hamiltonian(){
         //CavityDipole_y_->pointer()[A][A+1] += cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A+1);
         //CavityDipole_z_->pointer()[A+1][A] += cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
         //CavityDipole_z_->pointer()[A][A+1] += cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
-        CavityDipole_x_->pointer()[A+1][A] += sqrt(A+1);
-        CavityDipole_x_->pointer()[A][A+1] += sqrt(A+1);
-        CavityDipole_y_->pointer()[A+1][A] += sqrt(A+1);
-        CavityDipole_y_->pointer()[A][A+1] += sqrt(A+1);
+        //CavityDipole_x_->pointer()[A+1][A] += sqrt(A+1);
+        //CavityDipole_x_->pointer()[A][A+1] += sqrt(A+1);
+        //CavityDipole_y_->pointer()[A+1][A] += sqrt(A+1);
+        //CavityDipole_y_->pointer()[A][A+1] += sqrt(A+1);
         CavityDipole_z_->pointer()[A+1][A] += sqrt(A+1);
         CavityDipole_z_->pointer()[A][A+1] += sqrt(A+1);
     }
