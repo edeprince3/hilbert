@@ -78,6 +78,11 @@ void PolaritonicUHF::common_init() {
         throw PsiException("polaritonic uhf only works with c1 symmetry for now.",__FILE__,__LINE__);
     }
 
+    // this code only works in the coheren-state basis
+    if ( !options_.get_bool("USE_COHERENT_STATE_BASIS") ) {
+        throw PsiException("polaritonic uhf only works within the coherent-state basis",__FILE__,__LINE__);
+    }
+
 }
 
 double PolaritonicUHF::compute_energy() {

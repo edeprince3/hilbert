@@ -239,6 +239,7 @@ void PolaritonicHF::initialize_cavity() {
     dipole_scaled_sum_->axpy(lambda_y, dipole_[1]);
     dipole_scaled_sum_->axpy(lambda_z, dipole_[2]);
 
+/*
     // e-(n-<d>) contribution 0.5 * 2 (lambda . de) ( lambda . (dn - <d>) )
 
     // initialize with <de> = 0
@@ -270,6 +271,9 @@ void PolaritonicHF::initialize_cavity() {
 
     // constant terms:  0.5 ( lambda . ( dn - <d> ) )^2 = 0.5 ( lambda . <de> )^2
     average_electric_dipole_self_energy_ = 0.5 * nuc_dipdot * nuc_dipdot;
+*/
+
+    update_cavity_terms();
 
 }
 
@@ -319,17 +323,31 @@ void PolaritonicHF::update_cavity_terms(){
     el_dipdot->axpy(lambda_y,dipole_[1]);
     el_dipdot->axpy(lambda_z,dipole_[2]);
 
+    // n contribution: lambda . dn
+    // 
+    // or ... in the coherent-state basis:
+    // 
     // n-<d> contribution: lambda . (dn - <d>)
     double nuc_dipdot = 0.0;
-    nuc_dipdot += lambda_x * ( nuc_dip_x_ - tot_dip_x_ );
-    nuc_dipdot += lambda_y * ( nuc_dip_y_ - tot_dip_y_ );
-    nuc_dipdot += lambda_z * ( nuc_dip_z_ - tot_dip_z_ );
+    if ( use_coherent_state_basis_ ) {
+        nuc_dipdot += lambda_x * ( nuc_dip_x_ - tot_dip_x_ );
+        nuc_dipdot += lambda_y * ( nuc_dip_y_ - tot_dip_y_ );
+        nuc_dipdot += lambda_z * ( nuc_dip_z_ - tot_dip_z_ );
+    }else {
+        nuc_dipdot += lambda_x * nuc_dip_x_;
+        nuc_dipdot += lambda_y * nuc_dip_y_;
+        nuc_dipdot += lambda_z * nuc_dip_z_;
+    }
 
     // e-(n-<d>) contribution 0.5 * 2 (lambda . de) ( lambda . (dn - <d>) )
     scaled_e_n_dipole_squared_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
     scaled_e_n_dipole_squared_->copy(el_dipdot);
     scaled_e_n_dipole_squared_->scale(nuc_dipdot);
 
+    // constant terms:  0.5 ( lambda . dn ^2
+    // 
+    // or ... in the coherent state basis:
+    // 
     // constant terms:  0.5 ( lambda . ( dn - <d> ) )^2
     average_electric_dipole_self_energy_ = 0.5 * nuc_dipdot * nuc_dipdot;
 
