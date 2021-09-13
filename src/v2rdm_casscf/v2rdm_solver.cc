@@ -961,7 +961,6 @@ void v2RDMSolver::initialize_with_hubbard_hamiltonian() {
 
 void v2RDMSolver::initialize_with_external_hamiltonian() {
 
-printf("hi there\n");fflush(stdout);
     is_df_        = false;
 
     // these are set in the constructor
@@ -981,8 +980,8 @@ printf("hi there\n");fflush(stdout);
     nrstc_        = 0;
     nrstv_        = 0;
 
-    int ms = (int)nalpha_ - (int)nbeta_;
-    multiplicity_ = 2 * ms + 1;
+    int ms = (int)nalpha_ - (int)nbeta_; // ms times 2
+    multiplicity_ = ms + 1;
 
     nirrep_       = 1;
 
