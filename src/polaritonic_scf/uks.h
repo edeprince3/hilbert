@@ -50,6 +50,32 @@ class PolaritonicUKS: public PolaritonicHF {
     std::shared_ptr<Matrix> Va_;
     std::shared_ptr<Matrix> Vb_;
 
+    /// cavity Hamiltonian in basis of photon number states
+    std::shared_ptr<Matrix> HCavity_x_;
+    std::shared_ptr<Matrix> HCavity_y_;
+    std::shared_ptr<Matrix> HCavity_z_;
+
+    /// molecule->cavity interactoin Hamiltonian in basis of photon number states
+    std::shared_ptr<Matrix> HCavityInteraction_x_;
+    std::shared_ptr<Matrix> HCavityInteraction_y_;
+    std::shared_ptr<Matrix> HCavityInteraction_z_;
+
+    /// total cavity Hamiltonian in basis of photon number states
+    std::shared_ptr<Matrix> HCavityTotal_x_;
+    std::shared_ptr<Matrix> HCavityTotal_y_;
+    std::shared_ptr<Matrix> HCavityTotal_z_;
+
+    /// cavity dipole operator in basis of photon number states
+    std::shared_ptr<Matrix> CavityDipole_x_;
+    std::shared_ptr<Matrix> CavityDipole_y_;
+    std::shared_ptr<Matrix> CavityDipole_z_;
+
+    /// build and diagonalize cavity hamiltonian
+    double build_cavity_hamiltonian();
+
+    /// do print cavity properties?
+    bool print_cavity_properties_ = false;
+
 };
 
 } // End namespaces

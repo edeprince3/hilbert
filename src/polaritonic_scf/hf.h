@@ -96,6 +96,9 @@ class PolaritonicHF: public Wavefunction {
     void initialize_cavity();
     void update_cavity_terms();
 
+    /// do use coherent-state basis? default true
+    bool use_coherent_state_basis_ = true;
+
 };
 
 } // End namespaces

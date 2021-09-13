@@ -332,12 +332,14 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION POLARITONIC SCF -*/
 
-        /*- cavity number state -*/
+        /*- number of photon number states -*/
         options.add_int("N_PHOTON_STATES", 1);
+        /*- do use coherent-state basis? !expert -*/
+        options.add_bool("USE_COHERENT_STATE_BASIS", true);
         /*- cavity excitation energy for the modes along the x, y and z axis (a.u.) -*/
         options.add("CAVITY_FREQUENCY",new ArrayType());
         /*- cavity coupling strength (a.u.) -*/
-        options.add("CAVITY_COUPLING_STRENGTH",/* 2990.0/2.54175*/new ArrayType());
+        options.add("CAVITY_COUPLING_STRENGTH",new ArrayType());
 
         /*- do include u0 in polaritioinic ccsd? -*/
         options.add_bool("POLARITONIC_CC_INCLUDE_U0",false);
