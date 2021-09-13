@@ -441,12 +441,12 @@ std::shared_ptr<Matrix> v2RDMSolver::get_tpdm() {
                         int sg = 1;
                         if ( i > l ) sg = -sg;
                         if ( k > j ) sg = -sg;
-                        dum_ikjl += sg * x_p[d2aaoff[0] + il_aa * gems_aa[0] + kj_aa];
-                        dum_ikjl += sg * x_p[d2bboff[0] + il_aa * gems_aa[0] + kj_aa];
+                        dum_iklj += sg * x_p[d2aaoff[0] + il_aa * gems_aa[0] + kj_aa];
+                        dum_iklj += sg * x_p[d2bboff[0] + il_aa * gems_aa[0] + kj_aa];
                     }
 
-                    //tpdm_p[i*amo_+j][k*amo_+l] =  dum;
-                    tpdm_p[i*amo_+k][j*amo_+l] =  0.5 * (dum_ikjl + dum_iklj);
+                    tpdm_p[i*amo_+k][j*amo_+l] =  dum_ikjl;
+                    //tpdm_p[i*amo_+k][j*amo_+l] =  0.5 * (dum_ikjl + dum_iklj);
                     //tpdm_p[i*amo_+j][k*amo_+l] =  0.5 * (dum_ijkl + dum_ijlk);
                 }
             }
