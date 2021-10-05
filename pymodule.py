@@ -293,15 +293,10 @@ def run_v2rdm_casscf(name, **kwargs):
         ref_wfn.Ca().nph[irrep][:, orb1] = xp_a
         ref_wfn.Ca().nph[irrep][:, orb2] = yp_a
 
-        x_b = ref_wfn.Ca().nph[irrep][:, orb1].copy()
-        y_b = ref_wfn.Ca().nph[irrep][:, orb2].copy()
-
-        xp_b = numpy.cos(theta) * x_b - numpy.sin(theta) * y_b
-        yp_b = numpy.sin(theta) * x_b + numpy.cos(theta) * y_b
-
-        ref_wfn.Ca().nph[irrep][:, orb1] = xp_b
-        ref_wfn.Ca().nph[irrep][:, orb2] = yp_b
-
+        # beta orbitals are not changed because v2rdm does not use beta orbitals
+        # if/when beta orbitals are used, you should change beta orbitals too,
+        # but keep in mind that in RHF wavefunctions, beta orbital pointer may
+        # point to the same location as alpha orbital pointer
 
     returnvalue = psi4.core.plugin('hilbert.so', ref_wfn)
 
