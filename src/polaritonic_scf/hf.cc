@@ -214,6 +214,129 @@ void PolaritonicHF::initialize_cavity() {
     // quadrupole integrals
     std::vector< std::shared_ptr<Matrix> > quadrupole = mints->so_quadrupole();
 
+    // reorder dipole / quadrupole integrals integrals
+    // if polarization other than "z" is desired
+    //
+    // possibilities:
+    //
+    std::string order = options_.get_str("SWAP_POLARIZATION_AXIS");
+    std::vector< std::shared_ptr<Matrix> > new_d = mints->so_dipole();
+    std::vector< std::shared_ptr<Matrix> > new_q = mints->so_quadrupole();
+    double new_nuc_dip_x = nuc_dip_x_;
+    double new_nuc_dip_y = nuc_dip_y_;
+    double new_nuc_dip_z = nuc_dip_z_;
+    if ( order == "XYZ"){
+        // do nothing
+    }else if ( order == "XZY" ) {
+        // 0: x
+        // 1: y
+        dipole_[1]->copy(new_d[2]);
+        nuc_dip_y_ = new_nuc_dip_z;
+        // 2: z
+        dipole_[2]->copy(new_d[1]);
+        nuc_dip_z_ = new_nuc_dip_y;
+
+        // 0: xx
+        // 1: xy
+        quadrupole[1]->copy(new_q[2]);
+        // 2: xz
+        quadrupole[2]->copy(new_q[1]);
+        // 3: yy
+        quadrupole[3]->copy(new_q[5]);
+        // 4: yz
+        // 5: zz
+        quadrupole[5]->copy(new_q[3]);
+    }else if ( order == "YXZ" ) {
+        // 0: x
+        dipole_[0]->copy(new_d[1]);
+        nuc_dip_x_ = new_nuc_dip_y;
+        // 1: y
+        dipole_[1]->copy(new_d[0]);
+        nuc_dip_y_ = new_nuc_dip_x;
+        // 2: z
+
+        // 0: xx
+        quadrupole[0]->copy(new_q[3]);
+        // 1: xy
+        // 2: xz
+        quadrupole[2]->copy(new_q[4]);
+        // 3: yy
+        quadrupole[3]->copy(new_q[0]);
+        // 4: yz
+        quadrupole[4]->copy(new_q[2]);
+        // 5: zz
+    }else if ( order == "YZX" ) {
+        throw PsiException("invalid choice for SWAP_POLARIZATION_AXIS",__FILE__,__LINE__);
+        // 0: x
+        dipole_[0]->copy(new_d[1]);
+        nuc_dip_x_ = new_nuc_dip_y;
+        // 1: y
+        dipole_[1]->copy(new_d[2]);
+        nuc_dip_y_ = new_nuc_dip_z;
+        // 2: z
+        dipole_[2]->copy(new_d[0]);
+        nuc_dip_z_ = new_nuc_dip_x;
+
+        // 0: xx
+        quadrupole[0]->copy(new_q[3]);
+        // 1: xy
+        quadrupole[1]->copy(new_q[4]);
+        // 2: xz
+        quadrupole[2]->copy(new_q[1]);
+        // 3: yy
+        quadrupole[3]->copy(new_q[5]);
+        // 4: yz
+        quadrupole[4]->copy(new_q[2]);
+        // 5: zz
+        quadrupole[5]->copy(new_q[0]);
+    }else if ( order == "ZXY" ) {
+        throw PsiException("invalid choice for SWAP_POLARIZATION_AXIS",__FILE__,__LINE__);
+        // 0: x
+        dipole_[0]->copy(new_d[2]);
+        nuc_dip_x_ = new_nuc_dip_z;
+        // 1: y
+        dipole_[1]->copy(new_d[0]);
+        nuc_dip_y_ = new_nuc_dip_x;
+        // 2: z
+        dipole_[2]->copy(new_d[1]);
+        nuc_dip_z_ = new_nuc_dip_y;
+
+        // 0: xx
+        quadrupole[0]->copy(new_q[5]);
+        // 1: xy
+        quadrupole[1]->copy(new_q[2]);
+        // 2: xz
+        quadrupole[2]->copy(new_q[4]);
+        // 3: yy
+        quadrupole[3]->copy(new_q[0]);
+        // 4: yz
+        quadrupole[4]->copy(new_q[1]);
+        // 5: zz
+        quadrupole[5]->copy(new_q[3]);
+    }else if ( order == "ZYX" ) {
+        // 0: x
+        dipole_[0]->copy(new_d[2]);
+        nuc_dip_x_ = new_nuc_dip_z;
+        // 1: y
+        // 2: z
+        dipole_[2]->copy(new_d[0]);
+        nuc_dip_z_ = new_nuc_dip_x;
+
+        // 0: xx
+        quadrupole[0]->copy(new_q[5]);
+        // 1: xy
+        quadrupole[1]->copy(new_q[4]);
+        // 2: xz
+        // 3: yy
+        // 4: yz
+        quadrupole[4]->copy(new_q[1]);
+        // 5: zz
+        quadrupole[5]->copy(new_q[0]);
+    }else {
+        throw PsiException("invalid choice for SWAP_POLARIZATION_AXIS",__FILE__,__LINE__);
+    }
+    
+
     double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
     double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
     double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
