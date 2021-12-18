@@ -351,7 +351,7 @@ int read_options(std::string name, Options& options)
         options.add_bool("POLARITONIC_CC_INCLUDE_U2",false);
 
         /*- change cavity mode polarization by redefining x, y, and z -*/
-        options.add_str("SWAP_POLARIZATION_AXIS", "XYZ");
+        options.add_str("ROTATE_POLARIZATION_AXIS", "XYZ");
     }
 
     return true;

@@ -217,123 +217,62 @@ void PolaritonicHF::initialize_cavity() {
     // reorder dipole / quadrupole integrals integrals
     // if polarization other than "z" is desired
     //
-    // possibilities:
-    //
-    std::string order = options_.get_str("SWAP_POLARIZATION_AXIS");
-    std::vector< std::shared_ptr<Matrix> > new_d = mints->so_dipole();
-    std::vector< std::shared_ptr<Matrix> > new_q = mints->so_quadrupole();
-    double new_nuc_dip_x = nuc_dip_x_;
-    double new_nuc_dip_y = nuc_dip_y_;
-    double new_nuc_dip_z = nuc_dip_z_;
+    std::string order = options_.get_str("ROTATE_POLARIZATION_AXIS");
+    std::vector< std::shared_ptr<Matrix> > old_d = mints->so_dipole();
+    std::vector< std::shared_ptr<Matrix> > old_q = mints->so_quadrupole();
+    double old_nuc_dip_x = nuc_dip_x_;
+    double old_nuc_dip_y = nuc_dip_y_;
+    double old_nuc_dip_z = nuc_dip_z_;
     if ( order == "XYZ"){
         // do nothing
-    }else if ( order == "XZY" ) {
-        // 0: x
-        // 1: y
-        dipole_[1]->copy(new_d[2]);
-        nuc_dip_y_ = new_nuc_dip_z;
-        // 2: z
-        dipole_[2]->copy(new_d[1]);
-        nuc_dip_z_ = new_nuc_dip_y;
-
-        // 0: xx
-        // 1: xy
-        quadrupole[1]->copy(new_q[2]);
-        // 2: xz
-        quadrupole[2]->copy(new_q[1]);
-        // 3: yy
-        quadrupole[3]->copy(new_q[5]);
-        // 4: yz
-        // 5: zz
-        quadrupole[5]->copy(new_q[3]);
-    }else if ( order == "YXZ" ) {
-        // 0: x
-        dipole_[0]->copy(new_d[1]);
-        nuc_dip_x_ = new_nuc_dip_y;
-        // 1: y
-        dipole_[1]->copy(new_d[0]);
-        nuc_dip_y_ = new_nuc_dip_x;
-        // 2: z
-
-        // 0: xx
-        quadrupole[0]->copy(new_q[3]);
-        // 1: xy
-        // 2: xz
-        quadrupole[2]->copy(new_q[4]);
-        // 3: yy
-        quadrupole[3]->copy(new_q[0]);
-        // 4: yz
-        quadrupole[4]->copy(new_q[2]);
-        // 5: zz
     }else if ( order == "YZX" ) {
-        throw PsiException("invalid choice for SWAP_POLARIZATION_AXIS",__FILE__,__LINE__);
         // 0: x
-        dipole_[0]->copy(new_d[1]);
-        nuc_dip_x_ = new_nuc_dip_y;
+        dipole_[0]->copy(old_d[1]);
+        nuc_dip_x_ = old_nuc_dip_y;
         // 1: y
-        dipole_[1]->copy(new_d[2]);
-        nuc_dip_y_ = new_nuc_dip_z;
+        dipole_[1]->copy(old_d[2]);
+        nuc_dip_y_ = old_nuc_dip_z;
         // 2: z
-        dipole_[2]->copy(new_d[0]);
-        nuc_dip_z_ = new_nuc_dip_x;
+        dipole_[2]->copy(old_d[0]);
+        nuc_dip_z_ = old_nuc_dip_x;
 
         // 0: xx
-        quadrupole[0]->copy(new_q[3]);
+        quadrupole[0]->copy(old_q[3]);
         // 1: xy
-        quadrupole[1]->copy(new_q[4]);
+        quadrupole[1]->copy(old_q[4]);
         // 2: xz
-        quadrupole[2]->copy(new_q[1]);
+        quadrupole[2]->copy(old_q[1]);
         // 3: yy
-        quadrupole[3]->copy(new_q[5]);
+        quadrupole[3]->copy(old_q[5]);
         // 4: yz
-        quadrupole[4]->copy(new_q[2]);
+        quadrupole[4]->copy(old_q[2]);
         // 5: zz
-        quadrupole[5]->copy(new_q[0]);
+        quadrupole[5]->copy(old_q[0]);
     }else if ( order == "ZXY" ) {
-        throw PsiException("invalid choice for SWAP_POLARIZATION_AXIS",__FILE__,__LINE__);
         // 0: x
-        dipole_[0]->copy(new_d[2]);
-        nuc_dip_x_ = new_nuc_dip_z;
+        dipole_[0]->copy(old_d[2]);
+        nuc_dip_x_ = old_nuc_dip_z;
         // 1: y
-        dipole_[1]->copy(new_d[0]);
-        nuc_dip_y_ = new_nuc_dip_x;
+        dipole_[1]->copy(old_d[0]);
+        nuc_dip_y_ = old_nuc_dip_x;
         // 2: z
-        dipole_[2]->copy(new_d[1]);
-        nuc_dip_z_ = new_nuc_dip_y;
+        dipole_[2]->copy(old_d[1]);
+        nuc_dip_z_ = old_nuc_dip_y;
 
         // 0: xx
-        quadrupole[0]->copy(new_q[5]);
+        quadrupole[0]->copy(old_q[5]);
         // 1: xy
-        quadrupole[1]->copy(new_q[2]);
+        quadrupole[1]->copy(old_q[2]);
         // 2: xz
-        quadrupole[2]->copy(new_q[4]);
+        quadrupole[2]->copy(old_q[4]);
         // 3: yy
-        quadrupole[3]->copy(new_q[0]);
+        quadrupole[3]->copy(old_q[0]);
         // 4: yz
-        quadrupole[4]->copy(new_q[1]);
+        quadrupole[4]->copy(old_q[1]);
         // 5: zz
-        quadrupole[5]->copy(new_q[3]);
-    }else if ( order == "ZYX" ) {
-        // 0: x
-        dipole_[0]->copy(new_d[2]);
-        nuc_dip_x_ = new_nuc_dip_z;
-        // 1: y
-        // 2: z
-        dipole_[2]->copy(new_d[0]);
-        nuc_dip_z_ = new_nuc_dip_x;
-
-        // 0: xx
-        quadrupole[0]->copy(new_q[5]);
-        // 1: xy
-        quadrupole[1]->copy(new_q[4]);
-        // 2: xz
-        // 3: yy
-        // 4: yz
-        quadrupole[4]->copy(new_q[1]);
-        // 5: zz
-        quadrupole[5]->copy(new_q[0]);
+        quadrupole[5]->copy(old_q[3]);
     }else {
-        throw PsiException("invalid choice for SWAP_POLARIZATION_AXIS",__FILE__,__LINE__);
+        throw PsiException("invalid choice for ROTATE_POLARIZATION_AXIS",__FILE__,__LINE__);
     }
     
 
@@ -425,6 +364,33 @@ void PolaritonicHF::update_cavity_terms(){
         e_dip_x_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1); 
         e_dip_y_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1); 
         e_dip_z_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+    }
+
+    // reorder electronic component of dipole moment
+    // if polarization other than "z" is desired
+    //
+    std::string order = options_.get_str("ROTATE_POLARIZATION_AXIS");
+    double old_e_dip_x = e_dip_x_;
+    double old_e_dip_y = e_dip_y_;
+    double old_e_dip_z = e_dip_z_;
+    if ( order == "XYZ"){
+        // do nothing
+    }else if ( order == "YZX" ) {
+        // 0: x
+        e_dip_x_ = old_e_dip_y;
+        // 1: y
+        e_dip_y_ = old_e_dip_z;
+        // 2: z
+        e_dip_z_ = old_e_dip_x;
+    }else if ( order == "ZXY" ) {
+        // 0: x
+        e_dip_x_ = old_e_dip_z;
+        // 1: y
+        e_dip_y_ = old_e_dip_x;
+        // 2: z
+        e_dip_z_ = old_e_dip_y;
+    }else {
+        throw PsiException("invalid choice for ROTATE_POLARIZATION_AXIS",__FILE__,__LINE__);
     }
 
     // evaluate the total dipole moment:
