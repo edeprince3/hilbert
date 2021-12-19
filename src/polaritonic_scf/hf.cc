@@ -366,33 +366,6 @@ void PolaritonicHF::update_cavity_terms(){
         e_dip_z_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
     }
 
-    // reorder electronic component of dipole moment
-    // if polarization other than "z" is desired
-    //
-    std::string order = options_.get_str("ROTATE_POLARIZATION_AXIS");
-    double old_e_dip_x = e_dip_x_;
-    double old_e_dip_y = e_dip_y_;
-    double old_e_dip_z = e_dip_z_;
-    if ( order == "XYZ"){
-        // do nothing
-    }else if ( order == "YZX" ) {
-        // 0: x
-        e_dip_x_ = old_e_dip_y;
-        // 1: y
-        e_dip_y_ = old_e_dip_z;
-        // 2: z
-        e_dip_z_ = old_e_dip_x;
-    }else if ( order == "ZXY" ) {
-        // 0: x
-        e_dip_x_ = old_e_dip_z;
-        // 1: y
-        e_dip_y_ = old_e_dip_x;
-        // 2: z
-        e_dip_z_ = old_e_dip_y;
-    }else {
-        throw PsiException("invalid choice for ROTATE_POLARIZATION_AXIS",__FILE__,__LINE__);
-    }
-
     // evaluate the total dipole moment:
 
     tot_dip_x_ = e_dip_x_ + nuc_dip_x_;
