@@ -8,7 +8,11 @@
 #else()
     include(ExternalProject)
     message(STATUS "libsdp will be built at compile time")
-    set(CATCH_GIT_TAG 5a2e83dc4a58bd191a5c4f5145e507bf0a03ba38)
+    #set(CATCH_GIT_TAG 5a2e83dc4a58bd191a5c4f5145e507bf0a03ba38)
+    # this one
+    #set(CATCH_GIT_TAG 00b5ff68f7e7d0914eeab6b1de668cb0f1e6fc81)
+    #set(CATCH_GIT_TAG 933ba6227f534b9d7940ccd16420940ce1ee24d0)
+    set(CATCH_GIT_TAG 24047db4503565ce9b10140abfd7d29f9ad78bc8) # most recent as of 10/26/21
     ExternalProject_Add(libsdp_external
         GIT_REPOSITORY https://github.com/edeprince3/libsdp.git
         GIT_TAG ${CATCH_GIT_TAG}
