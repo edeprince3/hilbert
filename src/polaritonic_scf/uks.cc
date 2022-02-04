@@ -496,7 +496,7 @@ double PolaritonicUKS::compute_energy() {
         // if using canonical basis, add additional terms
         if ( !use_coherent_state_basis_ ) {
 
-            // w <b*b> 
+            // w <b*b>
             energy_ += cavity_energy; 
 
             // -(w/2)^1/2 lambda.mu_n <b* + b> 
@@ -684,21 +684,24 @@ double PolaritonicUKS::build_cavity_hamiltonian(){
     HCavity_x_->transform(eigvec);
     HCavityInteraction_x_->transform(eigvec);
     CavityDipole_x_->transform(eigvec);
-    double ex = eigval->pointer()[0];
+    //double ex = eigval->pointer()[0];
+    double ex = HCavity_x_->pointer()[0][0];
 
     // y
     HCavityTotal_y_->diagonalize(eigvec, eigval);
     HCavity_y_->transform(eigvec);
     HCavityInteraction_y_->transform(eigvec);
     CavityDipole_y_->transform(eigvec);
-    double ey = eigval->pointer()[0];
+    //double ey = eigval->pointer()[0];
+    double ey = HCavity_y_->pointer()[0][0];
 
     // z
     HCavityTotal_z_->diagonalize(eigvec, eigval);
     HCavity_z_->transform(eigvec);
     HCavityInteraction_z_->transform(eigvec);
     CavityDipole_z_->transform(eigvec);
-    double ez = eigval->pointer()[0];
+    //double ez = eigval->pointer()[0];
+    double ez = HCavity_z_->pointer()[0][0];
 
     if ( print_cavity_properties_ ) {
         outfile->Printf("\n");

@@ -344,7 +344,7 @@ void PolaritonicHF::update_cavity_terms(){
     scaled_e_n_dipole_squared_->copy(el_dipdot);
     scaled_e_n_dipole_squared_->scale(nuc_dipdot);
 
-    // constant terms:  0.5 ( lambda . dn ^2
+    // constant terms:  0.5 ( lambda . dn ) ^2 
     // 
     // or ... in the coherent state basis:
     // 
