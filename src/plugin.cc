@@ -349,6 +349,9 @@ int read_options(std::string name, Options& options)
 
         /*- do include u2 in polaritioinic ccsd? -*/
         options.add_bool("POLARITONIC_CC_INCLUDE_U2",false);
+
+        /*- change cavity mode polarization by redefining x, y, and z -*/
+        options.add_str("ROTATE_POLARIZATION_AXIS", "XYZ");
     }
 
     return true;

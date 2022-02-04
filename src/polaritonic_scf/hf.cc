@@ -214,6 +214,68 @@ void PolaritonicHF::initialize_cavity() {
     // quadrupole integrals
     std::vector< std::shared_ptr<Matrix> > quadrupole = mints->so_quadrupole();
 
+    // reorder dipole / quadrupole integrals integrals
+    // if polarization other than "z" is desired
+    //
+    std::string order = options_.get_str("ROTATE_POLARIZATION_AXIS");
+    std::vector< std::shared_ptr<Matrix> > old_d = mints->so_dipole();
+    std::vector< std::shared_ptr<Matrix> > old_q = mints->so_quadrupole();
+    double old_nuc_dip_x = nuc_dip_x_;
+    double old_nuc_dip_y = nuc_dip_y_;
+    double old_nuc_dip_z = nuc_dip_z_;
+    if ( order == "XYZ"){
+        // do nothing
+    }else if ( order == "YZX" ) {
+        // 0: x
+        dipole_[0]->copy(old_d[1]);
+        nuc_dip_x_ = old_nuc_dip_y;
+        // 1: y
+        dipole_[1]->copy(old_d[2]);
+        nuc_dip_y_ = old_nuc_dip_z;
+        // 2: z
+        dipole_[2]->copy(old_d[0]);
+        nuc_dip_z_ = old_nuc_dip_x;
+
+        // 0: xx
+        quadrupole[0]->copy(old_q[3]);
+        // 1: xy
+        quadrupole[1]->copy(old_q[4]);
+        // 2: xz
+        quadrupole[2]->copy(old_q[1]);
+        // 3: yy
+        quadrupole[3]->copy(old_q[5]);
+        // 4: yz
+        quadrupole[4]->copy(old_q[2]);
+        // 5: zz
+        quadrupole[5]->copy(old_q[0]);
+    }else if ( order == "ZXY" ) {
+        // 0: x
+        dipole_[0]->copy(old_d[2]);
+        nuc_dip_x_ = old_nuc_dip_z;
+        // 1: y
+        dipole_[1]->copy(old_d[0]);
+        nuc_dip_y_ = old_nuc_dip_x;
+        // 2: z
+        dipole_[2]->copy(old_d[1]);
+        nuc_dip_z_ = old_nuc_dip_y;
+
+        // 0: xx
+        quadrupole[0]->copy(old_q[5]);
+        // 1: xy
+        quadrupole[1]->copy(old_q[2]);
+        // 2: xz
+        quadrupole[2]->copy(old_q[4]);
+        // 3: yy
+        quadrupole[3]->copy(old_q[0]);
+        // 4: yz
+        quadrupole[4]->copy(old_q[1]);
+        // 5: zz
+        quadrupole[5]->copy(old_q[3]);
+    }else {
+        throw PsiException("invalid choice for ROTATE_POLARIZATION_AXIS",__FILE__,__LINE__);
+    }
+    
+
     double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
     double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
     double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
