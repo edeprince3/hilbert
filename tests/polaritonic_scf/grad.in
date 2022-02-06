@@ -1,0 +1,42 @@
+# PYTHONPATH must include directory above plugin directory.
+#     Define either externally or here, then import plugin.
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule h2 {
+         O            0.000000000000     0.000000000000    -0.068516219320    
+         H            0.000000000000    -0.790689573744     0.543701060715    
+         H            0.000000000000     0.790689573744     0.543701060715    
+no_reorient
+nocom
+symmetry c1
+}
+
+set {
+  basis sto-3g #cc-pvdz #def2-tzvppd #d-aug-cc-pv5z
+  scf_type df 
+  e_convergence 1e-10
+  d_convergence 1e-10 
+} 
+
+set hilbert {
+  maxiter 500
+  n_photon_states          2
+  cavity_frequency         [0.0, 0.0, 0.495589583372]
+  cavity_coupling_strength [0.0, 0.0, 0.150221990521748]
+  #n_photon_states          1
+  #cavity_frequency         [0.0, 0.0, 0.0]
+  #cavity_coupling_strength [0.0, 0.0, 0.0]
+}
+
+set points 5
+set reference uks
+#set dft_spherical_points 5810
+set hilbert {
+    cavity_qed_dft_functional 'hf'
+}
+g1 = np.asarray(gradient('polaritonic-uks',dertype=0))
+g2 = np.asarray(gradient('polaritonic-uks',dertype=1))
+diff = g2 - g1
+print('||g-g||',np.linalg.norm(diff))
+
