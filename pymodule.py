@@ -415,6 +415,10 @@ def run_polaritonic_scf_gradient(name, **kwargs):
     dipole = mints.so_dipole()
 
     mu_z = np.asarray(dipole[2])
+    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "YZX" ):
+        mu_z = np.asarray(dipole[0])
+    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "ZXY" ):
+        mu_z = np.asarray(dipole[1])
 
     # exchange contribution to dipole self energy 
 
@@ -448,9 +452,14 @@ def run_polaritonic_scf_gradient(name, **kwargs):
 
     # unpack z-component 3N x 3 matrix (the third column)
     dse_gradient_z = np.zeros((natom,3))
+    zdir = 2
+    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "YZX" ):
+        zdir = 0
+    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "ZXY" ):
+        zdir = 1
     for atom in range (0,natom):
         for cart in range (0,3):
-            dse_gradient_z[atom,cart] = dse_gradient[atom*3+cart,2] 
+            dse_gradient_z[atom,cart] = dse_gradient[atom*3+cart,zdir] 
 
     # scale by lambda^2
     dse_gradient_z_scaled = psi4.core.Matrix.from_array(dse_gradient_z)
@@ -484,7 +493,14 @@ def run_polaritonic_scf_gradient(name, **kwargs):
     #        print(derivmats[count])
     #        print()
     #        count += 1    
-    dse_gradient_z_scaled_2 = psi4.core.Matrix.from_array(derivmats[9])
+
+    zz = 9
+    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "YZX" ):
+        zz = 4
+    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "ZXY" ):
+        zz = 7
+
+    dse_gradient_z_scaled_2 = psi4.core.Matrix.from_array(derivmats[zz])
     dse_gradient_z_scaled_2.scale(-0.5 * lambda_z*lambda_z)
 
     # print
