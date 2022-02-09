@@ -415,4 +415,66 @@ void PolaritonicHF::update_cavity_terms(){
 
 }
 
+/*
+ *
+ * evaluate_dipole_self_energy():
+ *
+ * evaluate one- and two-electron contributions to the dipole self energy in the
+ * coherent-state basis: 
+ *
+ * < ( mu - <mu> )^2 > 
+ *
+*/
+void PolaritonicHF::evaluate_dipole_self_energy(double & one_electron, double & two_electron){
+
+    one_electron = 0.0;
+    two_electron = 0.0;
+
+    if ( n_photon_states_ < 1 ) return;
+
+    // one-electron part depends on quadrupole integrals: -Tr(D.q)
+    std::shared_ptr<Matrix> oei (new Matrix(quadrupole_scaled_sum_));
+    oei->scale(-1.0);
+
+    one_electron += Da_->vector_dot(oei);
+    if ( same_a_b_dens_ ) {
+        one_electron *= 2.0;
+    }else {
+        one_electron += Db_->vector_dot(oei);
+    }
+
+    // two-electron part:
+    std::shared_ptr<Matrix> dipole_Ka (new Matrix(nso_,nso_));
+    std::shared_ptr<Matrix> dipole_Kb (new Matrix(nso_,nso_));
+
+    dipole_Ka->zero();
+    dipole_Kb->zero();
+
+    // Kpq += mu_pr * mu_qs * Drs
+    double ** dp  = dipole_scaled_sum_->pointer();
+    double ** dap = Da_->pointer();
+    double ** dbp = Db_->pointer();
+    double ** kap = dipole_Ka->pointer();
+    double ** kbp = dipole_Kb->pointer();
+
+    std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
+    double ** tp = tmp->pointer();
+
+    C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+    C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(kap[0][0]),nso_);
+
+    if ( !same_a_b_dens_ ) {
+        C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+        C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(kbp[0][0]),nso_);
+    }
+
+    two_electron -= 0.5 * Da_->vector_dot(dipole_Ka);
+    if ( same_a_b_dens_ ) {
+        two_electron *= 2.0;
+    }else {
+        two_electron -= 0.5 * Db_->vector_dot(dipole_Kb);
+    }
+
+}
+
 } // End namespaces
