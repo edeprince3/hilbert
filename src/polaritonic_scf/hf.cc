@@ -81,8 +81,8 @@ void PolaritonicHF::common_init() {
 
     AO2SO_ = std::shared_ptr<Matrix>(reference_wavefunction_->aotoso());
 
-    Ca_ = std::shared_ptr<Matrix>(reference_wavefunction_->Ca());
-    Cb_ = std::shared_ptr<Matrix>(reference_wavefunction_->Cb());
+    Ca_ = (std::shared_ptr<Matrix>)(new Matrix(reference_wavefunction_->Ca()));
+    Cb_ = (std::shared_ptr<Matrix>)(new Matrix(reference_wavefunction_->Cb()));
 
     S_  = (std::shared_ptr<Matrix>)(new Matrix(reference_wavefunction_->S()));
 
