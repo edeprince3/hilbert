@@ -153,7 +153,7 @@ int read_options(std::string name, Options& options)
         options.add_int("ORBOPT_NUM_DIIS_VECTORS",0);
 
         /*- maximum number of iterations for orbital optimization -*/
-        options.add_int("ORBOPT_MAXITER",1);
+        options.add_int("ORBOPT_MAXITER",10);
 
         /*- Do write a ORBOPT output file?  If so, the filename will end in
         .molden, and the prefix is determined by |globals__writer_file_label|

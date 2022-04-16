@@ -3350,14 +3350,17 @@ void v2RDMSolver::RotateOrbitals(){
     }
 
     if ( orbopt_data_[8] > 0 ) {
-        outfile->Printf("            Orbital Optimization %s in %3i iterations \n",(int)orbopt_data_[13] ? "converged" : "did not converge",(int)orbopt_data_[10]);
+
+        if ( fabs(orbopt_data_[12]) < orbopt_data_[4] && fabs(orbopt_data_[11]) < orbopt_data_[3] ) {
+            orbopt_converged_ = true;
+            orbopt_data_[13] = 1.0;
+        }
+
+        outfile->Printf("            Orbital Optimization %s in %3i iterations \n",orbopt_converged_ ? "converged" : "did not converge",(int)orbopt_data_[10]);
         outfile->Printf("            Total energy change: %11.6le\n",orbopt_data_[12]);
         outfile->Printf("            Final gradient norm: %11.6le\n",orbopt_data_[11]);
         outfile->Printf("\n");
 
-        if ( fabs(orbopt_data_[12]) < orbopt_data_[4] && fabs(orbopt_data_[11]) < orbopt_data_[3] ) {
-            orbopt_converged_ = true;
-        }
     }
 
     RepackIntegrals();

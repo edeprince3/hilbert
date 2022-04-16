@@ -557,6 +557,21 @@ double PolaritonicUKS::compute_energy() {
     outfile->Printf("\n");
 
     outfile->Printf("    * Polaritonic UKS total energy: %20.12lf\n",energy_);
+    outfile->Printf("\n");
+
+    // evaluate dipole self energy
+    if ( n_photon_states_ > 1 ) {
+
+        double dse_one_electron = 0.0;
+        double dse_two_electron = 0.0;
+        evaluate_dipole_self_energy(dse_one_electron,dse_two_electron);
+
+        outfile->Printf("    dipole self energy (one electron): %20.12lf\n",dse_one_electron);
+        outfile->Printf("    dipole self energy (two electron): %20.12lf\n",dse_two_electron);
+        outfile->Printf("    dipole self energy (total):        %20.12lf\n",dse_one_electron+dse_two_electron);
+
+        outfile->Printf("\n");
+    }
 
     Process::environment.globals["SCF TOTAL ENERGY"] = energy_;
 
