@@ -332,12 +332,18 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION POLARITONIC SCF -*/
 
+        /*- functional for cavity QED-DFT -*/
+        options.add_str("CAVITY_QED_DFT_FUNCTIONAL", "B3LYP");
+
         /*- number of photon number states -*/
         options.add_int("N_PHOTON_STATES", 1);
+
         /*- do use coherent-state basis? !expert -*/
         options.add_bool("USE_COHERENT_STATE_BASIS", true);
+
         /*- cavity excitation energy for the modes along the x, y and z axis (a.u.) -*/
         options.add("CAVITY_FREQUENCY",new ArrayType());
+
         /*- cavity coupling strength (a.u.) -*/
         options.add("CAVITY_COUPLING_STRENGTH",new ArrayType());
 
