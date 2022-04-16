@@ -572,8 +572,8 @@ void PolaritonicHF::evaluate_bare_dipole_self_energy() {
     // Kpq += mu_pr * mu_qs * Drs
 
     double ** dx  = dipole_[0]->pointer();
-    double ** dy  = dipole_[0]->pointer();
-    double ** dz  = dipole_[0]->pointer();
+    double ** dy  = dipole_[1]->pointer();
+    double ** dz  = dipole_[2]->pointer();
 
     double ** dap = Da_->pointer();
     double ** dbp = Db_->pointer();
@@ -695,12 +695,12 @@ void PolaritonicHF::evaluate_bare_dipole_self_energy() {
     outfile->Printf("    one electron (yz): %20.12lf\n",one_electron_yz);
     outfile->Printf("    one electron (zz): %20.12lf\n",one_electron_zz);
     outfile->Printf("\n");
-    outfile->Printf("    two electron (xx): %20.12lf\n",two_electron_xx);
-    outfile->Printf("    two electron (xy): %20.12lf\n",two_electron_xy);
-    outfile->Printf("    two electron (xz): %20.12lf\n",two_electron_xz);
-    outfile->Printf("    two electron (yy): %20.12lf\n",two_electron_yy);
-    outfile->Printf("    two electron (yz): %20.12lf\n",two_electron_yz);
-    outfile->Printf("    two electron (zz): %20.12lf\n",two_electron_zz);
+    outfile->Printf("    two electron (xx): %20.12lf\n",two_electron_xx * 2.0);
+    outfile->Printf("    two electron (xy): %20.12lf\n",two_electron_xy * 2.0);
+    outfile->Printf("    two electron (xz): %20.12lf\n",two_electron_xz * 2.0);
+    outfile->Printf("    two electron (yy): %20.12lf\n",two_electron_yy * 2.0);
+    outfile->Printf("    two electron (yz): %20.12lf\n",two_electron_yz * 2.0);
+    outfile->Printf("    two electron (zz): %20.12lf\n",two_electron_zz * 2.0);
 
 }
 

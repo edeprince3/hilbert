@@ -35,6 +35,7 @@ set {
   d_convergence 1e-10 
 } 
 
+# apparently lambda = 0.149557981435142
 set hilbert {
   maxiter 500
   n_photon_states          2
