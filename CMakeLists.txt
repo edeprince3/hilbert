@@ -7,6 +7,7 @@ cmake_policy(SET CMP0048 NEW)  # project_VERSION* variables populated from proje
 project(hilbert
         VERSION 0.1
         LANGUAGES CXX C Fortran)
+
 set(hilbert_AUTHORS      "A. Eugene DePrince III and the DePrince Group")
 set(hilbert_DESCRIPTION  "Hilbert: A space for quantum chemistry plugins to Psi4")
 set(hilbert_URL          "https://github.com/edeprince3/hilbert")
@@ -146,23 +147,14 @@ add_psi4_plugin(hilbert
 set(EXTERNAL_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/external/)
 add_subdirectory(external)
 
-# link liblbfgs and find header
-set(LBFGS_LIBRARY "${PROJECT_SOURCE_DIR}/external/lib/liblbfgs.a")
-target_link_libraries(hilbert PRIVATE ${LBFGS_LIBRARY})
-set(EXTERNAL_INCLUDE "${PROJECT_SOURCE_DIR}/external/include")
-target_include_directories(hilbert PRIVATE ${EXTERNAL_INCLUDE})
-
-# link libsdp
-#target_link_libraries(hilbert PRIVATE /edfs/users/deprince/edeprince3/libsdp/libsdp.so)
-# link liblbfgs and find header
-set(SDP_LIBRARY "${PROJECT_SOURCE_DIR}/external/lib/libsdp.so")
-target_link_libraries(hilbert PRIVATE ${SDP_LIBRARY})
-
+set(EXTERNAL_INCLUDE  "${PROJECT_SOURCE_DIR}/external/include")
+target_include_directories(hilbert PRIVATE  ${EXTERNAL_INCLUDE})
+   
 # hilbert module headers
 target_include_directories(hilbert PRIVATE "${PROJECT_SOURCE_DIR}/src")
 
-add_dependencies(hilbert libsdp_external)
-add_dependencies(hilbert liblbfgs_external)
+target_link_libraries(hilbert PUBLIC sdp)
+target_link_libraries(hilbert PUBLIC LBFGS::lib)
 
 install(DIRECTORY ${hilbert_BINARY_DIR}/
         DESTINATION ${CMAKE_INSTALL_PREFIX}
