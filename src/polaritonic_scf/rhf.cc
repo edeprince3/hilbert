@@ -391,6 +391,9 @@ double PolaritonicRHF::compute_energy() {
     // print orbital energies
     epsilon_a_->print();
 
+    // copy alpha orbitals to beta orbitals
+    epsilon_b_->copy(epsilon_a_.get());
+
     return energy_;
 
 }
