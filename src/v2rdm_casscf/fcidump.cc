@@ -302,6 +302,11 @@ double rdm_entropy(int nirrep, int * dim, double * x, int * off){
 
 void v2RDMSolver::print_rdms() {
 
+    std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name());
+    std::string rdm_filename = filename + ".rdm";
+
+    FILE * rdm_fp = fopen(rdm_filename.c_str(),"w");
+
     double * x_p = x->pointer();
 
     double na = nalpha_ - nrstc_ - nfrzc_;
@@ -313,36 +318,38 @@ void v2RDMSolver::print_rdms() {
     }
     double ms = (multiplicity_ - 1.0)/2.0;
 
-    outfile->Printf("    v2RDM @Nalpha           %20.12lf\n",na);
-    outfile->Printf("    v2RDM @Nbeta            %20.12lf\n",nb)
-    outfile->Printf("    v2RDM @Nact             %20.12lf\n",nact);
-    outfile->Printf("    v2RDM @S2               %20.12lf\n",ms*(ms+1));
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    v2RDM @Nalpha           %20.12lf\n",na);
+    fprintf(rdm_fp,"    v2RDM @Nbeta            %20.12lf\n",nb);
+    fprintf(rdm_fp,"    v2RDM @Nact             %20.12lf\n",(double)nact);
+    fprintf(rdm_fp,"    v2RDM @S2               %20.12lf\n",ms*(ms+1));
+    fprintf(rdm_fp,"\n");
 
     // generalized entropy
 
     // D1
 
-    outfile->Printf("    v2RDM @entropy(D1a)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, d1aoff));
-    outfile->Printf("    v2RDM @entropy(D1b)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, d1boff));
+    fprintf(rdm_fp,"    v2RDM @entropy(D1a)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, d1aoff));
+    fprintf(rdm_fp,"    v2RDM @entropy(D1b)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, d1boff));
 
     // Q1
 
-    outfile->Printf("    v2RDM @entropy(Q1a)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, q1aoff));
-    outfile->Printf("    v2RDM @entropy(Q1b)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, q1boff));
+    fprintf(rdm_fp,"    v2RDM @entropy(Q1a)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, q1aoff));
+    fprintf(rdm_fp,"    v2RDM @entropy(Q1b)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, q1boff));
 
     // D2
 
-    outfile->Printf("    v2RDM @entropy(D2aa)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, d2aaoff));
-    outfile->Printf("    v2RDM @entropy(D2bb)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, d2bboff));
-    outfile->Printf("    v2RDM @entropy(D2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, d2aboff));
+    fprintf(rdm_fp,"    v2RDM @entropy(D2aa)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, d2aaoff));
+    fprintf(rdm_fp,"    v2RDM @entropy(D2bb)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, d2bboff));
+    fprintf(rdm_fp,"    v2RDM @entropy(D2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, d2aboff));
 
     if ( constrain_q2_ ) {
 
         // Q2
 
-        outfile->Printf("    v2RDM @entropy(Q2aa)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, q2aaoff));
-        outfile->Printf("    v2RDM @entropy(Q2bb)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, q2bboff));
-        outfile->Printf("    v2RDM @entropy(Q2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, q2aboff));
+        fprintf(rdm_fp,"    v2RDM @entropy(Q2aa)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, q2aaoff));
+        fprintf(rdm_fp,"    v2RDM @entropy(Q2bb)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, q2bboff));
+        fprintf(rdm_fp,"    v2RDM @entropy(Q2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, q2aboff));
 
     }
 
@@ -355,15 +362,15 @@ void v2RDMSolver::print_rdms() {
             tmp[h] = 2 * gems_ab[h];
         }
 
-        outfile->Printf("    v2RDM @entropy(G2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, g2aboff));
-        outfile->Printf("    v2RDM @entropy(G2ba)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, g2baoff));
-        outfile->Printf("    v2RDM @entropy(G2aa/bb) %20.12lf\n",rdm_entropy(nirrep_,     tmp, x_p, g2aaoff));
+        fprintf(rdm_fp,"    v2RDM @entropy(G2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, g2aboff));
+        fprintf(rdm_fp,"    v2RDM @entropy(G2ba)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, g2baoff));
+        fprintf(rdm_fp,"    v2RDM @entropy(G2aa/bb) %20.12lf\n",rdm_entropy(nirrep_,     tmp, x_p, g2aaoff));
 
         free(tmp);
 
     }
 
-    outfile->Printf("\n");
+    fprintf(rdm_fp,"\n");
 
     // norm of cumulant 2RDM
 
@@ -476,40 +483,19 @@ void v2RDMSolver::print_rdms() {
         }
     }
 
-    outfile->Printf("    v2RDM @||del2(aa)||^2   %20.12lf\n",del2aa->vector_dot(del2aa));
-    outfile->Printf("    v2RDM @||del2(bb)||^2   %20.12lf\n",del2bb->vector_dot(del2bb));
-    outfile->Printf("    v2RDM @||del2(ab)||^2   %20.12lf\n",del2ab->vector_dot(del2ab));
-    outfile->Printf("\n");
+    fprintf(rdm_fp,"    v2RDM @||del2(aa)||^2   %20.12lf\n",del2aa->vector_dot(del2aa));
+    fprintf(rdm_fp,"    v2RDM @||del2(bb)||^2   %20.12lf\n",del2bb->vector_dot(del2bb));
+    fprintf(rdm_fp,"    v2RDM @||del2(ab)||^2   %20.12lf\n",del2ab->vector_dot(del2ab));
+    fprintf(rdm_fp,"\n");
 
-    outfile->Printf("    v2RDM @Tr[del2(aa)]     %20.12lf\n",del2aa->trace());
-    outfile->Printf("    v2RDM @Tr[del2(bb)]     %20.12lf\n",del2bb->trace());
-    outfile->Printf("    v2RDM @Tr[del2(ab)]     %20.12lf\n",del2ab->trace());
-    outfile->Printf("\n");
+    fprintf(rdm_fp,"    v2RDM @Tr[del2(aa)]     %20.12lf\n",del2aa->trace());
+    fprintf(rdm_fp,"    v2RDM @Tr[del2(bb)]     %20.12lf\n",del2bb->trace());
+    fprintf(rdm_fp,"    v2RDM @Tr[del2(ab)]     %20.12lf\n",del2ab->trace());
+    fprintf(rdm_fp,"\n");
 
-    outfile->Printf("\n");
-    outfile->Printf("    ==> v2RDM @D2aa <==\n");
-    outfile->Printf("\n");
-
-    for (int h = 0; h < nirrep_; h++) {
-        for (int ij = 0; ij < gems_aa[h]; ij++) {
-            int i = bas_aa_sym[h][ij][0];
-            int j = bas_aa_sym[h][ij][1];
-            for (int kl = 0; kl < gems_aa[h]; kl++) {
-                int k = bas_aa_sym[h][kl][0];
-                int l = bas_aa_sym[h][kl][1];
-                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
-                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,i,k,l,-x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
-                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
-                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,i,l,k, x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
-            }
-        }
-    }
-    outfile->Printf("\n");
-    outfile->Printf("    @END\n");
-
-    outfile->Printf("\n");
-    outfile->Printf("    ==> v2RDM @D2bb <==\n");
-    outfile->Printf("\n");
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    ==> v2RDM @D2aa <==\n");
+    fprintf(rdm_fp,"\n");
 
     for (int h = 0; h < nirrep_; h++) {
         for (int ij = 0; ij < gems_aa[h]; ij++) {
@@ -518,19 +504,40 @@ void v2RDMSolver::print_rdms() {
             for (int kl = 0; kl < gems_aa[h]; kl++) {
                 int k = bas_aa_sym[h][kl][0];
                 int l = bas_aa_sym[h][kl][1];
-                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
-                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,j,k,l,-x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
-                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
-                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,j,l,k, x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
+                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
+                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,i,k,l,-x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
+                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
+                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,i,l,k, x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
             }
         }
     }
-    outfile->Printf("\n");
-    outfile->Printf("    @END\n");
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    @END\n");
 
-    outfile->Printf("\n");
-    outfile->Printf("    ==> v2RDM @D2ab <==\n");
-    outfile->Printf("\n");
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    ==> v2RDM @D2bb <==\n");
+    fprintf(rdm_fp,"\n");
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            int i = bas_aa_sym[h][ij][0];
+            int j = bas_aa_sym[h][ij][1];
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                int k = bas_aa_sym[h][kl][0];
+                int l = bas_aa_sym[h][kl][1];
+                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
+                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,j,k,l,-x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
+                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
+                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,j,l,k, x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
+            }
+        }
+    }
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    @END\n");
+
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    ==> v2RDM @D2ab <==\n");
+    fprintf(rdm_fp,"\n");
 
     for (int h = 0; h < nirrep_; h++) {
         for (int ij = 0; ij < gems_ab[h]; ij++) {
@@ -539,82 +546,82 @@ void v2RDMSolver::print_rdms() {
             for (int kl = 0; kl < gems_ab[h]; kl++) {
                 int k = bas_ab_sym[h][kl][0];
                 int l = bas_ab_sym[h][kl][1];
-                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[d2aboff[h] + ij * gems_ab[h] + kl]);
+                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[d2aboff[h] + ij * gems_ab[h] + kl]);
             }
         }
     }
-    outfile->Printf("\n");
-    outfile->Printf("    @END\n");
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    @END\n");
 
-    outfile->Printf("\n");
-    outfile->Printf("    ==> v2RDM @D1a <==\n");
-    outfile->Printf("\n");
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    ==> v2RDM @D1a <==\n");
+    fprintf(rdm_fp,"\n");
 
     for (int h = 0; h < nirrep_; h++) {
         for (int i = 0; i < amopi_[h]; i++) {
             int ii = i + pitzer_offset[h];
             for (int j = 0; j < amopi_[h]; j++) {
                 int jj = j + pitzer_offset[h];
-                outfile->Printf("%5i %5i %20.12lf\n",i,j,x_p[d1aoff[h] + i * amopi_[h] + j]);
+                fprintf(rdm_fp,"%5i %5i %20.12lf\n",i,j,x_p[d1aoff[h] + i * amopi_[h] + j]);
             }
         }
     }
-    outfile->Printf("\n");
-    outfile->Printf("    @END\n");
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    @END\n");
 
-    outfile->Printf("\n");
-    outfile->Printf("    ==> v2RDM @D1b <==\n");
-    outfile->Printf("\n");
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    ==> v2RDM @D1b <==\n");
+    fprintf(rdm_fp,"\n");
 
     for (int h = 0; h < nirrep_; h++) {
         for (int i = 0; i < amopi_[h]; i++) {
             int ii = i + pitzer_offset[h];
             for (int j = 0; j < amopi_[h]; j++) {
                 int jj = j + pitzer_offset[h];
-                outfile->Printf("%5i %5i %20.12lf\n",i,j,x_p[d1boff[h] + i * amopi_[h] + j]);
+                fprintf(rdm_fp,"%5i %5i %20.12lf\n",i,j,x_p[d1boff[h] + i * amopi_[h] + j]);
             }
         }
     }
-    outfile->Printf("\n");
-    outfile->Printf("    @END\n");
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    @END\n");
 
-    outfile->Printf("\n");
-    outfile->Printf("    ==> v2RDM @Q1a <==\n");
-    outfile->Printf("\n");
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    ==> v2RDM @Q1a <==\n");
+    fprintf(rdm_fp,"\n");
 
     for (int h = 0; h < nirrep_; h++) {
         for (int i = 0; i < amopi_[h]; i++) {
             int ii = i + pitzer_offset[h];
             for (int j = 0; j < amopi_[h]; j++) {
                 int jj = j + pitzer_offset[h];
-                outfile->Printf("%5i %5i %20.12lf\n",i,j,x_p[q1aoff[h] + i * amopi_[h] + j]);
+                fprintf(rdm_fp,"%5i %5i %20.12lf\n",i,j,x_p[q1aoff[h] + i * amopi_[h] + j]);
             }
         }
     }
-    outfile->Printf("\n");
-    outfile->Printf("    @END\n");
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    @END\n");
 
-    outfile->Printf("\n");
-    outfile->Printf("    ==> v2RDM @Q1b <==\n");
-    outfile->Printf("\n");
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    ==> v2RDM @Q1b <==\n");
+    fprintf(rdm_fp,"\n");
 
     for (int h = 0; h < nirrep_; h++) {
         for (int i = 0; i < amopi_[h]; i++) {
             int ii = i + pitzer_offset[h];
             for (int j = 0; j < amopi_[h]; j++) {
                 int jj = j + pitzer_offset[h];
-                outfile->Printf("%5i %5i %20.12lf\n",i,j,x_p[q1boff[h] + i * amopi_[h] + j]);
+                fprintf(rdm_fp,"%5i %5i %20.12lf\n",i,j,x_p[q1boff[h] + i * amopi_[h] + j]);
             }
         }
     }
-    outfile->Printf("\n");
-    outfile->Printf("    @END\n");
+    fprintf(rdm_fp,"\n");
+    fprintf(rdm_fp,"    @END\n");
 
     if ( constrain_q2_ ){
 
-        outfile->Printf("\n");
-        outfile->Printf("    ==> v2RDM @Q2aa <==\n");
-        outfile->Printf("\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    ==> v2RDM @Q2aa <==\n");
+        fprintf(rdm_fp,"\n");
 
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_aa[h]; ij++) {
@@ -623,19 +630,19 @@ void v2RDMSolver::print_rdms() {
                 for (int kl = 0; kl < gems_aa[h]; kl++) {
                     int k = bas_aa_sym[h][kl][0];
                     int l = bas_aa_sym[h][kl][1];
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[q2aaoff[h] + ij * gems_aa[h] + kl]);
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,i,k,l,-x_p[q2aaoff[h] + ij * gems_aa[h] + kl]);
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[q2aaoff[h] + ij * gems_aa[h] + kl]);
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,i,l,k, x_p[q2aaoff[h] + ij * gems_aa[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[q2aaoff[h] + ij * gems_aa[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,i,k,l,-x_p[q2aaoff[h] + ij * gems_aa[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[q2aaoff[h] + ij * gems_aa[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,i,l,k, x_p[q2aaoff[h] + ij * gems_aa[h] + kl]);
                 }
             }
         }
-        outfile->Printf("\n");
-        outfile->Printf("    @END\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    @END\n");
 
-        outfile->Printf("\n");
-        outfile->Printf("    ==> v2RDM @Q2bb <==\n");
-        outfile->Printf("\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    ==> v2RDM @Q2bb <==\n");
+        fprintf(rdm_fp,"\n");
 
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_aa[h]; ij++) {
@@ -644,19 +651,19 @@ void v2RDMSolver::print_rdms() {
                 for (int kl = 0; kl < gems_aa[h]; kl++) {
                     int k = bas_aa_sym[h][kl][0];
                     int l = bas_aa_sym[h][kl][1];
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,j,k,l,-x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,j,l,k, x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,j,k,l,-x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,j,l,k, x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
                 }
             }
         }
-        outfile->Printf("\n");
-        outfile->Printf("    @END\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    @END\n");
 
-        outfile->Printf("\n");
-        outfile->Printf("    ==> v2RDM @Q2ab <==\n");
-        outfile->Printf("\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    ==> v2RDM @Q2ab <==\n");
+        fprintf(rdm_fp,"\n");
 
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_ab[h]; ij++) {
@@ -665,20 +672,20 @@ void v2RDMSolver::print_rdms() {
                 for (int kl = 0; kl < gems_ab[h]; kl++) {
                     int k = bas_ab_sym[h][kl][0];
                     int l = bas_ab_sym[h][kl][1];
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[q2aboff[h] + ij * gems_ab[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[q2aboff[h] + ij * gems_ab[h] + kl]);
                 }
             }
         }
-        outfile->Printf("\n");
-        outfile->Printf("    @END\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    @END\n");
 
     }
 
     if ( constrain_g2_ ){
 
-        outfile->Printf("\n");
-        outfile->Printf("    ==> v2RDM @G2aa/aa <==\n");
-        outfile->Printf("\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    ==> v2RDM @G2aa/aa <==\n");
+        fprintf(rdm_fp,"\n");
 
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_ab[h]; ij++) {
@@ -687,16 +694,16 @@ void v2RDMSolver::print_rdms() {
                 for (int kl = 0; kl < gems_ab[h]; kl++) {
                     int k = bas_ab_sym[h][kl][0];
                     int l = bas_ab_sym[h][kl][1];
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aaoff[h] + (ij             ) * 2 * gems_ab[h] + (kl             )]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aaoff[h] + (ij             ) * 2 * gems_ab[h] + (kl             )]);
                 }
             }
         }
-        outfile->Printf("\n");
-        outfile->Printf("    @END\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    @END\n");
 
-        outfile->Printf("\n");
-        outfile->Printf("    ==> v2RDM @G2aa/bb <==\n");
-        outfile->Printf("\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    ==> v2RDM @G2aa/bb <==\n");
+        fprintf(rdm_fp,"\n");
 
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_ab[h]; ij++) {
@@ -705,16 +712,16 @@ void v2RDMSolver::print_rdms() {
                 for (int kl = 0; kl < gems_ab[h]; kl++) {
                     int k = bas_ab_sym[h][kl][0];
                     int l = bas_ab_sym[h][kl][1];
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aaoff[h] + (ij             ) * 2 * gems_ab[h] + (kl + gems_ab[h])]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aaoff[h] + (ij             ) * 2 * gems_ab[h] + (kl + gems_ab[h])]);
                 }
             }
         }
-        outfile->Printf("\n");
-        outfile->Printf("    @END\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    @END\n");
 
-        outfile->Printf("\n");
-        outfile->Printf("    ==> v2RDM @G2bb/aa <==\n");
-        outfile->Printf("\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    ==> v2RDM @G2bb/aa <==\n");
+        fprintf(rdm_fp,"\n");
 
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_ab[h]; ij++) {
@@ -723,16 +730,16 @@ void v2RDMSolver::print_rdms() {
                 for (int kl = 0; kl < gems_ab[h]; kl++) {
                     int k = bas_ab_sym[h][kl][0];
                     int l = bas_ab_sym[h][kl][1];
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aaoff[h] + (ij + gems_ab[h]) * 2 * gems_ab[h] + (kl             )]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aaoff[h] + (ij + gems_ab[h]) * 2 * gems_ab[h] + (kl             )]);
                 }
             }
         }
-        outfile->Printf("\n");
-        outfile->Printf("    @END\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    @END\n");
 
-        outfile->Printf("\n");
-        outfile->Printf("    ==> v2RDM @G2bb/bb <==\n");
-        outfile->Printf("\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    ==> v2RDM @G2bb/bb <==\n");
+        fprintf(rdm_fp,"\n");
 
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_ab[h]; ij++) {
@@ -741,16 +748,16 @@ void v2RDMSolver::print_rdms() {
                 for (int kl = 0; kl < gems_ab[h]; kl++) {
                     int k = bas_ab_sym[h][kl][0];
                     int l = bas_ab_sym[h][kl][1];
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aaoff[h] + (ij + gems_ab[h]) * 2 * gems_ab[h] + (kl + gems_ab[h])]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aaoff[h] + (ij + gems_ab[h]) * 2 * gems_ab[h] + (kl + gems_ab[h])]);
                 }
             }
         }
-        outfile->Printf("\n");
-        outfile->Printf("    @END\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    @END\n");
 
-        outfile->Printf("\n");
-        outfile->Printf("    ==> v2RDM @G2ab <==\n");
-        outfile->Printf("\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    ==> v2RDM @G2ab <==\n");
+        fprintf(rdm_fp,"\n");
 
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_ab[h]; ij++) {
@@ -759,16 +766,16 @@ void v2RDMSolver::print_rdms() {
                 for (int kl = 0; kl < gems_ab[h]; kl++) {
                     int k = bas_ab_sym[h][kl][0];
                     int l = bas_ab_sym[h][kl][1];
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aboff[h] + ij * gems_ab[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aboff[h] + ij * gems_ab[h] + kl]);
                 }
             }
         }
-        outfile->Printf("\n");
-        outfile->Printf("    @END\n");
-        outfile->Printf("\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    @END\n");
+        fprintf(rdm_fp,"\n");
 
-        outfile->Printf("    ==> v2RDM @G2ba <==\n");
-        outfile->Printf("\n");
+        fprintf(rdm_fp,"    ==> v2RDM @G2ba <==\n");
+        fprintf(rdm_fp,"\n");
 
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_ab[h]; ij++) {
@@ -777,16 +784,16 @@ void v2RDMSolver::print_rdms() {
                 for (int kl = 0; kl < gems_ab[h]; kl++) {
                     int k = bas_ab_sym[h][kl][0];
                     int l = bas_ab_sym[h][kl][1];
-                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2baoff[h] + ij * gems_ab[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2baoff[h] + ij * gems_ab[h] + kl]);
                 }
             }
         }
-        outfile->Printf("\n");
-        outfile->Printf("    @END\n");
+        fprintf(rdm_fp,"\n");
+        fprintf(rdm_fp,"    @END\n");
 
     }
 
-    outfile->Printf("\n");
+    fprintf(rdm_fp,"\n");
 }
 
 }
