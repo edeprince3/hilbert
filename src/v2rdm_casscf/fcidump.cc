@@ -304,6 +304,188 @@ void v2RDMSolver::print_rdms() {
 
     double * x_p = x->pointer();
 
+    double na = nalpha_ - nrstc_ - nfrzc_;
+    double nb = nbeta_ - nrstc_ - nfrzc_;
+
+    int nact = 0;
+    for (int h = 0; h < nirrep_; h++) {
+        nact += amopi_[h];
+    }
+    double ms = (multiplicity_ - 1.0)/2.0;
+
+    outfile->Printf("    v2RDM @Nalpha           %20.12lf\n",na);
+    outfile->Printf("    v2RDM @Nbeta            %20.12lf\n",nb)
+    outfile->Printf("    v2RDM @Nact             %20.12lf\n",nact);
+    outfile->Printf("    v2RDM @S2               %20.12lf\n",ms*(ms+1));
+
+    // generalized entropy
+
+    // D1
+
+    outfile->Printf("    v2RDM @entropy(D1a)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, d1aoff));
+    outfile->Printf("    v2RDM @entropy(D1b)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, d1boff));
+
+    // Q1
+
+    outfile->Printf("    v2RDM @entropy(Q1a)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, q1aoff));
+    outfile->Printf("    v2RDM @entropy(Q1b)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, q1boff));
+
+    // D2
+
+    outfile->Printf("    v2RDM @entropy(D2aa)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, d2aaoff));
+    outfile->Printf("    v2RDM @entropy(D2bb)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, d2bboff));
+    outfile->Printf("    v2RDM @entropy(D2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, d2aboff));
+
+    if ( constrain_q2_ ) {
+
+        // Q2
+
+        outfile->Printf("    v2RDM @entropy(Q2aa)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, q2aaoff));
+        outfile->Printf("    v2RDM @entropy(Q2bb)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, q2bboff));
+        outfile->Printf("    v2RDM @entropy(Q2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, q2aboff));
+
+    }
+
+    if ( constrain_g2_ ) {
+
+        // G2
+
+        int * tmp = (int*)malloc(nirrep_*sizeof(int));
+        for (int h = 0; h < nirrep_; h++) {
+            tmp[h] = 2 * gems_ab[h];
+        }
+
+        outfile->Printf("    v2RDM @entropy(G2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, g2aboff));
+        outfile->Printf("    v2RDM @entropy(G2ba)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, g2baoff));
+        outfile->Printf("    v2RDM @entropy(G2aa/bb) %20.12lf\n",rdm_entropy(nirrep_,     tmp, x_p, g2aaoff));
+
+        free(tmp);
+
+    }
+
+    outfile->Printf("\n");
+
+    // norm of cumulant 2RDM
+
+    std::shared_ptr<Matrix> del2aa (new Matrix(nirrep_, gems_aa, gems_aa));
+    std::shared_ptr<Matrix> del2bb (new Matrix(nirrep_, gems_aa, gems_aa));
+    std::shared_ptr<Matrix> del2ab (new Matrix(nirrep_, gems_ab, gems_ab));
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            int i = bas_aa_sym[h][ij][0];
+            int j = bas_aa_sym[h][ij][1];
+            int hi = symmetry[i];
+            int hj = symmetry[j];
+            int ii = i - pitzer_offset[hi];
+            int jj = j - pitzer_offset[hj];
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                int k = bas_aa_sym[h][kl][0];
+                int l = bas_aa_sym[h][kl][1];
+                int hk = symmetry[k];
+                int hl = symmetry[l];
+                int kk = k - pitzer_offset[hk];
+                int ll = l - pitzer_offset[hl];
+                double dik = 0.0;
+                double djl = 0.0;
+                double dil = 0.0;
+                double djk = 0.0;
+                if ( hi == hk ) {
+                    dik = x->pointer()[d1aoff[hi] + ii * amopi_[hi] + kk];
+                }
+                if ( hi == hl ) {
+                    dil = x->pointer()[d1aoff[hi] + ii * amopi_[hi] + ll];
+                }
+                if ( hj == hk ) {
+                    djk = x->pointer()[d1aoff[hj] + jj * amopi_[hj] + kk];
+                }
+                if ( hj == hl ) {
+                    djl = x->pointer()[d1aoff[hj] + jj * amopi_[hj] + ll];
+                }
+                del2aa->pointer(h)[ij][kl] = x->pointer()[d2aaoff[h] + ij * gems_aa[h] + kl] - ( dik * djl - dil * djk );
+
+            }
+        }
+    }
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            int i = bas_aa_sym[h][ij][0];
+            int j = bas_aa_sym[h][ij][1];
+            int hi = symmetry[i];
+            int hj = symmetry[j];
+            int ii = i - pitzer_offset[hi];
+            int jj = j - pitzer_offset[hj];
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                int k = bas_aa_sym[h][kl][0];
+                int l = bas_aa_sym[h][kl][1];
+                int hk = symmetry[k];
+                int hl = symmetry[l];
+                int kk = k - pitzer_offset[hk];
+                int ll = l - pitzer_offset[hl];
+                double dik = 0.0;
+                double djl = 0.0;
+                double dil = 0.0;
+                double djk = 0.0;
+                if ( hi == hk ) {
+                    dik = x->pointer()[d1boff[hi] + ii * amopi_[hi] + kk];
+                }
+                if ( hi == hl ) {
+                    dil = x->pointer()[d1boff[hi] + ii * amopi_[hi] + ll];
+                }
+                if ( hj == hk ) {
+                    djk = x->pointer()[d1boff[hj] + jj * amopi_[hj] + kk];
+                }
+                if ( hj == hl ) {
+                    djl = x->pointer()[d1boff[hj] + jj * amopi_[hj] + ll];
+                }
+                del2bb->pointer(h)[ij][kl] = x->pointer()[d2bboff[h] + ij * gems_aa[h] + kl] - ( dik * djl - dil * djk );
+
+            }
+        }
+    }
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_ab[h]; ij++) {
+            int i = bas_ab_sym[h][ij][0];
+            int j = bas_ab_sym[h][ij][1];
+            int hi = symmetry[i];
+            int hj = symmetry[j];
+            int ii = i - pitzer_offset[hi];
+            int jj = j - pitzer_offset[hj];
+            for (int kl = 0; kl < gems_ab[h]; kl++) {
+                int k = bas_ab_sym[h][kl][0];
+                int l = bas_ab_sym[h][kl][1];
+                int hk = symmetry[k];
+                int hl = symmetry[l];
+                int kk = k - pitzer_offset[hk];
+                int ll = l - pitzer_offset[hl];
+                double dik = 0.0;
+                double djl = 0.0;
+                double dil = 0.0;
+                double djk = 0.0;
+                if ( hi == hk ) {
+                    dik = x->pointer()[d1aoff[hi] + ii * amopi_[hi] + kk];
+                }
+                if ( hj == hl ) {
+                    djl = x->pointer()[d1boff[hj] + jj * amopi_[hj] + ll];
+                }
+                del2ab->pointer(h)[ij][kl] = x->pointer()[d2aboff[h] + ij * gems_ab[h] + kl] - dik * djl;
+
+            }
+        }
+    }
+
+    outfile->Printf("    v2RDM @||del2(aa)||^2   %20.12lf\n",del2aa->vector_dot(del2aa));
+    outfile->Printf("    v2RDM @||del2(bb)||^2   %20.12lf\n",del2bb->vector_dot(del2bb));
+    outfile->Printf("    v2RDM @||del2(ab)||^2   %20.12lf\n",del2ab->vector_dot(del2ab));
+    outfile->Printf("\n");
+
+    outfile->Printf("    v2RDM @Tr[del2(aa)]     %20.12lf\n",del2aa->trace());
+    outfile->Printf("    v2RDM @Tr[del2(bb)]     %20.12lf\n",del2bb->trace());
+    outfile->Printf("    v2RDM @Tr[del2(ab)]     %20.12lf\n",del2ab->trace());
+    outfile->Printf("\n");
+
     outfile->Printf("\n");
     outfile->Printf("    ==> v2RDM @D2aa <==\n");
     outfile->Printf("\n");
@@ -605,176 +787,6 @@ void v2RDMSolver::print_rdms() {
     }
 
     outfile->Printf("\n");
-
-    // generalized entropy
-
-    // D1
-
-    outfile->Printf("    v2RDM @entropy(D1a)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, d1aoff));
-    outfile->Printf("    v2RDM @entropy(D1b)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, d1boff));
-
-    // Q1
-
-    outfile->Printf("    v2RDM @entropy(Q1a)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, q1aoff));
-    outfile->Printf("    v2RDM @entropy(Q1b)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, q1boff));
-
-    // D2
-
-    outfile->Printf("    v2RDM @entropy(D2aa)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, d2aaoff));
-    outfile->Printf("    v2RDM @entropy(D2bb)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, d2bboff));
-    outfile->Printf("    v2RDM @entropy(D2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, d2aboff));
-
-    if ( constrain_q2_ ) {
-
-        // Q2
-
-        outfile->Printf("    v2RDM @entropy(Q2aa)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, q2aaoff));
-        outfile->Printf("    v2RDM @entropy(Q2bb)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, q2bboff));
-        outfile->Printf("    v2RDM @entropy(Q2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, q2aboff));
-
-    }
-
-    if ( constrain_g2_ ) {
-
-        // G2
-
-        int * tmp = (int*)malloc(nirrep_*sizeof(int));
-        for (int h = 0; h < nirrep_; h++) {
-            tmp[h] = 2 * gems_ab[h];
-        }
-
-        outfile->Printf("    v2RDM @entropy(G2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, g2aboff));
-        outfile->Printf("    v2RDM @entropy(G2ba)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, g2baoff));
-        outfile->Printf("    v2RDM @entropy(G2aa/bb) %20.12lf\n",rdm_entropy(nirrep_,     tmp, x_p, g2aaoff));
-
-        free(tmp);
-
-    }
-
-    outfile->Printf("\n");
-
-    // norm of cumulant 2RDM
-
-    std::shared_ptr<Matrix> del2aa (new Matrix(nirrep_, gems_aa, gems_aa));
-    std::shared_ptr<Matrix> del2bb (new Matrix(nirrep_, gems_aa, gems_aa));
-    std::shared_ptr<Matrix> del2ab (new Matrix(nirrep_, gems_ab, gems_ab));
-
-    for (int h = 0; h < nirrep_; h++) {
-        for (int ij = 0; ij < gems_aa[h]; ij++) {
-            int i = bas_aa_sym[h][ij][0];
-            int j = bas_aa_sym[h][ij][1];
-            int hi = symmetry[i];
-            int hj = symmetry[j];
-            int ii = i - pitzer_offset[hi];
-            int jj = j - pitzer_offset[hj];
-            for (int kl = 0; kl < gems_aa[h]; kl++) {
-                int k = bas_aa_sym[h][kl][0];
-                int l = bas_aa_sym[h][kl][1];
-                int hk = symmetry[k];
-                int hl = symmetry[l];
-                int kk = k - pitzer_offset[hk];
-                int ll = l - pitzer_offset[hl];
-                double dik = 0.0;
-                double djl = 0.0;
-                double dil = 0.0;
-                double djk = 0.0;
-                if ( hi == hk ) {
-                    dik = x->pointer()[d1aoff[hi] + ii * amopi_[hi] + kk];
-                }
-                if ( hi == hl ) {
-                    dil = x->pointer()[d1aoff[hi] + ii * amopi_[hi] + ll];
-                }
-                if ( hj == hk ) {
-                    djk = x->pointer()[d1aoff[hj] + jj * amopi_[hj] + kk];
-                }
-                if ( hj == hl ) {
-                    djl = x->pointer()[d1aoff[hj] + jj * amopi_[hj] + ll];
-                }
-                del2aa->pointer(h)[ij][kl] = x->pointer()[d2aaoff[h] + ij * gems_aa[h] + kl] - ( dik * djl - dil * djk );
-
-            }
-        }
-    }
-
-    for (int h = 0; h < nirrep_; h++) {
-        for (int ij = 0; ij < gems_aa[h]; ij++) {
-            int i = bas_aa_sym[h][ij][0];
-            int j = bas_aa_sym[h][ij][1];
-            int hi = symmetry[i];
-            int hj = symmetry[j];
-            int ii = i - pitzer_offset[hi];
-            int jj = j - pitzer_offset[hj];
-            for (int kl = 0; kl < gems_aa[h]; kl++) {
-                int k = bas_aa_sym[h][kl][0];
-                int l = bas_aa_sym[h][kl][1];
-                int hk = symmetry[k];
-                int hl = symmetry[l];
-                int kk = k - pitzer_offset[hk];
-                int ll = l - pitzer_offset[hl];
-                double dik = 0.0;
-                double djl = 0.0;
-                double dil = 0.0;
-                double djk = 0.0;
-                if ( hi == hk ) {
-                    dik = x->pointer()[d1boff[hi] + ii * amopi_[hi] + kk];
-                }
-                if ( hi == hl ) {
-                    dil = x->pointer()[d1boff[hi] + ii * amopi_[hi] + ll];
-                }
-                if ( hj == hk ) {
-                    djk = x->pointer()[d1boff[hj] + jj * amopi_[hj] + kk];
-                }
-                if ( hj == hl ) {
-                    djl = x->pointer()[d1boff[hj] + jj * amopi_[hj] + ll];
-                }
-                del2bb->pointer(h)[ij][kl] = x->pointer()[d2bboff[h] + ij * gems_aa[h] + kl] - ( dik * djl - dil * djk );
-
-            }
-        }
-    }
-
-    for (int h = 0; h < nirrep_; h++) {
-        for (int ij = 0; ij < gems_ab[h]; ij++) {
-            int i = bas_ab_sym[h][ij][0];
-            int j = bas_ab_sym[h][ij][1];
-            int hi = symmetry[i];
-            int hj = symmetry[j];
-            int ii = i - pitzer_offset[hi];
-            int jj = j - pitzer_offset[hj];
-            for (int kl = 0; kl < gems_ab[h]; kl++) {
-                int k = bas_ab_sym[h][kl][0];
-                int l = bas_ab_sym[h][kl][1];
-                int hk = symmetry[k];
-                int hl = symmetry[l];
-                int kk = k - pitzer_offset[hk];
-                int ll = l - pitzer_offset[hl];
-                double dik = 0.0;
-                double djl = 0.0;
-                double dil = 0.0;
-                double djk = 0.0;
-                if ( hi == hk ) {
-                    dik = x->pointer()[d1aoff[hi] + ii * amopi_[hi] + kk];
-                }
-                if ( hj == hl ) {
-                    djl = x->pointer()[d1boff[hj] + jj * amopi_[hj] + ll];
-                }
-                del2ab->pointer(h)[ij][kl] = x->pointer()[d2aboff[h] + ij * gems_ab[h] + kl] - dik * djl;
-
-            }
-        }
-    }
-
-    outfile->Printf("    v2RDM @||del2(aa)||^2   %20.12lf\n",del2aa->vector_dot(del2aa));
-    outfile->Printf("    v2RDM @||del2(bb)||^2   %20.12lf\n",del2bb->vector_dot(del2bb));
-    outfile->Printf("    v2RDM @||del2(ab)||^2   %20.12lf\n",del2ab->vector_dot(del2ab));
-    outfile->Printf("\n");
-
-    outfile->Printf("    v2RDM @Tr[del2(aa)]     %20.12lf\n",del2aa->trace());
-    outfile->Printf("    v2RDM @Tr[del2(bb)]     %20.12lf\n",del2bb->trace());
-    outfile->Printf("    v2RDM @Tr[del2(ab)]     %20.12lf\n",del2ab->trace());
-    outfile->Printf("\n");
-
-
 }
 
 }
