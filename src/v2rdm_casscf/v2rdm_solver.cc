@@ -1469,7 +1469,10 @@ double v2RDMSolver::compute_energy() {
     } 
 
     // compute and natural orbitals and transform 1-RDM/2-RDM to the NO basis
-    if ( options_.get_bool("NAT_ORBS") || options_.get_bool("FCIDUMP") || options_.get_bool("EXTENDED_KOOPMANS") ) {
+    if (  options_.get_bool("NAT_ORBS") || 
+          options_.get_bool("FCIDUMP")  || 
+         !options_.get_bool("PRINT_RDMS")  || 
+          options_.get_bool("EXTENDED_KOOPMANS") ) {
         ComputeNaturalOrbitals();
     }
     if ( options_.get_bool("MOLDEN_WRITE") && !is_hubbard_ && !is_external_hamiltonian_ ) {

@@ -271,12 +271,41 @@ void v2RDMSolver::FCIDUMP() {
 
 }
 
+
+double rdm_entropy(int nirrep, int * dim, double * x, int * off){
+
+    SharedMatrix mat (new Matrix(nirrep,dim,dim));
+    SharedMatrix eigvec (new Matrix(nirrep,dim,dim));
+    SharedVector eigval (new Vector(nirrep,dim));
+
+    double entropy = 0.0;
+
+    for (int h = 0; h < nirrep; h++) {
+        for (int i = 0; i < dim[h]; i++) {
+            for (int j = 0; j < dim[h]; j++) {
+                mat->pointer(h)[i][j]  = x[off[h]+i*dim[h]+j];
+            }
+        }
+    }
+    mat->diagonalize(eigvec,eigval,descending);
+
+    for (int h = 0; h < nirrep; h++) {
+        for (int i = 0; i < dim[h]; i++) {
+            double dum = eigval->pointer(h)[i];
+            if ( fabs(dum) < 1e-12 && dum < 0.0 ) dum = -dum;
+            entropy -= dum * log2(dum);
+        }
+    }
+
+    return entropy;
+}
+
 void v2RDMSolver::print_rdms() {
 
     double * x_p = x->pointer();
 
     outfile->Printf("\n");
-    outfile->Printf("    ==> v2RDM @2RDM (aa) <==\n");
+    outfile->Printf("    ==> v2RDM @D2aa <==\n");
     outfile->Printf("\n");
 
     for (int h = 0; h < nirrep_; h++) {
@@ -286,13 +315,18 @@ void v2RDMSolver::print_rdms() {
             for (int kl = 0; kl < gems_aa[h]; kl++) {
                 int k = bas_aa_sym[h][kl][0];
                 int l = bas_aa_sym[h][kl][1];
-                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
+                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
+                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,i,k,l,-x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
+                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
+                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,i,l,k, x_p[d2aaoff[h] + ij * gems_aa[h] + kl]);
             }
         }
     }
+    outfile->Printf("\n");
+    outfile->Printf("    @END\n");
 
     outfile->Printf("\n");
-    outfile->Printf("    ==> v2RDM @2RDM (bb) <==\n");
+    outfile->Printf("    ==> v2RDM @D2bb <==\n");
     outfile->Printf("\n");
 
     for (int h = 0; h < nirrep_; h++) {
@@ -302,13 +336,18 @@ void v2RDMSolver::print_rdms() {
             for (int kl = 0; kl < gems_aa[h]; kl++) {
                 int k = bas_aa_sym[h][kl][0];
                 int l = bas_aa_sym[h][kl][1];
-                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
+                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
+                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,j,k,l,-x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
+                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
+                outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,j,l,k, x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
             }
         }
     }
+    outfile->Printf("\n");
+    outfile->Printf("    @END\n");
 
     outfile->Printf("\n");
-    outfile->Printf("    ==> v2RDM @2RDM (ab) <==\n");
+    outfile->Printf("    ==> v2RDM @D2ab <==\n");
     outfile->Printf("\n");
 
     for (int h = 0; h < nirrep_; h++) {
@@ -322,9 +361,11 @@ void v2RDMSolver::print_rdms() {
             }
         }
     }
+    outfile->Printf("\n");
+    outfile->Printf("    @END\n");
 
     outfile->Printf("\n");
-    outfile->Printf("    ==> v2RDM @1RDM (a) <==\n");
+    outfile->Printf("    ==> v2RDM @D1a <==\n");
     outfile->Printf("\n");
 
     for (int h = 0; h < nirrep_; h++) {
@@ -336,9 +377,11 @@ void v2RDMSolver::print_rdms() {
             }
         }
     }
+    outfile->Printf("\n");
+    outfile->Printf("    @END\n");
 
     outfile->Printf("\n");
-    outfile->Printf("    ==> v2RDM @1RDM (b) <==\n");
+    outfile->Printf("    ==> v2RDM @D1b <==\n");
     outfile->Printf("\n");
 
     for (int h = 0; h < nirrep_; h++) {
@@ -351,6 +394,386 @@ void v2RDMSolver::print_rdms() {
         }
     }
     outfile->Printf("\n");
+    outfile->Printf("    @END\n");
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> v2RDM @Q1a <==\n");
+    outfile->Printf("\n");
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int i = 0; i < amopi_[h]; i++) {
+            int ii = i + pitzer_offset[h];
+            for (int j = 0; j < amopi_[h]; j++) {
+                int jj = j + pitzer_offset[h];
+                outfile->Printf("%5i %5i %20.12lf\n",i,j,x_p[q1aoff[h] + i * amopi_[h] + j]);
+            }
+        }
+    }
+    outfile->Printf("\n");
+    outfile->Printf("    @END\n");
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> v2RDM @Q1b <==\n");
+    outfile->Printf("\n");
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int i = 0; i < amopi_[h]; i++) {
+            int ii = i + pitzer_offset[h];
+            for (int j = 0; j < amopi_[h]; j++) {
+                int jj = j + pitzer_offset[h];
+                outfile->Printf("%5i %5i %20.12lf\n",i,j,x_p[q1boff[h] + i * amopi_[h] + j]);
+            }
+        }
+    }
+    outfile->Printf("\n");
+    outfile->Printf("    @END\n");
+
+    if ( constrain_q2_ ){
+
+        outfile->Printf("\n");
+        outfile->Printf("    ==> v2RDM @Q2aa <==\n");
+        outfile->Printf("\n");
+
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_aa[h]; ij++) {
+                int i = bas_aa_sym[h][ij][0];
+                int j = bas_aa_sym[h][ij][1];
+                for (int kl = 0; kl < gems_aa[h]; kl++) {
+                    int k = bas_aa_sym[h][kl][0];
+                    int l = bas_aa_sym[h][kl][1];
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[q2aaoff[h] + ij * gems_aa[h] + kl]);
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,i,k,l,-x_p[q2aaoff[h] + ij * gems_aa[h] + kl]);
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[q2aaoff[h] + ij * gems_aa[h] + kl]);
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,i,l,k, x_p[q2aaoff[h] + ij * gems_aa[h] + kl]);
+                }
+            }
+        }
+        outfile->Printf("\n");
+        outfile->Printf("    @END\n");
+
+        outfile->Printf("\n");
+        outfile->Printf("    ==> v2RDM @Q2bb <==\n");
+        outfile->Printf("\n");
+
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_aa[h]; ij++) {
+                int i = bas_aa_sym[h][ij][0];
+                int j = bas_aa_sym[h][ij][1];
+                for (int kl = 0; kl < gems_aa[h]; kl++) {
+                    int k = bas_aa_sym[h][kl][0];
+                    int l = bas_aa_sym[h][kl][1];
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,j,k,l,-x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",j,j,l,k, x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
+                }
+            }
+        }
+        outfile->Printf("\n");
+        outfile->Printf("    @END\n");
+
+        outfile->Printf("\n");
+        outfile->Printf("    ==> v2RDM @Q2ab <==\n");
+        outfile->Printf("\n");
+
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_ab[h]; ij++) {
+                int i = bas_ab_sym[h][ij][0];
+                int j = bas_ab_sym[h][ij][1];
+                for (int kl = 0; kl < gems_ab[h]; kl++) {
+                    int k = bas_ab_sym[h][kl][0];
+                    int l = bas_ab_sym[h][kl][1];
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[q2aboff[h] + ij * gems_ab[h] + kl]);
+                }
+            }
+        }
+        outfile->Printf("\n");
+        outfile->Printf("    @END\n");
+
+    }
+
+    if ( constrain_g2_ ){
+
+        outfile->Printf("\n");
+        outfile->Printf("    ==> v2RDM @G2aa/aa <==\n");
+        outfile->Printf("\n");
+
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_ab[h]; ij++) {
+                int i = bas_ab_sym[h][ij][0];
+                int j = bas_ab_sym[h][ij][1];
+                for (int kl = 0; kl < gems_ab[h]; kl++) {
+                    int k = bas_ab_sym[h][kl][0];
+                    int l = bas_ab_sym[h][kl][1];
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aaoff[h] + (ij             ) * 2 * gems_ab[h] + (kl             )]);
+                }
+            }
+        }
+        outfile->Printf("\n");
+        outfile->Printf("    @END\n");
+
+        outfile->Printf("\n");
+        outfile->Printf("    ==> v2RDM @G2aa/bb <==\n");
+        outfile->Printf("\n");
+
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_ab[h]; ij++) {
+                int i = bas_ab_sym[h][ij][0];
+                int j = bas_ab_sym[h][ij][1];
+                for (int kl = 0; kl < gems_ab[h]; kl++) {
+                    int k = bas_ab_sym[h][kl][0];
+                    int l = bas_ab_sym[h][kl][1];
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aaoff[h] + (ij             ) * 2 * gems_ab[h] + (kl + gems_ab[h])]);
+                }
+            }
+        }
+        outfile->Printf("\n");
+        outfile->Printf("    @END\n");
+
+        outfile->Printf("\n");
+        outfile->Printf("    ==> v2RDM @G2bb/aa <==\n");
+        outfile->Printf("\n");
+
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_ab[h]; ij++) {
+                int i = bas_ab_sym[h][ij][0];
+                int j = bas_ab_sym[h][ij][1];
+                for (int kl = 0; kl < gems_ab[h]; kl++) {
+                    int k = bas_ab_sym[h][kl][0];
+                    int l = bas_ab_sym[h][kl][1];
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aaoff[h] + (ij + gems_ab[h]) * 2 * gems_ab[h] + (kl             )]);
+                }
+            }
+        }
+        outfile->Printf("\n");
+        outfile->Printf("    @END\n");
+
+        outfile->Printf("\n");
+        outfile->Printf("    ==> v2RDM @G2bb/bb <==\n");
+        outfile->Printf("\n");
+
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_ab[h]; ij++) {
+                int i = bas_ab_sym[h][ij][0];
+                int j = bas_ab_sym[h][ij][1];
+                for (int kl = 0; kl < gems_ab[h]; kl++) {
+                    int k = bas_ab_sym[h][kl][0];
+                    int l = bas_ab_sym[h][kl][1];
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aaoff[h] + (ij + gems_ab[h]) * 2 * gems_ab[h] + (kl + gems_ab[h])]);
+                }
+            }
+        }
+        outfile->Printf("\n");
+        outfile->Printf("    @END\n");
+
+        outfile->Printf("\n");
+        outfile->Printf("    ==> v2RDM @G2ab <==\n");
+        outfile->Printf("\n");
+
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_ab[h]; ij++) {
+                int i = bas_ab_sym[h][ij][0];
+                int j = bas_ab_sym[h][ij][1];
+                for (int kl = 0; kl < gems_ab[h]; kl++) {
+                    int k = bas_ab_sym[h][kl][0];
+                    int l = bas_ab_sym[h][kl][1];
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2aboff[h] + ij * gems_ab[h] + kl]);
+                }
+            }
+        }
+        outfile->Printf("\n");
+        outfile->Printf("    @END\n");
+        outfile->Printf("\n");
+
+        outfile->Printf("    ==> v2RDM @G2ba <==\n");
+        outfile->Printf("\n");
+
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_ab[h]; ij++) {
+                int i = bas_ab_sym[h][ij][0];
+                int j = bas_ab_sym[h][ij][1];
+                for (int kl = 0; kl < gems_ab[h]; kl++) {
+                    int k = bas_ab_sym[h][kl][0];
+                    int l = bas_ab_sym[h][kl][1];
+                    outfile->Printf("%5i %5i %5i %5i %20.12lf\n",i,j,k,l,x_p[g2baoff[h] + ij * gems_ab[h] + kl]);
+                }
+            }
+        }
+        outfile->Printf("\n");
+        outfile->Printf("    @END\n");
+
+    }
+
+    outfile->Printf("\n");
+
+    // generalized entropy
+
+    // D1
+
+    outfile->Printf("    v2RDM @entropy(D1a)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, d1aoff));
+    outfile->Printf("    v2RDM @entropy(D1b)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, d1boff));
+
+    // Q1
+
+    outfile->Printf("    v2RDM @entropy(Q1a)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, q1aoff));
+    outfile->Printf("    v2RDM @entropy(Q1b)     %20.12lf\n",rdm_entropy(nirrep_, amopi_, x_p, q1boff));
+
+    // D2
+
+    outfile->Printf("    v2RDM @entropy(D2aa)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, d2aaoff));
+    outfile->Printf("    v2RDM @entropy(D2bb)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, d2bboff));
+    outfile->Printf("    v2RDM @entropy(D2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, d2aboff));
+
+    if ( constrain_q2_ ) {
+
+        // Q2
+
+        outfile->Printf("    v2RDM @entropy(Q2aa)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, q2aaoff));
+        outfile->Printf("    v2RDM @entropy(Q2bb)    %20.12lf\n",rdm_entropy(nirrep_, gems_aa, x_p, q2bboff));
+        outfile->Printf("    v2RDM @entropy(Q2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, q2aboff));
+
+    }
+
+    if ( constrain_g2_ ) {
+
+        // G2
+
+        int * tmp = (int*)malloc(nirrep_*sizeof(int));
+        for (int h = 0; h < nirrep_; h++) {
+            tmp[h] = 2 * gems_ab[h];
+        }
+
+        outfile->Printf("    v2RDM @entropy(G2ab)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, g2aboff));
+        outfile->Printf("    v2RDM @entropy(G2ba)    %20.12lf\n",rdm_entropy(nirrep_, gems_ab, x_p, g2baoff));
+        outfile->Printf("    v2RDM @entropy(G2aa/bb) %20.12lf\n",rdm_entropy(nirrep_,     tmp, x_p, g2aaoff));
+
+        free(tmp);
+
+    }
+
+    outfile->Printf("\n");
+
+    // norm of cumulant 2RDM
+
+    std::shared_ptr<Matrix> del2aa (new Matrix(nirrep_, gems_aa, gems_aa));
+    std::shared_ptr<Matrix> del2bb (new Matrix(nirrep_, gems_aa, gems_aa));
+    std::shared_ptr<Matrix> del2ab (new Matrix(nirrep_, gems_ab, gems_ab));
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            int i = bas_aa_sym[h][ij][0];
+            int j = bas_aa_sym[h][ij][1];
+            int hi = symmetry[i];
+            int hj = symmetry[j];
+            int ii = i - pitzer_offset[hi];
+            int jj = j - pitzer_offset[hj];
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                int k = bas_aa_sym[h][kl][0];
+                int l = bas_aa_sym[h][kl][1];
+                int hk = symmetry[k];
+                int hl = symmetry[l];
+                int kk = k - pitzer_offset[hk];
+                int ll = l - pitzer_offset[hl];
+                double dik = 0.0;
+                double djl = 0.0;
+                double dil = 0.0;
+                double djk = 0.0;
+                if ( hi == hk ) {
+                    dik = x->pointer()[d1aoff[hi] + ii * amopi_[hi] + kk];
+                }
+                if ( hi == hl ) {
+                    dil = x->pointer()[d1aoff[hi] + ii * amopi_[hi] + ll];
+                }
+                if ( hj == hk ) {
+                    djk = x->pointer()[d1aoff[hj] + jj * amopi_[hj] + kk];
+                }
+                if ( hj == hl ) {
+                    djl = x->pointer()[d1aoff[hj] + jj * amopi_[hj] + ll];
+                }
+                del2aa->pointer(h)[ij][kl] = x->pointer()[d2aaoff[h] + ij * gems_aa[h] + kl] - ( dik * djl - dil * djk );
+
+            }
+        }
+    }
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            int i = bas_aa_sym[h][ij][0];
+            int j = bas_aa_sym[h][ij][1];
+            int hi = symmetry[i];
+            int hj = symmetry[j];
+            int ii = i - pitzer_offset[hi];
+            int jj = j - pitzer_offset[hj];
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                int k = bas_aa_sym[h][kl][0];
+                int l = bas_aa_sym[h][kl][1];
+                int hk = symmetry[k];
+                int hl = symmetry[l];
+                int kk = k - pitzer_offset[hk];
+                int ll = l - pitzer_offset[hl];
+                double dik = 0.0;
+                double djl = 0.0;
+                double dil = 0.0;
+                double djk = 0.0;
+                if ( hi == hk ) {
+                    dik = x->pointer()[d1boff[hi] + ii * amopi_[hi] + kk];
+                }
+                if ( hi == hl ) {
+                    dil = x->pointer()[d1boff[hi] + ii * amopi_[hi] + ll];
+                }
+                if ( hj == hk ) {
+                    djk = x->pointer()[d1boff[hj] + jj * amopi_[hj] + kk];
+                }
+                if ( hj == hl ) {
+                    djl = x->pointer()[d1boff[hj] + jj * amopi_[hj] + ll];
+                }
+                del2bb->pointer(h)[ij][kl] = x->pointer()[d2bboff[h] + ij * gems_aa[h] + kl] - ( dik * djl - dil * djk );
+
+            }
+        }
+    }
+
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_ab[h]; ij++) {
+            int i = bas_ab_sym[h][ij][0];
+            int j = bas_ab_sym[h][ij][1];
+            int hi = symmetry[i];
+            int hj = symmetry[j];
+            int ii = i - pitzer_offset[hi];
+            int jj = j - pitzer_offset[hj];
+            for (int kl = 0; kl < gems_ab[h]; kl++) {
+                int k = bas_ab_sym[h][kl][0];
+                int l = bas_ab_sym[h][kl][1];
+                int hk = symmetry[k];
+                int hl = symmetry[l];
+                int kk = k - pitzer_offset[hk];
+                int ll = l - pitzer_offset[hl];
+                double dik = 0.0;
+                double djl = 0.0;
+                double dil = 0.0;
+                double djk = 0.0;
+                if ( hi == hk ) {
+                    dik = x->pointer()[d1aoff[hi] + ii * amopi_[hi] + kk];
+                }
+                if ( hj == hl ) {
+                    djl = x->pointer()[d1boff[hj] + jj * amopi_[hj] + ll];
+                }
+                del2ab->pointer(h)[ij][kl] = x->pointer()[d2aboff[h] + ij * gems_ab[h] + kl] - dik * djl;
+
+            }
+        }
+    }
+
+    outfile->Printf("    v2RDM @||del2(aa)||^2   %20.12lf\n",del2aa->vector_dot(del2aa));
+    outfile->Printf("    v2RDM @||del2(bb)||^2   %20.12lf\n",del2bb->vector_dot(del2bb));
+    outfile->Printf("    v2RDM @||del2(ab)||^2   %20.12lf\n",del2ab->vector_dot(del2ab));
+    outfile->Printf("\n");
+
+    outfile->Printf("    v2RDM @Tr[del2(aa)]     %20.12lf\n",del2aa->trace());
+    outfile->Printf("    v2RDM @Tr[del2(bb)]     %20.12lf\n",del2bb->trace());
+    outfile->Printf("    v2RDM @Tr[del2(ab)]     %20.12lf\n",del2ab->trace());
+    outfile->Printf("\n");
+
 
 }
 
