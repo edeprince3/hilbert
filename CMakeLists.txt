@@ -45,6 +45,7 @@ add_psi4_plugin(hilbert
 
     src/doci/doci_solver.cc
     src/doci/write_tpdm.cc
+    src/doci/fcidump.cc
 
     src/p2rdm/p2rdm_solver.cc
     src/p2rdm/p2rdm_residual.cc

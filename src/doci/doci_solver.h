@@ -173,6 +173,9 @@ class DOCISolver: public Wavefunction{
     /// print 1- and 2-RDM elements
     void print_rdms();
 
+    /// dump oeis, teis, and rdms to disk
+    void FCIDUMP();
+
 };
 
 }
