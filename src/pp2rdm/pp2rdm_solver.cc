@@ -540,7 +540,12 @@ double pp2RDMSolver::compute_energy() {
     }
 
     std::shared_ptr<Vector> NOs (new Vector("Natural Orbital Occupation Numbers (spin free)",nmo_));
-    BuildSeniorityZeroRDMs(false);
+    double rdm_energy = 0.0;
+    if ( options_.get_str("P2RDM_TYPE") != "CCD" ) {
+        rdm_energy = BuildSeniorityZeroRDMs(true);
+    }else {
+        rdm_energy = BuildSeniorityZeroRDMs_pCCD(true);
+    }
     for (int i = 0; i < nmo_; i++) {
         NOs->pointer()[i] = d1_[INDEX(i,i)];
     }
@@ -1029,22 +1034,6 @@ double pp2RDMSolver::z_iterations(int & iter) {
         if ( fabs(dE) < e_convergence_ && nrm < r_convergence_ ) break;
 
     }while(ci_iter_ < options_.get_int("MAXITER"));
-    printf("\n");
-    printf("    ==> t amplitudes <==\n");
-    printf("\n");
-    for (int a = 0; a < v; a++) {
-        for (int i = 0; i < o; i++) {
-            printf("%5i %5i %20.12lf\n",a,i,t2_[a * o + i]);
-        }
-    }
-    printf("\n");
-    printf("    ==> lambda amplitudes <==\n");
-    printf("\n");
-    for (int i = 0; i < o; i++) {
-        for (int a = 0; a < v; a++) {
-            printf("%5i %5i %20.12lf\n",i,a,z2_[i * v + a]);
-        }
-    }
 
     if (ci_iter_ == options_.get_int("MAXITER")){
         throw PsiException("  z iterations did not converge.",__FILE__,__LINE__);
