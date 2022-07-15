@@ -200,7 +200,6 @@ double PolaritonicRCIS::compute_energy() {
     if ( n_photon_states_ > 1 ) {
         update_cavity_terms();
     }
-printf("total dipole: %20.12lf\n",tot_dip_z_);
 
     // transform dipole integrals to MO basis
     dipole_[0]->transform(Ca_);
@@ -264,10 +263,10 @@ printf("total dipole: %20.12lf\n",tot_dip_z_);
 
                                 // coherent-state basis terms ... actually, these should be contained in orbital energies
                                 //if ( i == j ) {
-                                //    hp[ian][jbm] -= lambda_z * lambda_z * dz[a+o][b+o] * tot_dip_z_;
+                                //    hp[ian][jbm] -= lambda_z * lambda_z * dz[a+o][b+o] * e_dip_z_;
                                 //}
                                 //if ( a == b ) {
-                                //    hp[ian][jbm] -= lambda_z * lambda_z * dz[i][j] * tot_dip_z_;
+                                //    hp[ian][jbm] -= lambda_z * lambda_z * dz[i][j] * e_dip_z_;
                                 //}
 
                             }
@@ -302,11 +301,11 @@ printf("total dipole: %20.12lf\n",tot_dip_z_);
 
                             // more coherent-state terms ... these affect diagonals in electronic basis
                             if ( i == j && a == b && n == m + 1 ) {
-                                hp[ian][jbm] += coupling_factor_z * sqrt(n) * tot_dip_z_;
+                                hp[ian][jbm] += coupling_factor_z * sqrt(n) * e_dip_z_;
                             }
 
                             if ( i == j && a == b && n == m - 1 ) {
-                                hp[ian][jbm] += coupling_factor_z * sqrt(m) * tot_dip_z_;
+                                hp[ian][jbm] += coupling_factor_z * sqrt(m) * e_dip_z_;
                             }
 
                         }
