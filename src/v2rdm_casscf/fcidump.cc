@@ -526,9 +526,9 @@ void v2RDMSolver::print_rdms() {
                 int k = bas_aa_sym[h][kl][0];
                 int l = bas_aa_sym[h][kl][1];
                 fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
-                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,j,k,l,-x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
+                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,i,k,l,-x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
                 fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
-                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,j,l,k, x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
+                fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,i,l,k, x_p[d2bboff[h] + ij * gems_aa[h] + kl]);
             }
         }
     }
@@ -652,9 +652,9 @@ void v2RDMSolver::print_rdms() {
                     int k = bas_aa_sym[h][kl][0];
                     int l = bas_aa_sym[h][kl][1];
                     fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,k,l, x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
-                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,j,k,l,-x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,i,k,l,-x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
                     fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",i,j,l,k,-x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
-                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,j,l,k, x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
+                    fprintf(rdm_fp,"%5i %5i %5i %5i %20.12lf\n",j,i,l,k, x_p[q2bboff[h] + ij * gems_aa[h] + kl]);
                 }
             }
         }
