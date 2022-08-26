@@ -562,7 +562,7 @@ void v2RDMSolver::print_rdms() {
             int ii = i + pitzer_offset[h];
             for (int j = 0; j < amopi_[h]; j++) {
                 int jj = j + pitzer_offset[h];
-                fprintf(rdm_fp,"%5i %5i %20.12lf\n",i,j,x_p[d1aoff[h] + i * amopi_[h] + j]);
+                fprintf(rdm_fp,"%5i %5i %20.12lf\n",ii,jj,x_p[d1aoff[h] + i * amopi_[h] + j]);
             }
         }
     }
@@ -578,7 +578,7 @@ void v2RDMSolver::print_rdms() {
             int ii = i + pitzer_offset[h];
             for (int j = 0; j < amopi_[h]; j++) {
                 int jj = j + pitzer_offset[h];
-                fprintf(rdm_fp,"%5i %5i %20.12lf\n",i,j,x_p[d1boff[h] + i * amopi_[h] + j]);
+                fprintf(rdm_fp,"%5i %5i %20.12lf\n",ii,jj,x_p[d1boff[h] + i * amopi_[h] + j]);
             }
         }
     }
@@ -594,7 +594,7 @@ void v2RDMSolver::print_rdms() {
             int ii = i + pitzer_offset[h];
             for (int j = 0; j < amopi_[h]; j++) {
                 int jj = j + pitzer_offset[h];
-                fprintf(rdm_fp,"%5i %5i %20.12lf\n",i,j,x_p[q1aoff[h] + i * amopi_[h] + j]);
+                fprintf(rdm_fp,"%5i %5i %20.12lf\n",ii,jj,x_p[q1aoff[h] + i * amopi_[h] + j]);
             }
         }
     }
@@ -610,7 +610,7 @@ void v2RDMSolver::print_rdms() {
             int ii = i + pitzer_offset[h];
             for (int j = 0; j < amopi_[h]; j++) {
                 int jj = j + pitzer_offset[h];
-                fprintf(rdm_fp,"%5i %5i %20.12lf\n",i,j,x_p[q1boff[h] + i * amopi_[h] + j]);
+                fprintf(rdm_fp,"%5i %5i %20.12lf\n",ii,jj,x_p[q1boff[h] + i * amopi_[h] + j]);
             }
         }
     }
