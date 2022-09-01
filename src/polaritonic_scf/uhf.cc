@@ -419,6 +419,8 @@ double PolaritonicUHF::compute_energy() {
         evaluate_dipole_self_energy();
     }
 
+    evaluate_dipole_variance();
+
     compute_s2();
 
     Process::environment.globals["SCF TOTAL ENERGY"] = energy_;

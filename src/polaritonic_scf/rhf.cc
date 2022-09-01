@@ -370,6 +370,8 @@ double PolaritonicRHF::compute_energy() {
         evaluate_dipole_self_energy();
     }
 
+    evaluate_dipole_variance();
+
     Process::environment.globals["SCF TOTAL ENERGY"] = energy_;
 
     Process::environment.globals["CURRENT ENERGY"] = energy_;

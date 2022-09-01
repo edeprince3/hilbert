@@ -103,8 +103,8 @@ class PolaritonicHF: public Wavefunction {
     /// evaluate constant and one- and two-electron components of the dipole self energy
     void evaluate_dipole_self_energy();
 
-    /// evaluate one- and two-electron components of the dipole self energy (without lambda)
-    void evaluate_bare_dipole_self_energy();
+    /// evaluate constant and one- and two-electron components of the dipole variance
+    void evaluate_dipole_variance();
 
 };
 

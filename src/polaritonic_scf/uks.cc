@@ -563,7 +563,7 @@ double PolaritonicUKS::compute_energy() {
         evaluate_dipole_self_energy();
     }
 
-    evaluate_bare_dipole_self_energy();
+    evaluate_dipole_variance();
 
     Process::environment.globals["SCF TOTAL ENERGY"] = energy_;
 
