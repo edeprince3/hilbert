@@ -517,7 +517,21 @@ void PolaritonicHF::evaluate_dipole_self_energy() {
 */
 void PolaritonicHF::evaluate_dipole_variance() {
 
-    update_cavity_terms();
+    // evaluate the electronic contribute to the molecule's dipole moment
+
+    e_dip_x_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
+    e_dip_y_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
+    e_dip_z_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+
+    if ( same_a_b_dens_ ) {
+        e_dip_x_ *= 2.0;
+        e_dip_y_ *= 2.0;
+        e_dip_z_ *= 2.0;
+    }else {
+        e_dip_x_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
+        e_dip_y_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
+        e_dip_z_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+    }
 
     double one_electron_xx = 0.0;
     double one_electron_xy = 0.0;
