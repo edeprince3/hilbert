@@ -100,8 +100,8 @@ class PolaritonicHF: public Wavefunction {
     /// do use coherent-state basis? default true
     bool use_coherent_state_basis_ = true;
 
-    /// evaluate one- and two-electron components of the dipole self energy
-    void evaluate_dipole_self_energy(double & one_electron, double & two_electron);
+    /// evaluate constant and one- and two-electron components of the dipole self energy
+    void evaluate_dipole_self_energy(double & constant, double & one_electron, double & two_electron);
 
     /// evaluate one- and two-electron components of the dipole self energy (without lambda)
     void evaluate_bare_dipole_self_energy();

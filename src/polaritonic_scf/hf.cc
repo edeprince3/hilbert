@@ -427,20 +427,25 @@ void PolaritonicHF::update_cavity_terms(){
  *
  * evaluate_dipole_self_energy():
  *
- * evaluate one- and two-electron contributions to the dipole self energy in the
- * coherent-state basis: 
+ * evaluate constant and one- and two-electron contributions to the dipole self 
+ * energy in the coherent-state basis: 
  *
- * < ( lambda.[mu - <mu>] )^2 > 
+ * < ( lambda.[mu - <mu>] )^2 >  =  lambda^2 ( <mu^2> - <mu>^2 )
  *
 */
-void PolaritonicHF::evaluate_dipole_self_energy(double & one_electron, double & two_electron){
+void PolaritonicHF::evaluate_dipole_self_energy(double & constant, double & one_electron, double & two_electron){
 
+    constant = 0.0;
     one_electron = 0.0;
     two_electron = 0.0;
 
     if ( n_photon_states_ < 1 ) return;
 
-    // one-electron part depends on quadrupole integrals: -Tr(D.q)
+    // constant part of the operator is just - <mu>^2
+    constant = - average_electric_dipole_self_energy_;
+
+
+    // one-electron part if <mu^2> depends on quadrupole integrals: -Tr(D.q)
     std::shared_ptr<Matrix> oei (new Matrix(quadrupole_scaled_sum_));
     oei->scale(-1.0);
 
@@ -451,7 +456,7 @@ void PolaritonicHF::evaluate_dipole_self_energy(double & one_electron, double & 
         one_electron += Db_->vector_dot(oei);
     }
 
-    // two-electron part:
+    // two-electron part of <mu^2>:
     std::shared_ptr<Matrix> dipole_Ka (new Matrix(nso_,nso_));
     std::shared_ptr<Matrix> dipole_Kb (new Matrix(nso_,nso_));
 

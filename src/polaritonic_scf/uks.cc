@@ -562,13 +562,17 @@ double PolaritonicUKS::compute_energy() {
     // evaluate dipole self energy
     if ( n_photon_states_ > 1 ) {
 
+        double dse_constant = 0.0;
         double dse_one_electron = 0.0;
         double dse_two_electron = 0.0;
-        evaluate_dipole_self_energy(dse_one_electron,dse_two_electron);
+        evaluate_dipole_self_energy(dse_constant, dse_one_electron, dse_two_electron);
 
-        outfile->Printf("    dipole self energy (one electron): %20.12lf\n",dse_one_electron);
-        outfile->Printf("    dipole self energy (two electron): %20.12lf\n",dse_two_electron);
-        outfile->Printf("    dipole self energy (total):        %20.12lf\n",dse_one_electron+dse_two_electron);
+        outfile->Printf("    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==\n");
+        outfile->Printf("\n");
+        outfile->Printf("    constant part       %20.12lf\n",dse_constant);
+        outfile->Printf("    one-electron part;  %20.12lf\n",dse_one_electron);
+        outfile->Printf("    two-electron part:  %20.12lf\n",dse_two_electron);
+        outfile->Printf("    total:              %20.12lf\n",dse_constant + dse_one_electron + dse_two_electron);
 
         outfile->Printf("\n");
     }
