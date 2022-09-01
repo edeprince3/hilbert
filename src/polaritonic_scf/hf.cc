@@ -433,17 +433,16 @@ void PolaritonicHF::update_cavity_terms(){
  * < ( lambda.[mu - <mu>] )^2 >  =  lambda^2 ( <mu^2> - <mu>^2 )
  *
 */
-void PolaritonicHF::evaluate_dipole_self_energy(double & constant, double & one_electron, double & two_electron){
+void PolaritonicHF::evaluate_dipole_self_energy() {
 
-    constant = 0.0;
-    one_electron = 0.0;
-    two_electron = 0.0;
+    double constant = 0.0;
+    double one_electron = 0.0;
+    double two_electron = 0.0;
 
     if ( n_photon_states_ < 1 ) return;
 
     // constant part of the operator is just - <mu>^2
     constant = - average_electric_dipole_self_energy_;
-
 
     // one-electron part if <mu^2> depends on quadrupole integrals: -Tr(D.q)
     std::shared_ptr<Matrix> oei (new Matrix(quadrupole_scaled_sum_));
@@ -487,6 +486,15 @@ void PolaritonicHF::evaluate_dipole_self_energy(double & constant, double & one_
     }else {
         two_electron -= 0.5 * Db_->vector_dot(dipole_Kb);
     }
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==\n");
+    outfile->Printf("\n");
+    outfile->Printf("    constant part       %20.12lf\n",constant);
+    outfile->Printf("    one-electron part;  %20.12lf\n",one_electron);
+    outfile->Printf("    two-electron part:  %20.12lf\n",two_electron);
+    outfile->Printf("    total:              %20.12lf\n",constant + one_electron + two_electron);
+    outfile->Printf("\n");
 
 }
 /*
