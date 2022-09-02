@@ -427,7 +427,7 @@ void PolaritonicHF::update_cavity_terms(){
  *
  * evaluate_dipole_self_energy():
  *
- * evaluate constant and one- and two-electron contributions to the dipole self 
+ * evaluate one- and two-electron contributions to the dipole self 
  * energy in the coherent-state basis: 
  *
  * < ( lambda.[mu - <mu>] )^2 >  =  lambda^2 ( <mu^2> - <mu>^2 )
@@ -435,14 +435,10 @@ void PolaritonicHF::update_cavity_terms(){
 */
 void PolaritonicHF::evaluate_dipole_self_energy() {
 
-    double constant = 0.0;
     double one_electron = 0.0;
     double two_electron = 0.0;
 
     if ( n_photon_states_ < 1 ) return;
-
-    // constant part of the operator is just - <mu>^2
-    constant = - average_electric_dipole_self_energy_;
 
     // one-electron part if <mu^2> depends on quadrupole integrals: -Tr(D.q)
     std::shared_ptr<Matrix> oei (new Matrix(quadrupole_scaled_sum_));
@@ -455,7 +451,7 @@ void PolaritonicHF::evaluate_dipole_self_energy() {
         one_electron += Db_->vector_dot(oei);
     }
 
-    // two-electron part of <mu^2>:
+    // two-electron part of <mu^2> is just the exchange contribution
     std::shared_ptr<Matrix> dipole_Ka (new Matrix(nso_,nso_));
     std::shared_ptr<Matrix> dipole_Kb (new Matrix(nso_,nso_));
 
@@ -490,10 +486,9 @@ void PolaritonicHF::evaluate_dipole_self_energy() {
     outfile->Printf("\n");
     outfile->Printf("    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==\n");
     outfile->Printf("\n");
-    outfile->Printf("    constant part       %20.12lf\n",constant);
     outfile->Printf("    one-electron part;  %20.12lf\n",one_electron);
     outfile->Printf("    two-electron part:  %20.12lf\n",two_electron);
-    outfile->Printf("    total:              %20.12lf\n",constant + one_electron + two_electron);
+    outfile->Printf("    total:              %20.12lf\n",one_electron + two_electron);
     outfile->Printf("\n");
 
 }
@@ -501,7 +496,7 @@ void PolaritonicHF::evaluate_dipole_self_energy() {
  *
  * evaluate_dipole_variance():
  *
- * evaluate constant and one- and two-electron contributions to the dipole variance
+ * evaluate one- and two-electron contributions to the dipole variance
  *
  * < ( [mu - <mu>] )^2 > = <mu_e>^2 - <mu_e>^2
  *
@@ -516,22 +511,6 @@ void PolaritonicHF::evaluate_dipole_self_energy() {
  *
 */
 void PolaritonicHF::evaluate_dipole_variance() {
-
-    // evaluate the electronic contribute to the molecule's dipole moment
-
-    e_dip_x_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
-    e_dip_y_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
-    e_dip_z_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
-
-    if ( same_a_b_dens_ ) {
-        e_dip_x_ *= 2.0;
-        e_dip_y_ *= 2.0;
-        e_dip_z_ *= 2.0;
-    }else {
-        e_dip_x_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
-        e_dip_y_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
-        e_dip_z_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
-    }
 
     double one_electron_xx = 0.0;
     double one_electron_xy = 0.0;
@@ -578,7 +557,7 @@ void PolaritonicHF::evaluate_dipole_variance() {
     one_electron_yz *= -1.0;
     one_electron_zz *= -1.0;
 
-    // two-electron part:
+    // two-electron part is just exchange part of <mu^2>
     std::shared_ptr<Matrix> dipole_Ka (new Matrix(nso_,nso_));
     std::shared_ptr<Matrix> dipole_Kb (new Matrix(nso_,nso_));
 
@@ -704,13 +683,6 @@ void PolaritonicHF::evaluate_dipole_variance() {
     outfile->Printf("\n");
     outfile->Printf("    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== \n");
     outfile->Printf("\n");
-    outfile->Printf("    constant (xx):     %20.12lf\n",-e_dip_x_*e_dip_x_);
-    outfile->Printf("    constant (xy):     %20.12lf\n",-e_dip_x_*e_dip_y_);
-    outfile->Printf("    constant (xz):     %20.12lf\n",-e_dip_x_*e_dip_z_);
-    outfile->Printf("    constant (yy):     %20.12lf\n",-e_dip_y_*e_dip_y_);
-    outfile->Printf("    constant (yz):     %20.12lf\n",-e_dip_y_*e_dip_z_);
-    outfile->Printf("    constant (zz):     %20.12lf\n",-e_dip_z_*e_dip_z_);
-    outfile->Printf("\n");
     outfile->Printf("    one electron (xx): %20.12lf\n",one_electron_xx);
     outfile->Printf("    one electron (xy): %20.12lf\n",one_electron_xy);
     outfile->Printf("    one electron (xz): %20.12lf\n",one_electron_xz);
@@ -725,12 +697,12 @@ void PolaritonicHF::evaluate_dipole_variance() {
     outfile->Printf("    two electron (yz): %20.12lf\n",two_electron_yz * 2.0);
     outfile->Printf("    two electron (zz): %20.12lf\n",two_electron_zz * 2.0);
     outfile->Printf("\n");
-    outfile->Printf("    total (xx):        %20.12lf\n",-e_dip_x_*e_dip_x_ + one_electron_xx + two_electron_xx * 2.0);
-    outfile->Printf("    total (xy):        %20.12lf\n",-e_dip_x_*e_dip_y_ + one_electron_xy + two_electron_xy * 2.0);
-    outfile->Printf("    total (xz):        %20.12lf\n",-e_dip_x_*e_dip_z_ + one_electron_xz + two_electron_xz * 2.0);
-    outfile->Printf("    total (yy):        %20.12lf\n",-e_dip_y_*e_dip_y_ + one_electron_yy + two_electron_yy * 2.0);
-    outfile->Printf("    total (yz):        %20.12lf\n",-e_dip_y_*e_dip_z_ + one_electron_yz + two_electron_yz * 2.0);
-    outfile->Printf("    total (zz):        %20.12lf\n",-e_dip_z_*e_dip_z_ + one_electron_zz + two_electron_zz * 2.0);
+    outfile->Printf("    total (xx):        %20.12lf\n",one_electron_xx + two_electron_xx * 2.0);
+    outfile->Printf("    total (xy):        %20.12lf\n",one_electron_xy + two_electron_xy * 2.0);
+    outfile->Printf("    total (xz):        %20.12lf\n",one_electron_xz + two_electron_xz * 2.0);
+    outfile->Printf("    total (yy):        %20.12lf\n",one_electron_yy + two_electron_yy * 2.0);
+    outfile->Printf("    total (yz):        %20.12lf\n",one_electron_yz + two_electron_yz * 2.0);
+    outfile->Printf("    total (zz):        %20.12lf\n",one_electron_zz + two_electron_zz * 2.0);
     outfile->Printf("\n");
 
 }
