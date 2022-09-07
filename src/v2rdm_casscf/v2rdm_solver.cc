@@ -67,41 +67,6 @@
 using namespace psi;
 using namespace fnocc;
 
-extern "C" {
-    void dgeev(char& JOBVL,char& JOBVR,long int& N,double* A,long int& LDA,double* WR,double* WI,
-            double * VL,long int& LDVL,double* VR,long int& LDVR,double* WORK,long int& LWORK,long int& INFO);
-};
-inline void DGEEV(char& JOBVL,char& JOBVR,long int& N,double* A,long int& LDA,double* WR,double* WI,
-            double * VL,long int& LDVL,double* VR,long int& LDVR,double* WORK,long int& LWORK,long int& INFO){
-    dgeev(JOBVL, JOBVR, N, A, LDA, WR, WI, VL, LDVL, VR, LDVR, WORK, LWORK, INFO);
-}
-
-
-// diagonalize real, nonsymmetric matrix
-void NonsymmetricEigenvalue(long int N, double * A, double * VL, double * VR, double * WR, double *WI){
-
-    char JOBVL = 'V';
-    char JOBVR = 'V';
-    long int LDA  = N;
-    long int LDVL = N;
-    long int LDVR = N;
-    long int LWORK = 4*N;
-    double * WORK = (double*)malloc(LWORK*sizeof(double));
-    long int INFO;
-
-    DGEEV(JOBVL, JOBVR, N, A, LDA, WR, WI, VL, LDVL, VR, LDVR, WORK, LWORK, INFO);
-
-    // kill complex eigenvalues
-    for (int i = 0; i < N; i++) {
-        if ( fabs(WI[i]) > 1e-6 ) {
-            WR[i] = 0.0;
-            WI[i] = 0.0;
-        }
-    }
-
-    free(WORK);
-}
-
 namespace hilbert{
 
 //static void evaluate_Au(SharedVector Au, SharedVector u, void * data) 
