@@ -68,14 +68,16 @@ using namespace psi;
 using namespace fnocc;
 
 extern "C" {
-    void dgeev(char& JOBVL,char& JOBVR,long int& N,double* A,long int& LDA,double* WR,double* WI,
-            double * VL,long int& LDVL,double* VR,long int& LDVR,double* WORK,long int& LWORK,long int& INFO);
+void F77NAME(dgeev)(char &jobvl,char &jobvr,long int &n,double *a,long int &lda,
+           double *wr,double *wi, double *vl,long int &ldvl,double *vr,
+           long int &ldvr,double * work,long int &lwork, long int &info);
 };
-inline void DGEEV(char& JOBVL,char& JOBVR,long int& N,double* A,long int& LDA,double* WR,double* WI,
-            double * VL,long int& LDVL,double* VR,long int& LDVR,double* WORK,long int& LWORK,long int& INFO){
-    dgeev(JOBVL, JOBVR, N, A, LDA, WR, WI, VL, LDVL, VR, LDVR, WORK, LWORK, INFO);
-}
-
+inline void DGEEV(char &jobvl,char &jobvr,long int &n,double*a,long int &lda,
+           double *wr,double *wi, double *vl,long int &ldvl,double *vr,
+           long int &ldvr,double * work,long int &lwork,long int &info)
+{
+   F77NAME(dgeev)(jobvl,jobvr,n,a,lda,wr,wi,vl,ldvl,vr,ldvr,work,lwork,info);
+};
 
 // diagonalize real, nonsymmetric matrix
 void NonsymmetricEigenvalue(long int N, double * A, double * VL, double * VR, double * WR, double *WI){
