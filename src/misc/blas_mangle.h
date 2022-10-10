@@ -35,6 +35,13 @@
 #define FC_SYMBOL 2
 #endif
 
+#if   FC_SYMBOL==1
+#define F77NAME(x) x
+#elif FC_SYMBOL==2
+#define F77NAME(x) x##_
+#endif
+
+
 #ifdef USE_FCMANGLE_H
 #include "FCMangle.h"
 #define dgemv  FC_GLOBAL(dgemv , DGEMV)
