@@ -28,6 +28,8 @@
 # @END LICENSE
 #
 
+import numpy as np
+
 import psi4
 import psi4.driver.p4util as p4util
 from psi4.driver.procrouting import proc_util
@@ -61,10 +63,14 @@ def run_polaritonic_scf(name, **kwargs):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_ROHF')
     elif ( lowername == 'polaritonic-uks' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UKS')
+    elif ( lowername == 'polaritonic-rks' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RKS')
     elif ( lowername == 'polaritonic-rcis' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RCIS')
     elif ( lowername == 'polaritonic-uccsd' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UCCSD')
+    elif ( lowername == 'polaritonic-tddft' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_TDDFT')
 
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
     # Fock matrices, and more
@@ -282,13 +288,13 @@ def run_v2rdm_casscf(name, **kwargs):
             raise psi4.p4util.PsiException("REORDER_ORBITALS: Expression %s orbital number exceeds number of orbitals in irrep" %
                                     (str(orbord)))
 
-        theta = numpy.deg2rad(theta)
+        theta = np.deg2rad(theta)
 
         x_a = ref_wfn.Ca().nph[irrep][:, orb1].copy()
         y_a = ref_wfn.Ca().nph[irrep][:, orb2].copy()
 
-        xp_a = numpy.cos(theta) * x_a - numpy.sin(theta) * y_a
-        yp_a = numpy.sin(theta) * x_a + numpy.cos(theta) * y_a
+        xp_a = np.cos(theta) * x_a - np.sin(theta) * y_a
+        yp_a = np.sin(theta) * x_a + np.cos(theta) * y_a
 
         ref_wfn.Ca().nph[irrep][:, orb1] = xp_a
         ref_wfn.Ca().nph[irrep][:, orb2] = yp_a
@@ -484,12 +490,13 @@ psi4.driver.procedures['energy']['v2rdm-doci'] = run_v2rdm_doci
 psi4.driver.procedures['energy']['v2rdm-casscf'] = run_v2rdm_casscf
 psi4.driver.procedures['gradient']['v2rdm-casscf'] = run_v2rdm_casscf_gradient
 
-# polaritonic scf
+# polaritonic scf and cc
 psi4.driver.procedures['energy']['polaritonic-rhf'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-uhf'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-rohf'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-uks'] = run_polaritonic_scf
+psi4.driver.procedures['energy']['polaritonic-rks'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-rcis'] = run_polaritonic_scf
+psi4.driver.procedures['energy']['polaritonic-tddft'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-uccsd'] = run_polaritonic_scf
-#psi4.driver.procedures['energy']['polaritonic-uhf'] = run_polaritonic_scf
 

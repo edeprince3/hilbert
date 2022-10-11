@@ -399,7 +399,7 @@ void PolaritonicHF::update_cavity_terms(){
     // 
     // n-<d> contribution: lambda . (dn - <d>)
     double nuc_dipdot = 0.0;
-    if ( use_coherent_state_basis_ ) {
+    if ( use_coherent_state_basis_ && options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
         nuc_dipdot += lambda_x * ( nuc_dip_x_ - tot_dip_x_ );
         nuc_dipdot += lambda_y * ( nuc_dip_y_ - tot_dip_y_ );
         nuc_dipdot += lambda_z * ( nuc_dip_z_ - tot_dip_z_ );

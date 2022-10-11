@@ -47,45 +47,44 @@
 // diis solver
 #include <misc/diis.h>
 
-#include "uks.h"
+#include "rks.h"
 
 namespace hilbert{ 
 
-PolaritonicUKS::PolaritonicUKS(std::shared_ptr<Wavefunction> reference_wavefunction, Options& options_):
+PolaritonicRKS::PolaritonicRKS(std::shared_ptr<Wavefunction> reference_wavefunction, Options& options_):
     PolaritonicHF(reference_wavefunction,options_) {
     common_init();
 }
 
-PolaritonicUKS::~PolaritonicUKS() {
+PolaritonicRKS::~PolaritonicRKS() {
 }
 
-void PolaritonicUKS::common_init() {
+void PolaritonicRKS::common_init() {
 
     outfile->Printf("\n\n");
     outfile->Printf( "        *******************************************************\n");
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *                                                     *\n");
-    outfile->Printf( "        *    Polaritonic UKS                                  *\n");
+    outfile->Printf( "        *    Polaritonic RKS                                  *\n");
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *******************************************************\n");
 
     // ensure scf_type df
     if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" ) {
-        throw PsiException("polaritonic uks only works with scf_type df for now",__FILE__,__LINE__);
+        throw PsiException("polaritonic rks only works with scf_type df for now",__FILE__,__LINE__);
     }
 
     // ensure running in c1 symmetry
     if ( reference_wavefunction_->nirrep() > 1 ) {
-        throw PsiException("polaritonic uks only works with c1 symmetry for now.",__FILE__,__LINE__);
+        throw PsiException("polaritonic rks only works with c1 symmetry for now.",__FILE__,__LINE__);
     }
 
     // SO-basis xc potential matrices
     Va_ = std::shared_ptr<Matrix>(new Matrix(nso_,nso_));
-    Vb_ = std::shared_ptr<Matrix>(new Matrix(nso_,nso_));
 
-    same_a_b_orbs_ = false;
-    same_a_b_dens_ = false;
+    same_a_b_orbs_ = true;
+    same_a_b_dens_ = true;
 
     n_photon_states_ = options_.get_int("N_PHOTON_STATES");
 
@@ -113,7 +112,7 @@ void PolaritonicUKS::common_init() {
 
 }
 
-double PolaritonicUKS::compute_energy() {
+double PolaritonicRKS::compute_energy() {
 
     // grab the one-electron integrals from MintsHelper:
     std::shared_ptr<MintsHelper> mints (new MintsHelper(reference_wavefunction_));
@@ -142,7 +141,7 @@ double PolaritonicUKS::compute_energy() {
     potential->print_header();
 
     // JK object
-    std::shared_ptr<JK> jk;
+    //std::shared_ptr<JK> jk;
 
     int nQ = 0;
     bool is_x_lrc = false;
@@ -181,7 +180,7 @@ double PolaritonicUKS::compute_energy() {
 
         myjk->initialize();
 
-        jk = myjk;
+        jk_ = myjk;
 
     }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
 
@@ -212,7 +211,7 @@ double PolaritonicUKS::compute_energy() {
 
         myjk->initialize();
 
-        jk = myjk;
+        jk_ = myjk;
 
     }
 
@@ -253,9 +252,7 @@ double PolaritonicUKS::compute_energy() {
 
     // allocate memory for F' and its eigenvectors and eigenvalues
     std::shared_ptr<Matrix> Fevec_a ( new Matrix(nso_,nso_) );
-    std::shared_ptr<Matrix> Fevec_b ( new Matrix(nso_,nso_) );
     std::shared_ptr<Matrix> Fprime_a ( new Matrix(Fa_) );
-    std::shared_ptr<Matrix> Fprime_b ( new Matrix(Fb_) );
 
 /*
     // core guess ... shouldn't be necessary since we're starting from an existing reference
@@ -283,18 +280,16 @@ double PolaritonicUKS::compute_energy() {
     if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
         energy_  += average_electric_dipole_self_energy_;
     }
-
     energy_ += 0.5 * Da_->vector_dot(h);
-    energy_ += 0.5 * Db_->vector_dot(h);
+    energy_ += 0.5 * Da_->vector_dot(h);
     energy_ += 0.5 * Da_->vector_dot(Fa_);
-    energy_ += 0.5 * Db_->vector_dot(Fb_);
+    energy_ += 0.5 * Da_->vector_dot(Fa_);
 
     // SCF iterations
 
     double e_last    = 0.0;
     double dele      = 0.0;
     double gnorm_a   = 0.0;
-    double gnorm_b   = 0.0;
 
     outfile->Printf("\n");
     outfile->Printf("    Guess energy:  %20.12lf\n",energy_);
@@ -308,7 +303,7 @@ double PolaritonicUKS::compute_energy() {
     outfile->Printf("         RMS |[F,P]| ");
     outfile->Printf("\n");
 
-    std::shared_ptr<DIIS> diis (new DIIS(2*nso_*nso_));
+    std::shared_ptr<DIIS> diis (new DIIS(nso_*nso_));
 
     int iter = 0;
     do {
@@ -322,50 +317,37 @@ double PolaritonicUKS::compute_energy() {
         std::shared_ptr<Matrix> myCa (new Matrix(Ca_) );
         myCa->zero();
 
-        // grab occupied orbitals (the first nbeta)
-        std::shared_ptr<Matrix> myCb (new Matrix(Cb_) );
-        myCb->zero();
-
         for (int mu = 0; mu < nso_; mu++) {
             for (int i = 0; i < nalpha_; i++) {
                 myCa->pointer()[mu][i] = Ca_->pointer()[mu][i];
             }
-            for (int i = 0; i < nbeta_; i++) {
-                myCb->pointer()[mu][i] = Cb_->pointer()[mu][i];
-            }
         }
 
         // push occupied orbitals onto JK object
-        std::vector< std::shared_ptr<Matrix> >& C_left  = jk->C_left();
+        std::vector< std::shared_ptr<Matrix> >& C_left  = jk_->C_left();
         C_left.clear();
         C_left.push_back(myCa);
-        C_left.push_back(myCb);
 
         // form J/K
-        jk->compute();
+        jk_->compute();
 
         // form Fa = h + Ja + Jb - Ka
-        Fa_->copy(jk->J()[0]);
-        Fa_->add(jk->J()[1]);
-
-        Fb_->copy(jk->J()[0]);
-        Fb_->add(jk->J()[1]);
+        Fa_->copy(jk_->J()[0]);
+        Fa_->add(jk_->J()[0]);
 
         // Construct density from C
         C_DGEMM('n','t',nso_,nso_,nalpha_,1.0,&(Ca_->pointer()[0][0]),nso_,&(Ca_->pointer()[0][0]),nso_,0.0,&(Da_->pointer()[0][0]),nso_);
-        C_DGEMM('n','t',nso_,nso_,nbeta_, 1.0,&(Cb_->pointer()[0][0]),nso_,&(Cb_->pointer()[0][0]),nso_,0.0,&(Db_->pointer()[0][0]),nso_);
 
         if (functional->needs_xc()) {
 
             // set a/b densities in potential object
-            potential->set_D({Da_, Db_});
+            potential->set_D({Da_});
 
             // evaluate a/b potentials
-            potential->compute_V({Va_,Vb_});
+            potential->compute_V({Va_});
 
             // form Fa/b = h + Ja + Jb + Va/b
             Fa_->add(Va_);
-            Fb_->add(Vb_);
 
         }
 
@@ -373,16 +355,14 @@ double PolaritonicUKS::compute_energy() {
         if (functional->is_x_hybrid()) {
             // form F = h + 2*J + V - alpha K
             double alpha = functional->x_alpha();
-            Fa_->axpy(-alpha,jk->K()[0]);
-            Fb_->axpy(-alpha,jk->K()[1]);
+            Fa_->axpy(-alpha,jk_->K()[0]);
         }
 
         // LRC functional?
         if (is_x_lrc) {
             // form Fa/b = h + Ja + Jb + Va/b - alpha Ka/b - beta wKa/b
             double beta = 1.0 - functional->x_alpha();
-            Fa_->axpy(-beta,jk->wK()[0]);
-            Fb_->axpy(-beta,jk->wK()[1]);
+            Fa_->axpy(-beta,jk_->wK()[0]);
         }
 
         std::shared_ptr<Matrix> oei (new Matrix(h));
@@ -392,9 +372,7 @@ double PolaritonicUKS::compute_energy() {
         std::shared_ptr<Matrix> dipole_Kb (new Matrix(nso_,nso_));
 
         dipole_Ja->zero();
-        dipole_Jb->zero();
         dipole_Ka->zero();
-        dipole_Kb->zero();
 
         if ( n_photon_states_ > 1 ) {
 
@@ -426,19 +404,15 @@ double PolaritonicUKS::compute_energy() {
 
                 // two-electron part of e-e term (J)
                 double scaled_mu_a = Da_->vector_dot(dipole_scaled_sum_);
-                double scaled_mu_b = Db_->vector_dot(dipole_scaled_sum_);
 
                 dipole_Ja->axpy(scaled_mu_a,dipole_scaled_sum_);
-                dipole_Jb->axpy(scaled_mu_b,dipole_scaled_sum_);
 
                 // two-electron part of e-e term (K)
 
                 // Kpq += mu_pr * mu_qs * Drs
                 double ** dp  = dipole_scaled_sum_->pointer();
                 double ** dap = Da_->pointer();
-                double ** dbp = Db_->pointer();
                 double ** kap = dipole_Ka->pointer();
-                double ** kbp = dipole_Kb->pointer();
 
                 std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
                 double ** tp = tmp->pointer();
@@ -446,22 +420,15 @@ double PolaritonicUKS::compute_energy() {
                 C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
                 C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(kap[0][0]),nso_);
 
-                C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
-                C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(kbp[0][0]),nso_);
-
                 Fa_->add(dipole_Ja);
-                Fa_->add(dipole_Jb);
+                Fa_->add(dipole_Ja);
                 Fa_->subtract(dipole_Ka);
 
-                Fb_->add(dipole_Ja);
-                Fb_->add(dipole_Jb);
-                Fb_->subtract(dipole_Kb);
-
             }
+
         }
 
         Fa_->add(oei);
-        Fb_->add(oei);
 
         // evaluate the current energy, E = D(H+F) + Enuc
         // 
@@ -474,35 +441,35 @@ double PolaritonicUKS::compute_energy() {
         }
 
         energy_ += Da_->vector_dot(oei);
-        energy_ += Db_->vector_dot(oei);
+        energy_ += Da_->vector_dot(oei);
 
-        energy_ += 0.5 * Da_->vector_dot(jk->J()[0]);
-        energy_ += 0.5 * Da_->vector_dot(jk->J()[1]);
+        energy_ += 0.5 * Da_->vector_dot(jk_->J()[0]);
+        energy_ += 0.5 * Da_->vector_dot(jk_->J()[0]);
 
-        energy_ += 0.5 * Db_->vector_dot(jk->J()[0]);
-        energy_ += 0.5 * Db_->vector_dot(jk->J()[1]);
+        energy_ += 0.5 * Da_->vector_dot(jk_->J()[0]);
+        energy_ += 0.5 * Da_->vector_dot(jk_->J()[0]);
 
         if (functional->is_x_hybrid()) {
             double alpha = functional->x_alpha();
-            energy_ -= 0.5 * alpha * Da_->vector_dot(jk->K()[0]);
-            energy_ -= 0.5 * alpha * Db_->vector_dot(jk->K()[1]);
+            energy_ -= 0.5 * alpha * Da_->vector_dot(jk_->K()[0]);
+            energy_ -= 0.5 * alpha * Da_->vector_dot(jk_->K()[0]);
         }
 
         // dipole self energy contributions ... ignore if following QED-TDDFT outlined in J. Chem. Phys. 155, 064107 (2021)
         if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
             energy_ += 0.5 * Da_->vector_dot(dipole_Ja);
-            energy_ += 0.5 * Da_->vector_dot(dipole_Jb);
+            energy_ += 0.5 * Da_->vector_dot(dipole_Ja);
             energy_ -= 0.5 * Da_->vector_dot(dipole_Ka);
-
-            energy_ += 0.5 * Db_->vector_dot(dipole_Ja);
-            energy_ += 0.5 * Db_->vector_dot(dipole_Jb);
-            energy_ -= 0.5 * Db_->vector_dot(dipole_Kb);
+    
+            energy_ += 0.5 * Da_->vector_dot(dipole_Ja);
+            energy_ += 0.5 * Da_->vector_dot(dipole_Ja);
+            energy_ -= 0.5 * Da_->vector_dot(dipole_Ka);
         }
-
+    
         if (is_x_lrc) {
             double beta = 1.0 - functional->x_alpha();
-            energy_ -= 0.5 * beta * Da_->vector_dot(jk->wK()[0]);
-            energy_ -= 0.5 * beta * Db_->vector_dot(jk->wK()[1]);
+            energy_ -= 0.5 * beta * Da_->vector_dot(jk_->wK()[0]);
+            energy_ -= 0.5 * beta * Da_->vector_dot(jk_->wK()[0]);
         }
 
         double exchange_correlation_energy = 0.0;
@@ -513,7 +480,7 @@ double PolaritonicUKS::compute_energy() {
         // if using canonical basis, add additional terms. ignore if following QED-TDDFT outlined in J. Chem. Phys. 155, 064107 (2021)
         if ( !use_coherent_state_basis_ && options_.get_bool("QED_USE_RELAXED_ORBITALS")) {
 
-            // w <b*b>
+            // w <b*b> 
             energy_ += cavity_energy; 
 
             // -(w/2)^1/2 lambda.mu_n <b* + b> 
@@ -529,41 +496,34 @@ double PolaritonicUKS::compute_energy() {
         Fprime_a->copy(Fa_);
         Fprime_a->transform(Shalf);
 
-        Fprime_b->copy(Fb_);
-        Fprime_b->transform(Shalf);
-
         // The error vector in DIIS for SCF is defined as 
         // the orbital gradient, in the orthonormal basis:
         // 
         // ST^{-1/2} [FDS - SDF] S^{-1/2}
 
         std::shared_ptr<Matrix> grad_a = OrbitalGradient(Da_,Fa_,Shalf);
-        std::shared_ptr<Matrix> grad_b = OrbitalGradient(Db_,Fb_,Shalf);
 
         // We will use the RMS of the orbital gradient 
         // to monitor convergence.
         gnorm_a = grad_a->rms();
-        gnorm_b = grad_b->rms();
 
         // DIIS extrapolation
-        diis->WriteVector(&(Fprime_a->pointer()[0][0]),&(Fprime_b->pointer()[0][0]));
-        diis->WriteErrorVector(&(grad_a->pointer()[0][0]),&(grad_b->pointer()[0][0]));
-        diis->Extrapolate(&(Fprime_a->pointer()[0][0]),&(Fprime_b->pointer()[0][0]));
+        diis->WriteVector(&(Fprime_a->pointer()[0][0]));
+        diis->WriteErrorVector(&(grad_a->pointer()[0][0]));
+        diis->Extrapolate(&(Fprime_a->pointer()[0][0]));
 
         // Diagonalize F' to obtain C'
         Fprime_a->diagonalize(Fevec_a,epsilon_a_,ascending);
-        Fprime_b->diagonalize(Fevec_b,epsilon_b_,ascending);
 
         // Find C = S^(-1/2)C'
         Ca_->gemm(false,false,1.0,Shalf,Fevec_a,0.0);
-        Cb_->gemm(false,false,1.0,Shalf,Fevec_b,0.0);
 
-        outfile->Printf("    %5i %20.12lf %20.12lf %20.12lf\n",iter,energy_,dele,0.5 * (gnorm_a + gnorm_b)); 
+        outfile->Printf("    %5i %20.12lf %20.12lf %20.12lf\n",iter,energy_,dele,gnorm_a); 
 
         iter++;
         if ( iter > maxiter ) break;
 
-    }while(fabs(dele) > e_convergence || 0.5 * (gnorm_a + gnorm_b) > d_convergence );
+    }while(fabs(dele) > e_convergence || gnorm_a > d_convergence );
 
     if ( iter > maxiter ) {
         throw PsiException("Maximum number of iterations exceeded!",__FILE__,__LINE__);
@@ -573,7 +533,8 @@ double PolaritonicUKS::compute_energy() {
     outfile->Printf("    SCF iterations converged!\n");
     outfile->Printf("\n");
 
-    outfile->Printf("    * Polaritonic UKS total energy: %20.12lf\n",energy_);
+    outfile->Printf("    * Polaritonic RKS total energy: %20.12lf\n",energy_);
+    outfile->Printf("\n");
 
     // evaluate dipole self energy
     if ( n_photon_states_ > 1 ) {
@@ -593,7 +554,6 @@ double PolaritonicUKS::compute_energy() {
 
     // print orbital energies
     epsilon_a_->print();
-    epsilon_b_->print();
 
     return energy_;
 
@@ -609,7 +569,7 @@ double PolaritonicUKS::compute_energy() {
  * (the sum of the cavity Hamiltonian and the molecule->cavity
  * Hamiltonian) and returns its lowest eigenvalue (in z-direction)
 */
-double PolaritonicUKS::build_cavity_hamiltonian(){
+double PolaritonicRKS::build_cavity_hamiltonian(){
 
     // First, build the cavity dipole moment operator 
     // in the basis of photon number states ( n_photon_states_ )
@@ -708,24 +668,21 @@ double PolaritonicUKS::build_cavity_hamiltonian(){
     HCavity_x_->transform(eigvec);
     HCavityInteraction_x_->transform(eigvec);
     CavityDipole_x_->transform(eigvec);
-    //double ex = eigval->pointer()[0];
-    double ex = HCavity_x_->pointer()[0][0];
+    double ex = eigval->pointer()[0];
 
     // y
     HCavityTotal_y_->diagonalize(eigvec, eigval);
     HCavity_y_->transform(eigvec);
     HCavityInteraction_y_->transform(eigvec);
     CavityDipole_y_->transform(eigvec);
-    //double ey = eigval->pointer()[0];
-    double ey = HCavity_y_->pointer()[0][0];
+    double ey = eigval->pointer()[0];
 
     // z
     HCavityTotal_z_->diagonalize(eigvec, eigval);
     HCavity_z_->transform(eigvec);
     HCavityInteraction_z_->transform(eigvec);
     CavityDipole_z_->transform(eigvec);
-    //double ez = eigval->pointer()[0];
-    double ez = HCavity_z_->pointer()[0][0];
+    double ez = eigval->pointer()[0];
 
     if ( print_cavity_properties_ ) {
         outfile->Printf("\n");

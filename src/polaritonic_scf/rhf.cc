@@ -85,7 +85,10 @@ void PolaritonicRHF::common_init() {
 
     // this code only works in the coheren-state basis
     if ( !options_.get_bool("USE_COHERENT_STATE_BASIS") ) {
-        throw PsiException("polaritonic rhf only works within the coherent-state basis",__FILE__,__LINE__);
+        // but there is only a problem if we are relaxing the orbitals:
+        if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+            throw PsiException("polaritonic uhf can only relax orbitals within the coherent-state basis", __FILE__, __LINE__);
+        }
     }
 
 }
@@ -214,7 +217,14 @@ double PolaritonicRHF::compute_energy() {
     Da_->copy(Fprime);
 */
 
-    energy_  = enuc_ + average_electric_dipole_self_energy_;
+    if ( !options_.get_bool("QED_USE_RELAXED_ORBITALS") && !use_coherent_state_basis_ ) {
+        throw PsiException("QED_USE_RELAXED_ORBITALS false is not compatible with USE_COHERENT_STATE_BASIS false",__FILE__,__LINE__);
+    }
+
+    energy_  = enuc_;
+    if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+        energy_  += average_electric_dipole_self_energy_;
+    }
     energy_ += Da_->vector_dot(h);
     energy_ += Da_->vector_dot(Fa_);
 
@@ -272,43 +282,46 @@ double PolaritonicRHF::compute_energy() {
 
             update_cavity_terms();
 
-            // dipole self energy:
+            // dipole self energy ... ignore if not relaxing the orbitals
 
-            // e-n term 
-            oei->axpy(1.0,scaled_e_n_dipole_squared_);
+            if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
 
-            // one-electron part of e-e term 
-            oei->axpy(-1.0,quadrupole_scaled_sum_);
-            //Fa_->subtract(quadrupole_scaled_sum_);
+                // e-n term 
+                oei->axpy(1.0,scaled_e_n_dipole_squared_);
 
-            // two-electron part of e-e term (J)
-            double scaled_mu = Da_->vector_dot(dipole_scaled_sum_);
-            Fa_->axpy(2.0 * scaled_mu,dipole_scaled_sum_);
+                // one-electron part of e-e term 
+                oei->axpy(-1.0,quadrupole_scaled_sum_);
+                //Fa_->subtract(quadrupole_scaled_sum_);
 
-            // two-electron part of e-e term (K)
+                // two-electron part of e-e term (J)
+                double scaled_mu = Da_->vector_dot(dipole_scaled_sum_);
+                Fa_->axpy(2.0 * scaled_mu,dipole_scaled_sum_);
 
-            // Kpq += mu_pr * mu_qs * Drs
-            double ** dp  = dipole_scaled_sum_->pointer();
-            double ** dap = Da_->pointer();
-            double ** fap = Fa_->pointer();
+                // two-electron part of e-e term (K)
 
-            std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
-            double ** tp = tmp->pointer();
-            C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
-            C_DGEMM('n','t',nso_,nso_,nso_,-1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(fap[0][0]),nso_);
+                // Kpq += mu_pr * mu_qs * Drs
+                double ** dp  = dipole_scaled_sum_->pointer();
+                double ** dap = Da_->pointer();
+                double ** fap = Fa_->pointer();
 
-            //for (int p = 0; p < nso_; p++) {
-            //    for (int q = 0; q < nso_; q++) {
-            //        double dum = 0.0;
-            //        for (int r = 0; r < nso_; r++) {
-            //            for (int s = 0; s < nso_; s++) {
-            //                dum += dp[p][r] * dp[q][s] * dap[r][s];
-            //            }
-            //        }
-            //        fap[p][q] -= 0.5 * dum;
-            //    }
-            //}
+                std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
+                double ** tp = tmp->pointer();
+                C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+                C_DGEMM('n','t',nso_,nso_,nso_,-1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(fap[0][0]),nso_);
 
+                //for (int p = 0; p < nso_; p++) {
+                //    for (int q = 0; q < nso_; q++) {
+                //        double dum = 0.0;
+                //        for (int r = 0; r < nso_; r++) {
+                //            for (int s = 0; s < nso_; s++) {
+                //                dum += dp[p][r] * dp[q][s] * dap[r][s];
+                //            }
+                //        }
+                //        fap[p][q] -= 0.5 * dum;
+                //    }
+                //}
+
+            }
         }
         Fa_->add(oei);
 
@@ -316,7 +329,10 @@ double PolaritonicRHF::compute_energy() {
         C_DGEMM('n','t',nso_,nso_,nalpha_,1.0,&(Ca_->pointer()[0][0]),nso_,&(Ca_->pointer()[0][0]),nso_,0.0,&(Da_->pointer()[0][0]),nso_);
 
         // evaluate the current energy, E = D(H+F) + Enuc
-        energy_  = enuc_ + average_electric_dipole_self_energy_;
+        energy_  = enuc_;
+        if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+            energy_  += average_electric_dipole_self_energy_;
+        }
         energy_ += Da_->vector_dot(oei);
         energy_ += Da_->vector_dot(Fa_);
 

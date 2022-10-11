@@ -35,8 +35,11 @@ add_psi4_plugin(hilbert
     src/polaritonic_scf/rhf.cc
     src/polaritonic_scf/uhf.cc
     src/polaritonic_scf/rohf.cc
+    src/polaritonic_scf/rks.cc
     src/polaritonic_scf/uks.cc
     src/polaritonic_scf/rcis.cc
+    src/polaritonic_scf/rtddft.cc
+    src/polaritonic_scf/utddft.cc
     src/polaritonic_scf/uccsd.cc
 
     src/jellium/jellium_scf_solver.cc
@@ -57,6 +60,7 @@ add_psi4_plugin(hilbert
 
     src/misc/backtransform_tpdm.cc
     src/misc/davidson_solver.cc
+    src/misc/nonsym_davidson_solver.cc
     src/misc/diis.cc
     src/misc/lbfgs_helper.cc
     src/misc/integraltransform_sort_so_tpdm.cc
