@@ -441,7 +441,7 @@ void PolaritonicHF::update_cavity_terms(){
 */
 void PolaritonicHF::evaluate_dipole_self_energy() {
 
-    if ( use_coherent_state_basis_ || options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+    if ( use_coherent_state_basis_ ) {
 
         double one_electron = 0.0;
         double two_electron = 0.0;
@@ -537,8 +537,10 @@ void PolaritonicHF::evaluate_dipole_self_energy() {
         outfile->Printf("    1/2 ( lambda . <mu> )^2: %20.12lf\n",dse);
         outfile->Printf("\n");
 
-        // add dse to scf energy
-        energy_ += dse;
+        // add dse to scf energy. only necessary if not relaxing the orbitals and not using coherent state basis
+        if ( !options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+            energy_ += dse;
+        }
     }
 }
 
