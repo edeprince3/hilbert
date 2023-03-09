@@ -109,6 +109,9 @@ void PolaritonicHF::common_init() {
     // memory is from process::environment
     memory_ = Process::environment.get_memory();
 
+    // use coherent-state basis? 
+    use_coherent_state_basis_ = options_.get_bool("USE_COHERENT_STATE_BASIS");
+
     average_electric_dipole_self_energy_ = 0.0;
 
     // initialize cavity parameters
@@ -432,66 +435,113 @@ void PolaritonicHF::update_cavity_terms(){
  *
  * < ( lambda.[mu - <mu>] )^2 >  =  lambda^2 ( <mu^2> - <mu>^2 )
  *
+ * or not
+ *
+ * < (lambda.mu)^2 > = ( lambda . <mu> )^2
 */
 void PolaritonicHF::evaluate_dipole_self_energy() {
 
-    double one_electron = 0.0;
-    double two_electron = 0.0;
+    if ( use_coherent_state_basis_ || options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
 
-    if ( n_photon_states_ < 1 ) return;
+        double one_electron = 0.0;
+        double two_electron = 0.0;
 
-    // one-electron part if <mu^2> depends on quadrupole integrals: -Tr(D.q)
-    std::shared_ptr<Matrix> oei (new Matrix(quadrupole_scaled_sum_));
-    oei->scale(-1.0);
+        if ( n_photon_states_ < 1 ) return;
 
-    one_electron += Da_->vector_dot(oei);
-    if ( same_a_b_dens_ ) {
-        one_electron *= 2.0;
-    }else {
-        one_electron += Db_->vector_dot(oei);
+        // one-electron part if <mu^2> depends on quadrupole integrals: -Tr(D.q)
+        std::shared_ptr<Matrix> oei (new Matrix(quadrupole_scaled_sum_));
+        oei->scale(-1.0);
+
+        one_electron += Da_->vector_dot(oei);
+        if ( same_a_b_dens_ ) {
+            one_electron *= 2.0;
+        }else {
+            one_electron += Db_->vector_dot(oei);
+        }
+
+        // two-electron part of <mu^2> is just the exchange contribution
+        std::shared_ptr<Matrix> dipole_Ka (new Matrix(nso_,nso_));
+        std::shared_ptr<Matrix> dipole_Kb (new Matrix(nso_,nso_));
+
+        dipole_Ka->zero();
+        dipole_Kb->zero();
+
+        // Kpq += mu_pr * mu_qs * Drs
+        double ** dp  = dipole_scaled_sum_->pointer();
+        double ** dap = Da_->pointer();
+        double ** dbp = Db_->pointer();
+        double ** kap = dipole_Ka->pointer();
+        double ** kbp = dipole_Kb->pointer();
+
+        std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
+        double ** tp = tmp->pointer();
+
+        C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+        C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(kap[0][0]),nso_);
+
+        if ( !same_a_b_dens_ ) {
+            C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+            C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(kbp[0][0]),nso_);
+        }
+
+        two_electron -= 0.5 * Da_->vector_dot(dipole_Ka);
+        if ( same_a_b_dens_ ) {
+            two_electron *= 2.0;
+        }else {
+            two_electron -= 0.5 * Db_->vector_dot(dipole_Kb);
+        }
+
+        outfile->Printf("\n");
+        outfile->Printf("    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==\n");
+        outfile->Printf("\n");
+        outfile->Printf("    one-electron part;  %20.12lf\n",one_electron);
+        outfile->Printf("    two-electron part:  %20.12lf\n",two_electron);
+        outfile->Printf("    total:              %20.12lf\n",one_electron + two_electron);
+        outfile->Printf("\n");
+
+    }else{
+
+        // evaluate the electronic contribute to the molecule's dipole moment
+
+        e_dip_x_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
+        e_dip_y_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
+        e_dip_z_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+
+        if ( same_a_b_dens_ ) {
+            e_dip_x_ *= 2.0;
+            e_dip_y_ *= 2.0;
+            e_dip_z_ *= 2.0;
+        }else {
+            e_dip_x_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
+            e_dip_y_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
+            e_dip_z_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+        }
+
+        // evaluate the total dipole moment:
+
+        tot_dip_x_ = e_dip_x_ + nuc_dip_x_;
+        tot_dip_y_ = e_dip_y_ + nuc_dip_y_;
+        tot_dip_z_ = e_dip_z_ + nuc_dip_z_;
+
+        double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
+        double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
+        double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+
+        // 1/2 (lambda.<mu>)^2
+        double dse = lambda_x * tot_dip_x_ + lambda_y * tot_dip_y_ + lambda_z * tot_dip_z_;
+        dse *= 0.5 * dse;
+
+        outfile->Printf("\n");
+        outfile->Printf("    ==> dipole self-energy <==\n");
+        outfile->Printf("\n");
+        outfile->Printf("    1/2 ( lambda . <mu> )^2: %20.12lf\n",dse);
+        outfile->Printf("\n");
+
+        // add dse to scf energy
+        energy_ += dse;
     }
-
-    // two-electron part of <mu^2> is just the exchange contribution
-    std::shared_ptr<Matrix> dipole_Ka (new Matrix(nso_,nso_));
-    std::shared_ptr<Matrix> dipole_Kb (new Matrix(nso_,nso_));
-
-    dipole_Ka->zero();
-    dipole_Kb->zero();
-
-    // Kpq += mu_pr * mu_qs * Drs
-    double ** dp  = dipole_scaled_sum_->pointer();
-    double ** dap = Da_->pointer();
-    double ** dbp = Db_->pointer();
-    double ** kap = dipole_Ka->pointer();
-    double ** kbp = dipole_Kb->pointer();
-
-    std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
-    double ** tp = tmp->pointer();
-
-    C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
-    C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(kap[0][0]),nso_);
-
-    if ( !same_a_b_dens_ ) {
-        C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
-        C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(kbp[0][0]),nso_);
-    }
-
-    two_electron -= 0.5 * Da_->vector_dot(dipole_Ka);
-    if ( same_a_b_dens_ ) {
-        two_electron *= 2.0;
-    }else {
-        two_electron -= 0.5 * Db_->vector_dot(dipole_Kb);
-    }
-
-    outfile->Printf("\n");
-    outfile->Printf("    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==\n");
-    outfile->Printf("\n");
-    outfile->Printf("    one-electron part;  %20.12lf\n",one_electron);
-    outfile->Printf("    two-electron part:  %20.12lf\n",two_electron);
-    outfile->Printf("    total:              %20.12lf\n",one_electron + two_electron);
-    outfile->Printf("\n");
-
 }
+
 /*
  *
  * evaluate_dipole_variance():

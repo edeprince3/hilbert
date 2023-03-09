@@ -216,9 +216,9 @@ double PolaritonicUHF::compute_energy() {
     Da_->copy(Fprime);
 */
 
-    if ( !options_.get_bool("QED_USE_RELAXED_ORBITALS") && !use_coherent_state_basis_ ) {
-        throw PsiException("QED_USE_RELAXED_ORBITALS false is not compatible with USE_COHERENT_STATE_BASIS false",__FILE__,__LINE__);
-    }
+    //if ( !options_.get_bool("QED_USE_RELAXED_ORBITALS") && !use_coherent_state_basis_ ) {
+    //    throw PsiException("QED_USE_RELAXED_ORBITALS false is not compatible with USE_COHERENT_STATE_BASIS false",__FILE__,__LINE__);
+    //}
 
     if (options_.get_bool("GUESS_MIX")) {
         if (Ca_->nirrep() == 1) {
@@ -428,8 +428,6 @@ double PolaritonicUHF::compute_energy() {
     outfile->Printf("    SCF iterations converged!\n");
     outfile->Printf("\n");
 
-    outfile->Printf("    * Polaritonic UHF total energy: %20.12lf\n",energy_);
-
     // evaluate dipole self energy
     if ( n_photon_states_ > 1 ) {
         evaluate_dipole_self_energy();
@@ -438,6 +436,8 @@ double PolaritonicUHF::compute_energy() {
     evaluate_dipole_variance();
 
     compute_s2();
+
+    outfile->Printf("    * Polaritonic UHF total energy: %20.12lf\n",energy_);
 
     Process::environment.globals["SCF TOTAL ENERGY"] = energy_;
 
