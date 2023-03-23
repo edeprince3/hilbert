@@ -127,10 +127,11 @@ void v2RDMSolver::GetIntegrals() {
         offset += ( nmopi_[h] - frzvpi_[h] ) * ( nmopi_[h] - frzvpi_[h] + 1 ) / 2;
     }
 
-    if ( !is_df_ && !is_hubbard_ && !is_external_hamiltonian_ ) {
+    if ( !is_df_ && !is_hubbard_ && !is_external_hamiltonian_ && options_.get_str("SDP_TYPE") != "SOS" ) {
         // read tei's from disk
         GetTEIFromDisk();
     }
+
     RepackIntegrals();
 
 }
@@ -140,7 +141,12 @@ void v2RDMSolver::RepackIntegrals(){
 
     FrozenCoreEnergy();
 
-    double * c_p = c->pointer();
+    double * c_p;
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+        c_p = c->pointer();
+    }else {
+        c_p = b->pointer(); // constraint vector holds integrals in SOS
+    }
 
     // two-electron part
     long int na = nalpha_ - nrstc_ - nfrzc_;
@@ -191,10 +197,140 @@ void v2RDMSolver::RepackIntegrals(){
                 double dum1 = TEI(ii,kk,jj,ll,hik);
                 double dum2 = TEI(ii,ll,jj,kk,hil);
 
-                c_p[d2aaoff[h] + ij*gems_aa[h]+kl]    = dum1 - dum2;
-                c_p[d2bboff[h] + ij*gems_aa[h]+kl]    = dum1 - dum2;
+                c_p[d2aaoff[h] + ij*gems_aa[h]+kl]    = (dum1 - dum2);
+                c_p[d2bboff[h] + ij*gems_aa[h]+kl]    = (dum1 - dum2);
             }
         }
+    }
+
+    if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
+
+        // adjust b such that it contains K2 rather than the raw integrals
+        for (int h = 0; h < nirrep_; h++) {
+            for (long int ij = 0; ij < gems_ab[h]; ij++) {
+                long int i = bas_ab_sym[h][ij][0];
+                long int j = bas_ab_sym[h][ij][1];
+
+                long int ii = full_basis[i];
+                long int jj = full_basis[j];
+
+                int hi = symmetry[i];
+                int hj = symmetry[j];
+
+                for (long int kl = 0; kl < gems_ab[h]; kl++) {
+                    long int k = bas_ab_sym[h][kl][0];
+                    long int l = bas_ab_sym[h][kl][1];
+
+                    long int kk = full_basis[k];
+                    long int ll = full_basis[l];
+
+                    int hik = SymmetryPair(symmetry[i],symmetry[k]);
+
+                    int hk = symmetry[k];
+                    int hl = symmetry[l];
+
+                    int iii = i - pitzer_offset[hi];
+                    int kkk = k - pitzer_offset[hk];
+                    int jjj = j - pitzer_offset[hj];
+                    int lll = l - pitzer_offset[hl];
+
+
+                    if ( j == l ) {
+                        c_p[d2aboff[h] + ij*gems_ab[h]+kl] += 1.0 / (na + nb - 1) * c_p[d1aoff[hi] + iii * amopi_[hi] + kkk];
+                    }
+                    if ( i == k ) {
+                        c_p[d2aboff[h] + ij*gems_ab[h]+kl] += 1.0 / (na + nb - 1) * c_p[d1boff[hj] + jjj * amopi_[hj] + lll];
+                    }
+
+                    //c_p[d2aboff[h] + ij*gems_ab[h]+kl] *= 0.5;
+
+                }
+            }
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            for (long int ij = 0; ij < gems_aa[h]; ij++) {
+                long int i = bas_aa_sym[h][ij][0];
+                long int j = bas_aa_sym[h][ij][1];
+
+                long int ii = full_basis[i];
+                long int jj = full_basis[j];
+
+                int hi = symmetry[i];
+                int hj = symmetry[j];
+
+                for (long int kl = 0; kl < gems_aa[h]; kl++) {
+                    long int k = bas_aa_sym[h][kl][0];
+                    long int l = bas_aa_sym[h][kl][1];
+
+                    long int kk = full_basis[k];
+                    long int ll = full_basis[l];
+
+                    int hik = SymmetryPair(symmetry[i],symmetry[k]);
+
+                    long int ijb = ibas_ab_sym[h][i][j];
+                    long int jib = ibas_ab_sym[h][j][i];
+
+                    long int klb = ibas_ab_sym[h][k][l];
+                    long int lkb = ibas_ab_sym[h][l][k];
+
+                    int hk = symmetry[k];
+                    int hl = symmetry[l];
+
+                    int iii = i - pitzer_offset[hi];
+                    int kkk = k - pitzer_offset[hk];
+                    int jjj = j - pitzer_offset[hj];
+                    int lll = l - pitzer_offset[hl];
+
+                    //c_p[d2aaoff[h] + ij*gems_aa[h]+kl] = c_p[d2aboff[h] + ijb*gems_ab[h] + klb] - c_p[d2aboff[h] + ijb*gems_ab[h] + lkb];
+                    //c_p[d2bboff[h] + ij*gems_aa[h]+kl] = c_p[d2aboff[h] + ijb*gems_ab[h] + klb] - c_p[d2aboff[h] + ijb*gems_ab[h] + lkb];
+                    if ( j == l ) {
+                        c_p[d2aaoff[h] + ij*gems_aa[h]+kl] += 1.0 / (na + nb - 1) * c_p[d1aoff[hi] + iii * amopi_[hi] + kkk];
+                        c_p[d2bboff[h] + ij*gems_aa[h]+kl] += 1.0 / (na + nb - 1) * c_p[d1boff[hi] + iii * amopi_[hi] + kkk];
+                    }
+                    if ( i == k ) {
+                        c_p[d2aaoff[h] + ij*gems_aa[h]+kl] += 1.0 / (na + nb - 1) * c_p[d1aoff[hj] + jjj * amopi_[hj] + lll];
+                        c_p[d2bboff[h] + ij*gems_aa[h]+kl] += 1.0 / (na + nb - 1) * c_p[d1boff[hj] + jjj * amopi_[hj] + lll];
+                    }
+                    if ( j == k ) {
+                        c_p[d2aaoff[h] + ij*gems_aa[h]+kl] -= 1.0 / (na + nb - 1) * c_p[d1aoff[hi] + iii * amopi_[hi] + lll];
+                        c_p[d2bboff[h] + ij*gems_aa[h]+kl] -= 1.0 / (na + nb - 1) * c_p[d1boff[hi] + iii * amopi_[hi] + lll];
+                    }
+                    if ( i == l ) {
+                        c_p[d2aaoff[h] + ij*gems_aa[h]+kl] -= 1.0 / (na + nb - 1) * c_p[d1aoff[hj] + jjj * amopi_[hj] + kkk];
+                        c_p[d2bboff[h] + ij*gems_aa[h]+kl] -= 1.0 / (na + nb - 1) * c_p[d1boff[hj] + jjj * amopi_[hj] + kkk];
+                    }
+
+                }
+            }
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < amopi_[h] * amopi_[h]; ij++) {
+                c_p[d1aoff[h] + ij] = 0.0;
+                c_p[d1boff[h] + ij] = 0.0;
+            }
+        }
+
+        //b->scale(-1.0);
+/*
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ijkl = 0; ijkl < gems_ab[h] * gems_ab[h]; ijkl++) {
+                b->pointer()[d2aboff[h] + ijkl] *= na*nb;
+            } 
+            for (int ijkl = 0; ijkl < gems_aa[h] * gems_aa[h]; ijkl++) {
+                b->pointer()[d2aaoff[h] + ijkl] *= na*(na-1)/2;
+            } 
+            for (int ijkl = 0; ijkl < gems_aa[h] * gems_aa[h]; ijkl++) {
+                b->pointer()[d2bboff[h] + ijkl] *= nb*(nb-1)/2;
+            } 
+            for (int ij = 0; ij < amopi_[h] * amopi_[h]; ij++) {
+                b->pointer()[d1aoff[h] + ij] *= na;
+            } 
+            for (int ij = 0; ij < amopi_[h] * amopi_[h]; ij++) {
+                b->pointer()[d1boff[h] + ij] *= nb;
+            } 
+        }
+*/
+        
     }
 }
 
@@ -231,7 +367,12 @@ void v2RDMSolver::FrozenCoreEnergy() {
         offset3 += ( nmopi_[h] - frzvpi_[h] ) * ( nmopi_[h] - frzvpi_[h] + 1 ) / 2;
     }
 
-    double * c_p = c->pointer();
+    double * c_p;
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+        c_p = c->pointer();
+    }else {
+        c_p = b->pointer(); // constraint vector holds integrals in SOS
+    }
 
     // adjust one-electron integrals for core repulsion contribution
     offset = 0;
@@ -271,7 +412,6 @@ void v2RDMSolver::FrozenCoreEnergy() {
         offset += nmopi_[h] - frzvpi_[h];
         offset3 += ( nmopi_[h] - frzvpi_[h] ) * ( nmopi_[h] - frzvpi_[h] + 1 ) / 2;
     }
-
 }
 
 double v2RDMSolver::TEI(int i, int j, int k, int l, int h) {
@@ -282,7 +422,7 @@ double v2RDMSolver::TEI(int i, int j, int k, int l, int h) {
         //dum = C_DDOT(nQ_,Qmo_ + nQ_*INDEX(i,j),1,Qmo_+nQ_*INDEX(k,l),1);
         dum = C_DDOT(nQ_,Qmo_ + INDEX(i,j),(nmo_-nfrzv_)*(nmo_-nfrzv_+1)/2,Qmo_+INDEX(k,l),(nmo_-nfrzv_)*(nmo_-nfrzv_+1)/2);
 
-    }else if ( is_hubbard_ ) {
+    }else if ( is_hubbard_ && options_.get_str("SDP_SOLVER") != "SOS" ) {
 
         if ( i == j && k == l  && i == k ) {
             dum = options_.get_double("HUBBARD_U");
@@ -290,7 +430,7 @@ double v2RDMSolver::TEI(int i, int j, int k, int l, int h) {
             dum = 0.0;
         }
 
-    }else if ( is_external_hamiltonian_ ) {
+    }else if ( is_external_hamiltonian_ && options_.get_str("SDP_SOLVER") != "SOS" ) {
 
         double * c_p = c->pointer();
         int ik = ibas_ab_sym[0][i][k];

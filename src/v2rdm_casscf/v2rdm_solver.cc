@@ -420,7 +420,7 @@ void  v2RDMSolver::common_init(){
 
         sdp_ = (std::shared_ptr<libsdp::SDPSolver>)(new libsdp::BPSDPSolver(n_primal_,n_dual_,sdp_options));
 
-    }else if ( options_.get_str("SDP_SOLVER") == "RRSDP" ) {
+    }else if ( options_.get_str("SDP_SOLVER") == "RRSDP" || options_.get_str("SDP_SOLVER") == "SOS" ) {
 
         libsdp::SDPOptions sdp_options;
         sdp_options.sdp_objective_convergence = options_.get_double("E_CONVERGENCE");
@@ -1259,7 +1259,6 @@ int v2RDMSolver::TotalSym(int i,int j,int k, int l) {
 // compute the energy!
 double v2RDMSolver::compute_energy() {
 
-
     double start_total_time = omp_get_wtime();
 
     // print guess orbitals in molden format
@@ -1319,7 +1318,7 @@ double v2RDMSolver::compute_energy() {
     libsdp::SDPProgressMonitorFunction sdp_monitor;
     if ( options_.get_str("SDP_SOLVER") == "BPSDP" ) {
         sdp_monitor = bpsdp_monitor;
-    }else if ( options_.get_str("SDP_SOLVER") == "RRSDP" ) {
+    }else if ( options_.get_str("SDP_SOLVER") == "RRSDP" || options_.get_str("SDP_SOLVER") == "SOS" ) {
         sdp_monitor = rrsdp_monitor;
     }
 
@@ -1353,6 +1352,14 @@ double v2RDMSolver::compute_energy() {
         print_header();
         sdp_->solve(x->pointer(), b->pointer(), c->pointer(), dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, sdp_monitor, (void*)this);
 
+        std::shared_ptr<Vector> Ax (new Vector(n_dual_));
+        //offset = 0;
+        bpsdp_Au(Ax->pointer(),x->pointer());
+        b->print();
+        Ax->print();
+        Ax->subtract(b);
+        Ax->print();
+
         if ( options_.get_bool("OPTIMIZE_ORBITALS") && !is_hubbard_  && !is_external_hamiltonian_) {
     
             double start = omp_get_wtime();
@@ -1380,37 +1387,46 @@ double v2RDMSolver::compute_energy() {
     outfile->Printf("      v2RDM iterations converged!\n");
     outfile->Printf("\n");
 
-    // evaluate spin squared
     double s2 = 0.0;
-    double * x_p = x->pointer();
-    for (int i = 0; i < amo_; i++){
-        for (int j = 0; j < amo_; j++){
-            int h = SymmetryPair(symmetry[i],symmetry[j]);
-            int ij = ibas_ab_sym[h][i][j];
-            int ji = ibas_ab_sym[h][j][i];
-            s2 += x_p[d2aboff[h] + ij*gems_ab[h]+ji];
-        }
-    }
     double na = nalpha_ - nfrzc_ - nrstc_;
     double nb = nbeta_ - nfrzc_ - nrstc_;
     double ms = (multiplicity_ - 1.0)/2.0;
+    double * x_p = x->pointer();
+
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+
+        // evaluate spin squared
+        for (int i = 0; i < amo_; i++){
+            for (int j = 0; j < amo_; j++){
+                int h = SymmetryPair(symmetry[i],symmetry[j]);
+                int ij = ibas_ab_sym[h][i][j];
+                int ji = ibas_ab_sym[h][j][i];
+                s2 += x_p[d2aboff[h] + ij*gems_ab[h]+ji];
+            }
+        }
+    }
 
     // set energy for wavefunction
     double energy_primal = C_DDOT(n_primal_,c->pointer(),1,x->pointer(),1);
     energy_ = energy_primal+enuc_+efzc_;
 
     // push final transformation matrix onto Ca_ and Cb_
-    UpdateTransformationMatrix();
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+        UpdateTransformationMatrix();
+    }
 
     energy_primal = C_DDOT(n_primal_,c->pointer(),1,x->pointer(),1);
 
     // break down energy into one- and two-electron components
 
-    outfile->Printf("      na:                        %20.6lf\n", na);
-    outfile->Printf("      nb:                        %20.6lf\n", nb);
-    outfile->Printf("      v2RDM total spin [S(S+1)]: %20.6lf\n", 0.5 * (na + nb) + ms*ms - s2);
-    outfile->Printf("\n");
-    if ( !is_hubbard_ && !is_external_hamiltonian_ ) {
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+        outfile->Printf("      na:                        %20.6lf\n", na);
+        outfile->Printf("      nb:                        %20.6lf\n", nb);
+        outfile->Printf("      v2RDM total spin [S(S+1)]: %20.6lf\n", 0.5 * (na + nb) + ms*ms - s2);
+        outfile->Printf("\n");
+    }
+
+    if ( !is_hubbard_ && !is_external_hamiltonian_  &&  options_.get_str("SDP_SOLVER") != "SOS" ) {
         double kinetic, potential, two_electron_energy;
         EnergyByComponent(kinetic,potential,two_electron_energy);
 
@@ -1418,7 +1434,7 @@ double v2RDMSolver::compute_energy() {
         outfile->Printf("      Two-Electron Energy:               %20.12lf\n",two_electron_energy);
         outfile->Printf("      Kinetic Energy:                    %20.12lf\n",kinetic);
         outfile->Printf("      Electron-Nuclear Potential Energy: %20.12lf\n",potential);
-    }else {
+    }else if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
         double two_electron_energy = 0.0;
         for (int h = 0; h < nirrep_; h++) {
             two_electron_energy += C_DDOT(gems_ab[h] * gems_ab[h], x_p + d2aboff[h],1, c->pointer() + d2aboff[h], 1);
@@ -1434,6 +1450,9 @@ double v2RDMSolver::compute_energy() {
         outfile->Printf("      One-Electron Energy:               %20.12lf\n",one_electron_energy);
     }
 
+    if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
+        energy_primal *= -1;
+    }
     outfile->Printf("\n");
     outfile->Printf("    * v2RDM total energy:                %20.12lf\n",energy_primal+enuc_+efzc_);
     outfile->Printf("\n");
@@ -1441,7 +1460,7 @@ double v2RDMSolver::compute_energy() {
     Process::environment.globals["CURRENT ENERGY"]     = energy_primal+enuc_+efzc_;
     Process::environment.globals["v2RDM TOTAL ENERGY"] = energy_primal+enuc_+efzc_;
 
-    if ( options_.get_bool("SEMICANONICALIZE_ORBITALS") ) {
+    if ( options_.get_bool("SEMICANONICALIZE_ORBITALS") && options_.get_str("SDP_SOLVER") != "SOS" ) {
         if ( options_.get_str("DERTYPE") == "FIRST" ) {
             outfile->Printf("\n");
             outfile->Printf("    <<< WARNING >>> skipping orbital semicanonicalization (blame gradients)\n");
@@ -1464,52 +1483,76 @@ double v2RDMSolver::compute_energy() {
           options_.get_bool("EXTENDED_KOOPMANS") ) {
 
         if ( !options_.get_bool("PRINT_RDMS") ) { // protect function printing rdms not transformed to no basis
-            ComputeNaturalOrbitals();
+            if ( options_.get_str("SDP_SOLVER") != "SOS" ) { 
+                ComputeNaturalOrbitals();
+            }
         }  
 
     }
     if ( options_.get_bool("MOLDEN_WRITE") && !is_hubbard_ && !is_external_hamiltonian_ ) {
-        WriteMoldenFile();
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) { 
+            WriteMoldenFile();
+        }
     }
     if ( options_.get_bool("EXTENDED_KOOPMANS") && !is_hubbard_ && !is_external_hamiltonian_ ) {
-        ExtendedKoopmans();
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) { 
+            ExtendedKoopmans();
+        }
     }
     if ( options_.get_bool("FCIDUMP") && !is_hubbard_ && !is_external_hamiltonian_ ) {
-        FCIDUMP();
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) { 
+            FCIDUMP();
+        }
     }
     if ( options_.get_bool("PRINT_RDMS") ) {
-        print_rdms();
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) { 
+            print_rdms();
+        }
     }
 
     // compute and print natural orbital occupation numbers 
-    PrintNaturalOrbitalOccupations();
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) { 
+        PrintNaturalOrbitalOccupations();
+    }
 
     // push OPDM onto wavefunction object
-    FinalizeOPDM();
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) { 
+        FinalizeOPDM();
+    }
 
     // write tpdm to disk?
     if ( options_.get_bool("TPDM_WRITE") ) {
-        WriteActiveTPDM();
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) { 
+            WriteActiveTPDM();
+        }
     }
     if ( options_.get_bool("TPDM_WRITE_FULL") ) {
-        WriteTPDM();
-        //ReadTPDM();
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) { 
+            WriteTPDM();
+            //ReadTPDM();
+        }
     }
     if ( options_.get_bool("TPDM_WRITE_SPIN_FREE") ) {
-        WriteTPDMSpinFree();
-        //ReadTPDM();
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) { 
+            WriteTPDMSpinFree();
+            //ReadTPDM();
+        }
     }
     if ( options_.get_bool("OPDM_WRITE_FULL") ) {
-        WriteOPDM();
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) { 
+            WriteOPDM();
+        }
     }
     // write 3-particle density matrix to disk?
     if ( options_.get_bool("3PDM_WRITE") && options_.get_bool("CONSTRAIN_D3")) {
-        WriteActive3PDM();
-        //Read3PDM();
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) { 
+            WriteActive3PDM();
+            //Read3PDM();
+        }
     }
 
     // for derivatives:
-    if ( options_.get_str("DERTYPE") == "FIRST" ) {
+    if ( options_.get_str("DERTYPE") == "FIRST" && options_.get_str("SDP_SOLVER") != "SOS" ) {
 
         if ( options_.get_bool("NAT_ORBS") || options_.get_bool("FCIDUMP") || options_.get_bool("EXTENDED_KOOPMANS") ) {
             throw PsiException("analytic gradients require nat_orbs false",__FILE__,__LINE__);
@@ -1528,7 +1571,7 @@ double v2RDMSolver::compute_energy() {
         // push orbital lagrangian onto wave function
         OrbitalLagrangian();
 
-    }else if ( options_.get_bool("WRITE_CHECKPOINT_FILE") ) {
+    }else if ( options_.get_bool("WRITE_CHECKPOINT_FILE") && options_.get_str("SDP_SOLVER") != "SOS" ) {
 
         WriteCheckpointFile();
 
@@ -1813,7 +1856,7 @@ void v2RDMSolver::Guess(){
     double* x_p = x->pointer();
     memset((void*)x_p,'\0',n_primal_*sizeof(double));
 
-    if ( options_.get_str("TPDM_GUESS") == "HF" ) {
+    if ( options_.get_str("TPDM_GUESS") == "HF" && options_.get_str("SDP_SOLVER") != "SOS" ) {
 
         // Hartree-Fock guess for D2, D1, Q1, Q2, and G2
 
@@ -1906,19 +1949,23 @@ void v2RDMSolver::Guess(){
 
     }
 
-    if ( constrain_q2_ ) {
-        Q2_constraints_guess(x_p);
-    }
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
 
-    if ( constrain_g2_ ) {
-        G2_constraints_guess(x_p);
-    }
+        if ( constrain_q2_ ) {
+            Q2_constraints_guess(x_p);
+        }
 
-    if ( constrain_t1_ ) {
-        T1_constraints_guess(x_p);
-    }
-    if ( constrain_t2_ ) {
-        T2_constraints_guess(x_p);
+        if ( constrain_g2_ ) {
+            G2_constraints_guess(x_p);
+        }
+
+        if ( constrain_t1_ ) {
+            T1_constraints_guess(x_p);
+        }
+        if ( constrain_t2_ ) {
+            T2_constraints_guess(x_p);
+        }
+
     }
 
 }
@@ -1937,10 +1984,31 @@ void v2RDMSolver::BuildConstraints(){
     double n = na + nb;
     double trd    = n*(n-1.0);
 
-    b->zero();
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+        // in SOS, constraint vector should contain the integrals ... this should have been done in GetIntegrals() ... don't zero b for SOS
+        b->zero();
+    }
     double* b_p = b->pointer();
 
     offset = 0;
+
+    if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
+
+        // c vector should give c.x = E, with x[0] = r[0]*r[0]
+        c->zero();
+        //c->pointer()[sos_e1a_off] = -1.0 * na;
+        //c->pointer()[sos_e1b_off] = -1.0 * nb;
+        //c->pointer()[sos_e2ab_off] = 1.0 * (na + nb)*(na + nb - 1)/2;
+        c->pointer()[sos_e2ab_off] = na*nb;
+        c->pointer()[sos_e2aa_off] = 1.0 * na*(na-1)/2;
+        c->pointer()[sos_e2bb_off] = 1.0 * nb*(nb-1)/2;
+
+        // constraint vector should contain the integrals ... this should have been done in GetIntegrals()
+        //b->scale(-1.0);
+
+        return;
+    }
+
 
     ///Trace of D2(s=0,ms=0) and D2(s=1,ms=0)
     if ( constrain_sz_ ) {
@@ -3069,7 +3137,10 @@ void v2RDMSolver::bpsdp_Au(double* A, double* u){
     memset((void*)A,'\0',n_dual_*sizeof(double));
 
     offset = 0;
-    D2_constraints_Au(A,u);
+
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+        D2_constraints_Au(A,u);
+    }
 
     if ( constrain_spin_ ) {
         Spin_constraints_Au(A,u);
@@ -3080,7 +3151,11 @@ void v2RDMSolver::bpsdp_Au(double* A, double* u){
     }
 
     if ( constrain_g2_ ) {
-        G2_constraints_Au(A,u);
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+            G2_constraints_Au(A,u);
+        }else {
+            G2_constraints_Au_sos(A,u);
+        }
     }
 
     if ( constrain_t1_ ) {
@@ -3127,7 +3202,10 @@ void v2RDMSolver::bpsdp_ATu(double * A, double * u){
     memset((void*)A,'\0',n_primal_*sizeof(double));
 
     offset = 0;
-    D2_constraints_ATu(A,u);
+
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+        D2_constraints_ATu(A,u);
+    }
 
     if ( constrain_spin_ ) {
         Spin_constraints_ATu(A,u);
@@ -3138,7 +3216,11 @@ void v2RDMSolver::bpsdp_ATu(double * A, double * u){
     }
 
     if ( constrain_g2_ ) {
-        G2_constraints_ATu(A,u);
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+            G2_constraints_ATu(A,u);
+        }else {
+            G2_constraints_ATu_sos(A,u);
+        }
     }
 
     if ( constrain_t1_ ) {
@@ -3291,6 +3373,10 @@ void v2RDMSolver::PackSpatialDensity() {
 
 void v2RDMSolver::RotateOrbitals(){
 
+    if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
+        throw PsiException("orbital rotations disabled for SDP_SOLVER = SOS", __FILE__, __LINE__);
+    }
+
     PackSpatialDensity();
 
     if ( orbopt_data_[8] > 0 ) {
@@ -3365,6 +3451,15 @@ void v2RDMSolver::RotateOrbitals(){
 void v2RDMSolver::determine_n_primal() {
 
     n_primal_ = 0;
+
+    if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
+        n_primal_ += 1; // sos_e2ab_off
+        n_primal_ += 1; // sos_e2aa_off
+        n_primal_ += 1; // sos_e2bb_off
+        //n_primal_ += 1; // the a one-electron energy
+        //n_primal_ += 1; // the b one-electron energy
+    }
+
     for ( int h = 0; h < nirrep_; h++) {
         n_primal_ += gems_ab[h]*gems_ab[h]; // D2ab
     }
@@ -3377,18 +3472,24 @@ void v2RDMSolver::determine_n_primal() {
     for ( int h = 0; h < nirrep_; h++) {
         n_primal_ += amopi_[h]*amopi_[h]; // D1a
         n_primal_ += amopi_[h]*amopi_[h]; // D1b
-        n_primal_ += amopi_[h]*amopi_[h]; // Q1b
-        n_primal_ += amopi_[h]*amopi_[h]; // Q1a
     }
-    if ( constrain_spin_ && nalpha_ == nbeta_ ) {
+
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
         for ( int h = 0; h < nirrep_; h++) {
-            n_primal_ += gems_ab[h] * gems_ab[h]; // D200
+            n_primal_ += amopi_[h]*amopi_[h]; // Q1b
+            n_primal_ += amopi_[h]*amopi_[h]; // Q1a
         }
-    }else if ( constrain_spin_ ) {
-        for ( int h = 0; h < nirrep_; h++) {
-            n_primal_ += 4 * gems_ab[h] * gems_ab[h]; // D200
+        if ( constrain_spin_ && nalpha_ == nbeta_ ) {
+            for ( int h = 0; h < nirrep_; h++) {
+                n_primal_ += gems_ab[h] * gems_ab[h]; // D200
+            }
+        }else if ( constrain_spin_ ) {
+            for ( int h = 0; h < nirrep_; h++) {
+                n_primal_ += 4 * gems_ab[h] * gems_ab[h]; // D200
+            }
         }
     }
+
     if ( constrain_q2_ ) {
         for ( int h = 0; h < nirrep_; h++) {
             n_primal_ += gems_ab[h]*gems_ab[h]; // Q2ab
@@ -3523,6 +3624,17 @@ void v2RDMSolver::determine_n_primal() {
 void v2RDMSolver::determine_n_dual() {
 
     n_dual_ = 0;
+
+    if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
+        for ( int h = 0; h < nirrep_; h++) {
+            n_dual_ += gems_ab[h]*gems_ab[h]; // H2ab
+            n_dual_ += gems_aa[h]*gems_aa[h]; // H2aa
+            n_dual_ += gems_aa[h]*gems_aa[h]; // H2bb
+            n_dual_ += amopi_[h]*amopi_[h]; // H1a
+            n_dual_ += amopi_[h]*amopi_[h]; // H1b
+        }
+        return;
+    }
 
     if ( constrain_sz_ ) {
         n_dual_ += 1;                   // Tr(D2ab)
@@ -3793,6 +3905,12 @@ void v2RDMSolver::set_primal_offsets() {
     d2aaoff = (int*)malloc(nirrep_*sizeof(int));
     d2bboff = (int*)malloc(nirrep_*sizeof(int));
     d200off = (int*)malloc(nirrep_*sizeof(int));
+
+    d1aoff = (int*)malloc(nirrep_*sizeof(int));
+    d1boff = (int*)malloc(nirrep_*sizeof(int));
+    q1aoff = (int*)malloc(nirrep_*sizeof(int));
+    q1boff = (int*)malloc(nirrep_*sizeof(int));
+
     for (int h = 0; h < nirrep_; h++) {
         d2aboff[h] = offset; 
         offset += gems_ab[h]*gems_ab[h];
@@ -3811,26 +3929,25 @@ void v2RDMSolver::set_primal_offsets() {
         dimensions_.push_back(gems_aa[h]);
         rank_.push_back(gems_aa[h]);
     }
-    if ( constrain_spin_ && nalpha_ == nbeta_ ) {
-        for (int h = 0; h < nirrep_; h++) {
-            d200off[h] = offset; 
-            offset += gems_ab[h]*gems_ab[h];
-            dimensions_.push_back(gems_ab[h]);
-            rank_.push_back(gems_ab[h]);
-        }
-    } else if ( constrain_spin_ ) {
-        for (int h = 0; h < nirrep_; h++) {
-            d200off[h] = offset; 
-            offset += 4*gems_ab[h]*gems_ab[h];
-            dimensions_.push_back(2*gems_ab[h]);
-            rank_.push_back(2*gems_ab[h]);
+
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+        if ( constrain_spin_ && nalpha_ == nbeta_ ) {
+            for (int h = 0; h < nirrep_; h++) {
+                d200off[h] = offset; 
+                offset += gems_ab[h]*gems_ab[h];
+                dimensions_.push_back(gems_ab[h]);
+                rank_.push_back(gems_ab[h]);
+            }
+        } else if ( constrain_spin_ ) {
+            for (int h = 0; h < nirrep_; h++) {
+                d200off[h] = offset; 
+                offset += 4*gems_ab[h]*gems_ab[h];
+                dimensions_.push_back(2*gems_ab[h]);
+                rank_.push_back(2*gems_ab[h]);
+            }
         }
     }
 
-    d1aoff = (int*)malloc(nirrep_*sizeof(int));
-    d1boff = (int*)malloc(nirrep_*sizeof(int));
-    q1aoff = (int*)malloc(nirrep_*sizeof(int));
-    q1boff = (int*)malloc(nirrep_*sizeof(int));
     for (int h = 0; h < nirrep_; h++) {
         d1aoff[h] = offset; 
         offset += amopi_[h]*amopi_[h];
@@ -3843,17 +3960,20 @@ void v2RDMSolver::set_primal_offsets() {
         dimensions_.push_back(amopi_[h]);
         rank_.push_back(amopi_[h]);
     }
-    for (int h = 0; h < nirrep_; h++) {
-        q1aoff[h] = offset; 
-        offset += amopi_[h]*amopi_[h];
-        dimensions_.push_back(amopi_[h]);
-        rank_.push_back(amopi_[h]);
-    }
-    for (int h = 0; h < nirrep_; h++) {
-        q1boff[h] = offset; 
-        offset += amopi_[h]*amopi_[h];
-        dimensions_.push_back(amopi_[h]);
-        rank_.push_back(amopi_[h]);
+
+    if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+        for (int h = 0; h < nirrep_; h++) {
+            q1aoff[h] = offset; 
+            offset += amopi_[h]*amopi_[h];
+            dimensions_.push_back(amopi_[h]);
+            rank_.push_back(amopi_[h]);
+        }
+        for (int h = 0; h < nirrep_; h++) {
+            q1boff[h] = offset; 
+            offset += amopi_[h]*amopi_[h];
+            dimensions_.push_back(amopi_[h]);
+            rank_.push_back(amopi_[h]);
+        }
     }
 
     if ( constrain_q2_ ) {
@@ -4135,6 +4255,42 @@ void v2RDMSolver::set_primal_offsets() {
             gpcoff.push_back(my_gpcoff);
         }
     }
+
+    if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
+
+        // the one-electron energy
+/*(
+        sos_e1a_off = offset; 
+        offset++;
+        dimensions_.push_back(1);
+        rank_.push_back(1);
+
+        sos_e1b_off = offset; 
+        offset++;
+        dimensions_.push_back(1);
+        rank_.push_back(1);
+*/
+
+        // the two-electron energy
+        sos_e2ab_off = offset; 
+        offset++;
+        dimensions_.push_back(1);
+        rank_.push_back(1);
+
+        sos_e2aa_off = offset; 
+        offset++;
+        dimensions_.push_back(1);
+        rank_.push_back(1);
+
+        sos_e2bb_off = offset; 
+        offset++;
+        dimensions_.push_back(1);
+        rank_.push_back(1);
+    }
+
+    if ( offset != n_primal_ ) {
+        throw PsiException("something is wrong with the number of primal variables", __FILE__, __LINE__);
+    }
 }
 
 void v2RDMSolver::set_constraints() {
@@ -4252,6 +4408,26 @@ void v2RDMSolver::set_constraints() {
         if ( constrain_gpc_2rdm_ ) {
             throw PsiException("GPCs may not yet be applied to the 2RDM",__FILE__,__LINE__);
         }
+
+    }
+
+    // for sos problem, we dont have spin contstraints or (currently) gpc constraints
+    if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
+        if ( constrain_gpc_ || constrain_gpc_1rdm_ || constrain_gpc_2rdm_ ) {
+            throw PsiException("GPCs may not be applied to SOS problem yet", __FILE__, __LINE__);
+        }
+
+        // need to implement all of these for the SOS problem ...
+        constrain_spin_ = false;
+        constrain_sz_ = false;
+        constrain_q2_ = false;
+        constrain_t1_ = false;
+        constrain_t2_ = false;
+        constrain_d3_ = false;
+        constrain_q3_ = false;
+        constrain_e3_ = false;
+        constrain_f3_ = false;
+        constrain_d4_ = false;
 
     }
 }
@@ -4411,7 +4587,7 @@ void v2RDMSolver::print_header() {
         outfile->Printf("      eps(p)");
         outfile->Printf("      eps(d)\n");
 
-    }else if ( options_.get_str("SDP_SOLVER") == "RRSDP" ) {
+    }else if ( options_.get_str("SDP_SOLVER") == "RRSDP" || options_.get_str("SDP_SOLVER") == "SOS" ) {
 
         outfile->Printf("           oiter");
         outfile->Printf("        iiter");

@@ -3372,6 +3372,7 @@ void v2RDMSolver::T2_constraints_ATu(double* A,double* u){
 #endif
 
 }
+
 // T2 portion of A^T.y (slow version!)
 void v2RDMSolver::T2_constraints_ATu_slow(double* A,double* u){
 
