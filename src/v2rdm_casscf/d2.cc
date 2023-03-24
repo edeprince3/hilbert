@@ -590,7 +590,36 @@ void v2RDMSolver::D2_constraints_Au(double* A,double* u){
             poff   += nmopi_[h] - rstcpi_[h] - frzcpi_[h] - rstvpi_[h] - frzvpi_[h];
         }
     }
+}
 
+// D2 portion of A.u for the sos problem
+void v2RDMSolver::D2_constraints_Au_sos(double* A,double* u){
+
+    for (int h = 0; h < nirrep_; h++) {
+        // D2ab contribution to H:
+        C_DAXPY(gems_ab[h] * gems_ab[h], 1.0, u + d2aboff[h], 1, A + d2aboff[h], 1);
+
+        // D2aa contribution to H:
+        C_DAXPY(gems_aa[h] * gems_aa[h], 1.0, u + d2aaoff[h], 1, A + d2aaoff[h], 1);
+
+        // D2bb contribution to H:
+        C_DAXPY(gems_aa[h] * gems_aa[h], 1.0, u + d2bboff[h], 1, A + d2bboff[h], 1);
+    }
+}
+
+// D2 portion of AT.u for the sos problem
+void v2RDMSolver::D2_constraints_ATu_sos(double* A,double* u){
+
+    for (int h = 0; h < nirrep_; h++) {
+        // D2ab contribution to H:
+        C_DAXPY(gems_ab[h] * gems_ab[h], 1.0, u + d2aboff[h], 1, A + d2aboff[h], 1);
+
+        // D2aa contribution to H:
+        C_DAXPY(gems_aa[h] * gems_aa[h], 1.0, u + d2aaoff[h], 1, A + d2aaoff[h], 1);
+
+        // D2bb contribution to H:
+        C_DAXPY(gems_aa[h] * gems_aa[h], 1.0, u + d2bboff[h], 1, A + d2bboff[h], 1);
+    }
 }
 
 }

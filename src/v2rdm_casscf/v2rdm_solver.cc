@@ -3138,8 +3138,30 @@ void v2RDMSolver::bpsdp_Au(double* A, double* u){
 
     offset = 0;
 
+    if ( options_.get_str("SDP_SOLVER") == "SOS" ) { 
+
+        // diagonal contribution to H (E)
+
+        // ab
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_ab[h]; ij++) {
+                A[d2aboff[h] + ij * gems_ab[h] + ij] -= u[sos_e2ab_off];
+            }
+        }
+        // aa, bb
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_aa[h]; ij++) {
+                A[d2aaoff[h] + ij * gems_aa[h] + ij] -= u[sos_e2aa_off];
+                A[d2bboff[h] + ij * gems_aa[h] + ij] -= u[sos_e2bb_off];
+            }
+        }
+    }
+
+
     if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
         D2_constraints_Au(A,u);
+    } else if ( constrain_d2_ ) {
+        D2_constraints_Au_sos(A,u);
     }
 
     if ( constrain_spin_ ) {
@@ -3193,18 +3215,218 @@ void v2RDMSolver::bpsdp_Au(double* A, double* u){
         }
     }
 
+    if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
+
+        double na = nalpha_ - nfrzc_ - nrstc_;
+        double nb = nbeta_ - nfrzc_ - nrstc_;
+        double trdab = na * nb;
+
+        // adjust A such that d1 elements are mapped onto d2
+        for (int h = 0; h < nirrep_; h++) {
+            for (long int ij = 0; ij < gems_ab[h]; ij++) {
+                long int i = bas_ab_sym[h][ij][0];
+                long int j = bas_ab_sym[h][ij][1];
+
+                long int ii = full_basis[i];
+                long int jj = full_basis[j];
+
+                int hi = symmetry[i];
+                int hj = symmetry[j];
+
+                for (long int kl = 0; kl < gems_ab[h]; kl++) {
+                    long int k = bas_ab_sym[h][kl][0];
+                    long int l = bas_ab_sym[h][kl][1];
+
+                    long int kk = full_basis[k];
+                    long int ll = full_basis[l];
+
+                    int hik = SymmetryPair(symmetry[i],symmetry[k]);
+
+                    int hk = symmetry[k];
+                    int hl = symmetry[l];
+
+                    int iii = i - pitzer_offset[hi];
+                    int kkk = k - pitzer_offset[hk];
+                    int jjj = j - pitzer_offset[hj];
+                    int lll = l - pitzer_offset[hl];
+
+
+                    if ( j == l ) {
+                        A[d2aboff[h] + ij*gems_ab[h]+kl] += 1.0 / (na + nb - 1) * A[d1aoff[hi] + iii * amopi_[hi] + kkk];
+                    }
+                    if ( i == k ) {
+                        A[d2aboff[h] + ij*gems_ab[h]+kl] += 1.0 / (na + nb - 1) * A[d1boff[hj] + jjj * amopi_[hj] + lll];
+                    }
+
+                }
+            }
+        }
+
+        for (int h = 0; h < nirrep_; h++) {
+            for (long int ij = 0; ij < gems_aa[h]; ij++) {
+                long int i = bas_aa_sym[h][ij][0];
+                long int j = bas_aa_sym[h][ij][1];
+
+                long int ii = full_basis[i];
+                long int jj = full_basis[j];
+
+                int hi = symmetry[i];
+                int hj = symmetry[j];
+
+                for (long int kl = 0; kl < gems_aa[h]; kl++) {
+                    long int k = bas_aa_sym[h][kl][0];
+                    long int l = bas_aa_sym[h][kl][1];
+
+                    long int kk = full_basis[k];
+                    long int ll = full_basis[l];
+
+                    int hk = symmetry[k];
+                    int hl = symmetry[l];
+
+                    int hik = SymmetryPair(symmetry[i],symmetry[k]);
+
+                    long int ijb = ibas_ab_sym[h][i][j];
+                    long int jib = ibas_ab_sym[h][j][i];
+
+                    long int klb = ibas_ab_sym[h][k][l];
+                    long int lkb = ibas_ab_sym[h][l][k];
+
+                    int iii = i - pitzer_offset[hi];
+                    int kkk = k - pitzer_offset[hk];
+                    int jjj = j - pitzer_offset[hj];
+                    int lll = l - pitzer_offset[hl];
+
+                    if ( j == l ) {
+                        A[d2aaoff[h] + ij*gems_aa[h]+kl] += 1.0 / (na + nb - 1) * A[d1aoff[hi] + iii * amopi_[hi] + kkk];
+                        A[d2bboff[h] + ij*gems_aa[h]+kl] += 1.0 / (na + nb - 1) * A[d1boff[hi] + iii * amopi_[hi] + kkk];
+                    }
+                    if ( i == k ) {
+                        A[d2aaoff[h] + ij*gems_aa[h]+kl] += 1.0 / (na + nb - 1) * A[d1aoff[hj] + jjj * amopi_[hj] + lll];
+                        A[d2bboff[h] + ij*gems_aa[h]+kl] += 1.0 / (na + nb - 1) * A[d1boff[hj] + jjj * amopi_[hj] + lll];
+                    }
+                    if ( j == k ) {
+                        A[d2aaoff[h] + ij*gems_aa[h]+kl] -= 1.0 / (na + nb - 1) * A[d1aoff[hi] + iii * amopi_[hi] + lll];
+                        A[d2bboff[h] + ij*gems_aa[h]+kl] -= 1.0 / (na + nb - 1) * A[d1boff[hi] + iii * amopi_[hi] + lll];
+                    }
+                    if ( i == l ) {
+                        A[d2aaoff[h] + ij*gems_aa[h]+kl] -= 1.0 / (na + nb - 1) * A[d1aoff[hj] + jjj * amopi_[hj] + kkk];
+                        A[d2bboff[h] + ij*gems_aa[h]+kl] -= 1.0 / (na + nb - 1) * A[d1boff[hj] + jjj * amopi_[hj] + kkk];
+                    }
+
+                }
+            }
+        }
+
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < amopi_[h] * amopi_[h]; ij++) {
+                A[d1aoff[h] + ij] = 0.0;
+                A[d1boff[h] + ij] = 0.0;
+            }
+        }
+    }
+
 } // end Au
 
 ///Build AT dot u where u =[z,c]
-//void v2RDMSolver::bpsdp_ATu(SharedVector A, SharedVector u)
 void v2RDMSolver::bpsdp_ATu(double * A, double * u){
 
     memset((void*)A,'\0',n_primal_*sizeof(double));
 
     offset = 0;
 
+    if ( options_.get_str("SDP_SOLVER") == "SOS" ) { 
+
+        // diagonal contribution to H (E)
+
+        // ab
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_ab[h]; ij++) {
+                A[sos_e2ab_off] -= u[d2aboff[h] + ij * gems_ab[h] + ij];
+            }
+        }
+
+        // aa, bb
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < gems_aa[h]; ij++) {
+                A[sos_e2aa_off] -= u[d2aaoff[h] + ij * gems_aa[h] + ij];
+                A[sos_e2bb_off] -= u[d2bboff[h] + ij * gems_aa[h] + ij];
+            }
+        }
+
+        double na = nalpha_ - nrstc_ - nfrzc_;
+        double nb = nbeta_ - nrstc_ - nfrzc_;
+        double n = na + nb;
+
+        // adjust u such that d2 elements are mapped onto d1
+
+        int poff = 0;
+
+        // contraction: D2aa + D2ab -> D1 a
+        poff = 0;
+        for (int h = 0; h < nirrep_; h++) {
+            for (int i = 0; i < amopi_[h]; i++){
+                for (int j = 0; j < amopi_[h]; j++){
+                    double sum = 0.0;
+                    int ii  = i + poff;
+                    int jj  = j + poff;
+                    for(int k = 0; k < amo_; k++){
+                        int h2  = SymmetryPair(symmetry[ii],symmetry[k]);
+                        int ik = ibas_ab_sym[h2][ii][k];
+                        int jk = ibas_ab_sym[h2][jj][k];
+                        sum += u[d2aboff[h2] + ik*gems_ab[h2]+jk];
+                    }
+                    for(int k = 0; k < amo_; k++){
+                        if( ii==k || jj==k ) continue;
+                        int h2   = SymmetryPair(symmetry[ii],symmetry[k]);
+                        int ik  = ibas_aa_sym[h2][ii][k];
+                        int jk  = ibas_aa_sym[h2][jj][k];
+                        int sik = ( ii < k ) ? 1 : -1;
+                        int sjk = ( jj < k ) ? 1 : -1;
+                        sum += sik*sjk*u[d2aaoff[h2] + ik*gems_aa[h2]+jk];
+                    }
+                    u[d1aoff[h] + i*amopi_[h]+j] = sum / (n - 1.0);
+                }
+            }
+            offset += amopi_[h]*amopi_[h];
+            poff   += nmopi_[h] - rstcpi_[h] - frzcpi_[h] - rstvpi_[h] - frzvpi_[h];
+        }
+
+        // contraction: D2bb + D2ab -> D1 b
+        poff = 0;
+        for (int h = 0; h < nirrep_; h++) {
+            for (int i = 0; i < amopi_[h]; i++){
+                for (int j = 0; j < amopi_[h]; j++){
+                    double sum = 0.0;
+                    int ii  = i + poff;
+                    int jj  = j + poff;
+                    for(int k = 0; k < amo_; k++){
+                        int h2  = SymmetryPair(symmetry[ii],symmetry[k]);
+                        int ik = ibas_ab_sym[h2][k][ii];
+                        int jk = ibas_ab_sym[h2][k][jj];
+                        sum += u[d2aboff[h2] + ik*gems_ab[h2]+jk];
+                    }
+                    for(int k = 0; k < amo_; k++){
+                        if( ii==k || jj==k ) continue;
+                        int h2   = SymmetryPair(symmetry[ii],symmetry[k]);
+                        int ik  = ibas_aa_sym[h2][ii][k];
+                        int jk  = ibas_aa_sym[h2][jj][k];
+                        int sik = ( ii < k ) ? 1 : -1;
+                        int sjk = ( jj < k ) ? 1 : -1;
+                        sum += sik*sjk*u[d2bboff[h2] + ik*gems_aa[h2]+jk];
+                    }
+                    u[d1boff[h] + i*amopi_[h]+j] = sum / (n - 1.0);
+                }
+            }
+            offset += amopi_[h]*amopi_[h];
+            poff   += nmopi_[h] - rstcpi_[h] - frzcpi_[h] - rstvpi_[h] - frzvpi_[h];
+        }
+
+    }
+
     if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
         D2_constraints_ATu(A,u);
+    }else if ( constrain_d2_ ) {
+        D2_constraints_ATu_sos(A,u);
     }
 
     if ( constrain_spin_ ) {
@@ -3255,6 +3477,16 @@ void v2RDMSolver::bpsdp_ATu(double * A, double * u){
     if ( constrain_gpc_ ) {
         for (int my_state = 0; my_state < n_gpc_states_; my_state++) {
             Generalized_Pauli_constraints_ATu(A,u,my_state);
+        }
+    }
+
+    if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
+        // re-zero d1 part of u
+        for (int h = 0; h < nirrep_; h++) {
+            for (int ij = 0; ij < amopi_[h] * amopi_[h]; ij++) {
+                u[d1aoff[h] + ij] = 0.0;
+                u[d1boff[h] + ij] = 0.0;
+            }
         }
     }
 
@@ -4296,6 +4528,7 @@ void v2RDMSolver::set_primal_offsets() {
 void v2RDMSolver::set_constraints() {
 
     // pick conditions.  default is dqg
+    constrain_d2_ = true;
     constrain_q2_ = true;
     constrain_g2_ = true;
     constrain_t1_ = false;
@@ -4305,6 +4538,13 @@ void v2RDMSolver::set_constraints() {
     constrain_q3_ = false;
     constrain_d3_ = false;
     constrain_d4_ = false;
+    if (options_.get_str("POSITIVITY")=="G") {
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+            throw PsiException("positivity = G only valid for sdp_solver = sos", __FILE__, __LINE__);
+        }
+        constrain_d2_ = false;
+        constrain_q2_ = false;
+    }
     if (options_.get_str("POSITIVITY")=="D") {
         constrain_q2_ = false;
         constrain_g2_ = false;
