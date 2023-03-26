@@ -1350,7 +1350,28 @@ double v2RDMSolver::compute_energy() {
         }
 
         print_header();
-        sdp_->solve(x->pointer(), b->pointer(), c->pointer(), dimensions_, local_maxiter, evaluate_Au, evaluate_ATu, sdp_monitor, (void*)this);
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+            sdp_->solve(x->pointer(), 
+                        b->pointer(), 
+                        c->pointer(), 
+                        dimensions_,
+                        local_maxiter,
+                        evaluate_Au,
+                        evaluate_ATu,
+                        sdp_monitor,
+                        (void*)this);
+        }else{
+            sdp_->solve_low_rank(x->pointer(), 
+                                 b->pointer(), 
+                                 c->pointer(), 
+                                 dimensions_,
+                                 rank_,
+                                 local_maxiter,
+                                 evaluate_Au,
+                                 evaluate_ATu,
+                                 sdp_monitor,
+                                 (void*)this);
+        }
 
         std::shared_ptr<Vector> Ax (new Vector(n_dual_));
         //offset = 0;
@@ -1995,13 +2016,11 @@ void v2RDMSolver::BuildConstraints(){
     if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
 
         // c vector should give c.x = E, with x[0] = r[0]*r[0]
-        c->zero();
-        //c->pointer()[sos_e1a_off] = -1.0 * na;
-        //c->pointer()[sos_e1b_off] = -1.0 * nb;
-        //c->pointer()[sos_e2ab_off] = 1.0 * (na + nb)*(na + nb - 1)/2;
-        c->pointer()[sos_e2ab_off] = na*nb;
-        c->pointer()[sos_e2aa_off] = 1.0 * na*(na-1)/2;
-        c->pointer()[sos_e2bb_off] = 1.0 * nb*(nb-1)/2;
+        c->pointer()[sos_trab_off] = na*nb;
+        c->pointer()[sos_traa_off] = na*(na-1)/2;
+        c->pointer()[sos_trbb_off] = nb*(nb-1)/2;
+        c->pointer()[sos_tra_off] = (na+nb)*na;
+        c->pointer()[sos_trb_off] = (na+nb)*nb;
 
         // constraint vector should contain the integrals ... this should have been done in GetIntegrals()
         //b->scale(-1.0);
@@ -3145,14 +3164,42 @@ void v2RDMSolver::bpsdp_Au(double* A, double* u){
         // ab
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_ab[h]; ij++) {
-                A[d2aboff[h] + ij * gems_ab[h] + ij] -= u[sos_e2ab_off];
+                A[d2aboff[h] + ij * gems_ab[h] + ij] -= u[sos_trab_off];
             }
         }
         // aa, bb
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_aa[h]; ij++) {
-                A[d2aaoff[h] + ij * gems_aa[h] + ij] -= u[sos_e2aa_off];
-                A[d2bboff[h] + ij * gems_aa[h] + ij] -= u[sos_e2bb_off];
+                A[d2aaoff[h] + ij * gems_aa[h] + ij] -= u[sos_traa_off];
+                A[d2bboff[h] + ij * gems_aa[h] + ij] -= u[sos_trbb_off];
+            }
+        }
+
+        // <Sz> constraints
+        if ( constrain_sz_ ) {
+            // ab -> a
+            for (int h = 0; h < nirrep_; h++) {
+                for (int ij = 0; ij < gems_ab[h]; ij++) {
+                    A[d2aboff[h] + ij * gems_ab[h] + ij] -= u[sos_tra_off];
+                }
+            }
+            // aa -> a
+            for (int h = 0; h < nirrep_; h++) {
+                for (int ij = 0; ij < gems_aa[h]; ij++) {
+                    A[d2aaoff[h] + ij * gems_aa[h] + ij] -= u[sos_tra_off];
+                }
+            }
+            // ab -> b
+            for (int h = 0; h < nirrep_; h++) {
+                for (int ij = 0; ij < gems_ab[h]; ij++) {
+                    A[d2aboff[h] + ij * gems_ab[h] + ij] -= u[sos_trb_off];
+                }
+            }
+            // bb -> b
+            for (int h = 0; h < nirrep_; h++) {
+                for (int ij = 0; ij < gems_aa[h]; ij++) {
+                    A[d2bboff[h] + ij * gems_aa[h] + ij] -= u[sos_trb_off];
+                }
             }
         }
     }
@@ -3341,15 +3388,48 @@ void v2RDMSolver::bpsdp_ATu(double * A, double * u){
         // ab
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_ab[h]; ij++) {
-                A[sos_e2ab_off] -= u[d2aboff[h] + ij * gems_ab[h] + ij];
+                A[sos_trab_off] -= u[d2aboff[h] + ij * gems_ab[h] + ij];
             }
         }
 
         // aa, bb
         for (int h = 0; h < nirrep_; h++) {
             for (int ij = 0; ij < gems_aa[h]; ij++) {
-                A[sos_e2aa_off] -= u[d2aaoff[h] + ij * gems_aa[h] + ij];
-                A[sos_e2bb_off] -= u[d2bboff[h] + ij * gems_aa[h] + ij];
+                A[sos_traa_off] -= u[d2aaoff[h] + ij * gems_aa[h] + ij];
+                A[sos_trbb_off] -= u[d2bboff[h] + ij * gems_aa[h] + ij];
+            }
+        }
+
+        // <Sz> constraints
+
+        if ( constrain_sz_ ) {
+
+            // ab -> a
+            for (int h = 0; h < nirrep_; h++) {
+                for (int ij = 0; ij < gems_ab[h]; ij++) {
+                    A[sos_tra_off] -= u[d2aboff[h] + ij * gems_ab[h] + ij];
+                }
+            }
+
+            // aa -> a
+            for (int h = 0; h < nirrep_; h++) {
+                for (int ij = 0; ij < gems_aa[h]; ij++) {
+                    A[sos_tra_off] -= u[d2aaoff[h] + ij * gems_aa[h] + ij];
+                }
+            }
+
+            // ab -> b
+            for (int h = 0; h < nirrep_; h++) {
+                for (int ij = 0; ij < gems_ab[h]; ij++) {
+                    A[sos_trb_off] -= u[d2aboff[h] + ij * gems_ab[h] + ij];
+                }
+            }
+
+            // bb -> b
+            for (int h = 0; h < nirrep_; h++) {
+                for (int ij = 0; ij < gems_aa[h]; ij++) {
+                    A[sos_trb_off] -= u[d2bboff[h] + ij * gems_aa[h] + ij];
+                }
             }
         }
 
@@ -3685,9 +3765,11 @@ void v2RDMSolver::determine_n_primal() {
     n_primal_ = 0;
 
     if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
-        n_primal_ += 1; // sos_e2ab_off
-        n_primal_ += 1; // sos_e2aa_off
-        n_primal_ += 1; // sos_e2bb_off
+        n_primal_ += 1; // sos_trab_off
+        n_primal_ += 1; // sos_traa_off
+        n_primal_ += 1; // sos_trbb_off
+        n_primal_ += 1; // sos_tra_off
+        n_primal_ += 1; // sos_trb_off
         //n_primal_ += 1; // the a one-electron energy
         //n_primal_ += 1; // the b one-electron energy
     }
@@ -4241,18 +4323,21 @@ void v2RDMSolver::set_primal_offsets() {
             offset += gems_ab[h]*gems_ab[h];
             dimensions_.push_back(gems_ab[h]);
             rank_.push_back(gems_ab[h]);
+            //rank_.push_back((int)sqrt(gems_ab[h]));
         }
         for (int h = 0; h < nirrep_; h++) {
             g2baoff[h] = offset; 
             offset += gems_ab[h]*gems_ab[h];
             dimensions_.push_back(gems_ab[h]);
             rank_.push_back(gems_ab[h]);
+            //rank_.push_back((int)sqrt(gems_ab[h]));
         }
         for (int h = 0; h < nirrep_; h++) {
             g2aaoff[h] = offset; 
             offset += 2*gems_ab[h]*2*gems_ab[h];
             dimensions_.push_back(2*gems_ab[h]);
             rank_.push_back(2*gems_ab[h]);
+            //rank_.push_back((int)sqrt(gems_ab[h]));
         }
     }
 
@@ -4504,20 +4589,32 @@ void v2RDMSolver::set_primal_offsets() {
 */
 
         // the two-electron energy
-        sos_e2ab_off = offset; 
+        sos_trab_off = offset; 
         offset++;
         dimensions_.push_back(1);
         rank_.push_back(1);
 
-        sos_e2aa_off = offset; 
+        sos_traa_off = offset; 
         offset++;
         dimensions_.push_back(1);
         rank_.push_back(1);
 
-        sos_e2bb_off = offset; 
+        sos_trbb_off = offset; 
         offset++;
         dimensions_.push_back(1);
         rank_.push_back(1);
+
+        // trace constraints on d1
+        sos_tra_off = offset; 
+        offset++;
+        dimensions_.push_back(1);
+        rank_.push_back(1);
+
+        sos_trb_off = offset; 
+        offset++;
+        dimensions_.push_back(1);
+        rank_.push_back(1);
+
     }
 
     if ( offset != n_primal_ ) {
@@ -4659,7 +4756,7 @@ void v2RDMSolver::set_constraints() {
 
         // need to implement all of these for the SOS problem ...
         constrain_spin_ = false;
-        constrain_sz_ = false;
+        //constrain_sz_ = false;
         constrain_q2_ = false;
         constrain_t1_ = false;
         constrain_t2_ = false;

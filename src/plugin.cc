@@ -209,7 +209,7 @@ int read_options(std::string name, Options& options)
         options.add_int("MU_UPDATE_FREQUENCY",1000);
 
         /*- The type of 2-positivity computation -*/
-        options.add_str("POSITIVITY", "DQG", "DQG D DQ DG DQGT1 DQGT2 DQGT1T2 3POS");
+        options.add_str("POSITIVITY", "DQG", "DQG D DQ DG DQGT1 DQGT2 DQGT1T2 3POS G");
 
         /*- Do enforce generalized pauli constraints -*/ 
         options.add_str("GPC_CONSTRAINTS","NONE", "NONE 1RDM 2RDM");
@@ -235,7 +235,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION v2RDM-CASSCF -*/
 
         /*- SDP solver -*/
-        options.add_str("SDP_SOLVER","BPSDP", "BPSDP RRSDP");
+        options.add_str("SDP_SOLVER","BPSDP", "BPSDP RRSDP SOS");
 
         /*- do use hubbard model? -*/
         options.add_bool("HUBBARD_HAMILTONIAN",false);

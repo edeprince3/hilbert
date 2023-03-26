@@ -437,11 +437,11 @@ class v2RDMSolver: public Wavefunction{
     void G2_constraints_ATu_sos(double* A,double* u);
 
     void build_sos_constraint_vector();
-    int sos_e1a_off;
-    int sos_e1b_off;
-    int sos_e2ab_off;
-    int sos_e2aa_off;
-    int sos_e2bb_off;
+    int sos_tra_off;
+    int sos_trb_off;
+    int sos_trab_off;
+    int sos_traa_off;
+    int sos_trbb_off;
 
     // end of sos 
 
