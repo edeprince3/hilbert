@@ -431,10 +431,14 @@ class v2RDMSolver: public Wavefunction{
     bool constrain_d2_;
 
     void D2_constraints_Au_sos(double* A,double* u);
+    void Q2_constraints_Au_sos(double* A,double* u);
     void G2_constraints_Au_sos(double* A,double* u);
+    void T2_constraints_Au_sos(double* A,double* u);
 
     void D2_constraints_ATu_sos(double* A,double* u);
+    void Q2_constraints_ATu_sos(double* A,double* u);
     void G2_constraints_ATu_sos(double* A,double* u);
+    void T2_constraints_ATu_sos(double* A,double* u);
 
     void build_sos_constraint_vector();
     int sos_tra_off;

@@ -4487,4 +4487,1149 @@ void v2RDMSolver::T2_tilde_constraints_ATu(double* A,double* u){
 */
 }
 
+// T2 portion of A.u for the sos problem, which looks an awful lot like AT.u for the primal problem 
+void v2RDMSolver::T2_constraints_Au_sos(double* A,double* u){
+
+    // T2aab
+    for (int h = 0; h < nirrep_; h++) {
+
+        for (int ijk = 0; ijk < trip_aab[h]; ijk++) {
+
+            int i = bas_aab_sym[h][ijk][0];
+            int j = bas_aab_sym[h][ijk][1];
+            int k = bas_aab_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aab[h]; lmn++) {
+
+                int l = bas_aab_sym[h][lmn][0];
+                int m = bas_aab_sym[h][lmn][1];
+                int n = bas_aab_sym[h][lmn][2];
+
+                double dum = u[t2aaboff[h] + ijk*trip_aab[h]+lmn];
+
+                if ( k == n ) {
+                    int hij = SymmetryPair(symmetry[i],symmetry[j]);
+                    int ij = ibas_aa_sym[hij][i][j];
+                    int lm = ibas_aa_sym[hij][l][m];
+                    A[d2aaoff[hij] + ij*gems_aa[hij]+lm] += dum; // + D2(ij,lm) dkn
+                }
+
+                if ( j == m && i == l ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    A[d1boff[h2] + nn*amopi_[h2]+kk] += dum; // + D1(n,k) djm dil
+                }
+                if ( j == l && i == m ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    A[d1boff[h2] + nn*amopi_[h2]+kk] -= dum; // - D1(n,k) djl dim
+                }
+
+                if ( i == l ) {
+                    int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                    int nj = ibas_ab_sym[hnj][j][n];
+                    int km = ibas_ab_sym[hnj][m][k];
+                    A[d2aboff[hnj] + nj*gems_ab[hnj]+km] -= dum; // - D2(nj,km) dil
+                }
+                if ( j == l ) {
+                    int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                    int ni = ibas_ab_sym[hni][i][n];
+                    int km = ibas_ab_sym[hni][m][k];
+                    A[d2aboff[hni] + ni*gems_ab[hni]+km] += dum; // D2(ni,km) djl
+                }
+                if ( i == m ) {
+                    int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                    int nj = ibas_ab_sym[hnj][j][n];
+                    int kl = ibas_ab_sym[hnj][l][k];
+                    A[d2aboff[hnj] + nj*gems_ab[hnj]+kl] += dum; // D2(nj,kl) dim
+                }
+                if ( j == m ) {
+                    int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                    int ni = ibas_ab_sym[hni][i][n];
+                    int kl = ibas_ab_sym[hni][l][k];
+                    A[d2aboff[hni] + ni*gems_ab[hni]+kl] -= dum; // -D2(ni,kl) djm
+                }
+            }
+        }
+    }
+
+    // T2bba
+    for (int h = 0; h < nirrep_; h++) {
+
+        for (int ijk = 0; ijk < trip_aab[h]; ijk++) {
+
+            int i = bas_aab_sym[h][ijk][0];
+            int j = bas_aab_sym[h][ijk][1];
+            int k = bas_aab_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aab[h]; lmn++) {
+
+                int l = bas_aab_sym[h][lmn][0];
+                int m = bas_aab_sym[h][lmn][1];
+                int n = bas_aab_sym[h][lmn][2];
+
+                double dum = u[t2bbaoff[h] + ijk*trip_aab[h]+lmn];
+
+                if ( k == n ) {
+                    int hij = SymmetryPair(symmetry[i],symmetry[j]);
+                    int ij = ibas_aa_sym[hij][i][j];
+                    int lm = ibas_aa_sym[hij][l][m];
+                    A[d2bboff[hij] + ij*gems_aa[hij]+lm] += dum; // + D2(ij,lm) dkn
+                }
+
+                if ( j == m && i == l ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    A[d1aoff[h2] + nn*amopi_[h2]+kk] += dum; // + D1(n,k) djm dil
+                }
+                if ( j == l && i == m ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    A[d1aoff[h2] + nn*amopi_[h2]+kk] -= dum; // - D1(n,k) djl dim
+                }
+
+                if ( i == l ) {
+                    int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                    int nj = ibas_ab_sym[hnj][n][j];
+                    int km = ibas_ab_sym[hnj][k][m];
+                    A[d2aboff[hnj] + nj*gems_ab[hnj]+km] -= dum; // - D2(nj,km) dil
+                }
+                if ( j == l ) {
+                    int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                    int ni = ibas_ab_sym[hni][n][i];
+                    int km = ibas_ab_sym[hni][k][m];
+                    A[d2aboff[hni] + ni*gems_ab[hni]+km] += dum; // D2(ni,km) djl
+                }
+                if ( i == m ) {
+                    int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                    int nj = ibas_ab_sym[hnj][n][j];
+                    int kl = ibas_ab_sym[hnj][k][l];
+                    A[d2aboff[hnj] + nj*gems_ab[hnj]+kl] += dum; // D2(nj,kl) dim
+                }
+                if ( j == m ) {
+                    int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                    int ni = ibas_ab_sym[hni][n][i];
+                    int kl = ibas_ab_sym[hni][k][l];
+                    A[d2aboff[hni] + ni*gems_ab[hni]+kl] -= dum; // -D2(ni,kl) djm
+                }
+            }
+        }
+    }
+
+    // big block 1: T2aaa + T2abb
+    for (int h = 0; h < nirrep_; h++) {
+
+        // T2aaa/aaa
+        for (int ijk = 0; ijk < trip_aab[h]; ijk++) {
+
+            int i = bas_aab_sym[h][ijk][0];
+            int j = bas_aab_sym[h][ijk][1];
+            int k = bas_aab_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aab[h]; lmn++) {
+
+                int l = bas_aab_sym[h][lmn][0];
+                int m = bas_aab_sym[h][lmn][1];
+                int n = bas_aab_sym[h][lmn][2];
+
+                int id = ijk*(trip_aab[h]+trip_aba[h])+lmn;
+
+                double dum = u[t2aaaoff[h] + id];
+
+                if ( k == n ) {
+                    int hij = SymmetryPair(symmetry[i],symmetry[j]);
+                    int ij = ibas_aa_sym[hij][i][j];
+                    int lm = ibas_aa_sym[hij][l][m];
+                    A[d2aaoff[hij] + ij*gems_aa[hij]+lm] += dum; // + D2(ij,lm) dkn
+                }
+
+                if ( j == m && i == l ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    A[d1aoff[h2] + nn*amopi_[h2]+kk] += dum; // + D1(n,k) djm dil
+                }
+                if ( j == l && i == m ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    A[d1aoff[h2] + nn*amopi_[h2]+kk] -= dum; // - D1(n,k) djl dim
+                }
+
+                if ( i == l ) {
+                    if ( n != j && k != m ) {
+                        int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                        int nj = ibas_aa_sym[hnj][n][j];
+                        int km = ibas_aa_sym[hnj][k][m];
+
+                        int s = 1;
+                        if ( n > j ) s = -s;
+                        if ( k > m ) s = -s;
+
+                        A[d2aaoff[hnj] + nj*gems_aa[hnj]+km] -= s * dum; // - D2(nj,km) dil
+                    }
+                }
+                if ( j == l ) {
+                    if ( n != i && k != m ) {
+                        int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                        int ni = ibas_aa_sym[hni][n][i];
+                        int km = ibas_aa_sym[hni][k][m];
+
+                        int s = 1;
+                        if ( n > i ) s = -s;
+                        if ( k > m ) s = -s;
+
+                        A[d2aaoff[hni] + ni*gems_aa[hni]+km] += s * dum; // D2(ni,km) djl
+                    }
+                }
+                if ( i == m ) {
+                    if ( n != j && k != l ) {
+                        int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                        int nj = ibas_aa_sym[hnj][n][j];
+                        int kl = ibas_aa_sym[hnj][k][l];
+
+                        int s = 1;
+                        if ( n > j ) s = -s;
+                        if ( k > l ) s = -s;
+
+                        A[d2aaoff[hnj] + nj*gems_aa[hnj]+kl] += s * dum; // D2(nj,kl) dim
+                    }
+                }
+                if ( j == m ) {
+                    if ( n != i && k != l ) {
+                        int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                        int ni = ibas_aa_sym[hni][n][i];
+                        int kl = ibas_aa_sym[hni][k][l];
+
+                        int s = 1;
+                        if ( n > i ) s = -s;
+                        if ( k > l ) s = -s;
+
+                        A[d2aaoff[hni] + ni*gems_aa[hni]+kl] -= s * dum; // -D2(ni,kl) djm
+                    }
+                }
+            }
+        }
+        // T2aaa/abb
+        for (int ijk = 0; ijk < trip_aab[h]; ijk++) {
+
+            int i = bas_aab_sym[h][ijk][0];
+            int j = bas_aab_sym[h][ijk][1];
+            int k = bas_aab_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aba[h]; lmn++) {
+
+                int l = bas_aba_sym[h][lmn][0];
+                int m = bas_aba_sym[h][lmn][1];
+                int n = bas_aba_sym[h][lmn][2];
+
+                int id = ijk*(trip_aab[h]+trip_aba[h])+(lmn+trip_aab[h]);
+
+                double dum = u[t2aaaoff[h] + id];
+
+                if ( i == l ) {
+                    int hjn = SymmetryPair(symmetry[j],symmetry[n]);
+                    int jn = ibas_ab_sym[hjn][j][n];
+                    int km = ibas_ab_sym[hjn][k][m];
+                    A[d2aboff[hjn]+jn*gems_ab[hjn]+km] += dum; // D2(jn,km) dil
+                }
+                if ( j == l ) {
+                    int hin = SymmetryPair(symmetry[i],symmetry[n]);
+                    int in = ibas_ab_sym[hin][i][n];
+                    int km = ibas_ab_sym[hin][k][m];
+                    A[d2aboff[hin]+in*gems_ab[hin]+km] -= dum; // -D2(in,km) djl
+                }
+            }
+        }
+
+        // T2abb/aaa
+        for (int ijk = 0; ijk < trip_aba[h]; ijk++) {
+
+            int i = bas_aba_sym[h][ijk][0];
+            int j = bas_aba_sym[h][ijk][1];
+            int k = bas_aba_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aab[h]; lmn++) {
+
+                int l = bas_aab_sym[h][lmn][0];
+                int m = bas_aab_sym[h][lmn][1];
+                int n = bas_aab_sym[h][lmn][2];
+
+                int id = (ijk+trip_aab[h])*(trip_aab[h]+trip_aba[h])+lmn;
+
+                double dum = u[t2aaaoff[h] + id];
+
+                if ( i == l ) {
+                    int hjn = SymmetryPair(symmetry[j],symmetry[n]);
+                    int jn = ibas_ab_sym[hjn][n][j];
+                    int km = ibas_ab_sym[hjn][m][k];
+                    A[d2aboff[hjn]+jn*gems_ab[hjn]+km] += dum; // D2(jn,km) dil
+                }
+                if ( i == m ) {
+                    int hnj = SymmetryPair(symmetry[j],symmetry[n]);
+                    int nj = ibas_ab_sym[hnj][n][j];
+                    int lk = ibas_ab_sym[hnj][l][k];
+                    A[d2aboff[hnj]+nj*gems_ab[hnj]+lk] -= dum; // -D2(in,km) djl
+                }
+            }
+        }
+
+        // T2abb/abb
+        for (int ijk = 0; ijk < trip_aba[h]; ijk++) {
+
+            int i = bas_aba_sym[h][ijk][0];
+            int j = bas_aba_sym[h][ijk][1];
+            int k = bas_aba_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aba[h]; lmn++) {
+
+                int l = bas_aba_sym[h][lmn][0];
+                int m = bas_aba_sym[h][lmn][1];
+                int n = bas_aba_sym[h][lmn][2];
+
+                int id = (ijk+trip_aab[h])*(trip_aab[h]+trip_aba[h])+(lmn+trip_aab[h]);
+
+                double dum = u[t2aaaoff[h] + id];
+
+                if ( k == n ) {
+                    int hij = SymmetryPair(symmetry[i],symmetry[j]);
+                    int ij = ibas_ab_sym[hij][i][j];
+                    int lm = ibas_ab_sym[hij][l][m];
+                    A[d2aboff[hij] + ij*gems_ab[hij]+lm] += dum; // + D2(ij,lm) dkn
+                }
+
+                if ( j == m && i == l ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    A[d1boff[h2] + nn*amopi_[h2]+kk] += dum; // + D1(n,k) djm dil
+                }
+
+                if ( i == l ) {
+                    if ( n != j && k != m ) {
+                        int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                        int nj = ibas_aa_sym[hnj][n][j];
+                        int km = ibas_aa_sym[hnj][k][m];
+
+                        int s = 1;
+                        if ( n > j ) s = -s;
+                        if ( k > m ) s = -s;
+
+                        A[d2bboff[hnj] + nj*gems_aa[hnj]+km] -= s * dum; // - D2(nj,km) dil
+                    }
+                }
+                if ( j == m ) {
+                    int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                    int ni = ibas_ab_sym[hni][i][n];
+                    int kl = ibas_ab_sym[hni][l][k];
+                    A[d2aboff[hni] + ni*gems_ab[hni]+kl] -= dum; // -D2(ni,kl) djm
+                }
+            }
+        }
+    }
+
+    // big block 2: T2bbb + T2baa
+    for (int h = 0; h < nirrep_; h++) {
+
+        // T2bbb/bbb
+        for (int ijk = 0; ijk < trip_aab[h]; ijk++) {
+
+            int i = bas_aab_sym[h][ijk][0];
+            int j = bas_aab_sym[h][ijk][1];
+            int k = bas_aab_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aab[h]; lmn++) {
+
+                int l = bas_aab_sym[h][lmn][0];
+                int m = bas_aab_sym[h][lmn][1];
+                int n = bas_aab_sym[h][lmn][2];
+
+                int id = ijk*(trip_aab[h]+trip_aba[h])+lmn;
+
+                double dum = u[t2bbboff[h] + id];
+
+                if ( k == n ) {
+                    int hij = SymmetryPair(symmetry[i],symmetry[j]);
+                    int ij = ibas_aa_sym[hij][i][j];
+                    int lm = ibas_aa_sym[hij][l][m];
+                    A[d2bboff[hij] + ij*gems_aa[hij]+lm] += dum; // + D2(ij,lm) dkn
+                }
+
+                if ( j == m && i == l ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    A[d1boff[h2] + nn*amopi_[h2]+kk] += dum; // + D1(n,k) djm dil
+                }
+                if ( j == l && i == m ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    A[d1boff[h2] + nn*amopi_[h2]+kk] -= dum; // - D1(n,k) djl dim
+                }
+
+                if ( i == l ) {
+                    if ( n != j && k != m ) {
+                        int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                        int nj = ibas_aa_sym[hnj][n][j];
+                        int km = ibas_aa_sym[hnj][k][m];
+
+                        int s = 1;
+                        if ( n > j ) s = -s;
+                        if ( k > m ) s = -s;
+
+                        A[d2bboff[hnj] + nj*gems_aa[hnj]+km] -= s * dum; // - D2(nj,km) dil
+                    }
+                }
+                if ( j == l ) {
+                    if ( n != i && k != m ) {
+                        int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                        int ni = ibas_aa_sym[hni][n][i];
+                        int km = ibas_aa_sym[hni][k][m];
+
+                        int s = 1;
+                        if ( n > i ) s = -s;
+                        if ( k > m ) s = -s;
+
+                        A[d2bboff[hni] + ni*gems_aa[hni]+km] += s * dum; // D2(ni,km) djl
+                    }
+                }
+                if ( i == m ) {
+                    if ( n != j && k != l ) {
+                        int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                        int nj = ibas_aa_sym[hnj][n][j];
+                        int kl = ibas_aa_sym[hnj][k][l];
+
+                        int s = 1;
+                        if ( n > j ) s = -s;
+                        if ( k > l ) s = -s;
+
+                        A[d2bboff[hnj] + nj*gems_aa[hnj]+kl] += s * dum; // D2(nj,kl) dim
+                    }
+                }
+                if ( j == m ) {
+                    if ( n != i && k != l ) {
+                        int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                        int ni = ibas_aa_sym[hni][n][i];
+                        int kl = ibas_aa_sym[hni][k][l];
+
+                        int s = 1;
+                        if ( n > i ) s = -s;
+                        if ( k > l ) s = -s;
+
+                        A[d2bboff[hni] + ni*gems_aa[hni]+kl] -= s * dum; // -D2(ni,kl) djm
+                    }
+                }
+            }
+        }
+        // T2bbb/baa
+        for (int ijk = 0; ijk < trip_aab[h]; ijk++) {
+
+            int i = bas_aab_sym[h][ijk][0];
+            int j = bas_aab_sym[h][ijk][1];
+            int k = bas_aab_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aba[h]; lmn++) {
+
+                int l = bas_aba_sym[h][lmn][0];
+                int m = bas_aba_sym[h][lmn][1];
+                int n = bas_aba_sym[h][lmn][2];
+
+                int id = ijk*(trip_aab[h]+trip_aba[h])+(lmn+trip_aab[h]);
+
+                double dum = u[t2bbboff[h] + id];
+
+                if ( i == l ) {
+                    int hjn = SymmetryPair(symmetry[j],symmetry[n]);
+                    int jn = ibas_ab_sym[hjn][n][j];
+                    int km = ibas_ab_sym[hjn][m][k];
+                    A[d2aboff[hjn]+jn*gems_ab[hjn]+km] += dum; // D2(jn,km) dil
+                }
+                if ( j == l ) {
+                    int hin = SymmetryPair(symmetry[i],symmetry[n]);
+                    int in = ibas_ab_sym[hin][n][i];
+                    int km = ibas_ab_sym[hin][m][k];
+                    A[d2aboff[hin]+in*gems_ab[hin]+km] -= dum; // -D2(in,km) djl
+                }
+            }
+        }
+
+        // T2baa/bbb
+        for (int ijk = 0; ijk < trip_aba[h]; ijk++) {
+
+            int i = bas_aba_sym[h][ijk][0];
+            int j = bas_aba_sym[h][ijk][1];
+            int k = bas_aba_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aab[h]; lmn++) {
+
+                int l = bas_aab_sym[h][lmn][0];
+                int m = bas_aab_sym[h][lmn][1];
+                int n = bas_aab_sym[h][lmn][2];
+
+                int id = (ijk+trip_aab[h])*(trip_aab[h]+trip_aba[h])+lmn;
+
+                double dum = u[t2bbboff[h] + id];
+
+                if ( i == l ) {
+                    int hjn = SymmetryPair(symmetry[j],symmetry[n]);
+                    int jn = ibas_ab_sym[hjn][j][n];
+                    int km = ibas_ab_sym[hjn][k][m];
+                    A[d2aboff[hjn]+jn*gems_ab[hjn]+km] += dum; // D2(jn,km) dil
+                }
+                if ( i == m ) {
+                    int hnj = SymmetryPair(symmetry[j],symmetry[n]);
+                    int nj = ibas_ab_sym[hnj][j][n];
+                    int lk = ibas_ab_sym[hnj][k][l];
+                    A[d2aboff[hnj]+nj*gems_ab[hnj]+lk] -= dum; // -D2(in,km) djl
+                }
+            }
+        }
+
+        // T2baa/baa
+        for (int ijk = 0; ijk < trip_aba[h]; ijk++) {
+
+            int i = bas_aba_sym[h][ijk][0];
+            int j = bas_aba_sym[h][ijk][1];
+            int k = bas_aba_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aba[h]; lmn++) {
+
+                int l = bas_aba_sym[h][lmn][0];
+                int m = bas_aba_sym[h][lmn][1];
+                int n = bas_aba_sym[h][lmn][2];
+
+                int id = (ijk+trip_aab[h])*(trip_aab[h]+trip_aba[h])+(lmn+trip_aab[h]);
+
+                double dum = u[t2bbboff[h] + id];
+
+                if ( k == n ) {
+                    int hij = SymmetryPair(symmetry[i],symmetry[j]);
+                    int ij = ibas_ab_sym[hij][j][i];
+                    int lm = ibas_ab_sym[hij][m][l];
+                    A[d2aboff[hij] + ij*gems_ab[hij]+lm] += dum; // + D2(ij,lm) dkn
+                }
+
+                if ( j == m && i == l ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    A[d1aoff[h2] + nn*amopi_[h2]+kk] += dum; // + D1(n,k) djm dil
+                }
+
+                if ( i == l ) {
+                    if ( n != j && k != m ) {
+                        int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                        int nj = ibas_aa_sym[hnj][n][j];
+                        int km = ibas_aa_sym[hnj][k][m];
+
+                        int s = 1;
+                        if ( n > j ) s = -s;
+                        if ( k > m ) s = -s;
+
+                        A[d2aaoff[hnj] + nj*gems_aa[hnj]+km] -= s * dum; // - D2(nj,km) dil
+                    }
+                }
+                if ( j == m ) {
+                    int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                    int ni = ibas_ab_sym[hni][n][i];
+                    int kl = ibas_ab_sym[hni][k][l];
+                    A[d2aboff[hni] + ni*gems_ab[hni]+kl] -= dum; // -D2(ni,kl) djm
+                }
+            }
+        }
+    }
+}
+
+// T2 portion of AT.u for the sos problem, which looks an awful lot like A.u for the primal problem 
+void v2RDMSolver::T2_constraints_ATu_sos(double* A,double* u){
+
+    // T2aab
+    for (int h = 0; h < nirrep_; h++) {
+
+        for (int ijk = 0; ijk < trip_aab[h]; ijk++) {
+
+            int i = bas_aab_sym[h][ijk][0];
+            int j = bas_aab_sym[h][ijk][1];
+            int k = bas_aab_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aab[h]; lmn++) {
+
+                int l = bas_aab_sym[h][lmn][0];
+                int m = bas_aab_sym[h][lmn][1];
+                int n = bas_aab_sym[h][lmn][2];
+
+                double dum = 0.0;
+
+                if ( k == n ) {
+                    int hij = SymmetryPair(symmetry[i],symmetry[j]);
+                    int ij = ibas_aa_sym[hij][i][j];
+                    int lm = ibas_aa_sym[hij][l][m];
+                    dum += u[d2aaoff[hij] + ij*gems_aa[hij]+lm]; // + D2(ij,lm) dkn
+                }
+
+                if ( j == m && i == l ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    dum += u[d1boff[h2] + nn*amopi_[h2]+kk]; // + D1(n,k) djm dil
+                }
+                if ( j == l && i == m ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    dum -= u[d1boff[h2] + nn*amopi_[h2]+kk]; // - D1(n,k) djl dim
+                }
+
+                if ( i == l ) {
+                    int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                    int nj = ibas_ab_sym[hnj][j][n];
+                    int km = ibas_ab_sym[hnj][m][k];
+                    dum -= u[d2aboff[hnj] + nj*gems_ab[hnj]+km]; // - D2(nj,km) dil
+                }
+                if ( j == l ) {
+                    int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                    int ni = ibas_ab_sym[hni][i][n];
+                    int km = ibas_ab_sym[hni][m][k];
+                    dum += u[d2aboff[hni] + ni*gems_ab[hni]+km]; // D2(ni,km) djl
+                }
+                if ( i == m ) {
+                    int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                    int nj = ibas_ab_sym[hnj][j][n];
+                    int kl = ibas_ab_sym[hnj][l][k];
+                    dum += u[d2aboff[hnj] + nj*gems_ab[hnj]+kl]; // D2(nj,kl) dim
+                }
+                if ( j == m ) {
+                    int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                    int ni = ibas_ab_sym[hni][i][n];
+                    int kl = ibas_ab_sym[hni][l][k];
+                    dum -= u[d2aboff[hni] + ni*gems_ab[hni]+kl]; // -D2(ni,kl) djm
+                }
+    
+                A[t2aaboff[h] + ijk*trip_aab[h]+lmn] += dum;
+            }
+        }
+    }
+
+    // T2bba
+    for (int h = 0; h < nirrep_; h++) {
+
+        for (int ijk = 0; ijk < trip_aab[h]; ijk++) {
+
+            int i = bas_aab_sym[h][ijk][0];
+            int j = bas_aab_sym[h][ijk][1];
+            int k = bas_aab_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aab[h]; lmn++) {
+
+                int l = bas_aab_sym[h][lmn][0];
+                int m = bas_aab_sym[h][lmn][1];
+                int n = bas_aab_sym[h][lmn][2];
+
+                double dum = 0.0;
+
+                if ( k == n ) {
+                    int hij = SymmetryPair(symmetry[i],symmetry[j]);
+                    int ij = ibas_aa_sym[hij][i][j];
+                    int lm = ibas_aa_sym[hij][l][m];
+                    dum += u[d2bboff[hij] + ij*gems_aa[hij]+lm]; // + D2(ij,lm) dkn
+                }
+
+                if ( j == m && i == l ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    dum += u[d1aoff[h2] + nn*amopi_[h2]+kk]; // + D1(n,k) djm dil
+                }
+                if ( j == l && i == m ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    dum -= u[d1aoff[h2] + nn*amopi_[h2]+kk]; // - D1(n,k) djl dim
+                }
+
+                if ( i == l ) {
+                    int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                    int nj = ibas_ab_sym[hnj][n][j];
+                    int km = ibas_ab_sym[hnj][k][m];
+                    dum -= u[d2aboff[hnj] + nj*gems_ab[hnj]+km]; // - D2(nj,km) dil
+                }
+                if ( j == l ) {
+                    int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                    int ni = ibas_ab_sym[hni][n][i];
+                    int km = ibas_ab_sym[hni][k][m];
+                    dum += u[d2aboff[hni] + ni*gems_ab[hni]+km]; // D2(ni,km) djl
+                }
+                if ( i == m ) {
+                    int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                    int nj = ibas_ab_sym[hnj][n][j];
+                    int kl = ibas_ab_sym[hnj][k][l];
+                    dum += u[d2aboff[hnj] + nj*gems_ab[hnj]+kl]; // D2(nj,kl) dim
+                }
+                if ( j == m ) {
+                    int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                    int ni = ibas_ab_sym[hni][n][i];
+                    int kl = ibas_ab_sym[hni][k][l];
+                    dum -= u[d2aboff[hni] + ni*gems_ab[hni]+kl]; // -D2(ni,kl) djm
+                }
+    
+                A[t2bbaoff[h] + ijk*trip_aab[h]+lmn] += dum;
+
+            }
+        }
+    }
+
+    // big block 1: T2aaa + T2abb
+    for (int h = 0; h < nirrep_; h++) {
+
+        // T2aaa/aaa
+        for (int ijk = 0; ijk < trip_aab[h]; ijk++) {
+
+            int i = bas_aab_sym[h][ijk][0];
+            int j = bas_aab_sym[h][ijk][1];
+            int k = bas_aab_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aab[h]; lmn++) {
+
+                int l = bas_aab_sym[h][lmn][0];
+                int m = bas_aab_sym[h][lmn][1];
+                int n = bas_aab_sym[h][lmn][2];
+
+                int id = ijk*(trip_aab[h]+trip_aba[h])+lmn;
+
+                double dum = 0.0; 
+
+                if ( k == n ) {
+                    int hij = SymmetryPair(symmetry[i],symmetry[j]);
+                    int ij = ibas_aa_sym[hij][i][j];
+                    int lm = ibas_aa_sym[hij][l][m];
+                    dum += u[d2aaoff[hij] + ij*gems_aa[hij]+lm]; // + D2(ij,lm) dkn
+                }
+
+                if ( j == m && i == l ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    dum += u[d1aoff[h2] + nn*amopi_[h2]+kk]; // + D1(n,k) djm dil
+                }
+                if ( j == l && i == m ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    dum -= u[d1aoff[h2] + nn*amopi_[h2]+kk]; // - D1(n,k) djl dim
+                }
+
+                if ( i == l ) {
+                    if ( n != j && k != m ) {
+                        int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                        int nj = ibas_aa_sym[hnj][n][j];
+                        int km = ibas_aa_sym[hnj][k][m];
+
+                        int s = 1;
+                        if ( n > j ) s = -s;
+                        if ( k > m ) s = -s;
+
+                        dum -= s * u[d2aaoff[hnj] + nj*gems_aa[hnj]+km]; // - D2(nj,km) dil
+                    }
+                }
+                if ( j == l ) {
+                    if ( n != i && k != m ) {
+                        int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                        int ni = ibas_aa_sym[hni][n][i];
+                        int km = ibas_aa_sym[hni][k][m];
+
+                        int s = 1;
+                        if ( n > i ) s = -s;
+                        if ( k > m ) s = -s;
+
+                        dum += s * u[d2aaoff[hni] + ni*gems_aa[hni]+km]; // D2(ni,km) djl
+                    }
+                }
+                if ( i == m ) {
+                    if ( n != j && k != l ) {
+                        int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                        int nj = ibas_aa_sym[hnj][n][j];
+                        int kl = ibas_aa_sym[hnj][k][l];
+
+                        int s = 1;
+                        if ( n > j ) s = -s;
+                        if ( k > l ) s = -s;
+
+                        dum += s * u[d2aaoff[hnj] + nj*gems_aa[hnj]+kl]; // D2(nj,kl) dim
+                    }
+                }
+                if ( j == m ) {
+                    if ( n != i && k != l ) {
+                        int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                        int ni = ibas_aa_sym[hni][n][i];
+                        int kl = ibas_aa_sym[hni][k][l];
+
+                        int s = 1;
+                        if ( n > i ) s = -s;
+                        if ( k > l ) s = -s;
+
+                        dum -= s * u[d2aaoff[hni] + ni*gems_aa[hni]+kl]; // -D2(ni,kl) djm
+                    }
+                }
+    
+                A[t2aaaoff[h] + id] += dum;
+
+            }
+        }
+        // T2aaa/abb
+        for (int ijk = 0; ijk < trip_aab[h]; ijk++) {
+
+            int i = bas_aab_sym[h][ijk][0];
+            int j = bas_aab_sym[h][ijk][1];
+            int k = bas_aab_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aba[h]; lmn++) {
+
+                int l = bas_aba_sym[h][lmn][0];
+                int m = bas_aba_sym[h][lmn][1];
+                int n = bas_aba_sym[h][lmn][2];
+
+                int id = ijk*(trip_aab[h]+trip_aba[h])+(lmn+trip_aab[h]);
+
+                double dum = 0.0;
+
+                if ( i == l ) {
+                    int hjn = SymmetryPair(symmetry[j],symmetry[n]);
+                    int jn = ibas_ab_sym[hjn][j][n];
+                    int km = ibas_ab_sym[hjn][k][m];
+                    dum += u[d2aboff[hjn]+jn*gems_ab[hjn]+km]; // D2(jn,km) dil
+                }
+                if ( j == l ) {
+                    int hin = SymmetryPair(symmetry[i],symmetry[n]);
+                    int in = ibas_ab_sym[hin][i][n];
+                    int km = ibas_ab_sym[hin][k][m];
+                    dum -= u[d2aboff[hin]+in*gems_ab[hin]+km]; // -D2(in,km) djl
+                }
+
+                A[t2aaaoff[h] + id] += dum;
+            }
+        }
+
+        // T2abb/aaa
+        for (int ijk = 0; ijk < trip_aba[h]; ijk++) {
+
+            int i = bas_aba_sym[h][ijk][0];
+            int j = bas_aba_sym[h][ijk][1];
+            int k = bas_aba_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aab[h]; lmn++) {
+
+                int l = bas_aab_sym[h][lmn][0];
+                int m = bas_aab_sym[h][lmn][1];
+                int n = bas_aab_sym[h][lmn][2];
+
+                int id = (ijk+trip_aab[h])*(trip_aab[h]+trip_aba[h])+lmn;
+
+                double dum = 0.0;
+
+                if ( i == l ) {
+                    int hjn = SymmetryPair(symmetry[j],symmetry[n]);
+                    int jn = ibas_ab_sym[hjn][n][j];
+                    int km = ibas_ab_sym[hjn][m][k];
+                    dum += u[d2aboff[hjn]+jn*gems_ab[hjn]+km]; // D2(jn,km) dil
+                }
+                if ( i == m ) {
+                    int hnj = SymmetryPair(symmetry[j],symmetry[n]);
+                    int nj = ibas_ab_sym[hnj][n][j];
+                    int lk = ibas_ab_sym[hnj][l][k];
+                    dum -= u[d2aboff[hnj]+nj*gems_ab[hnj]+lk]; // -D2(in,km) djl
+                }
+
+                A[t2aaaoff[h] + id] += dum;
+
+            }
+        }
+
+        // T2abb/abb
+        for (int ijk = 0; ijk < trip_aba[h]; ijk++) {
+
+            int i = bas_aba_sym[h][ijk][0];
+            int j = bas_aba_sym[h][ijk][1];
+            int k = bas_aba_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aba[h]; lmn++) {
+
+                int l = bas_aba_sym[h][lmn][0];
+                int m = bas_aba_sym[h][lmn][1];
+                int n = bas_aba_sym[h][lmn][2];
+
+                int id = (ijk+trip_aab[h])*(trip_aab[h]+trip_aba[h])+(lmn+trip_aab[h]);
+
+                double dum = 0.0;
+
+                if ( k == n ) {
+                    int hij = SymmetryPair(symmetry[i],symmetry[j]);
+                    int ij = ibas_ab_sym[hij][i][j];
+                    int lm = ibas_ab_sym[hij][l][m];
+                    dum += u[d2aboff[hij] + ij*gems_ab[hij]+lm]; // + D2(ij,lm) dkn
+                }
+
+                if ( j == m && i == l ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    dum += u[d1boff[h2] + nn*amopi_[h2]+kk]; // + D1(n,k) djm dil
+                }
+
+                if ( i == l ) {
+                    if ( n != j && k != m ) {
+                        int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                        int nj = ibas_aa_sym[hnj][n][j];
+                        int km = ibas_aa_sym[hnj][k][m];
+
+                        int s = 1;
+                        if ( n > j ) s = -s;
+                        if ( k > m ) s = -s;
+
+                        dum -= s * u[d2bboff[hnj] + nj*gems_aa[hnj]+km]; // - D2(nj,km) dil
+                    }
+                }
+                if ( j == m ) {
+                    int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                    int ni = ibas_ab_sym[hni][i][n];
+                    int kl = ibas_ab_sym[hni][l][k];
+                    dum -= u[d2aboff[hni] + ni*gems_ab[hni]+kl]; // -D2(ni,kl) djm
+                }
+    
+                A[t2aaaoff[h] + id] += dum;
+
+            }
+        }
+
+    }
+
+    // big block 2: T2bbb + T2baa
+    for (int h = 0; h < nirrep_; h++) {
+
+        // T2bbb/bbb
+        for (int ijk = 0; ijk < trip_aab[h]; ijk++) {
+
+            int i = bas_aab_sym[h][ijk][0];
+            int j = bas_aab_sym[h][ijk][1];
+            int k = bas_aab_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aab[h]; lmn++) {
+
+                int l = bas_aab_sym[h][lmn][0];
+                int m = bas_aab_sym[h][lmn][1];
+                int n = bas_aab_sym[h][lmn][2];
+
+                int id = ijk*(trip_aab[h]+trip_aba[h])+lmn;
+
+                double dum = 0.0;
+
+                if ( k == n ) {
+                    int hij = SymmetryPair(symmetry[i],symmetry[j]);
+                    int ij = ibas_aa_sym[hij][i][j];
+                    int lm = ibas_aa_sym[hij][l][m];
+                    dum += u[d2bboff[hij] + ij*gems_aa[hij]+lm]; // + D2(ij,lm) dkn
+                }
+
+                if ( j == m && i == l ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    dum += u[d1boff[h2] + nn*amopi_[h2]+kk]; // + D1(n,k) djm dil
+                }
+                if ( j == l && i == m ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    dum -= u[d1boff[h2] + nn*amopi_[h2]+kk]; // - D1(n,k) djl dim
+                }
+
+                if ( i == l ) {
+                    if ( n != j && k != m ) {
+                        int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                        int nj = ibas_aa_sym[hnj][n][j];
+                        int km = ibas_aa_sym[hnj][k][m];
+
+                        int s = 1;
+                        if ( n > j ) s = -s;
+                        if ( k > m ) s = -s;
+
+                        dum -= s * u[d2bboff[hnj] + nj*gems_aa[hnj]+km]; // - D2(nj,km) dil
+                    }
+                }
+                if ( j == l ) {
+                    if ( n != i && k != m ) {
+                        int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                        int ni = ibas_aa_sym[hni][n][i];
+                        int km = ibas_aa_sym[hni][k][m];
+
+                        int s = 1;
+                        if ( n > i ) s = -s;
+                        if ( k > m ) s = -s;
+
+                        dum += s * u[d2bboff[hni] + ni*gems_aa[hni]+km]; // D2(ni,km) djl
+                    }
+                }
+                if ( i == m ) {
+                    if ( n != j && k != l ) {
+                        int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                        int nj = ibas_aa_sym[hnj][n][j];
+                        int kl = ibas_aa_sym[hnj][k][l];
+
+                        int s = 1;
+                        if ( n > j ) s = -s;
+                        if ( k > l ) s = -s;
+
+                        dum += s * u[d2bboff[hnj] + nj*gems_aa[hnj]+kl]; // D2(nj,kl) dim
+                    }
+                }
+                if ( j == m ) {
+                    if ( n != i && k != l ) {
+                        int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                        int ni = ibas_aa_sym[hni][n][i];
+                        int kl = ibas_aa_sym[hni][k][l];
+
+                        int s = 1;
+                        if ( n > i ) s = -s;
+                        if ( k > l ) s = -s;
+
+                        dum -= s * u[d2bboff[hni] + ni*gems_aa[hni]+kl]; // -D2(ni,kl) djm
+                    }
+                }
+    
+                A[t2bbboff[h] + id] += dum;
+
+            }
+        }
+        // T2bbb/baa
+        for (int ijk = 0; ijk < trip_aab[h]; ijk++) {
+
+            int i = bas_aab_sym[h][ijk][0];
+            int j = bas_aab_sym[h][ijk][1];
+            int k = bas_aab_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aba[h]; lmn++) {
+
+                int l = bas_aba_sym[h][lmn][0];
+                int m = bas_aba_sym[h][lmn][1];
+                int n = bas_aba_sym[h][lmn][2];
+
+                int id = ijk*(trip_aab[h]+trip_aba[h])+(lmn+trip_aab[h]);
+
+                double dum = 0.0;
+
+                if ( i == l ) {
+                    int hjn = SymmetryPair(symmetry[j],symmetry[n]);
+                    int jn = ibas_ab_sym[hjn][n][j];
+                    int km = ibas_ab_sym[hjn][m][k];
+                    dum += u[d2aboff[hjn]+jn*gems_ab[hjn]+km]; // D2(jn,km) dil
+                }
+                if ( j == l ) {
+                    int hin = SymmetryPair(symmetry[i],symmetry[n]);
+                    int in = ibas_ab_sym[hin][n][i];
+                    int km = ibas_ab_sym[hin][m][k];
+                    dum -= u[d2aboff[hin]+in*gems_ab[hin]+km]; // -D2(in,km) djl
+                }
+
+                A[t2bbboff[h] + id] = dum;
+
+            }
+        }
+
+        // T2baa/bbb
+        for (int ijk = 0; ijk < trip_aba[h]; ijk++) {
+
+            int i = bas_aba_sym[h][ijk][0];
+            int j = bas_aba_sym[h][ijk][1];
+            int k = bas_aba_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aab[h]; lmn++) {
+
+                int l = bas_aab_sym[h][lmn][0];
+                int m = bas_aab_sym[h][lmn][1];
+                int n = bas_aab_sym[h][lmn][2];
+
+                int id = (ijk+trip_aab[h])*(trip_aab[h]+trip_aba[h])+lmn;
+
+                double dum = 0.0;
+
+                if ( i == l ) {
+                    int hjn = SymmetryPair(symmetry[j],symmetry[n]);
+                    int jn = ibas_ab_sym[hjn][j][n];
+                    int km = ibas_ab_sym[hjn][k][m];
+                    dum += u[d2aboff[hjn]+jn*gems_ab[hjn]+km]; // D2(jn,km) dil
+                }
+                if ( i == m ) {
+                    int hnj = SymmetryPair(symmetry[j],symmetry[n]);
+                    int nj = ibas_ab_sym[hnj][j][n];
+                    int lk = ibas_ab_sym[hnj][k][l];
+                    dum -= u[d2aboff[hnj]+nj*gems_ab[hnj]+lk]; // -D2(in,km) djl
+                }
+
+                A[t2bbboff[h] + id] = dum;
+
+            }
+        }
+        // T2baa/baa
+        for (int ijk = 0; ijk < trip_aba[h]; ijk++) {
+
+            int i = bas_aba_sym[h][ijk][0];
+            int j = bas_aba_sym[h][ijk][1];
+            int k = bas_aba_sym[h][ijk][2];
+
+            for (int lmn = 0; lmn < trip_aba[h]; lmn++) {
+
+                int l = bas_aba_sym[h][lmn][0];
+                int m = bas_aba_sym[h][lmn][1];
+                int n = bas_aba_sym[h][lmn][2];
+
+                int id = (ijk+trip_aab[h])*(trip_aab[h]+trip_aba[h])+(lmn+trip_aab[h]);
+
+                double dum = 0.0;
+
+                if ( k == n ) {
+                    int hij = SymmetryPair(symmetry[i],symmetry[j]);
+                    int ij = ibas_ab_sym[hij][j][i];
+                    int lm = ibas_ab_sym[hij][m][l];
+                    dum += u[d2aboff[hij] + ij*gems_ab[hij]+lm]; // + D2(ij,lm) dkn
+                }
+
+                if ( j == m && i == l ) {
+                    int h2 = symmetry[k];
+                    int kk = k - pitzer_offset[h2];
+                    int nn = n - pitzer_offset[h2];
+                    dum += u[d1aoff[h2] + nn*amopi_[h2]+kk]; // + D1(n,k) djm dil
+                }
+
+                if ( i == l ) {
+                    if ( n != j && k != m ) {
+                        int hnj = SymmetryPair(symmetry[n],symmetry[j]);
+                        int nj = ibas_aa_sym[hnj][n][j];
+                        int km = ibas_aa_sym[hnj][k][m];
+
+                        int s = 1;
+                        if ( n > j ) s = -s;
+                        if ( k > m ) s = -s;
+
+                        dum -= s * u[d2aaoff[hnj] + nj*gems_aa[hnj]+km]; // - D2(nj,km) dil
+                    }
+                }
+                if ( j == m ) {
+                    int hni = SymmetryPair(symmetry[n],symmetry[i]);
+                    int ni = ibas_ab_sym[hni][n][i];
+                    int kl = ibas_ab_sym[hni][k][l];
+                    dum -= u[d2aboff[hni] + ni*gems_ab[hni]+kl]; // -D2(ni,kl) djm
+                }
+    
+                A[t2bbboff[h] + id] = dum;
+
+            }
+        }
+    }
+}
+
+
 } // end namespaces

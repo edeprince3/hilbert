@@ -2015,12 +2015,45 @@ void v2RDMSolver::BuildConstraints(){
 
     if ( options_.get_str("SDP_SOLVER") == "SOS" ) {
 
-        // c vector should give c.x = E, with x[0] = r[0]*r[0]
-        c->pointer()[sos_trab_off] = na*nb;
-        c->pointer()[sos_traa_off] = na*(na-1)/2;
-        c->pointer()[sos_trbb_off] = nb*(nb-1)/2;
-        c->pointer()[sos_tra_off] = (na+nb)*na;
-        c->pointer()[sos_trb_off] = (na+nb)*nb;
+        // c vector should give c.x = E
+        double * c_p = c->pointer();
+        c->zero();
+
+        c_p[sos_trab_off] = na*nb;
+        c_p[sos_traa_off] = na*(na-1)/2;
+        c_p[sos_trbb_off] = nb*(nb-1)/2;
+        c_p[sos_tra_off] = (na+nb)*na;
+        c_p[sos_trb_off] = (na+nb)*nb;
+
+        if ( constrain_q2_ ) {
+
+            // map d2ab to q2ab
+            for (int h = 0; h < nirrep_; h++) {
+                for(int ij = 0; ij < gems_ab[h]; ij++){
+                    int i = bas_ab_sym[h][ij][0];
+                    int j = bas_ab_sym[h][ij][1];
+                    for(int kl = 0; kl < gems_ab[h]; kl++){
+                        int k = bas_ab_sym[h][kl][0];
+                        int l = bas_ab_sym[h][kl][1];
+                        c_p[q2aboff[h] + ij*gems_ab[h]+kl] = (i==k)*(j==l);
+                    }
+                }
+            }
+
+            // map d2aa to q2aa / d2bb to q2bb
+            for (int h = 0; h < nirrep_; h++) {
+                for(int ij = 0; ij < gems_aa[h]; ij++){
+                    int i = bas_aa_sym[h][ij][0];
+                    int j = bas_aa_sym[h][ij][1];
+                    for(int kl = 0; kl < gems_aa[h]; kl++){
+                        int k = bas_aa_sym[h][kl][0];
+                        int l = bas_aa_sym[h][kl][1];
+                        c_p[q2aaoff[h] + ij*gems_aa[h]+kl] = (i==k)*(j==l) - (i==l)*(j==k);
+                        c_p[q2bboff[h] + ij*gems_aa[h]+kl] = (i==k)*(j==l) - (i==l)*(j==k);
+                    }
+                }
+            }
+        }
 
         // constraint vector should contain the integrals ... this should have been done in GetIntegrals()
         //b->scale(-1.0);
@@ -3216,7 +3249,11 @@ void v2RDMSolver::bpsdp_Au(double* A, double* u){
     }
 
     if ( constrain_q2_ ) {
-        Q2_constraints_Au(A,u);
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+            Q2_constraints_Au(A,u);
+        }else {
+            Q2_constraints_Au_sos(A,u);
+        }
     }
 
     if ( constrain_g2_ ) {
@@ -3232,8 +3269,11 @@ void v2RDMSolver::bpsdp_Au(double* A, double* u){
     }
 
     if ( constrain_t2_ ) {
-        //T2_constraints_Au(A,u);
-        T2_constraints_Au_slow(A,u);
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+            T2_constraints_Au_slow(A,u);
+        }else{
+            T2_constraints_Au_sos(A,u);
+        }
     }
 
     if ( constrain_e3_ ) {
@@ -3514,7 +3554,11 @@ void v2RDMSolver::bpsdp_ATu(double * A, double * u){
     }
 
     if ( constrain_q2_ ) {
-        Q2_constraints_ATu(A,u);
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+            Q2_constraints_ATu(A,u);
+        }else {
+            Q2_constraints_ATu_sos(A,u);
+        }
     }
 
     if ( constrain_g2_ ) {
@@ -3530,8 +3574,11 @@ void v2RDMSolver::bpsdp_ATu(double * A, double * u){
     }
 
     if ( constrain_t2_ ) {
-        //T2_constraints_ATu(A,u);
-        T2_constraints_ATu_slow(A,u);
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+            T2_constraints_ATu_slow(A,u);
+        }else{
+            T2_constraints_ATu_sos(A,u);
+        }
     }
 
     if ( constrain_e3_ ) {
@@ -4642,6 +4689,13 @@ void v2RDMSolver::set_constraints() {
         constrain_d2_ = false;
         constrain_q2_ = false;
     }
+    if (options_.get_str("POSITIVITY")=="Q") {
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+            throw PsiException("positivity = Q only valid for sdp_solver = sos", __FILE__, __LINE__);
+        }
+        constrain_d2_ = false;
+        constrain_g2_ = false;
+    }
     if (options_.get_str("POSITIVITY")=="D") {
         constrain_q2_ = false;
         constrain_g2_ = false;
@@ -4757,9 +4811,9 @@ void v2RDMSolver::set_constraints() {
         // need to implement all of these for the SOS problem ...
         constrain_spin_ = false;
         //constrain_sz_ = false;
-        constrain_q2_ = false;
+        //constrain_q2_ = false;
         constrain_t1_ = false;
-        constrain_t2_ = false;
+        //constrain_t2_ = false;
         constrain_d3_ = false;
         constrain_q3_ = false;
         constrain_e3_ = false;

@@ -434,7 +434,241 @@ void v2RDMSolver::Q2_constraints_ATu(double* A,double* u){
         }
         offset += gems_aa[h]*gems_aa[h];
     }
+}
 
+// Q2 portion of A.u for the sos problem, which looks an awful lot like AT.u for the primal problem 
+void v2RDMSolver::Q2_constraints_Au_sos(double* A,double* u){
+
+    long int blocksize_ab = 0;
+    long int blocksize_aa = 0;
+    for (int h = 0; h < nirrep_; h++) {
+        blocksize_ab += gems_ab[h]*gems_ab[h];
+        blocksize_aa += gems_aa[h]*gems_aa[h];
+    }
+
+    // map D2ab to Q2ab
+    //C_DAXPY(blocksize_ab, 1.0, u + q2aboff[0], 1, A + d2aboff[0], 1); // + Q2(kl,ij)
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_ab[h]; ij++) {
+            int i = bas_ab_sym[h][ij][0];
+            int j = bas_ab_sym[h][ij][1];
+            for (int kl = 0; kl < gems_ab[h]; kl++) {
+                int k = bas_ab_sym[h][kl][0];
+                int l = bas_ab_sym[h][kl][1];
+
+                double val = u[q2aboff[h] + ij*gems_ab[h]+kl];
+
+                A[d2aboff[h] + kl*gems_ab[h]+ij] += val;
+                if ( j==l ) {
+                    int h2 = symmetry[i];
+                    int ii = i - pitzer_offset[h2];
+                    int kk = k - pitzer_offset[h2];
+                    A[d1aoff[h2]  + kk*amopi_[h2]+ii] -= val;
+                }
+                if ( i==k ) {
+                    int h2 = symmetry[j];
+                    int jj = j - pitzer_offset[h2];
+                    int ll = l - pitzer_offset[h2];
+                    A[d1boff[h2]  + ll*amopi_[h2]+jj] -= val;
+                }
+            }
+        }
+    }
+
+    // map D2aa to Q2aa
+    //C_DAXPY(blocksize_aa, 1.0, u + q2aaoff[0], 1, A + d2aaoff[0],1); // + Q2(kl,ij)
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            int i = bas_aa_sym[h][ij][0];
+            int j = bas_aa_sym[h][ij][1];
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                int k = bas_aa_sym[h][kl][0];
+                int l = bas_aa_sym[h][kl][1];
+
+                double val = u[q2aaoff[h] + ij*gems_aa[h]+kl];
+
+                A[d2aaoff[h] + kl*gems_aa[h]+ij] += val;
+                if ( j==l ) {
+                    int h2 = symmetry[i];
+                    int ii = i - pitzer_offset[h2];
+                    int kk = k - pitzer_offset[h2];
+                    A[d1aoff[h2]  + kk*amopi_[h2]+ii] -= val;
+                }
+                if ( j==k ) {
+                    int h2 = symmetry[i];
+                    int ii = i - pitzer_offset[h2];
+                    int ll = l - pitzer_offset[h2];
+                    A[d1aoff[h2]  + ll*amopi_[h2]+ii] += val;
+                }
+                if ( i==l ) {
+                    int h2 = symmetry[j];
+                    int jj = j - pitzer_offset[h2];
+                    int kk = k - pitzer_offset[h2];
+                    A[d1aoff[h2]  + kk*amopi_[h2]+jj] += val;
+                }
+                if ( i==k ) {
+                    int h2 = symmetry[j];
+                    int jj = j - pitzer_offset[h2];
+                    int ll = l - pitzer_offset[h2];
+                    A[d1aoff[h2]  + ll*amopi_[h2]+jj] -= val;
+                }
+            }
+        }
+    }
+
+    // map D2bb to Q2bb
+    //C_DAXPY(blocksize_aa, 1.0, u + q2bboff[0], 1, A + d2bboff[0], 1); // + Q2(kl,ij)
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            int i = bas_aa_sym[h][ij][0];
+            int j = bas_aa_sym[h][ij][1];
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                int k = bas_aa_sym[h][kl][0];
+                int l = bas_aa_sym[h][kl][1];
+
+                double val = u[q2bboff[h] + ij*gems_aa[h]+kl];
+
+                A[d2bboff[h] + kl*gems_aa[h]+ij] += val;
+                if ( j==l ) {
+                    int h2 = symmetry[i];
+                    int ii = i - pitzer_offset[h2];
+                    int kk = k - pitzer_offset[h2];
+                    A[d1boff[h2]  + kk*amopi_[h2]+ii] -= val;
+                }
+                if ( j==k ) {
+                    int h2 = symmetry[i];
+                    int ii = i - pitzer_offset[h2];
+                    int ll = l - pitzer_offset[h2];
+                    A[d1boff[h2]  + ll*amopi_[h2]+ii] += val;
+                }
+                if ( i==l ) {
+                    int h2 = symmetry[j];
+                    int jj = j - pitzer_offset[h2];
+                    int kk = k - pitzer_offset[h2];
+                    A[d1boff[h2]  + kk*amopi_[h2]+jj] += val;
+                }
+                if ( i==k ) {
+                    int h2 = symmetry[j];
+                    int jj = j - pitzer_offset[h2];
+                    int ll = l - pitzer_offset[h2];
+                    A[d1boff[h2]  + ll*amopi_[h2]+jj] -= val;
+                }
+            }
+        }
+    }
+}
+
+// Q2 portion of AT.u for the sos problem, which looks an awful lot like A.u for the primal problem 
+void v2RDMSolver::Q2_constraints_ATu_sos(double* A,double* u){
+
+    long int blocksize_ab = 0;
+    long int blocksize_aa = 0;
+    for (int h = 0; h < nirrep_; h++) {
+        blocksize_ab += gems_ab[h]*gems_ab[h];
+        blocksize_aa += gems_aa[h]*gems_aa[h];
+    }
+
+    // map D2ab to Q2ab
+    //C_DAXPY(blocksize_ab, 1.0, u + d2aboff[0], 1, A + q2aboff[0], 1); // + Q2(kl,ij)
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_ab[h]; ij++) {
+            int i = bas_ab_sym[h][ij][0];
+            int j = bas_ab_sym[h][ij][1];
+            for (int kl = 0; kl < gems_ab[h]; kl++) {
+                int k = bas_ab_sym[h][kl][0];
+                int l = bas_ab_sym[h][kl][1];
+                A[q2aboff[h] + ij*gems_ab[h]+kl] += u[d2aboff[h] + kl*gems_ab[h] + ij];
+                if ( j==l ) {
+                    int h2 = symmetry[i];
+                    int ii = i - pitzer_offset[h2];
+                    int kk = k - pitzer_offset[h2];
+                    A[q2aboff[h] + ij*gems_ab[h]+kl] -= u[d1aoff[h2]  + kk*amopi_[h2]+ii];
+                }
+                if ( i==k ) {
+                    int h2 = symmetry[j];
+                    int jj = j - pitzer_offset[h2];
+                    int ll = l - pitzer_offset[h2];
+                    A[q2aboff[h] + ij*gems_ab[h]+kl] -= u[d1boff[h2]  + ll*amopi_[h2]+jj];
+                }
+            }
+        }
+    }
+
+    // map D2aa to Q2aa
+    //C_DAXPY(blocksize_aa, 1.0, u + d2aaoff[0], 1, A + q2aaoff[0],1); // + Q2(kl,ij)
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            int i = bas_aa_sym[h][ij][0];
+            int j = bas_aa_sym[h][ij][1];
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                int k = bas_aa_sym[h][kl][0];
+                int l = bas_aa_sym[h][kl][1];
+                A[q2aaoff[h] + ij*gems_aa[h]+kl] += u[d2aaoff[h] + kl*gems_aa[h] + ij];
+                if ( j==l ) {
+                    int h2 = symmetry[i];
+                    int ii = i - pitzer_offset[h2];
+                    int kk = k - pitzer_offset[h2];
+                    A[q2aaoff[h] + ij*gems_aa[h]+kl] -= u[d1aoff[h2]  + kk*amopi_[h2]+ii];
+                }
+                if ( j==k ) {
+                    int h2 = symmetry[i];
+                    int ii = i - pitzer_offset[h2];
+                    int ll = l - pitzer_offset[h2];
+                    A[q2aaoff[h] + ij*gems_aa[h]+kl] += u[d1aoff[h2]  + ll*amopi_[h2]+ii];
+                }
+                if ( i==l ) {
+                    int h2 = symmetry[j];
+                    int jj = j - pitzer_offset[h2];
+                    int kk = k - pitzer_offset[h2];
+                    A[q2aaoff[h] + ij*gems_aa[h]+kl] += u[d1aoff[h2]  + kk*amopi_[h2]+jj];
+                }
+                if ( i==k ) {
+                    int h2 = symmetry[j];
+                    int jj = j - pitzer_offset[h2];
+                    int ll = l - pitzer_offset[h2];
+                    A[q2aaoff[h] + ij*gems_aa[h]+kl] -= u[d1aoff[h2]  + ll*amopi_[h2]+jj];
+                }
+            }
+        }
+    }
+
+    // map D2bb to Q2bb
+    //C_DAXPY(blocksize_aa, 1.0, u + d2bboff[0], 1, A + q2bboff[0], 1); // + Q2(kl,ij)
+    for (int h = 0; h < nirrep_; h++) {
+        for (int ij = 0; ij < gems_aa[h]; ij++) {
+            int i = bas_aa_sym[h][ij][0];
+            int j = bas_aa_sym[h][ij][1];
+            for (int kl = 0; kl < gems_aa[h]; kl++) {
+                int k = bas_aa_sym[h][kl][0];
+                int l = bas_aa_sym[h][kl][1];
+                A[q2bboff[h] + ij*gems_aa[h]+kl] += u[d2bboff[h] + kl*gems_aa[h] + ij];
+                if ( j==l ) {
+                    int h2 = symmetry[i];
+                    int ii = i - pitzer_offset[h2];
+                    int kk = k - pitzer_offset[h2];
+                    A[q2bboff[h] + ij*gems_aa[h]+kl] -= u[d1boff[h2]  + kk*amopi_[h2]+ii];
+                }
+                if ( j==k ) {
+                    int h2 = symmetry[i];
+                    int ii = i - pitzer_offset[h2];
+                    int ll = l - pitzer_offset[h2];
+                    A[q2bboff[h] + ij*gems_aa[h]+kl] += u[d1boff[h2]  + ll*amopi_[h2]+ii];
+                }
+                if ( i==l ) {
+                    int h2 = symmetry[j];
+                    int jj = j - pitzer_offset[h2];
+                    int kk = k - pitzer_offset[h2];
+                    A[q2bboff[h] + ij*gems_aa[h]+kl] += u[d1boff[h2]  + kk*amopi_[h2]+jj];
+                }
+                if ( i==k ) {
+                    int h2 = symmetry[j];
+                    int jj = j - pitzer_offset[h2];
+                    int ll = l - pitzer_offset[h2];
+                    A[q2bboff[h] + ij*gems_aa[h]+kl] -= u[d1boff[h2]  + ll*amopi_[h2]+jj];
+                }
+            }
+        }
+    }
 }
 
 } // end namespaces
