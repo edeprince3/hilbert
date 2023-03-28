@@ -4429,24 +4429,28 @@ void v2RDMSolver::set_primal_offsets() {
             offset += (trip_aab[h]+trip_aba[h])*(trip_aab[h]+trip_aba[h]); // T2aaa
             dimensions_.push_back(trip_aab[h]+trip_aba[h]);
             rank_.push_back(trip_aab[h]+trip_aba[h]);
+            //rank_.push_back(amopi_[h]);
         }
         for (int h = 0; h < nirrep_; h++) {
             t2bbboff[h] = offset; 
             offset += (trip_aab[h]+trip_aba[h])*(trip_aab[h]+trip_aba[h]); // T2bbb
             dimensions_.push_back(trip_aab[h]+trip_aba[h]);
             rank_.push_back(trip_aab[h]+trip_aba[h]);
+            //rank_.push_back(amopi_[h]);
         }
         for (int h = 0; h < nirrep_; h++) {
             t2aaboff[h] = offset; 
             offset += trip_aab[h]*trip_aab[h]; // T2aab
             dimensions_.push_back(trip_aab[h]);
             rank_.push_back(trip_aab[h]);
+            //rank_.push_back(amopi_[h]);
         }
         for (int h = 0; h < nirrep_; h++) {
             t2bbaoff[h] = offset; 
             offset += trip_aab[h]*trip_aab[h]; // T2bba
             dimensions_.push_back(trip_aab[h]);
             rank_.push_back(trip_aab[h]);
+            //rank_.push_back(amopi_[h]);
         }
     }
     if ( constrain_e3_ ) {
@@ -4695,6 +4699,15 @@ void v2RDMSolver::set_constraints() {
         }
         constrain_d2_ = false;
         constrain_g2_ = false;
+    }
+    if (options_.get_str("POSITIVITY")=="T2") {
+        if ( options_.get_str("SDP_SOLVER") != "SOS" ) {
+            throw PsiException("positivity = T2 only valid for sdp_solver = sos", __FILE__, __LINE__);
+        }
+        constrain_d2_ = false;
+        constrain_q2_ = false;
+        constrain_g2_ = false;
+        constrain_t2_ = true;
     }
     if (options_.get_str("POSITIVITY")=="D") {
         constrain_q2_ = false;
