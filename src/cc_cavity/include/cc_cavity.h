@@ -225,14 +225,12 @@ namespace hilbert {
          * @brief build the antisymmetric 4-index integrals in the MO basis.
          * @param Qmo_blks the 3-index integrals in the MO basis
          */
-        virtual void unpack_eris(TArrayMap &Qmo_blks) = 0;
+        virtual void unpack_eris(TArrayMap &Qmo_blks);
 
         /**
          * @brief build the orbital energies
          */
         virtual void build_eps();
-
-
 
         /**
          * @brief compute the residual equations

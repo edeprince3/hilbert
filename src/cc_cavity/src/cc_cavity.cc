@@ -627,6 +627,118 @@ namespace hilbert {
         }
     }
 
+    void CC_Cavity::unpack_eris(TArrayMap &Qmo_blks) {
+
+        double lx2, ly2, lz2;
+        if (has_photon_) {
+            lx2 = lambda_[0] * lambda_[0];
+            ly2 = lambda_[1] * lambda_[1];
+            lz2 = lambda_[2] * lambda_[2];
+        }
+
+        static unordered_set<string> valid_names = {
+            "aaaa_oooo", "aaaa_vvvv", "aaaa_oovv", "aaaa_vvoo", "aaaa_vovo", "aaaa_vooo", "aaaa_oovo", "aaaa_vovv", "aaaa_vvvo",
+            "abab_oooo", "abab_vvvv", "abab_oovv", "abab_vvoo", "abab_vovo", "abab_vooo", "abab_oovo", "abab_vovv", "abab_vvvo",
+            "bbbb_oooo", "bbbb_vvvv", "bbbb_oovv", "bbbb_vvoo", "bbbb_vovo", "bbbb_vooo", "bbbb_oovo", "bbbb_vovv", "bbbb_vvvo",
+
+            // extra terms generated from parsed equations (helps optimization in TABuilder)
+            "abba_oovo", "abba_vooo", "baab_vooo", "baba_vovo", "abba_vovo", "baab_vovo", "baab_vovv", "abba_vvvo"
+        };
+
+        // build string for eri spin
+        static auto build_eri_spin = [](const string& colm_lspin, const string& colm_rspin) {
+            string eri_spin(4, ' ');
+            eri_spin[0] = colm_lspin[0]; eri_spin[1] = colm_rspin[0];
+            eri_spin[2] = colm_lspin[1]; eri_spin[3] = colm_rspin[1];
+            return eri_spin;
+        };
+
+        // build string for eri occupation
+        static auto build_eri_ov = [](const string& colm_lov, const string& colm_rov) {
+            string eri_ov(4, ' ');
+            eri_ov[0] = colm_lov[0]; eri_ov[1] = colm_rov[0];
+            eri_ov[2] = colm_lov[1]; eri_ov[3] = colm_rov[1];
+            return eri_ov;
+        };
+
+        // check if eri spin is valid
+        static auto is_valid_spin = [](const string& eri_spin) {
+            size_t num_alpha = count(eri_spin.begin(), eri_spin.end(), 'a');
+            size_t num_beta  = count(eri_spin.begin(), eri_spin.end(), 'b');
+            return num_alpha % 2 == 0 && num_beta % 2 == 0;
+        };
+
+        // check if eri is in V_blks_
+        auto is_in_V_blks = [this](const string& eri_name) {
+            return this->V_blks_.find(eri_name) != this->V_blks_.end();
+        };
+
+        // check if eri name is valid
+        static auto is_valid_name = [](const string& eri_name, const unordered_set<string>& ) {
+            return valid_names.find(eri_name) != valid_names.end();
+        };
+
+        // build string for exchange name
+        static auto build_exchange_name = [](const string& lspin, const string& rspin,
+                                             const string& lov, const string& rov) {
+            string exc_spin(2, ' ');
+            string exc_ov(2, ' ');
+
+            // Build spin and ov strings
+            exc_spin[0] = lspin[0]; exc_spin[1] = rspin[1];
+            exc_ov[0] =   lov[0];   exc_ov[1] =   rov[1];
+
+            // Combine spin and orbital occupation strings
+            string exchange_name = exc_spin + "_" + exc_ov;
+            return exchange_name.substr(0, 5);
+        };
+
+        // remove eris from last build (if any)
+        V_blks_.clear();
+
+        // loop over all Qmo blocks and build electron repulsion integrals
+        for (auto& Ql : Qmo_blks) {
+            string colm_l = Ql.first;
+            string colm_lspin = colm_l.substr(0, 2);
+            string colm_lov = colm_l.substr(3, 2);
+
+            for (auto& Qr : Qmo_blks) {
+                string colm_r = Qr.first;
+                string colm_rspin = colm_r.substr(0, 2);
+                string colm_rov = colm_r.substr(3, 2);
+
+                string eri_spin = build_eri_spin(colm_lspin, colm_rspin);
+                string eri_ov = build_eri_ov(colm_lov, colm_rov);
+                string eri_name = eri_spin + "_" + eri_ov;
+
+                if (!is_valid_spin(eri_spin) || is_in_V_blks(eri_name) || !is_valid_name(eri_name, valid_names))
+                    continue;
+
+                string exc_l = build_exchange_name(colm_lspin, colm_rspin, colm_lov, colm_rov);
+                string exc_r = build_exchange_name(colm_rspin, colm_lspin, colm_rov, colm_lov);
+
+                TArrayD ijab, ibaj;
+                ijab("i,j,a,b") = Ql.second("Q,i,j") * Qr.second("Q,a,b");
+                ibaj("i,b,a,j") = Qmo_blks[exc_l]("Q,i,b") * Qmo_blks[exc_r]("Q,a,j");
+
+                /// add dipole terms
+                if (has_photon_) {
+                    // add dipole terms for coulomb
+                    ijab("i,j,a,b") += lx2 * Dip_blks_["dx_" + colm_l]("i,j") * Dip_blks_["dx_" + colm_r]("a,b");
+                    ijab("i,j,a,b") += ly2 * Dip_blks_["dy_" + colm_l]("i,j") * Dip_blks_["dy_" + colm_r]("a,b");
+                    ijab("i,j,a,b") += lz2 * Dip_blks_["dz_" + colm_l]("i,j") * Dip_blks_["dz_" + colm_r]("a,b");
+
+                    // add dipole terms for exchange
+                    ibaj("i,b,a,j") += lx2 * Dip_blks_["dx_"+exc_l]("i,b") * Dip_blks_["dx_"+exc_r]("a,j");
+                    ibaj("i,b,a,j") += ly2 * Dip_blks_["dy_"+exc_l]("i,b") * Dip_blks_["dy_"+exc_r]("a,j");
+                    ibaj("i,b,a,j") += lz2 * Dip_blks_["dz_"+exc_l]("i,b") * Dip_blks_["dz_"+exc_r]("a,j");
+                }
+
+                V_blks_[eri_name]("i,a,j,b") = ijab("i,j,a,b") - ibaj("i,b,a,j");
+            }
+        }
+    }
+
     void CC_Cavity::build_eps() {
 
         double* eps = epsilon_;

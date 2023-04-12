@@ -76,12 +76,6 @@ namespace hilbert {
         void print_iteration(size_t iter, double energy, double dele, double tnorm) const override;
 
         /**
-         * @brief construct the antisymmetrized electron repulsion integrals from density fitting
-         * @param Qmo_blks the blocks of the density fitting integrals
-         */
-        void unpack_eris(TArrayMap &Qmo_blks) override;
-
-        /**
          * @brief Build the residual vectors and compute the energy
          * @return the energy
          */
