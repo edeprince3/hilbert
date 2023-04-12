@@ -66,9 +66,8 @@ namespace hilbert {
 
         auto * Hdiag = (double*) calloc(N_, sizeof(double));
 
-        bool singleGuess = eom_ss_guess_;
         double* ss_diag = nullptr;
-        if (singleGuess) ss_diag = build_diagonal();
+        if (eom_ss_guess_) ss_diag = build_diagonal();
 
         // reference
         Hdiag[0] = cc_energy_;
@@ -77,7 +76,7 @@ namespace hilbert {
         int id_s = 0;
         if ( include_u0_ ){
             Hdiag[dim_e_] = cc_energy_ + cavity_frequency_[2];
-            if (singleGuess) {
+            if (eom_ss_guess_) {
                 Hdiag[dim_e_] = ss_diag[id_s++] + enuc_;
                 Hdiag[dim_e_] += average_electric_dipole_self_energy_;
             }
@@ -88,7 +87,7 @@ namespace hilbert {
         int id = 1;
         for (int a = 0; a < va; a++) {
             for (int i = 0; i < oa; ++i) {
-                if (singleGuess) {
+                if (eom_ss_guess_) {
                     Hdiag[id] = ss_diag[id_s];
                     Hdiag[id] += average_electric_dipole_self_energy_ + enuc_;
 
@@ -109,7 +108,7 @@ namespace hilbert {
         //beta
         for (int a = va; a < va + vb; a++) {
             for (int i = oa; i < oa + ob; ++i) {
-                if (singleGuess) {
+                if (eom_ss_guess_) {
                     Hdiag[id] = ss_diag[id_s];
                     Hdiag[id] += average_electric_dipole_self_energy_ + enuc_;
                     if (include_u1_) {
@@ -170,7 +169,7 @@ namespace hilbert {
             }
         }
 
-        if (singleGuess) { free(ss_diag); }
+        if (eom_ss_guess_) { free(ss_diag); }
         return Hdiag;
     }
 
