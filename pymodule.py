@@ -73,9 +73,12 @@ def run_polaritonic_scf(name, **kwargs):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_TDDFT')
     elif ( lowername == 'cc_cavity' ):
         from mpi4py import MPI
-        from hilbert import set_ta_comm
+        import hilbert
         comm = MPI.COMM_WORLD
-        set_ta_comm(comm)
+        try:
+            hilbert.set_ta_comm(comm)
+        except:
+            raise Exception('Hilbert is not compiled with TA support. Please recompile with the `USE_QED_CC` flag.')
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'CC_CAVITY')
 
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
