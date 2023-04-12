@@ -3945,7 +3945,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o4v2L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmas2_xbbbb_Lvvoo("I,e,f,m,n") += tempArray[0]("I,j,i,m,n") * u2_bbbb_vvoo("e,f,j,i");
         }
-        world_.gop.fence(); tempArray[0].~TArrayD();
+        tempArray[0].~TArrayD();
 
         {
 
@@ -3970,7 +3970,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o4v2L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[1]("I,j,m,i,n") * u2_abab_vvoo("e,f,j,i");
         }
-        world_.gop.fence(); tempArray[1].~TArrayD();
+        tempArray[1].~TArrayD();
 
         {
 
@@ -3993,7 +3993,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o0v2L1: 1 | mem: o0v2L1: 2, 
             tempArray[3]("I,c,b") = t2_abab_vvoo("a,c,i,j") * m2_xabab_Loovv("I,i,j,a,b");
         }
-        world_.gop.fence(); tempArray[2].~TArrayD();
+        tempArray[2].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -4024,7 +4024,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o0v2L1: 1 | mem: o0v2L1: 2, 
             tempArray[4]("I,c,b") = t2_abab_vvoo("c,a,i,j") * m2_xabab_Loovv("I,i,j,b,a");
         }
-        world_.gop.fence(); tempArray[3].~TArrayD();
+        tempArray[3].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -4051,7 +4051,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmam2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[4]("I,b,e") * V_blks_["abab_oovv"]("m,n,b,f");
         }
-        world_.gop.fence(); tempArray[4].~TArrayD();
+        tempArray[4].~TArrayD();
 
         {
 
@@ -4094,7 +4094,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmal2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[5]("I,b,e") * V_blks_["abab_oovv"]("m,n,b,f");
         }
-        world_.gop.fence(); tempArray[5].~TArrayD();
+        tempArray[5].~TArrayD();
 
         if (include_u2_) {
 
@@ -4161,8 +4161,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmal2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[7]("I,e,b") * V_blks_["abab_oovv"]("m,n,b,f");
         }
-        world_.gop.fence(); tempArray[6].~TArrayD();
-        world_.gop.fence(); tempArray[7].~TArrayD();
+        tempArray[6].~TArrayD();
+        tempArray[7].~TArrayD();
 
         {
 
@@ -4211,7 +4211,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[9]("I,a,f") * t2_bbbb_vvoo("a,e,m,n");
         }
-        world_.gop.fence(); tempArray[8].~TArrayD();
+        tempArray[8].~TArrayD();
 
         if (include_u2_) {
 
@@ -4238,7 +4238,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[9]("I,a,f") * u2_bbbb_vvoo("a,e,m,n");
         }
-        world_.gop.fence(); tempArray[9].~TArrayD();
+        tempArray[9].~TArrayD();
 
         {
 
@@ -4299,7 +4299,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[10]("I,f,a") * u2_bbbb_vvoo("a,e,m,n");
         }
-        world_.gop.fence(); tempArray[10].~TArrayD();
+        tempArray[10].~TArrayD();
 
         {
 
@@ -4348,7 +4348,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[11]("I,e,a") * u2_abab_vvoo("a,f,m,n");
         }
-        world_.gop.fence(); tempArray[11].~TArrayD();
+        tempArray[11].~TArrayD();
 
         {
 
@@ -4399,7 +4399,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[12]("I,e,a") * u2_abab_vvoo("a,f,m,n");
         }
-        world_.gop.fence(); tempArray[12].~TArrayD();
+        tempArray[12].~TArrayD();
 
         {
 
@@ -4449,7 +4449,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempArray[14]("I,e,f,m,n") = dp_aa_vv("a,e") * l2_xaaaa_Loovv("I,m,n,a,f");
         }
-        world_.gop.fence(); tempArray[13].~TArrayD();
+        tempArray[13].~TArrayD();
 
         if (include_u2_) {
 
@@ -4488,7 +4488,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[14]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[14].~TArrayD();
+        tempArray[14].~TArrayD();
 
         if (include_u2_) {
 
@@ -4534,7 +4534,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[15]("I,f,e,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[15].~TArrayD();
+        tempArray[15].~TArrayD();
 
         if (include_u2_) {
 
@@ -4580,7 +4580,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[16]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[16].~TArrayD();
+        tempArray[16].~TArrayD();
 
         if (include_u2_) {
 
@@ -4620,7 +4620,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             sigmas2_xaaaa_Lvvoo("I,e,f,m,n") += tempPerm_xaaaa_Lvvoo("I,e,f,m,n");
             sigmas2_xaaaa_Lvvoo("I,e,f,m,n") -= tempPerm_xaaaa_Lvvoo("I,f,e,m,n");
         }
-        world_.gop.fence(); tempArray[17].~TArrayD();
+        tempArray[17].~TArrayD();
 
         {
 
@@ -4643,7 +4643,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o0v2L1: 1 | mem: o0v2L1: 2, 
             tempArray[19]("I,b,c") = 0.500000 * m2_xaaaa_Loovv("I,i,j,b,a") * t2_aaaa_vvoo("c,a,i,j");
         }
-        world_.gop.fence(); tempArray[18].~TArrayD();
+        tempArray[18].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -4655,7 +4655,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v3L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xbb_Lvo("I,e,m") += tempArray[19]("I,b,c") * V_blks_["abab_vovv"]("b,m,c,e");
         }
-        world_.gop.fence(); tempArray[19].~TArrayD();
+        tempArray[19].~TArrayD();
 
         {
 
@@ -4686,7 +4686,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[20]("I,f,b") * V_blks_["bbbb_oovv"]("m,n,b,e");
         }
-        world_.gop.fence(); tempArray[20].~TArrayD();
+        tempArray[20].~TArrayD();
 
         if (include_u2_) {
 
@@ -4717,7 +4717,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmal2_xabab_Lvvoo("I,e,f,m,n") += tempArray[21]("I,e,b") * V_blks_["abab_oovv"]("m,n,b,f");
         }
-        world_.gop.fence(); tempArray[21].~TArrayD();
+        tempArray[21].~TArrayD();
 
         {
 
@@ -4733,7 +4733,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v3L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xbb_Lvo("I,e,m") += tempArray[22]("I,c,b") * V_blks_["bbbb_vovv"]("b,m,c,e");
         }
-        world_.gop.fence(); tempArray[22].~TArrayD();
+        tempArray[22].~TArrayD();
 
         if (include_u2_) {
 
@@ -4752,7 +4752,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v3L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xbb_Lvo("I,e,m") += tempArray[23]("I,c,b") * V_blks_["bbbb_vovv"]("b,m,c,e");
         }
-        world_.gop.fence(); tempArray[23].~TArrayD();
+        tempArray[23].~TArrayD();
 
         if (include_u2_) {
 
@@ -4792,9 +4792,9 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") -= tempArray[26]("I,b,f") * V_blks_["bbbb_oovv"]("m,n,b,e");
         }
-        world_.gop.fence(); tempArray[24].~TArrayD();
-        world_.gop.fence(); tempArray[25].~TArrayD();
-        world_.gop.fence(); tempArray[26].~TArrayD();
+        tempArray[24].~TArrayD();
+        tempArray[25].~TArrayD();
+        tempArray[26].~TArrayD();
 
         {
 
@@ -4822,8 +4822,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmal2_xabab_Lvvoo("I,e,f,m,n") += tempArray[28]("I,e,b") * V_blks_["abab_oovv"]("m,n,b,f");
         }
-        world_.gop.fence(); tempArray[27].~TArrayD();
-        world_.gop.fence(); tempArray[28].~TArrayD();
+        tempArray[27].~TArrayD();
+        tempArray[28].~TArrayD();
 
         if (include_u2_) {
 
@@ -4872,8 +4872,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o0v2L1: 1 | mem: o0v2L1: 2, 
             tempArray[31]("I,f,a") = s2_xabab_Lvvoo("I,f,b,j,i") * V_blks_["abab_oovv"]("j,i,a,b");
         }
-        world_.gop.fence(); tempArray[29].~TArrayD();
-        world_.gop.fence(); tempArray[30].~TArrayD();
+        tempArray[29].~TArrayD();
+        tempArray[30].~TArrayD();
 
         {
 
@@ -4911,8 +4911,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[32]("I,a,e") * t2_abab_vvoo("a,f,m,n");
         }
-        world_.gop.fence(); tempArray[31].~TArrayD();
-        world_.gop.fence(); tempArray[32].~TArrayD();
+        tempArray[31].~TArrayD();
+        tempArray[32].~TArrayD();
 
         {
 
@@ -4934,7 +4934,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             sigmam2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[33]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[33].~TArrayD();
+        tempArray[33].~TArrayD();
 
         {
 
@@ -4964,7 +4964,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             sigmar2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[35]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[34].~TArrayD();
+        tempArray[34].~TArrayD();
 
         if (include_u0_ && include_u2_) {
 
@@ -4972,7 +4972,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[35]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[35].~TArrayD();
+        tempArray[35].~TArrayD();
 
         if (include_u2_) {
 
@@ -4991,7 +4991,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[36]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[36].~TArrayD();
+        tempArray[36].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -5112,7 +5112,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xbb_Lvo("I,e,m") += tempArray[38]("I,b,i,k,m") * sigmaOps[8]("b,e,i,k");
         }
-        world_.gop.fence(); tempArray[37].~TArrayD();
+        tempArray[37].~TArrayD();
 
         if (include_u2_) {
 
@@ -5165,7 +5165,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmam2_xabab_Lvvoo("I,e,f,m,n") += 2.000000 * tempArray[38]("I,e,m,i,n") * dp_bb_ov("i,f");
         }
-        world_.gop.fence(); tempArray[38].~TArrayD();
+        tempArray[38].~TArrayD();
 
         if (include_u2_) {
 
@@ -5267,7 +5267,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o2v0L1: 1 | mem: o2v0L1: 2, 
             tempArray[40]("I,m,j") = m2_xabab_Loovv("I,m,i,b,a") * t2_abab_vvoo("b,a,j,i");
         }
-        world_.gop.fence(); tempArray[39].~TArrayD();
+        tempArray[39].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -5359,7 +5359,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o2v0L1: 1 | mem: o2v0L1: 2, 
             tempArray[41]("I,k,i") = 0.500000 * t2_bbbb_vvoo("b,a,j,k") * m2_xbbbb_Loovv("I,i,j,b,a");
         }
-        world_.gop.fence(); tempArray[40].~TArrayD();
+        tempArray[40].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -5418,7 +5418,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o2v0L1: 1 | mem: o2v0L1: 2, 
             tempArray[42]("I,m,j") = 0.500000 * m2_xaaaa_Loovv("I,m,i,b,a") * t2_aaaa_vvoo("b,a,i,j");
         }
-        world_.gop.fence(); tempArray[41].~TArrayD();
+        tempArray[41].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -5482,7 +5482,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xaa_Lvo("I,e,m") -= tempArray[43]("I,k,j") * V_blks_["abab_oovo"]("m,k,e,j");
         }
-        world_.gop.fence(); tempArray[42].~TArrayD();
+        tempArray[42].~TArrayD();
 
         if (include_u0_ && include_u2_) {
 
@@ -5537,7 +5537,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xbb_Lvo("I,e,m") += 2.000000 * tempArray[43]("I,j,m") * dp_bb_ov("j,e");
         }
-        world_.gop.fence(); tempArray[43].~TArrayD();
+        tempArray[43].~TArrayD();
 
         {
 
@@ -5589,7 +5589,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xbb_Lvo("I,e,m") += tempArray[44]("I,m,j") * dp_bb_ov("j,e");
         }
-        world_.gop.fence(); tempArray[44].~TArrayD();
+        tempArray[44].~TArrayD();
 
         {
 
@@ -5656,7 +5656,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xaa_Lvo("I,e,m") += tempArray[45]("I,m,j") * dp_aa_ov("j,e");
         }
-        world_.gop.fence(); tempArray[45].~TArrayD();
+        tempArray[45].~TArrayD();
 
         if (include_u2_) {
 
@@ -5764,9 +5764,9 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmal2_xbbbb_Lvvoo("I,e,f,m,n") -= tempArray[48]("I,b,i,m,n") * V_blks_["bbbb_vovv"]("b,i,e,f");
         }
-        world_.gop.fence(); tempArray[46].~TArrayD();
-        world_.gop.fence(); tempArray[47].~TArrayD();
-        world_.gop.fence(); tempArray[48].~TArrayD();
+        tempArray[46].~TArrayD();
+        tempArray[47].~TArrayD();
+        tempArray[48].~TArrayD();
 
         {
 
@@ -5803,7 +5803,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xbb_Lvo("I,e,m") -= tempArray[49]("I,m,j") * dp_bb_ov("j,e");
         }
-        world_.gop.fence(); tempArray[49].~TArrayD();
+        tempArray[49].~TArrayD();
 
         if (include_u2_) {
 
@@ -5840,7 +5840,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xbb_Lvo("I,e,m") -= 2.000000 * tempArray[50]("I,j,m") * dp_bb_ov("j,e");
         }
-        world_.gop.fence(); tempArray[50].~TArrayD();
+        tempArray[50].~TArrayD();
 
         {
 
@@ -5877,7 +5877,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xaa_Lvo("I,e,m") -= tempArray[51]("I,m,j") * dp_aa_ov("j,e");
         }
-        world_.gop.fence(); tempArray[51].~TArrayD();
+        tempArray[51].~TArrayD();
 
         if (include_u2_) {
 
@@ -5914,7 +5914,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xaa_Lvo("I,e,m") -= 2.000000 * tempArray[52]("I,j,m") * dp_aa_ov("j,e");
         }
-        world_.gop.fence(); tempArray[52].~TArrayD();
+        tempArray[52].~TArrayD();
 
         {
 
@@ -5972,7 +5972,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[53]("I,m,i") * u2_bbbb_vvoo("e,f,n,i");
         }
-        world_.gop.fence(); tempArray[53].~TArrayD();
+        tempArray[53].~TArrayD();
 
         {
 
@@ -6041,7 +6041,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[54]("I,i,m") * u2_bbbb_vvoo("e,f,n,i");
         }
-        world_.gop.fence(); tempArray[54].~TArrayD();
+        tempArray[54].~TArrayD();
 
         {
 
@@ -6096,7 +6096,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[55]("I,i,m") * u2_abab_vvoo("e,f,i,n");
         }
-        world_.gop.fence(); tempArray[55].~TArrayD();
+        tempArray[55].~TArrayD();
 
         {
 
@@ -6162,7 +6162,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[56]("I,m,i") * u2_abab_vvoo("e,f,i,n");
         }
-        world_.gop.fence(); tempArray[56].~TArrayD();
+        tempArray[56].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -6247,7 +6247,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o3v1L1: 1 | mem: o3v1L1: 2, 
             tempArray[58]("I,f,m,n,i") = m2_xaaaa_Loovv("I,m,n,a,f") * u1_aa_vo("a,i");
         }
-        world_.gop.fence(); tempArray[57].~TArrayD();
+        tempArray[57].~TArrayD();
 
         if (include_u2_) {
 
@@ -6321,7 +6321,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = 2.000000 * tempArray[58]("I,f,m,n,i") * dp_aa_ov("i,e");
         }
-        world_.gop.fence(); tempArray[58].~TArrayD();
+        tempArray[58].~TArrayD();
 
         if (include_u1_) {
 
@@ -6370,7 +6370,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[59]("I,f,e,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[59].~TArrayD();
+        tempArray[59].~TArrayD();
 
         if (include_u1_) {
 
@@ -6419,7 +6419,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = tempArray[60]("I,f,e,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[60].~TArrayD();
+        tempArray[60].~TArrayD();
 
         if (include_u1_) {
 
@@ -6438,7 +6438,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[61]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[61].~TArrayD();
+        tempArray[61].~TArrayD();
 
         if (include_u1_) {
 
@@ -6457,7 +6457,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[62]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[62].~TArrayD();
+        tempArray[62].~TArrayD();
 
         if (include_u1_) {
 
@@ -6506,7 +6506,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[63]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[63].~TArrayD();
+        tempArray[63].~TArrayD();
 
         if (include_u2_) {
 
@@ -6552,7 +6552,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[64]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[64].~TArrayD();
+        tempArray[64].~TArrayD();
 
         if (include_u1_) {
 
@@ -6601,7 +6601,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[65]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[65].~TArrayD();
+        tempArray[65].~TArrayD();
 
         if (include_u2_) {
 
@@ -6647,7 +6647,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[66]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[66].~TArrayD();
+        tempArray[66].~TArrayD();
 
         {
 
@@ -6693,7 +6693,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[67]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[67].~TArrayD();
+        tempArray[67].~TArrayD();
 
         if (include_u2_) {
 
@@ -6739,7 +6739,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = 2.000000 * tempArray[68]("I,e,f,n,m");
         }
-        world_.gop.fence(); tempArray[68].~TArrayD();
+        tempArray[68].~TArrayD();
 
         if (include_u2_) {
 
@@ -6785,7 +6785,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = 2.000000 * tempArray[69]("I,e,f,n,m");
         }
-        world_.gop.fence(); tempArray[69].~TArrayD();
+        tempArray[69].~TArrayD();
 
         {
 
@@ -6835,7 +6835,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempArray[71]("I,e,f,m,n") = sigmaOps[223]("e,i,m,n") * r1_xbb_Lvo("I,f,i");
         }
-        world_.gop.fence(); tempArray[70].~TArrayD();
+        tempArray[70].~TArrayD();
 
         if (include_u2_) {
 
@@ -6877,7 +6877,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[71]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[71].~TArrayD();
+        tempArray[71].~TArrayD();
 
         if (include_u2_) {
 
@@ -6923,7 +6923,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[72]("I,e,f,n,m") * u0;
         }
-        world_.gop.fence(); tempArray[72].~TArrayD();
+        tempArray[72].~TArrayD();
 
         if (include_u1_) {
 
@@ -6972,7 +6972,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[73]("I,f,e,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[73].~TArrayD();
+        tempArray[73].~TArrayD();
 
         {
 
@@ -7021,7 +7021,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[74]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[74].~TArrayD();
+        tempArray[74].~TArrayD();
 
         {
 
@@ -7070,7 +7070,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = tempArray[75]("I,e,f,n,m") * u0;
         }
-        world_.gop.fence(); tempArray[75].~TArrayD();
+        tempArray[75].~TArrayD();
 
         if (include_u2_) {
 
@@ -7116,7 +7116,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = tempArray[76]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[76].~TArrayD();
+        tempArray[76].~TArrayD();
 
         {
 
@@ -7165,7 +7165,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[77]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[77].~TArrayD();
+        tempArray[77].~TArrayD();
 
         if (include_u1_) {
 
@@ -7214,7 +7214,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[78]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[78].~TArrayD();
+        tempArray[78].~TArrayD();
 
         if (include_u2_) {
 
@@ -7233,7 +7233,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xbb_Lvo("I,e,m") -= tempArray[79]("I,j,k") * V_blks_["bbbb_oovo"]("m,k,e,j");
         }
-        world_.gop.fence(); tempArray[79].~TArrayD();
+        tempArray[79].~TArrayD();
 
         {
 
@@ -7249,7 +7249,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xbb_Lvo("I,e,m") -= tempArray[80]("I,j,k") * V_blks_["bbbb_oovo"]("m,k,e,j");
         }
-        world_.gop.fence(); tempArray[80].~TArrayD();
+        tempArray[80].~TArrayD();
 
         if (include_u2_) {
 
@@ -7277,8 +7277,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xbb_Lvo("I,e,m") += tempArray[82]("I,k,j") * V_blks_["abba_oovo"]("k,m,e,j");
         }
-        world_.gop.fence(); tempArray[81].~TArrayD();
-        world_.gop.fence(); tempArray[82].~TArrayD();
+        tempArray[81].~TArrayD();
+        tempArray[82].~TArrayD();
 
         {
 
@@ -7294,7 +7294,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xbb_Lvo("I,e,m") += tempArray[83]("I,k,j") * V_blks_["abba_oovo"]("k,m,e,j");
         }
-        world_.gop.fence(); tempArray[83].~TArrayD();
+        tempArray[83].~TArrayD();
 
         if (include_u2_) {
 
@@ -7333,8 +7333,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             sigmas2_xaaaa_Lvvoo("I,e,f,m,n") += tempPerm_xaaaa_Lvvoo("I,e,f,m,n");
             sigmas2_xaaaa_Lvvoo("I,e,f,m,n") -= tempPerm_xaaaa_Lvvoo("I,f,e,m,n");
         }
-        world_.gop.fence(); tempArray[84].~TArrayD();
-        world_.gop.fence(); tempArray[85].~TArrayD();
+        tempArray[84].~TArrayD();
+        tempArray[85].~TArrayD();
 
         {
 
@@ -7371,8 +7371,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o2v0L1: 1 | mem: o2v0L1: 2, 
             tempArray[88]("I,k,j") = 0.500000 * t2_aaaa_vvoo("b,a,i,k") * m2_xaaaa_Loovv("I,i,j,b,a");
         }
-        world_.gop.fence(); tempArray[86].~TArrayD();
-        world_.gop.fence(); tempArray[87].~TArrayD();
+        tempArray[86].~TArrayD();
+        tempArray[87].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -7384,7 +7384,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xbb_Lvo("I,e,m") += tempArray[88]("I,k,j") * V_blks_["abba_oovo"]("k,m,e,j");
         }
-        world_.gop.fence(); tempArray[88].~TArrayD();
+        tempArray[88].~TArrayD();
 
         {
 
@@ -7408,7 +7408,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") += tempArray[89]("I,e,m");
         }
-        world_.gop.fence(); tempArray[89].~TArrayD();
+        tempArray[89].~TArrayD();
 
         if (include_u2_) {
 
@@ -7432,7 +7432,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") += 2.000000 * tempArray[90]("I,e,m");
         }
-        world_.gop.fence(); tempArray[90].~TArrayD();
+        tempArray[90].~TArrayD();
 
         if (include_u2_) {
 
@@ -7454,7 +7454,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") -= tempArray[91]("I,e,m");
         }
-        world_.gop.fence(); tempArray[91].~TArrayD();
+        tempArray[91].~TArrayD();
 
         {
 
@@ -7476,7 +7476,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") -= tempArray[92]("I,e,m");
         }
-        world_.gop.fence(); tempArray[92].~TArrayD();
+        tempArray[92].~TArrayD();
 
         {
 
@@ -7498,7 +7498,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") -= tempArray[93]("I,e,m");
         }
-        world_.gop.fence(); tempArray[93].~TArrayD();
+        tempArray[93].~TArrayD();
 
         {
 
@@ -7522,7 +7522,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") += tempArray[94]("I,e,m");
         }
-        world_.gop.fence(); tempArray[94].~TArrayD();
+        tempArray[94].~TArrayD();
 
         if (include_u2_) {
 
@@ -7546,7 +7546,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") += 2.000000 * tempArray[95]("I,e,m");
         }
-        world_.gop.fence(); tempArray[95].~TArrayD();
+        tempArray[95].~TArrayD();
 
         if (include_u2_) {
 
@@ -7568,7 +7568,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") -= tempArray[96]("I,e,m");
         }
-        world_.gop.fence(); tempArray[96].~TArrayD();
+        tempArray[96].~TArrayD();
 
         if (include_u2_) {
 
@@ -7587,7 +7587,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[97]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[97].~TArrayD();
+        tempArray[97].~TArrayD();
 
         if (include_u1_) {
 
@@ -7606,7 +7606,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[98]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[98].~TArrayD();
+        tempArray[98].~TArrayD();
 
         if (include_u2_) {
 
@@ -7625,7 +7625,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[99]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[99].~TArrayD();
+        tempArray[99].~TArrayD();
 
         if (include_u1_) {
 
@@ -7644,7 +7644,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[100]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[100].~TArrayD();
+        tempArray[100].~TArrayD();
 
         {
 
@@ -7670,7 +7670,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempArray[102]("I,e,f,m,n") = m2_xabab_Loovv("I,i,n,e,f") * sigmaOps[312]("i,m");
         }
-        world_.gop.fence(); tempArray[101].~TArrayD();
+        tempArray[101].~TArrayD();
 
         if (include_u0_ && include_u1_ && include_u2_) {
 
@@ -7685,7 +7685,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             sigmam2_xabab_Lvvoo("I,e,f,m,n") += 2.000000 * tempArray[102]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[102].~TArrayD();
+        tempArray[102].~TArrayD();
 
         if (include_u2_) {
 
@@ -7707,7 +7707,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             sigmam2_xabab_Lvvoo("I,e,f,m,n") += 2.000000 * tempArray[103]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[103].~TArrayD();
+        tempArray[103].~TArrayD();
 
         {
 
@@ -7729,7 +7729,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             sigmam2_xabab_Lvvoo("I,e,f,m,n") += tempArray[104]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[104].~TArrayD();
+        tempArray[104].~TArrayD();
 
         {
 
@@ -7751,7 +7751,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[105]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[105].~TArrayD();
+        tempArray[105].~TArrayD();
 
         if (include_u2_) {
 
@@ -7770,7 +7770,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[106]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[106].~TArrayD();
+        tempArray[106].~TArrayD();
 
         {
 
@@ -7792,7 +7792,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[107]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[107].~TArrayD();
+        tempArray[107].~TArrayD();
 
         {
 
@@ -7814,7 +7814,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[108]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[108].~TArrayD();
+        tempArray[108].~TArrayD();
 
         {
 
@@ -7836,7 +7836,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[109]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[109].~TArrayD();
+        tempArray[109].~TArrayD();
 
         if (include_u1_) {
 
@@ -7855,7 +7855,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[110]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[110].~TArrayD();
+        tempArray[110].~TArrayD();
 
         if (include_u1_) {
 
@@ -7874,7 +7874,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[111]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[111].~TArrayD();
+        tempArray[111].~TArrayD();
 
         if (include_u2_) {
 
@@ -7893,7 +7893,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[112]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[112].~TArrayD();
+        tempArray[112].~TArrayD();
 
         {
 
@@ -7950,7 +7950,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[113]("I,e,a") * u2_bbbb_vvoo("a,f,m,n");
         }
-        world_.gop.fence(); tempArray[113].~TArrayD();
+        tempArray[113].~TArrayD();
 
         {
 
@@ -8007,7 +8007,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[114]("I,e,a") * u2_bbbb_vvoo("a,f,m,n");
         }
-        world_.gop.fence(); tempArray[114].~TArrayD();
+        tempArray[114].~TArrayD();
 
         {
 
@@ -8058,7 +8058,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[115]("I,e,a") * u2_abab_vvoo("a,f,m,n");
         }
-        world_.gop.fence(); tempArray[115].~TArrayD();
+        tempArray[115].~TArrayD();
 
         {
 
@@ -8109,7 +8109,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[116]("I,e,a") * u2_abab_vvoo("a,f,m,n");
         }
-        world_.gop.fence(); tempArray[116].~TArrayD();
+        tempArray[116].~TArrayD();
 
         if (include_u1_) {
 
@@ -8135,7 +8135,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v3L1: 1, o0v2L1: 1 | mem: o0v2L1: 2, 
             tempArray[118]("I,f,a") = s1_xbb_Lvo("I,b,i") * V_blks_["bbbb_vovv"]("f,i,a,b");
         }
-        world_.gop.fence(); tempArray[117].~TArrayD();
+        tempArray[117].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -8158,7 +8158,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") += tempArray[119]("I,e,a") * t2_aaaa_vvoo("a,f,m,n");
         }
-        world_.gop.fence(); tempArray[118].~TArrayD();
+        tempArray[118].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -8166,7 +8166,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v3L1: 1, o2v2L1: 1 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[119]("I,e,a") * t2_abab_vvoo("a,f,m,n");
         }
-        world_.gop.fence(); tempArray[119].~TArrayD();
+        tempArray[119].~TArrayD();
 
         if (include_u1_) {
 
@@ -8229,7 +8229,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             sigmam2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[121]("I,f,n") * dp_aa_ov("m,e");
         }
-        world_.gop.fence(); tempArray[120].~TArrayD();
+        tempArray[120].~TArrayD();
 
         if (include_u2_) {
 
@@ -8296,7 +8296,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1, o0v0: 1 | mem: o1v1L1: 1, o0v0: 1, 
             sigmam1_xaa_Lvo("I,e,m") -= scalar8 * tempArray[122]("I,e,m");
         }
-        world_.gop.fence(); tempArray[121].~TArrayD();
+        tempArray[121].~TArrayD();
 
         if (include_u2_) {
 
@@ -8327,7 +8327,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             csigmam1_xaa_Lvo("I,e,m") += tempArray[122]("I,e,m");
         }
-        world_.gop.fence(); tempArray[122].~TArrayD();
+        tempArray[122].~TArrayD();
 
         if (include_u1_) {
 
@@ -8420,7 +8420,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempArray[124]("I,a,f,m,n") = r1_xaa_Lvo("I,a,m") * u1_aa_vo("f,n");
         }
-        world_.gop.fence(); tempArray[123].~TArrayD();
+        tempArray[123].~TArrayD();
 
         if (include_u2_) {
 
@@ -8502,7 +8502,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[124]("I,f,e,m,n");
         }
-        world_.gop.fence(); tempArray[124].~TArrayD();
+        tempArray[124].~TArrayD();
 
         if (include_u2_) {
 
@@ -8560,7 +8560,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             csigmam0_L("I") += tempArray[125]("I");
         }
-        world_.gop.fence(); tempArray[125].~TArrayD();
+        tempArray[125].~TArrayD();
 
         if (include_u2_) {
 
@@ -8615,7 +8615,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             csigmam0_L("I") += tempArray[126]("I");
         }
-        world_.gop.fence(); tempArray[126].~TArrayD();
+        tempArray[126].~TArrayD();
 
         if (include_u2_) {
 
@@ -8697,7 +8697,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             csigmam0_L("I") += tempArray[127]("I");
         }
-        world_.gop.fence(); tempArray[127].~TArrayD();
+        tempArray[127].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -8778,7 +8778,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1, o0v0: 1 | mem: o1v1L1: 1, o0v0: 1, 
             sigmam1_xaa_Lvo("I,e,m") += scalar7 * tempArray[129]("I,e,m");
         }
-        world_.gop.fence(); tempArray[128].~TArrayD();
+        tempArray[128].~TArrayD();
 
         {
 
@@ -8808,7 +8808,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             csigmam1_xaa_Lvo("I,e,m") -= tempArray[129]("I,e,m");
         }
-        world_.gop.fence(); tempArray[129].~TArrayD();
+        tempArray[129].~TArrayD();
 
         if (include_u1_) {
 
@@ -8884,7 +8884,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1, o0v0: 1 | mem: o1v1L1: 1, o0v0: 1, 
             sigmal1_xaa_Lvo("I,e,m") -= scalar8 * tempArray[131]("I,e,m");
         }
-        world_.gop.fence(); tempArray[130].~TArrayD();
+        tempArray[130].~TArrayD();
 
         if (include_u2_) {
 
@@ -8917,7 +8917,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             csigmal1_xaa_Lvo("I,e,m") += tempArray[131]("I,e,m");
         }
-        world_.gop.fence(); tempArray[131].~TArrayD();
+        tempArray[131].~TArrayD();
 
         {
 
@@ -8972,7 +8972,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 2, o2v2L1: 1 | mem: o2v2L1: 2, o3v1L1: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") -= t2_abab_vvoo("a,f,m,n") * tempArray[132]("I,a,i") * u1_aa_vo("e,i");
         }
-        world_.gop.fence(); tempArray[132].~TArrayD();
+        tempArray[132].~TArrayD();
 
         {
 
@@ -9013,7 +9013,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 2, o2v2L1: 1 | mem: o2v2L1: 2, o3v1L1: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += t2_abab_vvoo("a,f,m,n") * tempArray[133]("I,a,i") * u1_aa_vo("e,i");
         }
-        world_.gop.fence(); tempArray[133].~TArrayD();
+        tempArray[133].~TArrayD();
 
         {
 
@@ -9065,7 +9065,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o3v2L1: 2, o2v2L1: 1 | mem: o2v2L1: 2, o3v1L1: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[134]("I,a,i") * t2_bbbb_vvoo("a,e,m,n") * u1_bb_vo("f,i");
         }
-        world_.gop.fence(); tempArray[134].~TArrayD();
+        tempArray[134].~TArrayD();
 
         {
 
@@ -9107,7 +9107,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempArray[136]("I,f,e,m,n") = s1_xbb_Lvo("I,f,m") * u1_bb_vo("e,n");
         }
-        world_.gop.fence(); tempArray[135].~TArrayD();
+        tempArray[135].~TArrayD();
 
         if (include_u2_) {
 
@@ -9162,7 +9162,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempArray[137]("I,a,f,m,n") = s1_xaa_Lvo("I,a,m") * u1_aa_vo("f,n");
         }
-        world_.gop.fence(); tempArray[136].~TArrayD();
+        tempArray[136].~TArrayD();
 
         if (include_u2_) {
 
@@ -9225,7 +9225,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmar2_xabab_Lvvoo("I,e,f,m,n") -= scalar8 * tempArray[138]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[137].~TArrayD();
+        tempArray[137].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -9260,7 +9260,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             sigmar2_xabab_Lvvoo("I,e,f,m,n") -= scalar7 * tempArray[139]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[138].~TArrayD();
+        tempArray[138].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -9283,7 +9283,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             csigmar2_xabab_Lvvoo("I,e,f,m,n") += tempArray[139]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[139].~TArrayD();
+        tempArray[139].~TArrayD();
 
         if (include_u2_) {
 
@@ -9374,9 +9374,9 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             csigmal0_L("I") += tempArray[142]("I");
         }
-        world_.gop.fence(); tempArray[140].~TArrayD();
-        world_.gop.fence(); tempArray[141].~TArrayD();
-        world_.gop.fence(); tempArray[142].~TArrayD();
+        tempArray[140].~TArrayD();
+        tempArray[141].~TArrayD();
+        tempArray[142].~TArrayD();
 
         if (include_u1_) {
 
@@ -9436,7 +9436,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1, o0v0: 1 | mem: o1v1L1: 1, o0v0: 1, 
             sigmal1_xaa_Lvo("I,e,m") += scalar7 * tempArray[144]("I,e,m");
         }
-        world_.gop.fence(); tempArray[143].~TArrayD();
+        tempArray[143].~TArrayD();
 
         if (include_u2_) {
 
@@ -9469,7 +9469,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             csigmal1_xaa_Lvo("I,e,m") -= tempArray[144]("I,e,m");
         }
-        world_.gop.fence(); tempArray[144].~TArrayD();
+        tempArray[144].~TArrayD();
 
         {
 
@@ -9506,7 +9506,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempArray[146]("I,e,f,n,m") = dp_aa_ov("n,e") * l1_xaa_Lov("I,m,f");
         }
-        world_.gop.fence(); tempArray[145].~TArrayD();
+        tempArray[145].~TArrayD();
 
         if (include_u0_) {
 
@@ -9536,7 +9536,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempArray[147]("I,e,f,n,m") = sigmaOps[366]("e,n") * r1_xbb_Lvo("I,f,m");
         }
-        world_.gop.fence(); tempArray[146].~TArrayD();
+        tempArray[146].~TArrayD();
 
         if (include_u2_) {
 
@@ -9582,7 +9582,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[147]("I,e,f,n,m") * u0;
         }
-        world_.gop.fence(); tempArray[147].~TArrayD();
+        tempArray[147].~TArrayD();
 
         if (include_u1_) {
 
@@ -9635,7 +9635,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[148]("I,f,e,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[148].~TArrayD();
+        tempArray[148].~TArrayD();
 
         {
 
@@ -9688,7 +9688,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[149]("I,e,f,n,m") * u0;
         }
-        world_.gop.fence(); tempArray[149].~TArrayD();
+        tempArray[149].~TArrayD();
 
         {
 
@@ -9741,7 +9741,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[150]("I,e,f,n,m") * u0;
         }
-        world_.gop.fence(); tempArray[150].~TArrayD();
+        tempArray[150].~TArrayD();
 
         if (include_u1_) {
 
@@ -9794,7 +9794,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[151]("I,e,f,n,m") * u0;
         }
-        world_.gop.fence(); tempArray[151].~TArrayD();
+        tempArray[151].~TArrayD();
 
         {
 
@@ -9847,7 +9847,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[152]("I,e,f,n,m") * u0;
         }
-        world_.gop.fence(); tempArray[152].~TArrayD();
+        tempArray[152].~TArrayD();
 
         if (include_u1_) {
 
@@ -9900,7 +9900,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[153]("I,f,e,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[153].~TArrayD();
+        tempArray[153].~TArrayD();
 
         {
 
@@ -9953,7 +9953,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[154]("I,e,f,n,m") * u0;
         }
-        world_.gop.fence(); tempArray[154].~TArrayD();
+        tempArray[154].~TArrayD();
 
         if (include_u1_) {
 
@@ -10006,7 +10006,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = tempArray[155]("I,f,e,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[155].~TArrayD();
+        tempArray[155].~TArrayD();
 
         {
 
@@ -10059,7 +10059,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[156]("I,e,f,n,m") * u0;
         }
-        world_.gop.fence(); tempArray[156].~TArrayD();
+        tempArray[156].~TArrayD();
 
         if (include_u1_) {
 
@@ -10112,7 +10112,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = tempArray[157]("I,f,e,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[157].~TArrayD();
+        tempArray[157].~TArrayD();
 
         {
 
@@ -10165,7 +10165,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = tempArray[158]("I,e,f,n,m") * u0;
         }
-        world_.gop.fence(); tempArray[158].~TArrayD();
+        tempArray[158].~TArrayD();
 
         {
 
@@ -10218,7 +10218,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = tempArray[159]("I,e,f,n,m") * u0;
         }
-        world_.gop.fence(); tempArray[159].~TArrayD();
+        tempArray[159].~TArrayD();
 
         if (include_u1_) {
 
@@ -10271,7 +10271,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[160]("I,e,f,n,m") * u0;
         }
-        world_.gop.fence(); tempArray[160].~TArrayD();
+        tempArray[160].~TArrayD();
 
         if (include_u2_) {
 
@@ -10301,7 +10301,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") -= tempArray[161]("I,f,m") * u1_bb_vo("e,n");
         }
-        world_.gop.fence(); tempArray[161].~TArrayD();
+        tempArray[161].~TArrayD();
 
         if (include_u2_) {
 
@@ -10331,7 +10331,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") += tempArray[162]("I,f,m") * u1_bb_vo("e,n");
         }
-        world_.gop.fence(); tempArray[162].~TArrayD();
+        tempArray[162].~TArrayD();
 
         if (include_u2_) {
 
@@ -10361,7 +10361,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[163]("I,e,m") * u1_bb_vo("f,n");
         }
-        world_.gop.fence(); tempArray[163].~TArrayD();
+        tempArray[163].~TArrayD();
 
         if (include_u2_) {
 
@@ -10391,7 +10391,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[164]("I,e,m") * u1_bb_vo("f,n");
         }
-        world_.gop.fence(); tempArray[164].~TArrayD();
+        tempArray[164].~TArrayD();
 
         if (include_u0_) {
 
@@ -10431,7 +10431,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempArray[166]("I,f,e,m,n") = s0_L("I") * sigmaOps[40]("f,e,m,n");
         }
-        world_.gop.fence(); tempArray[165].~TArrayD();
+        tempArray[165].~TArrayD();
 
         if (include_u2_) {
 
@@ -10460,7 +10460,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") += tempArray[166]("I,e,f,n,m");
         }
-        world_.gop.fence(); tempArray[166].~TArrayD();
+        tempArray[166].~TArrayD();
 
         {
 
@@ -10504,7 +10504,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = -1.0 * tempArray[167]("I,f,m") * u1_bb_vo("e,n");
         }
-        world_.gop.fence(); tempArray[167].~TArrayD();
+        tempArray[167].~TArrayD();
 
         {
 
@@ -10530,7 +10530,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") += tempArray[168]("I,f,m") * u1_bb_vo("e,n");
         }
-        world_.gop.fence(); tempArray[168].~TArrayD();
+        tempArray[168].~TArrayD();
 
         {
 
@@ -10571,7 +10571,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             sigmar2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[169]("I,e,m") * u1_bb_vo("f,n");
         }
-        world_.gop.fence(); tempArray[169].~TArrayD();
+        tempArray[169].~TArrayD();
 
         {
 
@@ -10597,7 +10597,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             sigmar2_xabab_Lvvoo("I,e,f,m,n") += tempArray[170]("I,e,m") * u1_bb_vo("f,n");
         }
-        world_.gop.fence(); tempArray[170].~TArrayD();
+        tempArray[170].~TArrayD();
 
         if (include_u0_ && include_u2_) {
 
@@ -10617,7 +10617,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             csigmas2_xbbbb_Lvvoo("I,e,f,m,n") += tempArray[171]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[171].~TArrayD();
+        tempArray[171].~TArrayD();
 
         if (include_u1_) {
 
@@ -10640,7 +10640,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             csigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[172]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[172].~TArrayD();
+        tempArray[172].~TArrayD();
 
         if (include_u1_) {
 
@@ -10663,7 +10663,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             csigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[173]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[173].~TArrayD();
+        tempArray[173].~TArrayD();
 
         if (include_u0_ && include_u2_) {
 
@@ -10699,8 +10699,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
             csigmas2_xaaaa_Lvvoo("I,e,f,m,n") += tempArray[175]("I,e,f,m,n");
         }
-        world_.gop.fence(); tempArray[174].~TArrayD();
-        world_.gop.fence(); tempArray[175].~TArrayD();
+        tempArray[174].~TArrayD();
+        tempArray[175].~TArrayD();
 
         if (include_u0_) {
 
@@ -10752,7 +10752,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempArray[177]("I,e,f,m,n") = sigmaOps[235]("e,f,m,n") * s0_L("I");
         }
-        world_.gop.fence(); tempArray[176].~TArrayD();
+        tempArray[176].~TArrayD();
 
         if (include_u2_) {
 
@@ -10798,7 +10798,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempArray[178]("I,e,f,m,n") = sigmaOps[166]("e,f,m,n") * s0_L("I");
         }
-        world_.gop.fence(); tempArray[177].~TArrayD();
+        tempArray[177].~TArrayD();
 
         {
 
@@ -10843,7 +10843,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempArray[179]("I,e,f,m,n") = s0_L("I") * sigmaOps[232]("e,f,m,n");
         }
-        world_.gop.fence(); tempArray[178].~TArrayD();
+        tempArray[178].~TArrayD();
 
         if (include_u2_) {
 
@@ -10885,7 +10885,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o0v0: 1 | mem: o2v2L1: 1, o0v0: 1, 
             tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = tempArray[179]("I,e,f,m,n") * u0;
         }
-        world_.gop.fence(); tempArray[179].~TArrayD();
+        tempArray[179].~TArrayD();
 
         {
 
@@ -10906,7 +10906,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[180]("I");
         }
-        world_.gop.fence(); tempArray[180].~TArrayD();
+        tempArray[180].~TArrayD();
 
         {
 
@@ -10925,7 +10925,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[181]("I");
         }
-        world_.gop.fence(); tempArray[181].~TArrayD();
+        tempArray[181].~TArrayD();
 
         {
 
@@ -10944,7 +10944,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += tempArray[182]("I");
         }
-        world_.gop.fence(); tempArray[182].~TArrayD();
+        tempArray[182].~TArrayD();
 
         if (include_u2_) {
 
@@ -10965,7 +10965,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += 2.000000 * tempArray[183]("I");
         }
-        world_.gop.fence(); tempArray[183].~TArrayD();
+        tempArray[183].~TArrayD();
 
         if (include_u2_) {
 
@@ -10986,7 +10986,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= 2.000000 * tempArray[184]("I");
         }
-        world_.gop.fence(); tempArray[184].~TArrayD();
+        tempArray[184].~TArrayD();
 
         {
 
@@ -11007,7 +11007,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += tempArray[185]("I");
         }
-        world_.gop.fence(); tempArray[185].~TArrayD();
+        tempArray[185].~TArrayD();
 
         if (include_u2_) {
 
@@ -11028,7 +11028,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += 2.000000 * tempArray[186]("I");
         }
-        world_.gop.fence(); tempArray[186].~TArrayD();
+        tempArray[186].~TArrayD();
 
         if (include_u2_) {
 
@@ -11047,7 +11047,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[187]("I");
         }
-        world_.gop.fence(); tempArray[187].~TArrayD();
+        tempArray[187].~TArrayD();
 
         if (include_u2_) {
 
@@ -11068,7 +11068,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += 2.000000 * tempArray[188]("I");
         }
-        world_.gop.fence(); tempArray[188].~TArrayD();
+        tempArray[188].~TArrayD();
 
         if (include_u2_) {
 
@@ -11087,7 +11087,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[189]("I");
         }
-        world_.gop.fence(); tempArray[189].~TArrayD();
+        tempArray[189].~TArrayD();
 
         if (include_u2_) {
 
@@ -11106,7 +11106,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += tempArray[190]("I");
         }
-        world_.gop.fence(); tempArray[190].~TArrayD();
+        tempArray[190].~TArrayD();
 
         if (include_u2_) {
 
@@ -11125,7 +11125,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[191]("I");
         }
-        world_.gop.fence(); tempArray[191].~TArrayD();
+        tempArray[191].~TArrayD();
 
         if (include_u2_) {
 
@@ -11144,7 +11144,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[192]("I");
         }
-        world_.gop.fence(); tempArray[192].~TArrayD();
+        tempArray[192].~TArrayD();
 
         {
 
@@ -11163,7 +11163,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[193]("I");
         }
-        world_.gop.fence(); tempArray[193].~TArrayD();
+        tempArray[193].~TArrayD();
 
         if (include_u2_) {
 
@@ -11184,7 +11184,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += 2.000000 * tempArray[194]("I");
         }
-        world_.gop.fence(); tempArray[194].~TArrayD();
+        tempArray[194].~TArrayD();
 
         if (include_u2_) {
 
@@ -11203,7 +11203,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[195]("I");
         }
-        world_.gop.fence(); tempArray[195].~TArrayD();
+        tempArray[195].~TArrayD();
 
         {
 
@@ -11224,7 +11224,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[196]("I");
         }
-        world_.gop.fence(); tempArray[196].~TArrayD();
+        tempArray[196].~TArrayD();
 
         {
 
@@ -11245,7 +11245,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += tempArray[197]("I");
         }
-        world_.gop.fence(); tempArray[197].~TArrayD();
+        tempArray[197].~TArrayD();
 
         if (include_u2_) {
 
@@ -11266,7 +11266,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += 2.000000 * tempArray[198]("I");
         }
-        world_.gop.fence(); tempArray[198].~TArrayD();
+        tempArray[198].~TArrayD();
 
         if (include_u2_) {
 
@@ -11285,7 +11285,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[199]("I");
         }
-        world_.gop.fence(); tempArray[199].~TArrayD();
+        tempArray[199].~TArrayD();
 
         if (include_u2_) {
 
@@ -11306,7 +11306,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += 2.000000 * tempArray[200]("I");
         }
-        world_.gop.fence(); tempArray[200].~TArrayD();
+        tempArray[200].~TArrayD();
 
         if (include_u2_) {
 
@@ -11325,7 +11325,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += tempArray[201]("I");
         }
-        world_.gop.fence(); tempArray[201].~TArrayD();
+        tempArray[201].~TArrayD();
 
         if (include_u2_) {
 
@@ -11346,7 +11346,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= 2.000000 * tempArray[202]("I");
         }
-        world_.gop.fence(); tempArray[202].~TArrayD();
+        tempArray[202].~TArrayD();
 
         {
 
@@ -11365,7 +11365,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += tempArray[203]("I");
         }
-        world_.gop.fence(); tempArray[203].~TArrayD();
+        tempArray[203].~TArrayD();
 
         if (include_u1_) {
 
@@ -11417,10 +11417,10 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xbb_Lvo("I,e,m") -= tempArray[207]("I,b,j") * V_blks_["bbbb_oovv"]("m,j,b,e");
         }
-        world_.gop.fence(); tempArray[204].~TArrayD();
-        world_.gop.fence(); tempArray[205].~TArrayD();
-        world_.gop.fence(); tempArray[206].~TArrayD();
-        world_.gop.fence(); tempArray[207].~TArrayD();
+        tempArray[204].~TArrayD();
+        tempArray[205].~TArrayD();
+        tempArray[206].~TArrayD();
+        tempArray[207].~TArrayD();
 
         if (include_u2_) {
 
@@ -11442,7 +11442,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") -= 2.000000 * tempArray[208]("I,e,m");
         }
-        world_.gop.fence(); tempArray[208].~TArrayD();
+        tempArray[208].~TArrayD();
 
         if (include_u2_) {
 
@@ -11464,7 +11464,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") += 2.000000 * tempArray[209]("I,e,m");
         }
-        world_.gop.fence(); tempArray[209].~TArrayD();
+        tempArray[209].~TArrayD();
 
         {
 
@@ -11486,7 +11486,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") += tempArray[210]("I,e,m");
         }
-        world_.gop.fence(); tempArray[210].~TArrayD();
+        tempArray[210].~TArrayD();
 
         if (include_u2_) {
 
@@ -11508,7 +11508,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") += 2.000000 * tempArray[211]("I,e,m");
         }
-        world_.gop.fence(); tempArray[211].~TArrayD();
+        tempArray[211].~TArrayD();
 
         {
 
@@ -11530,7 +11530,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") += tempArray[212]("I,e,m");
         }
-        world_.gop.fence(); tempArray[212].~TArrayD();
+        tempArray[212].~TArrayD();
 
         if (include_u2_) {
 
@@ -11552,7 +11552,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") -= 2.000000 * tempArray[213]("I,e,m");
         }
-        world_.gop.fence(); tempArray[213].~TArrayD();
+        tempArray[213].~TArrayD();
 
         if (include_u2_) {
 
@@ -11574,7 +11574,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") += 2.000000 * tempArray[214]("I,e,m");
         }
-        world_.gop.fence(); tempArray[214].~TArrayD();
+        tempArray[214].~TArrayD();
 
         {
 
@@ -11596,7 +11596,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") -= tempArray[215]("I,e,m");
         }
-        world_.gop.fence(); tempArray[215].~TArrayD();
+        tempArray[215].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -11624,8 +11624,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xbb_Lvo("I,e,m") += tempArray[217]("I,e,j") * dp_bb_oo("m,j");
         }
-        world_.gop.fence(); tempArray[216].~TArrayD();
-        world_.gop.fence(); tempArray[217].~TArrayD();
+        tempArray[216].~TArrayD();
+        tempArray[217].~TArrayD();
 
         {
 
@@ -11647,7 +11647,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") -= tempArray[218]("I,e,m");
         }
-        world_.gop.fence(); tempArray[218].~TArrayD();
+        tempArray[218].~TArrayD();
 
         {
 
@@ -11669,7 +11669,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") += tempArray[219]("I,e,m");
         }
-        world_.gop.fence(); tempArray[219].~TArrayD();
+        tempArray[219].~TArrayD();
 
         if (include_u2_) {
 
@@ -11691,7 +11691,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") -= 2.000000 * tempArray[220]("I,e,m");
         }
-        world_.gop.fence(); tempArray[220].~TArrayD();
+        tempArray[220].~TArrayD();
 
         if (include_u2_) {
 
@@ -11713,7 +11713,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") -= 2.000000 * tempArray[221]("I,e,m");
         }
-        world_.gop.fence(); tempArray[221].~TArrayD();
+        tempArray[221].~TArrayD();
 
         {
 
@@ -11735,7 +11735,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") -= tempArray[222]("I,e,m");
         }
-        world_.gop.fence(); tempArray[222].~TArrayD();
+        tempArray[222].~TArrayD();
 
         if (include_u2_) {
 
@@ -11757,7 +11757,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") += 2.000000 * tempArray[223]("I,e,m");
         }
-        world_.gop.fence(); tempArray[223].~TArrayD();
+        tempArray[223].~TArrayD();
 
         if (include_u2_) {
 
@@ -11779,7 +11779,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") += 2.000000 * tempArray[224]("I,e,m");
         }
-        world_.gop.fence(); tempArray[224].~TArrayD();
+        tempArray[224].~TArrayD();
 
         {
 
@@ -11795,7 +11795,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xbb_Lvo("I,e,m") += tempArray[225]("I,b,j") * V_blks_["bbbb_oovv"]("m,j,b,e");
         }
-        world_.gop.fence(); tempArray[225].~TArrayD();
+        tempArray[225].~TArrayD();
 
         if (include_u2_) {
 
@@ -11829,8 +11829,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xbb_Lvo("I,e,m") += tempArray[227]("I,b,j") * V_blks_["abab_oovv"]("j,m,b,e");
         }
-        world_.gop.fence(); tempArray[226].~TArrayD();
-        world_.gop.fence(); tempArray[227].~TArrayD();
+        tempArray[226].~TArrayD();
+        tempArray[227].~TArrayD();
 
         if (include_u2_) {
 
@@ -11852,7 +11852,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") -= 2.000000 * tempArray[228]("I,e,m");
         }
-        world_.gop.fence(); tempArray[228].~TArrayD();
+        tempArray[228].~TArrayD();
 
         {
 
@@ -11874,7 +11874,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") -= tempArray[229]("I,e,m");
         }
-        world_.gop.fence(); tempArray[229].~TArrayD();
+        tempArray[229].~TArrayD();
 
         {
 
@@ -11896,7 +11896,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") += tempArray[230]("I,e,m");
         }
-        world_.gop.fence(); tempArray[230].~TArrayD();
+        tempArray[230].~TArrayD();
 
         {
 
@@ -11912,7 +11912,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xbb_Lvo("I,e,m") -= tempArray[231]("I,b,j") * V_blks_["abab_oovv"]("j,m,b,e");
         }
-        world_.gop.fence(); tempArray[231].~TArrayD();
+        tempArray[231].~TArrayD();
 
         if (include_u2_) {
 
@@ -11934,7 +11934,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") -= 2.000000 * tempArray[232]("I,e,m");
         }
-        world_.gop.fence(); tempArray[232].~TArrayD();
+        tempArray[232].~TArrayD();
 
         {
 
@@ -11956,7 +11956,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") += tempArray[233]("I,e,m");
         }
-        world_.gop.fence(); tempArray[233].~TArrayD();
+        tempArray[233].~TArrayD();
 
         if (include_u2_) {
 
@@ -11978,7 +11978,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") += 2.000000 * tempArray[234]("I,e,m");
         }
-        world_.gop.fence(); tempArray[234].~TArrayD();
+        tempArray[234].~TArrayD();
 
         {
 
@@ -12000,7 +12000,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") -= tempArray[235]("I,e,m");
         }
-        world_.gop.fence(); tempArray[235].~TArrayD();
+        tempArray[235].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -12028,8 +12028,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xaa_Lvo("I,e,m") += tempArray[237]("I,e,j") * dp_aa_oo("m,j");
         }
-        world_.gop.fence(); tempArray[236].~TArrayD();
-        world_.gop.fence(); tempArray[237].~TArrayD();
+        tempArray[236].~TArrayD();
+        tempArray[237].~TArrayD();
 
         {
 
@@ -12051,7 +12051,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") -= tempArray[238]("I,e,m");
         }
-        world_.gop.fence(); tempArray[238].~TArrayD();
+        tempArray[238].~TArrayD();
 
         if (include_u2_) {
 
@@ -12097,9 +12097,9 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xbb_Lvo("I,e,m") -= tempArray[241]("I,b,j") * V_blks_["bbbb_oovv"]("m,j,b,e");
         }
-        world_.gop.fence(); tempArray[239].~TArrayD();
-        world_.gop.fence(); tempArray[240].~TArrayD();
-        world_.gop.fence(); tempArray[241].~TArrayD();
+        tempArray[239].~TArrayD();
+        tempArray[240].~TArrayD();
+        tempArray[241].~TArrayD();
 
         {
 
@@ -12115,7 +12115,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xbb_Lvo("I,e,m") += tempArray[242]("I,b,j") * V_blks_["abab_oovv"]("j,m,b,e");
         }
-        world_.gop.fence(); tempArray[242].~TArrayD();
+        tempArray[242].~TArrayD();
 
         if (include_u2_) {
 
@@ -12137,7 +12137,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") += 2.000000 * tempArray[243]("I,e,m");
         }
-        world_.gop.fence(); tempArray[243].~TArrayD();
+        tempArray[243].~TArrayD();
 
         {
 
@@ -12159,7 +12159,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") += tempArray[244]("I,e,m");
         }
-        world_.gop.fence(); tempArray[244].~TArrayD();
+        tempArray[244].~TArrayD();
 
         {
 
@@ -12175,7 +12175,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xbb_Lvo("I,e,m") -= tempArray[245]("I,b,j") * V_blks_["bbbb_oovv"]("m,j,b,e");
         }
-        world_.gop.fence(); tempArray[245].~TArrayD();
+        tempArray[245].~TArrayD();
 
         if (include_u1_ && include_u2_) {
 
@@ -12191,7 +12191,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmal1_xbb_Lvo("I,e,m") -= tempArray[246]("I,b,j") * V_blks_["abab_oovv"]("j,m,b,e");
         }
-        world_.gop.fence(); tempArray[246].~TArrayD();
+        tempArray[246].~TArrayD();
 
         if (include_u2_) {
 
@@ -12213,7 +12213,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xaa_Lvo("I,e,m") -= 2.000000 * tempArray[247]("I,e,m");
         }
-        world_.gop.fence(); tempArray[247].~TArrayD();
+        tempArray[247].~TArrayD();
 
         if (include_u1_) {
 
@@ -12265,10 +12265,10 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmas1_xbb_Lvo("I,e,m") -= tempArray[251]("I,a,i") * t2_bbbb_vvoo("a,e,m,i");
         }
-        world_.gop.fence(); tempArray[248].~TArrayD();
-        world_.gop.fence(); tempArray[249].~TArrayD();
-        world_.gop.fence(); tempArray[250].~TArrayD();
-        world_.gop.fence(); tempArray[251].~TArrayD();
+        tempArray[248].~TArrayD();
+        tempArray[249].~TArrayD();
+        tempArray[250].~TArrayD();
+        tempArray[251].~TArrayD();
 
         {
 
@@ -12290,7 +12290,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") -= tempArray[252]("I,e,m");
         }
-        world_.gop.fence(); tempArray[252].~TArrayD();
+        tempArray[252].~TArrayD();
 
         {
 
@@ -12320,7 +12320,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmar1_xbb_Lvo("I,e,m") -= tempArray[254]("I,e,m");
         }
-        world_.gop.fence(); tempArray[253].~TArrayD();
+        tempArray[253].~TArrayD();
 
         if (include_u0_ && include_u1_) {
 
@@ -12365,7 +12365,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmar1_xaa_Lvo("I,e,m") -= tempArray[255]("I,e,m");
         }
-        world_.gop.fence(); tempArray[254].~TArrayD();
+        tempArray[254].~TArrayD();
 
         if (include_u0_ && include_u1_) {
 
@@ -12402,7 +12402,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") -= tempArray[255]("I,e,m") * u1_bb_vo("f,n");
         }
-        world_.gop.fence(); tempArray[255].~TArrayD();
+        tempArray[255].~TArrayD();
 
         {
 
@@ -12481,7 +12481,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2, o2v1L1: 1 | mem: o2v2L1: 2, o1v1L1: 1, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[256]("I,m,i") * u1_bb_vo("e,i") * u1_bb_vo("f,n");
         }
-        world_.gop.fence(); tempArray[256].~TArrayD();
+        tempArray[256].~TArrayD();
 
         {
 
@@ -12557,7 +12557,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2, o2v1L1: 1 | mem: o2v2L1: 2, o1v1L1: 1, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += u1_aa_vo("e,i") * tempArray[257]("I,m,i") * u1_bb_vo("f,n");
         }
-        world_.gop.fence(); tempArray[257].~TArrayD();
+        tempArray[257].~TArrayD();
 
         if (include_u1_) {
 
@@ -12623,7 +12623,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o2v0L1: 1 | mem: o2v0L1: 2, 
             tempArray[259]("I,i,m") = u1_aa_vo("a,i") * m1_xaa_Lov("I,m,a");
         }
-        world_.gop.fence(); tempArray[258].~TArrayD();
+        tempArray[258].~TArrayD();
 
         if (include_u0_ && include_u1_) {
 
@@ -12678,7 +12678,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             sigmam1_xaa_Lvo("I,e,m") += 2.000000 * tempArray[259]("I,i,m") * dp_aa_ov("i,e");
         }
-        world_.gop.fence(); tempArray[259].~TArrayD();
+        tempArray[259].~TArrayD();
 
         {
 
@@ -12704,7 +12704,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             tempArray[261]("I,e,m") = m1_xbb_Lov("I,i,e") * sigmaOps[311]("m,i");
         }
-        world_.gop.fence(); tempArray[260].~TArrayD();
+        tempArray[260].~TArrayD();
 
         if (include_u0_ && include_u1_) {
 
@@ -12719,7 +12719,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmam1_xbb_Lvo("I,e,m") += 2.000000 * tempArray[261]("I,e,m");
         }
-        world_.gop.fence(); tempArray[261].~TArrayD();
+        tempArray[261].~TArrayD();
 
         {
 
@@ -12745,7 +12745,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v1L1: 1, o1v1L1: 1 | mem: o1v1L1: 2, 
             tempArray[263]("I,e,m") = sigmaOps[312]("i,m") * m1_xaa_Lov("I,i,e");
         }
-        world_.gop.fence(); tempArray[262].~TArrayD();
+        tempArray[262].~TArrayD();
 
         if (include_u0_ && include_u1_) {
 
@@ -12768,7 +12768,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmar1_xbb_Lvo("I,e,m") += tempArray[264]("I,e,m");
         }
-        world_.gop.fence(); tempArray[263].~TArrayD();
+        tempArray[263].~TArrayD();
 
         if (include_u0_ && include_u1_) {
 
@@ -12802,7 +12802,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = tempArray[264]("I,f,n") * u1_bb_vo("e,m");
         }
-        world_.gop.fence(); tempArray[264].~TArrayD();
+        tempArray[264].~TArrayD();
 
         {
 
@@ -12846,7 +12846,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             sigmar1_xaa_Lvo("I,e,m") += tempArray[266]("I,e,m");
         }
-        world_.gop.fence(); tempArray[265].~TArrayD();
+        tempArray[265].~TArrayD();
 
         if (include_u0_ && include_u1_) {
 
@@ -12880,7 +12880,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[266]("I,e,m") * u1_bb_vo("f,n");
         }
-        world_.gop.fence(); tempArray[266].~TArrayD();
+        tempArray[266].~TArrayD();
 
         {
 
@@ -12916,7 +12916,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             sigmas2_xabab_Lvvoo("I,e,f,m,n") += tempArray[267]("I,e,m") * u1_bb_vo("f,n");
         }
-        world_.gop.fence(); tempArray[267].~TArrayD();
+        tempArray[267].~TArrayD();
 
         if (include_u1_) {
 
@@ -12965,7 +12965,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             csigmam0_L("I") += tempArray[268]("I");
         }
-        world_.gop.fence(); tempArray[268].~TArrayD();
+        tempArray[268].~TArrayD();
 
         if (include_u1_) {
 
@@ -13014,7 +13014,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             csigmam0_L("I") += tempArray[269]("I");
         }
-        world_.gop.fence(); tempArray[269].~TArrayD();
+        tempArray[269].~TArrayD();
 
         if (include_u1_) {
 
@@ -13074,8 +13074,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmar0_L("I") -= tempArray[272]("I");
         }
-        world_.gop.fence(); tempArray[270].~TArrayD();
-        world_.gop.fence(); tempArray[271].~TArrayD();
+        tempArray[270].~TArrayD();
+        tempArray[271].~TArrayD();
 
         if (include_u0_ && include_u1_) {
 
@@ -13109,7 +13109,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             sigmas2_xbbbb_Lvvoo("I,e,f,m,n") -= tempArray[272]("I") * u2_bbbb_vvoo("e,f,m,n");
         }
-        world_.gop.fence(); tempArray[272].~TArrayD();
+        tempArray[272].~TArrayD();
 
         if (include_u1_) {
 
@@ -13154,7 +13154,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             sigmas2_xbbbb_Lvvoo("I,e,f,m,n") -= tempArray[273]("I") * u2_bbbb_vvoo("e,f,m,n");
         }
-        world_.gop.fence(); tempArray[273].~TArrayD();
+        tempArray[273].~TArrayD();
 
         {
 
@@ -13195,7 +13195,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             sigmar2_xbbbb_Lvvoo("I,e,f,m,n") -= tempArray[274]("I") * u2_bbbb_vvoo("e,f,m,n");
         }
-        world_.gop.fence(); tempArray[274].~TArrayD();
+        tempArray[274].~TArrayD();
 
         {
 
@@ -13236,7 +13236,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o2v2L1: 2 | mem: o2v2L1: 2, 
             sigmar2_xbbbb_Lvvoo("I,e,f,m,n") -= tempArray[275]("I") * u2_bbbb_vvoo("e,f,m,n");
         }
-        world_.gop.fence(); tempArray[275].~TArrayD();
+        tempArray[275].~TArrayD();
 
         if (include_u0_ && include_u1_) {
 
@@ -13272,8 +13272,8 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o1v1L1: 1 | mem: o1v1L1: 1, 
             csigmas1_xaa_Lvo("I,e,m") += tempArray[277]("I,e,m");
         }
-        world_.gop.fence(); tempArray[276].~TArrayD();
-        world_.gop.fence(); tempArray[277].~TArrayD();
+        tempArray[276].~TArrayD();
+        tempArray[277].~TArrayD();
 
         if (include_u1_) {
 
@@ -13292,7 +13292,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += 2.000000 * tempArray[278]("I");
         }
-        world_.gop.fence(); tempArray[278].~TArrayD();
+        tempArray[278].~TArrayD();
 
         if (include_u1_) {
 
@@ -13311,7 +13311,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += 2.000000 * tempArray[279]("I");
         }
-        world_.gop.fence(); tempArray[279].~TArrayD();
+        tempArray[279].~TArrayD();
 
         if (include_u1_) {
 
@@ -13330,7 +13330,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= 2.000000 * tempArray[280]("I");
         }
-        world_.gop.fence(); tempArray[280].~TArrayD();
+        tempArray[280].~TArrayD();
 
         if (include_u1_) {
 
@@ -13349,7 +13349,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= 2.000000 * tempArray[281]("I");
         }
-        world_.gop.fence(); tempArray[281].~TArrayD();
+        tempArray[281].~TArrayD();
 
         {
 
@@ -13368,7 +13368,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[282]("I");
         }
-        world_.gop.fence(); tempArray[282].~TArrayD();
+        tempArray[282].~TArrayD();
 
         {
 
@@ -13387,7 +13387,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += tempArray[283]("I");
         }
-        world_.gop.fence(); tempArray[283].~TArrayD();
+        tempArray[283].~TArrayD();
 
         {
 
@@ -13406,7 +13406,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[284]("I");
         }
-        world_.gop.fence(); tempArray[284].~TArrayD();
+        tempArray[284].~TArrayD();
 
         if (include_u1_) {
 
@@ -13425,7 +13425,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= 2.000000 * tempArray[285]("I");
         }
-        world_.gop.fence(); tempArray[285].~TArrayD();
+        tempArray[285].~TArrayD();
 
         if (include_u1_) {
 
@@ -13444,7 +13444,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += 2.000000 * tempArray[286]("I");
         }
-        world_.gop.fence(); tempArray[286].~TArrayD();
+        tempArray[286].~TArrayD();
 
         {
 
@@ -13463,7 +13463,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[287]("I");
         }
-        world_.gop.fence(); tempArray[287].~TArrayD();
+        tempArray[287].~TArrayD();
 
         {
 
@@ -13482,7 +13482,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= tempArray[288]("I");
         }
-        world_.gop.fence(); tempArray[288].~TArrayD();
+        tempArray[288].~TArrayD();
 
         {
 
@@ -13501,7 +13501,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += tempArray[289]("I");
         }
-        world_.gop.fence(); tempArray[289].~TArrayD();
+        tempArray[289].~TArrayD();
 
         if (include_u1_) {
 
@@ -13520,7 +13520,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") -= 2.000000 * tempArray[290]("I");
         }
-        world_.gop.fence(); tempArray[290].~TArrayD();
+        tempArray[290].~TArrayD();
 
         if (include_u1_) {
 
@@ -13539,7 +13539,7 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             // flops: o0v0L1: 1 | mem: o0v0L1: 1, 
             sigmam0_L("I") += 2.000000 * tempArray[291]("I");
         }
-        world_.gop.fence(); tempArray[291].~TArrayD();
+        tempArray[291].~TArrayD();
 
         {
 
@@ -29917,13 +29917,6 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             sigmam2_xaaaa_Lvvoo("I,e,f,m,n") += tempPerm_xaaaa_Lvvoo("I,f,e,n,m");
         }
 
-        {
-
-            // tempPerm_xaaaa_Lvvoo += 1.000000 tempPerm_xaaaa_Lvvoo tempPerm 
-            // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
-            tempPerm_xaaaa_Lvvoo("I,e,f,m,n") = 0.000000 * tempPerm_xaaaa_Lvvoo("I,e,f,m,n");
-        }
-
         if (include_u2_) {
 
             // sigmam2_xbbbb_Lvvoo += 1.000000 tempPerm_xbbbb_Lvvoo tempPerm 
@@ -29932,13 +29925,6 @@ void hilbert::EOM_EE_Driver::build_Hc_cH(size_t L) {
             sigmam2_xbbbb_Lvvoo("I,e,f,m,n") -= tempPerm_xbbbb_Lvvoo("I,e,f,n,m");
             sigmam2_xbbbb_Lvvoo("I,e,f,m,n") -= tempPerm_xbbbb_Lvvoo("I,f,e,m,n");
             sigmam2_xbbbb_Lvvoo("I,e,f,m,n") += tempPerm_xbbbb_Lvvoo("I,f,e,n,m");
-        }
-
-        {
-
-            // tempPerm_xbbbb_Lvvoo += 1.000000 tempPerm_xbbbb_Lvvoo tempPerm 
-            // flops: o2v2L1: 1 | mem: o2v2L1: 1, 
-            tempPerm_xbbbb_Lvvoo("I,e,f,m,n") = 0.000000 * tempPerm_xbbbb_Lvvoo("I,e,f,m,n");
         }
 
     }
