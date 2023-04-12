@@ -71,6 +71,12 @@ def run_polaritonic_scf(name, **kwargs):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UCCSD')
     elif ( lowername == 'polaritonic-tddft' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_TDDFT')
+    elif ( lowername == 'cc_cavity' ):
+        from mpi4py import MPI
+        from hilbert import set_ta_comm
+        comm = MPI.COMM_WORLD
+        set_ta_comm(comm)
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'CC_CAVITY')
 
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
     # Fock matrices, and more
@@ -499,4 +505,5 @@ psi4.driver.procedures['energy']['polaritonic-rks'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-rcis'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-tddft'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-uccsd'] = run_polaritonic_scf
+psi4.driver.procedures['energy']['cc_cavity'] = run_polaritonic_scf
 
