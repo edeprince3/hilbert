@@ -133,42 +133,110 @@ namespace hilbert {
 
         /// *** common functions ***
 
+        /**
+         * Print the banner for the EOM-CC calculation
+         */
         virtual void print_banner() const;
 
+        /**
+         * Compute the EOM-CC energies
+         */
         virtual void compute_eom_energy();
 
+        /**
+         * Prepare and process data for the EOM-CC sigma equations
+         * @param L number of trial vectors
+         * @param Q trial vectors
+         * @param sigmar right sigma vectors
+         * @param sigmal left sigma vectors
+         */
         virtual void build_sigma(int L, double **Q, double **sigmar, double **sigmal);
 
+        /**
+         * Print the EOM-CC timers
+         */
         virtual void print_timers() const;
 
+        /**
+         * Save the eigenvectors to file (not working)
+         */
         virtual void save_eigenvectors() const;
 
+        /**
+         * Load the eigenvectors from file (not working)
+         * @param pid process id
+         */
         virtual void load_eigenvectors(size_t pid);
 
+        /**
+         * Binormalize the left and right eigenvectors
+         */
         virtual void binormalize_states();
 
         /// *** interface functions ***
 
+        /**
+         * Set the problem size for the EOM-CC calculation
+         */
         virtual void set_problem_size() = 0;
 
+        /**
+         * Print the EOM-CC summary of energies and properties
+         */
         virtual void print_eom_summary() const = 0;
 
+        /**
+         * build the full hamiltonian (not implemented)
+         */
         virtual void build_hamiltonian() = 0;
 
+        /**
+         * Build the guess vector for the EOM-CC calculation (either uses orbital guess or singles guess)
+         * @return guess vector
+         */
         virtual double* build_guess() = 0;
 
+        /**
+         * Build operators for the EOM-CC calculation that do not depend on the trial vectors
+         */
         virtual void build_common_ops() = 0;
 
+        /**
+         * unpack the trial vectors from the array Q
+         * @param L number of trial vectors
+         * @param Q trial vectors
+         */
         virtual void unpack_trial_vectors(size_t L, double **Q) = 0;
 
+        /**
+         * Solve the EOM-CC sigma equations for the trial vectors
+         * @param L
+         */
         virtual void build_Hc_cH(size_t L) = 0;
 
+        /**
+         * Pack the sigma vectors into the array sigmar
+         * @param L number of trial vectors
+         * @param sigmar right sigma vectors
+         * @param sigmal left sigma vectors
+         */
         virtual void pack_sigma_vectors(size_t L, double **sigmar, double **sigmal) = 0;
 
+        /**
+         * Compute the norms of each operator in the i'th eigenvector
+         * @param i the i'th eigenvector
+         * @return the norms of each operator in the i'th eigenvector
+         */
         virtual double *get_state_norms(size_t i) const = 0;
 
+        /**
+         * unpack the final eigenvectors into TArrays
+         */
         virtual void unpack_eigenvectors() = 0;
 
+        /**
+         * Print the dominant transitions for each state
+         */
         virtual void print_dominant_transitions() = 0;
     };
 
