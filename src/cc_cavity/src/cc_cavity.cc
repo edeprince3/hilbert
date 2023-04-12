@@ -94,7 +94,7 @@ namespace hilbert {
         Printf( "        *******************************************************\n");
         Printf("\n\n");
 
-        // grab dimensions
+        /// grab dimensions
         // ensure scf_type df
         if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" ) {
             throw PsiException("CC Cavity only works with scf_type df or cd for now",__FILE__,__LINE__);
@@ -126,6 +126,39 @@ namespace hilbert {
         // initialize diis solver
         int max_vecs = options_.get_int("DIIS_MAX_VECS");
         diis_ta = (std::shared_ptr<DIISTA>)(new DIISTA(max_vecs));
+
+        /// cavity options
+
+        // update cavity terms once more
+        if ( n_photon_states_ > 1) {
+            update_cavity_terms();
+        }
+        same_a_b_orbs_ = same_a_b_dens_ = false;
+
+        cc_type_ = has_photon_ ? "QED-CC" : "CC";
+        cc_type_ += "SD";
+        if (include_t3_ || include_u3_) cc_type_ += "T";
+        if (include_t4_ || include_u4_) cc_type_ += "Q";
+        if (has_photon_) cc_type_ += "-1";
+
+        // set coupling factors
+        lambda_[0] = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
+        lambda_[1] = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
+        lambda_[2] = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+
+        /// initialize containers
+
+        // initialize arbitrary index strings and identity tensors
+        init_operators();
+
+        // make containers for integrals
+        init_integrals();
+
+        // initialize orbital energies
+        epsilon_ = (double*) calloc(2*nso_, sizeof(double));
+
+        // transform integrals to MO basis
+        transform_integrals(false);
 
     }
 
@@ -174,6 +207,8 @@ namespace hilbert {
         residuals_["t2_aaaa"]  = HelperD::makeTensor(world_, {va_,va_, oa_,oa_}, true);
         residuals_["t2_abab"]  = HelperD::makeTensor(world_, {va_,vb_, oa_,ob_}, true);
         residuals_["t2_bbbb"]  = HelperD::makeTensor(world_, {vb_,vb_, ob_,ob_}, true);
+
+        world_.gop.fence();
     }
 
     void CC_Cavity::init_integrals() {
@@ -302,36 +337,104 @@ namespace hilbert {
             free(tmp_so_p);
         }
         world_.gop.fence();
-
-        print_dimensions();
-
     }
 
     void CC_Cavity::transform_integrals(bool use_t1) {
         has_t1_integrals_ = use_t1;
 
-        if (use_t1) {
+        if (!use_t1)
+            return apply_transform(C_blks_, C_blks_);
 
-            // copy C_blks_ to CL and CR
-            TArrayMap CL, CR;
-            for (auto& block : C_blks_) {
-                CL[block.first] = C_blks_[block.first].clone();
-                CR[block.first] = C_blks_[block.first].clone();
-            }
+        // copy C_blks_ to CL and CR
+        TArrayMap CL, CR;
+        for (auto& block : C_blks_) {
+            CL[block.first] = C_blks_[block.first].clone();
+            CR[block.first] = C_blks_[block.first].clone();
+        }
 
-            // grab references to t1 blocks
-            TArrayD &t1_aa = amplitudes_["t1_aa"];
-            TArrayD &t1_bb = amplitudes_["t1_bb"];
+        // grab references to t1 blocks
+        TArrayD &t1_aa = amplitudes_["t1_aa"];
+        TArrayD &t1_bb = amplitudes_["t1_bb"];
 
-            // apply t1 to CL and CR
-            CL["a_v"]("mu, a") -= C_blks_["a_o"]("mu, i") * t1_aa("a, i");
-            CL["b_v"]("mu, a") -= C_blks_["b_o"]("mu, i") * t1_bb("a, i");
-            CR["a_o"]("mu, i") += C_blks_["a_v"]("mu, a") * t1_aa("a, i");
-            CR["b_o"]("mu, i") += C_blks_["b_v"]("mu, a") * t1_bb("a, i");
+        // apply t1 to CL and CR
+        CL["a_v"]("mu, a") -= C_blks_["a_o"]("mu, i") * t1_aa("a, i");
+        CL["b_v"]("mu, a") -= C_blks_["b_o"]("mu, i") * t1_bb("a, i");
+        CR["a_o"]("mu, i") += C_blks_["a_v"]("mu, a") * t1_aa("a, i");
+        CR["b_o"]("mu, i") += C_blks_["b_v"]("mu, a") * t1_bb("a, i");
 
-            apply_transform(CL, CR);
-        } else
-            apply_transform(C_blks_, C_blks_);
+        apply_transform(CL, CR);
+
+    }
+
+    void CC_Cavity::print_dimensions() {
+
+        /// compute the number of amplitudes
+        singleDim_ = oa_ * va_
+                     + ob_ * vb_;
+        doubleDim_ = oa_ * oa_ * va_ * va_
+                     + ob_ * ob_ * vb_ * vb_
+                     + oa_ * ob_ * va_ * vb_;
+        if (include_t3_ || include_u3_)
+            tripleDim_ = oa_ * oa_ * oa_ * va_ * va_ * va_
+                         + ob_ * ob_ * ob_ * vb_ * vb_ * vb_
+                         + oa_ * oa_ * ob_ * va_ * va_ * vb_
+                         + oa_ * ob_ * ob_ * va_ * vb_ * vb_;
+        if (include_t4_ || include_u4_)
+            quadDim_ = oa_ * oa_ * oa_ * oa_ * va_ * va_ * va_ * va_
+                       + ob_ * ob_ * ob_ * ob_ * vb_ * vb_ * vb_ * vb_
+                       + oa_ * oa_ * oa_ * ob_ * va_ * va_ * va_ * vb_
+                       + oa_ * oa_ * ob_ * ob_ * va_ * va_ * vb_ * vb_
+                       + oa_ * ob_ * ob_ * ob_ * va_ * vb_ * vb_ * vb_;
+
+        /// evaluate the total number of amplitudes
+        size_t ccamps_dim_ = singleDim_ + doubleDim_; // t1, t2
+        if (include_t3_) ccamps_dim_ += tripleDim_; // t3
+        if (include_t4_) ccamps_dim_ += quadDim_; // t4
+        if (include_u0_) ccamps_dim_++; // u0
+        if (include_u1_) ccamps_dim_ += singleDim_; // u1
+        if (include_u2_) ccamps_dim_ += doubleDim_; // u2
+        if (include_u3_) ccamps_dim_ += tripleDim_; // u3
+        if (include_u4_) ccamps_dim_ += quadDim_; // u4
+
+        /// print included amplitudes
+        Printf("  Included amplitudes:\n");
+        Printf(include_u1_ ? "    U0\n" : "");
+        Printf("    %2s", "T1");
+        Printf("    %2s\n", include_u1_ ? "U1" : "  ");
+        Printf("    %2s", "T2");
+        Printf("    %2s\n", include_u2_ ? "U2" : "  ");
+        if (include_t3_ || include_u3_) {
+            Printf("    %2s", include_t3_ ? "T3" : "  ");
+            Printf("    %2s\n", include_u3_ ? "U3" : "  ");
+        }
+        if (include_t4_ || include_u4_) {
+            Printf("    %2s", include_t4_ ? "T4" : "  ");
+            Printf("    %2s\n", include_u4_ ? "U4" : "  ");
+        }
+        Printf("\n  Dimension of CC amplitudes: %d\n\n", ccamps_dim_);
+        if (has_photon_){
+            // calculate cavity volumes: lambda = (1/(4*pi)*V_cav)^(-1/2) -> V_cav = (4*pi/lambda^2)
+            double lam_norm = 0;
+            for (double lam : lambda_)
+                lam_norm += lam * lam;
+
+            double V_cav = 4.0 * M_PI / lam_norm;
+
+            // convert from bohr^3 to nm^3 (https://physics.nist.gov/cgi-bin/cuu/Value?Abohrrada0)
+            double bohr_to_nm = 0.052917721090380;
+            V_cav *= bohr_to_nm * bohr_to_nm * bohr_to_nm;
+
+            // print cavity parameters
+            Printf("  V_cav (nm3) = %6.4lf\n", V_cav);
+            Printf("  lambda      = x: %6.4lf y: %6.4lf z: %6.4lf\n", lambda_[0], lambda_[1], lambda_[2]);
+            Printf("  hw          = x: %6.4lf y: %6.4lf z: %6.4lf\n",
+                   cavity_frequency_[0], cavity_frequency_[1], cavity_frequency_[2]);
+            Printf(
+                    options_.get_bool("QED_USE_RELAXED_ORBITALS") ? "  Using relaxed orbitals.\n"
+                                                                  : "  Using unrelaxed orbitals.\n"
+            );
+
+        }
     }
 
     double CC_Cavity::compute_energy() {
@@ -351,7 +454,13 @@ namespace hilbert {
         Printf("    e_convergence:             %10.3le\n",e_convergence);
         Printf("    r_convergence:             %10.3le\n",r_convergence);
         Printf("    maxiter:                        %5i\n",maxiter);
-        Printf("\n");
+        Printf("\n\n");
+
+        // print out the dimensions of the amplitudes we will be using
+        print_dimensions();
+
+        // make containers for amplitudes from derived classes
+        init_operators();
 
         // print header for iterations
         print_iter_header();
@@ -857,6 +966,17 @@ namespace hilbert {
         world_.gop.fence();
 
         amp_vec.clear(); resid_vec.clear(); // clear vectors
+    }
+
+    double CC_Cavity::compute_residual_norms(bool return_tot) {
+
+        resid_norms_["t1"] = sqrt(squared_norm(residuals_["t1_aa"])
+                                  + squared_norm(residuals_["t1_bb"]));
+        resid_norms_["t2"] = sqrt(squared_norm(residuals_["t2_aaaa"])
+                                  + squared_norm(residuals_["t2_abab"])
+                                  + squared_norm(residuals_["t2_bbbb"]));
+
+        return 0; // this is a placeholder, since derived classes will return something else
     }
 
 }

@@ -53,7 +53,9 @@
     #include "python_api/python_helpers.h"
     #include <tiledarray.h>
     #include "cc_cavity/include/cc_cavity.h"
-    #include "cc_cavity/include/derived/qed_cc.h"
+    #include "cc_cavity/include/derived/qed_ccsd.h"
+    #include "cc_cavity/include/derived/qed_ccsdt.h"
+    #include "cc_cavity/include/derived/qed_ccsdtq.h"
 #endif
 
 #ifdef USE_QED_EOM_CC
@@ -648,7 +650,18 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         // create the CC_CAVITY object
         std::shared_ptr<CC_Cavity> qedcc;
-        qedcc = std::shared_ptr<CC_Cavity>(new QED_CC(qed_ref_wfn,options));
+
+        // determine the level of theory
+        bool three_body = options.get_bool("QED_CC_INCLUDE_T3") || options.get_bool("QED_CC_INCLUDE_U3");
+        bool four_body  = options.get_bool("QED_CC_INCLUDE_T4") || options.get_bool("QED_CC_INCLUDE_U4");
+
+        // select the appropriate derived CC_CAVITY object
+        if (four_body)
+            qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSDTQ(qed_ref_wfn, options));
+        else if (three_body)
+            qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSDT(qed_ref_wfn, options));
+        else
+            qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD(qed_ref_wfn, options));
 
         // compute the energy
         double energy = qedcc->compute_energy();
@@ -657,9 +670,9 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         bool do_eom = options.get_bool("PERFORM_EOM");
 
         if (do_eom){
-    #ifndef USE_QED_EOM_CC
+        #ifndef USE_QED_EOM_CC
             throw PsiException("QED-EOM-CC calculations require the `USE_QED_EOM_CC` flag to be set at compile time",__FILE__,__LINE__);
-    #else
+        #else
             std::shared_ptr<EOM_Driver> eom_driver;
             if (options.get_str("EOM_TYPE") == "EE") { // use EOM for excitation energies
                 eom_driver = std::shared_ptr<EOM_Driver>(

@@ -24,14 +24,14 @@
  *  @END LICENSE
  */
 
-#include "../../include/derived/qed_cc.h"
+#include "../../include/derived/qed_ccsd.h"
 
 
 using namespace std;
 using namespace TA;
 using namespace hilbert;
 
-double QED_CC::build_residuals() {
+double QED_CCSD::build_residuals() {
     if ( !has_t1_integrals_ ) transform_integrals(true);
 
 
@@ -113,12 +113,25 @@ double QED_CC::build_residuals() {
         cru2_bbbb_vvoo = HelperD::makeTensor(world_, {vb_, vb_, ob_, ob_}, true);
     }
 
-    // get reference amplitudes
-    double u0 = scalar_amps_["u0"];
+    /// get reference amplitudes
+
+    // extract scalar amplitude
+    double& u0 = scalar_amps_["u0"];
+    if(include_u0_) {
+        world_.gop.fence();
+        HelperD::forall(amplitudes_["u0"], [&u0](auto &tile, auto &x){
+            u0 = tile[x];
+        });
+        world_.gop.fence();
+    }
+
+    // extract 1-body amplitudes
     TA::TArrayD &t1_aa_vo = amplitudes_["t1_aa"];
     TA::TArrayD &t1_bb_vo = amplitudes_["t1_bb"];
     TA::TArrayD &u1_aa_vo = amplitudes_["u1_aa"];
     TA::TArrayD &u1_bb_vo = amplitudes_["u1_bb"];
+
+    // extract 2-body amplitudes
     TA::TArrayD &t2_aaaa_vvoo = amplitudes_["t2_aaaa"];
     TA::TArrayD &t2_abab_vvoo = amplitudes_["t2_abab"];
     TA::TArrayD &t2_bbbb_vvoo = amplitudes_["t2_bbbb"];

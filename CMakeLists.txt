@@ -90,8 +90,12 @@ if (USE_QED_CC)
   # add files for performing QED-CC calculations
   set(qed_cc
           src/cc_cavity/src/cc_cavity.cc
-          src/cc_cavity/src/derived/qed_cc.cc
-          src/cc_cavity/src/derived/qed_cc_resid.cc
+          src/cc_cavity/src/derived/qed_ccsd.cc
+          src/cc_cavity/src/derived/qed_ccsd_resid.cc
+          src/cc_cavity/src/derived/qed_ccsdt.cc
+#          src/cc_cavity/src/derived/qed_ccsdt_resid.cc  (not yet implemented)
+          src/cc_cavity/src/derived/qed_ccsdtq.cc
+#          src/cc_cavity/src/derived/qed_ccsdtq_resid.cc  (not yet implemented)
 
           src/cc_cavity/misc/diis_qed.cc
           src/cc_cavity/misc/nonsym_davidson_solver_qed.cc
@@ -107,7 +111,6 @@ if (USE_QED_EOM_CC AND USE_QED_CC)
           src/cc_cavity/src/eom_driver.cc
           src/cc_cavity/src/eom_rdm.cc
 
-          src/cc_cavity/src/derived/qed_cc_resid.cc
           src/cc_cavity/src/derived/eom_ee_driver.cc
           src/cc_cavity/src/derived/eom_ee_build.cc
           src/cc_cavity/src/derived/eom_ea_driver.cc

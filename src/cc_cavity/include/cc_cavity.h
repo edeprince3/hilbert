@@ -178,7 +178,7 @@ namespace hilbert {
         /**
          * @brief print the dimensions of the calculation
          */
-        virtual void print_dimensions() = 0;
+        virtual void print_dimensions();
 
         /**
          * @brief initializes the amplitudes
@@ -254,7 +254,7 @@ namespace hilbert {
          * @brief compute the norm of the residuals
          * @return the norm of the residuals
          */
-        virtual double compute_residual_norms() = 0;
+        virtual double compute_residual_norms(bool return_tot = true);
 
         /**
         * @brief compute and print norms of the amplitudes
