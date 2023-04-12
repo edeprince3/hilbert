@@ -166,19 +166,24 @@ namespace hilbert {
         * @brief transform integrals with MO Coefficients
         * @param use_t1 if true, fold the t1 amplitudes into MO Coefficients
         */
-        virtual void transform_integrals(bool use_t1) = 0;
+        virtual void transform_integrals(bool use_t1);
 
     protected:
 
         /**
          * @brief initialize the integrals and data for the calculation
          */
-        virtual void init_integrals() = 0;
+        virtual void init_integrals();
+
+        /**
+         * @brief print the dimensions of the calculation
+         */
+        virtual void print_dimensions() = 0;
 
         /**
          * @brief initializes the amplitudes
          */
-        virtual void init_amplitudes() = 0;
+        virtual void init_operators();
 
         /**
          * @brief calculate the CC energy and amplitudes
@@ -208,13 +213,13 @@ namespace hilbert {
          * @brief build the OEI integrals in the MO basis.
          * @param C_new the MO coefficients to use
          */
-        virtual void build_oei(TArrayMap &CL, TArrayMap &CR) = 0;
+        virtual void build_oei(TArrayMap &CL, TArrayMap &CR);
 
         /**
          * @brief build the TEI integrals in the MO basis.
          * @param C_new the MO coefficients to use
          */
-        virtual void build_tei(TArrayMap &CL, TArrayMap &CR) = 0;
+        virtual void build_tei(TArrayMap &CL, TArrayMap &CR);
 
         /**
          * @brief build the antisymmetric 4-index integrals in the MO basis.
@@ -225,22 +230,39 @@ namespace hilbert {
         /**
          * @brief build the orbital energies
          */
-        virtual void build_eps() = 0;
+        virtual void build_eps();
+
+
 
         /**
          * @brief compute the residual equations
          */
         virtual double build_residuals() = 0;
 
+
+
         /**
          * @brief update cluster amplitudes from residual equations
          */
-        virtual double update_amplitudes() = 0;
+        virtual void update_amplitudes();
+
+        /**
+         * @brief update and extrapolate amplitudes using DIIS
+         */
+        virtual void extrapolate_amplitudes();
+
+
+        /**
+         * @brief compute the norm of the residuals
+         * @return the norm of the residuals
+         */
+        virtual double compute_residual_norms() = 0;
 
         /**
         * @brief compute and print norms of the amplitudes
         */
         virtual void print_properties() = 0;
+
     };
 }
 

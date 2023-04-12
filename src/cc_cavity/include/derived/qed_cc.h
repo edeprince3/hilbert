@@ -50,29 +50,59 @@ namespace hilbert {
         ~QED_CC() override = default;
 
     protected:
-        void init_integrals() override;
 
-        void init_amplitudes() override;
+        /**
+         * @brief Initialize the CC operators
+         */
+        void init_operators() override;
 
+        /**
+         * @brief print the dimensions of the CC operators
+         */
+        void print_dimensions() override;
+
+        /**
+         * @brief Print the header for the iteration
+         */
         void print_iter_header() const override;
 
+        /**
+         * @brief Print the iteration information
+         * @param iter number of current iteration
+         * @param energy current energy
+         * @param dele energy change
+         * @param tnorm current residual norm
+         */
         void print_iteration(size_t iter, double energy, double dele, double tnorm) const override;
 
-        void transform_integrals(bool use_t1) override;
+        /**
+         * @brief construct the antisymmetrized electron repulsion integrals from density fitting
+         * @param Qmo_blks the blocks of the density fitting integrals
+         */
+        void unpack_eris(TArrayMap &Qmo_blks) override;
 
-        void build_oei(TArrayMap &CL, TArrayMap &CR) override;
-
-        void build_tei(TArrayMap &CL, TArrayMap &CR) override;
-
-        void build_eps() override;
-
+        /**
+         * @brief Build the residual vectors and compute the energy
+         * @return the energy
+         */
         double build_residuals() override;
 
-        double update_amplitudes() override;
+        /**
+         * @brief Update the amplitudes
+         */
+        void update_amplitudes() override;
 
+        /**
+         * @brief compute the residual norms for each operator
+         * @return the total residual norm
+         */
+        double compute_residual_norms() override;
+
+        /**
+         * @brief Print summary of amplitude properties
+         */
         void print_properties() override;
 
-        void unpack_eris(TArrayMap &Qmo_blks) override;
     };
 
 } // cc_cavity
