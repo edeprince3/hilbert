@@ -62,15 +62,16 @@ namespace hilbert {
          * Calculate the index of an element in an upper triangular array from its row and column indices (i,j)
          * @param i row index
          * @param j column index
-         * @param N size of the array
-         * @return index of the element
+         * @param N leading dimension of the array
+         * @return index of the element in the triangular array
          */
         inline static size_t sqr_2_tri_idx(size_t i, size_t j, size_t N) {
             return (2 * N - i - 3) * i / 2 + j - 1;
         }
 
-        /// wavefunction members
+        /** ------------------------ Common Attributes ------------------------ */
 
+        // CC_Cavity object
         std::shared_ptr<CC_Cavity> cc_wfn_;
         Options & options_;
 
@@ -86,7 +87,11 @@ namespace hilbert {
                 tripleDim_ = cc_wfn_->tripleDim_,
                 quadDim_ = cc_wfn_->quadDim_;
 
-        size_t dim_e_, dim_p_, N_; // dimensions of the problem
+        // dimensions of the problem
+        size_t dim_e_, dim_p_, N_; // number of electronic states, number of polaritonic states, total dimension
+        size_t M_ = options_.get_int("NUMBER_ROOTS"); // number of desired roots
+        size_t maxdim_ = M_ * options_.get_int("MAXDIM"); // maximum subspace size scaled by number of roots
+        size_t initdim_ = M_ * options_.get_int("INDIM"); // initial subspace size scaled by number of roots
 
         // initialize included operator bools
         bool include_t3_ = cc_wfn_->include_t3_;
@@ -96,15 +101,10 @@ namespace hilbert {
         bool include_u2_ = cc_wfn_->include_u2_;
         bool include_u3_ = cc_wfn_->include_u3_;
         bool include_u4_ = cc_wfn_->include_u4_;
-        bool has_photon_ = cc_wfn_->has_photon_;
 
         /// eom-cc parameters
 
         bool build_hamiltonian_ = options_.get_bool("BUILD_HAMILTONIAN"); // build hamiltonian?
-        size_t M_ = options_.get_int("NUMBER_ROOTS"); // number of desired roots:
-        size_t maxdim_ = M_ * options_.get_int("MAXDIM"); // maximum subspace size scaled by number of roots
-        size_t initdim_ = M_ * options_.get_int("INDIM"); // initial subspace size scaled by number of roots
-
         double eom_e_conv_ = options_.get_double("EOM_E_CONV"); // energy convergence
         double eom_r_conv_ = options_.get_double("EOM_R_CONV"); // residual convergence
         size_t eom_maxiter_ = options_.get_int("EOM_MAXITER"); // maximum number of iterations
@@ -131,7 +131,7 @@ namespace hilbert {
         TArrayMap sigvec_blks_;   // left/right trial eigenvalue*eigenvector blocks
         Timer common_timer_, build_timer_, unpack_timer_, pack_timer_, eigsolve_timer_; // timers
 
-        /// *** common functions ***
+        /** ------------------------ Common Functions ------------------------ */
 
         /**
          * Print the banner for the EOM-CC calculation
@@ -173,7 +173,7 @@ namespace hilbert {
          */
         virtual void binormalize_states();
 
-        /// *** interface functions ***
+        /** ------------------------ Interface Functions ------------------------ */
 
         /**
          * Set the problem size for the EOM-CC calculation
