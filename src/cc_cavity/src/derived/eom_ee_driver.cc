@@ -308,7 +308,7 @@ namespace hilbert {
 
         // pack redundant doubles into tensors
         {
-            evec_blks_["r2_aaaa"].init_elements([Q, va, oa, offset, this](auto &I) {
+            evec_blks_["r2_aaaa"].init_elements([Q, va, oa, offset](auto &I) {
                 size_t a = I[1], b = I[2], i = I[3], j = I[4];
                 if (a == b || i == j) return 0.0; // return 0 for diagonal elements
 
@@ -316,8 +316,8 @@ namespace hilbert {
                 if (a > b) std::swap(a, b);
                 if (i > j) std::swap(i, j);
 
-                size_t ab_off = this->sqr_2_tri_idx(a, b, va);
-                size_t ij_off = this->sqr_2_tri_idx(i, j, oa);
+                size_t ab_off = EOM_Driver::sqr_2_tri_idx(a, b, va);
+                size_t ij_off = EOM_Driver::sqr_2_tri_idx(i, j, oa);
                 size_t upper_tri_index = ab_off*oa*(oa-1)/2 + ij_off;
 
                 double value = Q[I[0]][upper_tri_index + offset];
@@ -330,7 +330,7 @@ namespace hilbert {
                 return Q[I[0]][I[1]*vb*oa*ob + I[2]*oa*ob + I[3]*ob + I[4] + offset];
             }); offset += va*vb*oa*ob;
 
-            evec_blks_["r2_bbbb"].init_elements([Q, vb, ob, offset, this](auto &I) {
+            evec_blks_["r2_bbbb"].init_elements([Q, vb, ob, offset](auto &I) {
                 size_t a = I[1], b = I[2], i = I[3], j = I[4];
                 if (a == b || i == j) return 0.0; // return 0 for diagonal elements
 
@@ -338,8 +338,8 @@ namespace hilbert {
                 if (a > b) std::swap(a, b);
                 if (i > j) std::swap(i, j);
 
-                size_t ab_off = this->sqr_2_tri_idx(a, b, vb);
-                size_t ij_off = this->sqr_2_tri_idx(i, j, ob);
+                size_t ab_off = EOM_Driver::sqr_2_tri_idx(a, b, vb);
+                size_t ij_off = EOM_Driver::sqr_2_tri_idx(i, j, ob);
                 size_t upper_tri_index = ab_off*ob*(ob-1)/2 + ij_off;
                 double value = Q[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
@@ -366,7 +366,7 @@ namespace hilbert {
         }
         if (include_u2_){
             // pack redundant doubles + hw operator
-            evec_blks_["s2_aaaa"].init_elements([Q, va, oa, offset, this](auto &I) {
+            evec_blks_["s2_aaaa"].init_elements([Q, va, oa, offset](auto &I) {
                 size_t a = I[1], b = I[2], i = I[3], j = I[4];
                 if (a == b || i == j) return 0.0; // return 0 for diagonal elements
 
@@ -374,8 +374,8 @@ namespace hilbert {
                 if (a > b) std::swap(a, b);
                 if (i > j) std::swap(i, j);
 
-                size_t ab_off = this->sqr_2_tri_idx(a, b, va);
-                size_t ij_off = this->sqr_2_tri_idx(i, j, oa);
+                size_t ab_off = EOM_Driver::sqr_2_tri_idx(a, b, va);
+                size_t ij_off = EOM_Driver::sqr_2_tri_idx(i, j, oa);
                 size_t upper_tri_index = ab_off*oa*(oa-1)/2 + ij_off;
                 double value = Q[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
@@ -386,7 +386,7 @@ namespace hilbert {
                 return Q[I[0]][I[1]*vb*oa*ob + I[2]*oa*ob + I[3]*ob + I[4] + offset];
             }); offset += va*vb*oa*ob;
 
-            evec_blks_["s2_bbbb"].init_elements([Q, vb, ob, offset, this](auto &I) {
+            evec_blks_["s2_bbbb"].init_elements([Q, vb, ob, offset](auto &I) {
                 size_t a = I[1], b = I[2], i = I[3], j = I[4];
                 if (a == b || i == j) return 0.0; // return 0 for diagonal elements
 
@@ -394,8 +394,8 @@ namespace hilbert {
                 if (a > b) std::swap(a, b);
                 if (i > j) std::swap(i, j);
 
-                size_t ab_off = this->sqr_2_tri_idx(a, b, vb);
-                size_t ij_off = this->sqr_2_tri_idx(i, j, ob);
+                size_t ab_off = EOM_Driver::sqr_2_tri_idx(a, b, vb);
+                size_t ij_off = EOM_Driver::sqr_2_tri_idx(i, j, ob);
                 size_t upper_tri_index = ab_off*ob*(ob-1)/2 + ij_off;
                 double value = Q[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
@@ -455,10 +455,10 @@ namespace hilbert {
         // doubles
         {
 
-            HelperD::forall(sigvec_blks_["sigmar_d_aaaa"], [sigmar, oa, va, offset, this](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmar_d_aaaa"], [sigmar, oa, va, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
-                    size_t ab_off = this->sqr_2_tri_idx(x[1], x[2], va);
-                    size_t ij_off = this->sqr_2_tri_idx(x[3], x[4], oa);
+                    size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], va);
+                    size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], oa);
                     size_t sigmar_idx = ab_off*oa*(oa-1)/2 + ij_off + offset;
                     sigmar[sigmar_idx][x[0]] = tile[x];
                 }
@@ -468,10 +468,10 @@ namespace hilbert {
                 sigmar[x[1]*vb*oa*ob + x[2]*oa*ob + x[3]*ob + x[4] + offset][x[0]] = tile[x];
             }); offset += va*vb*oa*ob;
             
-            HelperD::forall(sigvec_blks_["sigmar_d_bbbb"], [sigmar, ob, vb, offset, this](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmar_d_bbbb"], [sigmar, ob, vb, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
-                    size_t ab_off = this->sqr_2_tri_idx(x[1], x[2], vb);
-                    size_t ij_off = this->sqr_2_tri_idx(x[3], x[4], ob);
+                    size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], vb);
+                    size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], ob);
                     size_t sigmar_idx = ab_off*ob*(ob-1)/2 + ij_off + offset;
                     sigmar[sigmar_idx][x[0]] = tile[x];
                 }
@@ -499,10 +499,10 @@ namespace hilbert {
         }
 
         if (include_u2_){
-            HelperD::forall(sigvec_blks_["sigmar_u2_aaaa"], [sigmar, oa, va, offset, this](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmar_u2_aaaa"], [sigmar, oa, va, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
-                    size_t ab_off = this->sqr_2_tri_idx(x[1], x[2], va);
-                    size_t ij_off = this->sqr_2_tri_idx(x[3], x[4], oa);
+                    size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], va);
+                    size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], oa);
                     size_t sigmar_idx = ab_off*oa*(oa-1)/2 + ij_off + offset;
                     sigmar[sigmar_idx][x[0]] = tile[x];
                 }
@@ -512,10 +512,10 @@ namespace hilbert {
                 sigmar[x[1]*vb*oa*ob + x[2]*oa*ob + x[3]*ob + x[4] + offset][x[0]] = tile[x];
             }); offset += va*vb*oa*ob;
             
-            HelperD::forall(sigvec_blks_["sigmar_u2_bbbb"], [sigmar, ob, vb, offset, this](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmar_u2_bbbb"], [sigmar, ob, vb, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
-                    size_t ab_off = this->sqr_2_tri_idx(x[1], x[2], vb);
-                    size_t ij_off = this->sqr_2_tri_idx(x[3], x[4], ob);
+                    size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], vb);
+                    size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], ob);
                     size_t sigmar_idx = ab_off*ob*(ob-1)/2 + ij_off + offset;
                     sigmar[sigmar_idx][x[0]] = tile[x];
                 }
@@ -543,10 +543,10 @@ namespace hilbert {
 
         // doubles
         {
-            HelperD::forall(sigvec_blks_["sigmal_d_aaaa"], [sigmal, oa, va, offset, this](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmal_d_aaaa"], [sigmal, oa, va, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
-                    size_t ab_off = this->sqr_2_tri_idx(x[1], x[2], va);
-                    size_t ij_off = this->sqr_2_tri_idx(x[3], x[4], oa);
+                    size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], va);
+                    size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], oa);
                     size_t sigmal_idx = ab_off*oa*(oa-1)/2 + ij_off + offset;
                     sigmal[sigmal_idx][x[0]] = tile[x];
                 }
@@ -557,10 +557,10 @@ namespace hilbert {
                        offset][x[0]] = tile[x];
             }); offset += va*vb*oa*ob;
 
-            HelperD::forall(sigvec_blks_["sigmal_d_bbbb"], [sigmal, ob, vb, offset, this](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmal_d_bbbb"], [sigmal, ob, vb, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
-                    size_t ab_off = this->sqr_2_tri_idx(x[1], x[2], vb);
-                    size_t ij_off = this->sqr_2_tri_idx(x[3], x[4], ob);
+                    size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], vb);
+                    size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], ob);
                     size_t sigmal_idx = ab_off*ob*(ob-1)/2 + ij_off + offset;
                     sigmal[sigmal_idx][x[0]] = tile[x];
                 }
@@ -588,10 +588,10 @@ namespace hilbert {
         }
 
         if (include_u2_){
-            HelperD::forall(sigvec_blks_["sigmal_u2_aaaa"], [sigmal, oa, va, offset, this](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmal_u2_aaaa"], [sigmal, oa, va, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
-                    size_t ab_off = this->sqr_2_tri_idx(x[1], x[2], va);
-                    size_t ij_off = this->sqr_2_tri_idx(x[3], x[4], oa);
+                    size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], va);
+                    size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], oa);
                     size_t sigmal_idx = ab_off*oa*(oa-1)/2 + ij_off + offset;
                     sigmal[sigmal_idx][x[0]] = tile[x];
                 }
@@ -601,10 +601,10 @@ namespace hilbert {
                 sigmal[x[1]*vb*oa*ob + x[2]*oa*ob + x[3]*ob + x[4] + offset][x[0]] = tile[x];
             }); offset += va*vb*oa*ob;
 
-            HelperD::forall(sigvec_blks_["sigmal_u2_bbbb"], [sigmal, ob, vb, offset, this](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmal_u2_bbbb"], [sigmal, ob, vb, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
-                    size_t ab_off = this->sqr_2_tri_idx(x[1], x[2], vb);
-                    size_t ij_off = this->sqr_2_tri_idx(x[3], x[4], ob);
+                    size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], vb);
+                    size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], ob);
                     size_t sigmal_idx = ab_off*ob*(ob-1)/2 + ij_off + offset;
                     sigmal[sigmal_idx][x[0]] = tile[x];
                 }
@@ -665,7 +665,7 @@ namespace hilbert {
 
         // pack redundant doubles into tensors
         {
-            evec_blks_["r2_aaaa"].init_elements([rerp, va, oa, offset, this](auto &I) {
+            evec_blks_["r2_aaaa"].init_elements([rerp, va, oa, offset](auto &I) {
                 size_t a = I[1], b = I[2], i = I[3], j = I[4];
                 if (a == b || i == j) return 0.0; // return 0 for diagonal elements
 
@@ -673,8 +673,8 @@ namespace hilbert {
                 if (a > b) std::swap(a, b);
                 if (i > j) std::swap(i, j);
 
-                size_t ab_off = this->sqr_2_tri_idx(a, b, va);
-                size_t ij_off = this->sqr_2_tri_idx(i, j, oa);
+                size_t ab_off = EOM_Driver::sqr_2_tri_idx(a, b, va);
+                size_t ij_off = EOM_Driver::sqr_2_tri_idx(i, j, oa);
                 size_t upper_tri_index = ab_off*oa*(oa-1)/2 + ij_off;
                 double value = rerp[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
@@ -685,7 +685,7 @@ namespace hilbert {
                 return rerp[I[0]][I[1]*vb*oa*ob + I[2]*oa*ob + I[3]*ob + I[4] + offset];
             }); offset += va*vb*oa*ob;
             
-            evec_blks_["r2_bbbb"].init_elements([rerp, vb, ob, offset, this](auto &I) {
+            evec_blks_["r2_bbbb"].init_elements([rerp, vb, ob, offset](auto &I) {
                 size_t a = I[1], b = I[2], i = I[3], j = I[4];
                 if (a == b || i == j) return 0.0; // return 0 for diagonal elements
 
@@ -693,8 +693,8 @@ namespace hilbert {
                 if (a > b) std::swap(a, b);
                 if (i > j) std::swap(i, j);
 
-                size_t ab_off = this->sqr_2_tri_idx(a, b, vb);
-                size_t ij_off = this->sqr_2_tri_idx(i, j, ob);
+                size_t ab_off = EOM_Driver::sqr_2_tri_idx(a, b, vb);
+                size_t ij_off = EOM_Driver::sqr_2_tri_idx(i, j, ob);
                 size_t upper_tri_index = ab_off*ob*(ob-1)/2 + ij_off;
                 double value = rerp[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
@@ -721,7 +721,7 @@ namespace hilbert {
         }
         if (include_u2_){
             // pack redundant doubles + hw operator
-            evec_blks_["s2_aaaa"].init_elements([rerp, va, oa, offset, this](auto &I) {
+            evec_blks_["s2_aaaa"].init_elements([rerp, va, oa, offset](auto &I) {
                 size_t a = I[1], b = I[2], i = I[3], j = I[4];
                 if (a == b || i == j) return 0.0; // return 0 for diagonal elements
 
@@ -729,8 +729,8 @@ namespace hilbert {
                 if (a > b) std::swap(a, b);
                 if (i > j) std::swap(i, j);
 
-                size_t ab_off = this->sqr_2_tri_idx(a, b, va);
-                size_t ij_off = this->sqr_2_tri_idx(i, j, oa);
+                size_t ab_off = EOM_Driver::sqr_2_tri_idx(a, b, va);
+                size_t ij_off = EOM_Driver::sqr_2_tri_idx(i, j, oa);
                 size_t upper_tri_index = ab_off*oa*(oa-1)/2 + ij_off;
                 double value = rerp[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
@@ -741,7 +741,7 @@ namespace hilbert {
                 return rerp[I[0]][I[1]*vb*oa*ob + I[2]*oa*ob + I[3]*ob + I[4] + offset];
             }); offset += va*vb*oa*ob;
 
-            evec_blks_["s2_bbbb"].init_elements([rerp, vb, ob, offset, this](auto &I) {
+            evec_blks_["s2_bbbb"].init_elements([rerp, vb, ob, offset](auto &I) {
                 size_t a = I[1], b = I[2], i = I[3], j = I[4];
                 if (a == b || i == j) return 0.0; // return 0 for diagonal elements
 
@@ -749,8 +749,8 @@ namespace hilbert {
                 if (a > b) std::swap(a, b);
                 if (i > j) std::swap(i, j);
 
-                size_t ab_off = this->sqr_2_tri_idx(a, b, vb);
-                size_t ij_off = this->sqr_2_tri_idx(i, j, ob);
+                size_t ab_off = EOM_Driver::sqr_2_tri_idx(a, b, vb);
+                size_t ij_off = EOM_Driver::sqr_2_tri_idx(i, j, ob);
                 size_t upper_tri_index = ab_off*ob*(ob-1)/2 + ij_off;
                 double value = rerp[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
@@ -798,7 +798,7 @@ namespace hilbert {
 
         // pack redundant doubles into tensors
         {
-            evec_blks_["l2_aaaa"].init_elements([relp, va, oa, offset, this](auto &I) {
+            evec_blks_["l2_aaaa"].init_elements([relp, va, oa, offset](auto &I) {
                 size_t a = I[3], b = I[4], i = I[1], j = I[2];
                 if (a == b || i == j) return 0.0; // return 0 for diagonal elements
 
@@ -806,8 +806,8 @@ namespace hilbert {
                 if (a > b) std::swap(a, b);
                 if (i > j) std::swap(i, j);
 
-                size_t ab_off = this->sqr_2_tri_idx(a, b, va);
-                size_t ij_off = this->sqr_2_tri_idx(i, j, oa);
+                size_t ab_off = EOM_Driver::sqr_2_tri_idx(a, b, va);
+                size_t ij_off = EOM_Driver::sqr_2_tri_idx(i, j, oa);
                 size_t upper_tri_index = ab_off*oa*(oa-1)/2 + ij_off;
                 double value = relp[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
@@ -818,7 +818,7 @@ namespace hilbert {
                 return relp[I[0]][I[3]*vb*oa*ob + I[4]*oa*ob + I[1]*ob + I[2] + offset];
             }); offset += va*vb*oa*ob;
 
-            evec_blks_["l2_bbbb"].init_elements([relp, vb, ob, offset, this](auto &I) {
+            evec_blks_["l2_bbbb"].init_elements([relp, vb, ob, offset](auto &I) {
                 size_t a = I[3], b = I[4], i = I[1], j = I[2];
                 if (a == b || i == j) return 0.0; // return 0 for diagonal elements
 
@@ -826,8 +826,8 @@ namespace hilbert {
                 if (a > b) std::swap(a, b);
                 if (i > j) std::swap(i, j);
 
-                size_t ab_off = this->sqr_2_tri_idx(a, b, vb);
-                size_t ij_off = this->sqr_2_tri_idx(i, j, ob);
+                size_t ab_off = EOM_Driver::sqr_2_tri_idx(a, b, vb);
+                size_t ij_off = EOM_Driver::sqr_2_tri_idx(i, j, ob);
                 size_t upper_tri_index = ab_off*ob*(ob-1)/2 + ij_off;
                 double value = relp[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
@@ -854,7 +854,7 @@ namespace hilbert {
         }
         if (include_u2_){
             // pack redundant doubles + hw operator
-            evec_blks_["m2_aaaa"].init_elements([relp, va, oa, offset, this](auto &I) {
+            evec_blks_["m2_aaaa"].init_elements([relp, va, oa, offset](auto &I) {
                 size_t a = I[3], b = I[4], i = I[1], j = I[2];
                 if (a == b || i == j) return 0.0; // return 0 for diagonal elements
 
@@ -862,8 +862,8 @@ namespace hilbert {
                 if (a > b) std::swap(a, b);
                 if (i > j) std::swap(i, j);
 
-                size_t ab_off = this->sqr_2_tri_idx(a, b, va);
-                size_t ij_off = this->sqr_2_tri_idx(i, j, oa);
+                size_t ab_off = EOM_Driver::sqr_2_tri_idx(a, b, va);
+                size_t ij_off = EOM_Driver::sqr_2_tri_idx(i, j, oa);
                 size_t upper_tri_index = ab_off*oa*(oa-1)/2 + ij_off;
                 double value = relp[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
@@ -874,7 +874,7 @@ namespace hilbert {
                 return relp[I[0]][I[3]*vb*oa*ob + I[4]*oa*ob + I[1]*ob + I[2] + offset];
             }); offset += va*vb*oa*ob;
 
-            evec_blks_["m2_bbbb"].init_elements([relp, vb, ob, offset, this](auto &I) {
+            evec_blks_["m2_bbbb"].init_elements([relp, vb, ob, offset](auto &I) {
                 size_t a = I[3], b = I[4], i = I[1], j = I[2];
                 if (a == b || i == j) return 0.0; // return 0 for diagonal elements
 
@@ -882,8 +882,8 @@ namespace hilbert {
                 if (a > b) std::swap(a, b);
                 if (i > j) std::swap(i, j);
 
-                size_t ab_off = this->sqr_2_tri_idx(a, b, vb);
-                size_t ij_off = this->sqr_2_tri_idx(i, j, ob);
+                size_t ab_off = EOM_Driver::sqr_2_tri_idx(a, b, vb);
+                size_t ij_off = EOM_Driver::sqr_2_tri_idx(i, j, ob);
                 size_t upper_tri_index = ab_off*ob*(ob-1)/2 + ij_off;
                 double value = relp[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;

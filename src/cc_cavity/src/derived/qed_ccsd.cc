@@ -233,7 +233,7 @@ namespace hilbert {
 
         // print norms of cluster amplitudes
         outfile->Printf("\n\n   Norms of cluster amplitudes:");
-        outfile->Printf("\n   ----------------------------");
+        outfile->Printf("\n   ------------------------------");
         outfile->Printf("\n    T1: %15.12lf | %5.2f %%"
                         "\n    T2: %15.12lf | %5.2f %%",
                         sqrt(nT1), 100*nT1/total_norm,
@@ -241,7 +241,7 @@ namespace hilbert {
         if ( include_u0_ ) outfile->Printf("\n    U0: %15.12lf | %5.2f %%", u0_, 100.0*fabs(u0_*u0_)/total_norm);
         if ( include_u1_ ) outfile->Printf("\n    U1: %15.12lf | %5.2f %%", sqrt(nU1), 100.0*nU1/total_norm);
         if ( include_u2_ ) outfile->Printf("\n    U2: %15.12lf | %5.2f %%", sqrt(nU2), 100.0*nU2/total_norm);
-        outfile->Printf("\n   ----------------------------");
+        outfile->Printf("\n   ------------------------------");
         outfile->Printf("\n    Total: %15.12lf\n\n", sqrt(total_norm));
 
     }
@@ -250,7 +250,7 @@ namespace hilbert {
         Printf("\n");
         Printf("    ==>  Begin %s iterations <==    \n", cc_type_.c_str());
         Printf("\n");
-        Printf("%5s %16s %15s %15s | %8s %8s",  "Iter","energy","dE","|dT|","|dT1|","|dT2|");
+        Printf("%5s %16s %15s %15s  | %8s %8s",  "Iter","energy","dE","|dT|","|dT1|","|dT2|");
         if (include_u0_) Printf(" %8s","|dU0|");
         if (include_u1_) Printf(" %8s","|dU1|");
         if (include_u2_) Printf(" %8s","|dU2|");

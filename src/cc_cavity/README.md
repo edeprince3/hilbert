@@ -74,6 +74,8 @@ After installing the `cc_cavity` plugin, you can use it within Psi4 to perform Q
 4. Run the calculation with `energy('cc_cavity')`.
 
 ### Example
+Here is an example input file to run with Psi4 that has comments for the different settings that can be included.
+
 ``` python
 sys.path.insert(0, '../')
 import hilbert
@@ -118,7 +120,7 @@ set hilbert {
   cavity_coupling_strength [0.0, 0.0, $coupling_strength]
   
   # number of photon states to include in the cavity (at most two is supported for QED-CC)
-  n_photon_states              2 # should be 1 if doing only QED-CC calculations
+  n_photon_states              2 # should be 1 if doing only CCSD calculations
   
   # Choose which photon operators to include in the QED-CC calculations
   QED_CC_INCLUDE_U0         true # ground state with one photon
@@ -139,11 +141,29 @@ set hilbert {
   EOM_SS_GUESS              true # use the singles hamiltonian to guess the EOM-CC subspace
   EOM_MAXITER                250 # maximum number of iterations for the EOM-CC iterations
   EXCITED_PROPERTIES        true # compute EOM properties (oscillator strengths, transition dipole moments, etc.)
+  
+  MAD_NUM_THREADS              1 # the number of MADNESS threads to use with mpirun 
+                                 # Note: if not using mpi or eom, set this to 1 for best performance
+  TILE_SIZE                   -1 # the spacing between tiles in a tiledarray (-1 places all data on a single tile)
+                                 # Note: if not using mpi or eom, set this to -1 for best performance
 }
 
 # memory for Psi4 (note: this is for the integrals, not the CC calculation which does not restrict memory usage)
 memory 1000 MB
 
-en, wfn = energy('cc_cavity') # run the QED-CC calculation (note: this will take a while)
+# run the QED-CC calculation (note: this will take a while)
+en, wfn = energy('cc_cavity', return_wfn=True)
 print('Total energy: %20.12f' % en) # print the total energy
 ```
+
+If the name of this file is `input.dat`, the file can be run with the following command:
+``` bash
+psi4 -n $NUM_THREADS input.dat output.dat
+```
+
+Where $NUMTHREADS is the number of threads you wish to run the calculation with (when using parallel BLAS).
+To run the calculation with mpi, you can use the following command:
+``` bash
+mpirun -n $NUM_THREADS psi4 input.dat output.dat
+```
+Note: MPI functionality is not optimized as of now.
