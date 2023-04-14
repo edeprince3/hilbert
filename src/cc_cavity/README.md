@@ -143,9 +143,9 @@ set hilbert {
   EXCITED_PROPERTIES        true # compute EOM properties (oscillator strengths, transition dipole moments, etc.)
   
   MAD_NUM_THREADS              1 # the number of MADNESS threads to use with mpirun 
-                                 # Note: if not using mpi or eom, set this to 1 for best performance
+                                 # Note: if not using mpi or using eom, set this to 1 for best performance
   TILE_SIZE                   -1 # the spacing between tiles in a tiledarray (-1 places all data on a single tile)
-                                 # Note: if not using mpi or eom, set this to -1 for best performance
+                                 # Note: if not using mpi or using eom, set this to -1 for best performance
 }
 
 # memory for Psi4 (note: this is for the integrals, not the CC calculation which does not restrict memory usage)
