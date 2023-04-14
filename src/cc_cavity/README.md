@@ -118,7 +118,7 @@ set hilbert {
   cavity_coupling_strength [0.0, 0.0, $coupling_strength]
   
   # number of photon states to include in the cavity (at most two is supported for QED-CC)
-  n_photon_states              2 # should be 1 if doing only QED-CC calculations
+  n_photon_states              2 # should be 1 if doing only CCSD calculations
   
   # Choose which photon operators to include in the QED-CC calculations
   QED_CC_INCLUDE_U0         true # ground state with one photon
