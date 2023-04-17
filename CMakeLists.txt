@@ -18,14 +18,16 @@ cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-include(psi4OptionsTools)
-
 find_package(pybind11 REQUIRED)
-find_package(psi4 1.3 REQUIRED)
+find_package(psi4 REQUIRED)
+include(psi4OptionsTools)
 
 # add files for performing EOM-CC calculations if requested
 option(USE_QED_EOM_CC "Build QED-EOM-CC functionality" OFF)
 option(USE_QED_CC "Build QED-CC functionality" OFF)
+
+# add option for MAX_CC_LEVEL (default is 2, but can be set to 3 or 4)
+set(MAX_CC_LEVEL 2 CACHE STRING "CC level for QED-CC calculations")
 
 # add files for performing QED-CC calculations
 set(qed_cc "")
@@ -38,20 +40,22 @@ if (USE_QED_CC)
   else()
     message(STATUS "QED-EOM-CC will NOT be built")
   endif()
+  message(STATUS "MAX_CC_LEVEL is set to ${MAX_CC_LEVEL}")
 else()
-    message(STATUS "QED-CC will NOT be built")
-    if (USE_QED_EOM_CC)
-        message(FATAL_ERROR "USE_QED_EOM_CC requires USE_QED_CC")
-    endif()
+  message(STATUS "QED-CC will NOT be built")
+  if (USE_QED_EOM_CC)
+    message(FATAL_ERROR "USE_QED_EOM_CC requires USE_QED_CC")
+  endif()
 endif()
 
 if (USE_QED_CC)
 
   # find prerequisites
-  if(NOT MPI_Fortran_COMPILER AND Fortran_COMPILER_ID MATCHES "Intel")
+  if(Fortran_COMPILER_ID MATCHES "Intel" AND NOT I_MPI_ROOT)
     # find_package(MPI) doesn't find mpi fortran compilers from intel and hangs if it's not set
-    message(FATAL_ERROR "MPI_Fortran_COMPILER not set. Please set MPI_Fortran_COMPILER to the path of your MPI Fortran compiler.")
+    message(FATAL_ERROR "I_MPI_ROOT must be set to the root directory of the Intel MPI installation")
   endif()
+  find_package(Boost REQUIRED COMPONENTS serialization)
   find_package(MPI REQUIRED)
   find_package(Eigen3 REQUIRED)
   find_package(OpenMP)
@@ -65,7 +69,7 @@ if (USE_QED_CC)
             COMMAND
             ${Python_EXECUTABLE} -c "import mpi4py; import os; print(mpi4py.get_include(), end='')"
             OUTPUT_VARIABLE MPI4PY_INCLUDE_DIR
-    )
+            )
     if(MPI4PY_INCLUDE_DIR STREQUAL "")
       message(FATAL_ERROR "Could not find mpi4py include directory. Install mpi4py with pip or set MPI4PY_INCLUDE_DIR.")
     endif()
@@ -92,10 +96,6 @@ if (USE_QED_CC)
           src/cc_cavity/src/cc_cavity.cc
           src/cc_cavity/src/derived/qed_ccsd.cc
           src/cc_cavity/src/derived/qed_ccsd_resid.cc
-          src/cc_cavity/src/derived/qed_ccsdt.cc
-#          src/cc_cavity/src/derived/qed_ccsdt_resid.cc  (not yet implemented)
-          src/cc_cavity/src/derived/qed_ccsdtq.cc
-#          src/cc_cavity/src/derived/qed_ccsdtq_resid.cc  (not yet implemented)
 
           src/cc_cavity/misc/diis_qed.cc
           src/cc_cavity/misc/nonsym_davidson_solver_qed.cc
@@ -104,6 +104,32 @@ if (USE_QED_CC)
           src/cc_cavity/misc/ta_helper.cc
           )
   add_definitions(-DUSE_QED_CC=1)
+
+  # set default MAX_CC_LEVEL to 2 if it is not set
+  if (NOT MAX_CC_LEVEL OR MAX_CC_LEVEL LESS 2)
+    set(MAX_CC_LEVEL 2)
+  endif()
+
+  # add files for performing QED-CC calculations at MAX_CC_LEVEL >= 3
+  if (MAX_CC_LEVEL GREATER 2)
+    set(qed_cc
+            ${qed_cc}
+            src/cc_cavity/src/derived/qed_ccsdt.cc
+            src/cc_cavity/src/derived/qed_ccsdt_resid.cc
+            )
+  endif()
+
+  # add files for performing QED-CC calculations at MAX_CC_LEVEL >= 4
+  if (MAX_CC_LEVEL GREATER 3)
+    set(qed_cc
+            ${qed_cc}
+            src/cc_cavity/src/derived/qed_ccsdtq.cc
+            src/cc_cavity/src/derived/qed_ccsdtq_resid.cc
+            )
+  endif()
+
+  # add MAX_CC_LEVEL to compiler flags
+  add_definitions(-DMAX_CC_LEVEL=${MAX_CC_LEVEL})
 endif()
 
 if (USE_QED_EOM_CC AND USE_QED_CC)
@@ -269,13 +295,13 @@ add_psi4_plugin(hilbert
         ${v2rdm_casscf}
         )
 
-# external projects 
+# external projects
 set(EXTERNAL_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/external/)
 add_subdirectory(external)
 
 set(EXTERNAL_INCLUDE  "${PROJECT_SOURCE_DIR}/external/include")
 target_include_directories(hilbert PRIVATE  ${EXTERNAL_INCLUDE})
-   
+
 # hilbert module headers
 target_include_directories(hilbert PRIVATE "${PROJECT_SOURCE_DIR}/src")
 
@@ -285,7 +311,7 @@ target_link_libraries(hilbert PUBLIC LBFGS::lib)
 if(USE_QED_CC)
   target_include_directories(hilbert PRIVATE ${MPI4PY_INCLUDE_DIR})
   target_include_directories(hilbert PRIVATE ${tiledarray_INCLUDE_DIR})
-  target_link_libraries(hilbert PUBLIC MPI::MPI_CXX tiledarray)
+  target_link_libraries(hilbert PUBLIC MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran tiledarray)
 endif()
 
 install(DIRECTORY ${hilbert_BINARY_DIR}/
@@ -298,4 +324,4 @@ install(DIRECTORY ${hilbert_BINARY_DIR}/
         PATTERN "cmake_install.cmake" EXCLUDE
         PATTERN "Makefile" EXCLUDE
         PATTERN "install_manifest.txt" EXCLUDE
-)
+        )
