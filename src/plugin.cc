@@ -54,12 +54,17 @@
     #include <tiledarray.h>
     #include "cc_cavity/include/cc_cavity.h"
     #include "cc_cavity/include/derived/qed_ccsd.h"
-    #include "cc_cavity/include/derived/qed_ccsdt.h"
-    #include "cc_cavity/include/derived/qed_ccsdtq.h"
+    #if MAX_CC_LEVEL >= 3
+        #include "cc_cavity/include/derived/qed_ccsdt.h"
+    #endif
+    #if MAX_CC_LEVEL >= 4
+        #include "cc_cavity/include/derived/qed_ccsdtq.h"
+    #endif
 #endif
 
 #ifdef USE_QED_EOM_CC
-    #include "cc_cavity/include/derived/eom_ee_driver.h"
+    #include "cc_cavity/include/derived/eom_ee_ccsd.h"
+    #include "cc_cavity/include/derived/eom_ee_qed_ccsd.h"
     #include "cc_cavity/include/derived/eom_ea_driver.h"
     #include "cc_cavity/include/derived/eom_ee_rdm.h"
 #endif
@@ -455,6 +460,9 @@ int read_options(std::string name, Options& options)
 
         /*- do print excited state transition dipoles (computed either way) -*/
         options.add_bool("EXCITED_PROPERTIES", true);
+
+        /*- Select left and right states to visualize density or transition density -*/
+        options.add_array("RDM_STATES");
     }
 
     return true;
@@ -654,14 +662,27 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         // determine the level of theory
         bool three_body = options.get_bool("QED_CC_INCLUDE_T3") || options.get_bool("QED_CC_INCLUDE_U3");
         bool four_body  = options.get_bool("QED_CC_INCLUDE_T4") || options.get_bool("QED_CC_INCLUDE_U4");
+        bool has_photon = options.get_int("N_PHOTON_STATES") > 1;
 
         // select the appropriate derived CC_CAVITY object
         if (four_body)
+    #if MAX_CC_LEVEL >= 4
             qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSDTQ(qed_ref_wfn, options));
+    #else
+            throw PsiException("QED_CCSDTQ requires MAX_CC_LEVEL >= 4 at compile time",__FILE__,__LINE__);
+    #endif
         else if (three_body)
+    #if MAX_CC_LEVEL >= 3
             qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSDT(qed_ref_wfn, options));
-        else
-            qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD(qed_ref_wfn, options));
+    #else
+            throw PsiException("QED_CCSDT requires MAX_CC_LEVEL >= 3 at compile time",__FILE__,__LINE__);
+    #endif
+        else {
+            if (has_photon)
+                qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD(qed_ref_wfn, options));
+            else
+                qedcc = std::shared_ptr<CC_Cavity>(new CC_Cavity(qed_ref_wfn, options));
+        }
 
         // compute the energy
         double energy = qedcc->compute_energy();
@@ -669,14 +690,18 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         // perform QED-EOM-CC if requested
         bool do_eom = options.get_bool("PERFORM_EOM");
 
-        if (do_eom){
+        if (do_eom && !four_body && !three_body) {
         #ifndef USE_QED_EOM_CC
             throw PsiException("QED-EOM-CC calculations require the `USE_QED_EOM_CC` flag to be set at compile time",__FILE__,__LINE__);
         #else
             std::shared_ptr<EOM_Driver> eom_driver;
             if (options.get_str("EOM_TYPE") == "EE") { // use EOM for excitation energies
-                eom_driver = std::shared_ptr<EOM_Driver>(
-                        new EOM_EE_Driver((std::shared_ptr<CC_Cavity>) qedcc, options));
+                if (has_photon)
+                    eom_driver = std::shared_ptr<EOM_Driver>(
+                        new EOM_EE_QED_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
+                else
+                    eom_driver = std::shared_ptr<EOM_Driver>(
+                        new EOM_EE_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
             }
             else if (options.get_str("EOM_TYPE") == "EA") { // use EOM for electron attachment
                 throw PsiException("QED-EOM-EA-CC is not fuctional for release yet.", __FILE__, __LINE__);
@@ -694,6 +719,21 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
                 rdm->compute_eom_rdms();
                 rdm->compute_oscillators();
                 rdm->print_oscillators();
+                if (options.exists("RDM_STATES")) {
+                    vector<int> rdm_states = options.get_int_vector("RDM_STATES");
+                    if (rdm_states.size() != 2 && rdm_states.size() != 1) {
+                        throw PsiException("RDM_STATES must be a vector of length 1 or 2: provided size is " + std::to_string(rdm_states.size()), __FILE__, __LINE__);
+                    }
+
+                    for (auto state : rdm_states) {
+                        if (state < 0 || state > eom_driver->M_) {
+                            throw PsiException("RDM_STATES must be between 0 and the number of states.", __FILE__, __LINE__);
+                        }
+                    }
+
+                    rdm->molden(rdm_states);
+                }
+
             }
         #endif
 

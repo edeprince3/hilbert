@@ -46,10 +46,10 @@ public:
 
     void set_problem_size() override;
 
-    void print_eom_summary() const override;
+    void print_eom_header() const override;
 
     void build_hamiltonian() override;
-    double* build_guess() override;
+    double* build_preconditioner() override;
 
     void build_common_ops() override;
 
@@ -63,7 +63,9 @@ public:
 
     void unpack_eigenvectors() override;
 
-    void print_dominant_transitions() override;
+    DominantTransitionsType find_dominant_transitions(size_t I) override;
+
+
 };
 
 } // cc_cavity

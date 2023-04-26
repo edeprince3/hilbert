@@ -24,6 +24,7 @@
  *  @END LICENSE
  */
 
+#include <psi4/libmints/writer.h>
 #include "../../include/derived/eom_ee_rdm.h"
 
 namespace hilbert {
@@ -2420,6 +2421,193 @@ namespace hilbert {
 //            outfile->Printf("\n  Building EOM-EE-CC RDMs... ");
             outfile->Printf("Done --> Time: %s\n", rdm_timer.elapsed().c_str());
         }
+    }
+
+    void EOM_EE_RDM::molden(vector<int> rdm_states) {
+        if (world_.rank() == 0) {
+            outfile->Printf("\n  Writing density to molden file...");
+        }
+
+        if (rdm_states.size() == 1) {
+            rdm_states.push_back(rdm_states[0]);
+        }
+
+        // get reference wavefunction
+        const auto & ref_wfn = eom_driver_->cc_wfn_->reference_wavefunction();
+        size_t nso = ref_wfn->nso(); // could have done this sooner
+
+        // extract the RDMs
+        SharedMatrix D1_aa(new Matrix(nso, nso));
+        SharedMatrix D1_bb(new Matrix(nso, nso));
+        
+        double** D1_aa_p = D1_aa->pointer();
+        double** D1_bb_p = D1_bb->pointer();
+        
+        size_t oa = oa_, ob = ob_, va = va_, vb = vb_;
+        
+        //// D1_aa
+        
+        // add D1_aa_oo
+        HelperD::forall(RDM_blks_["D1_aa_oo"], [D1_aa_p, rdm_states](auto &tile, auto &x){
+            size_t mu = x[2], nu = x[3];
+            if (x[0] == rdm_states[0] && x[1] == rdm_states[1])
+                D1_aa_p[mu][nu] = tile[x];
+        });
+        
+        // add D1_aa_ov
+        HelperD::forall(RDM_blks_["D1_aa_ov"], [D1_aa_p, oa, rdm_states](auto &tile, auto &x){
+            size_t mu = x[2], nu = x[3] + oa;
+            if (x[0] == rdm_states[0] && x[1] == rdm_states[1])
+                D1_aa_p[mu][nu] = tile[x];
+        });
+        
+        // add D1_aa_vo
+        HelperD::forall(RDM_blks_["D1_aa_vo"], [D1_aa_p, oa, rdm_states](auto &tile, auto &x){
+            size_t mu = x[2] + oa, nu = x[3];
+            if (x[0] == rdm_states[0] && x[1] == rdm_states[1])
+                D1_aa_p[mu][nu] = tile[x];
+        });
+        
+        // add D1_aa_vv
+        HelperD::forall(RDM_blks_["D1_aa_vv"], [D1_aa_p, oa, rdm_states](auto &tile, auto &x){
+            size_t mu = x[2] + oa, nu = x[3] + oa;
+            if (x[0] == rdm_states[0] && x[1] == rdm_states[1])
+                D1_aa_p[mu][nu] = tile[x];
+        });
+        
+        //// D1_bb
+        
+        // add D1_bb_oo
+        HelperD::forall(RDM_blks_["D1_bb_oo"], [D1_bb_p, rdm_states](auto &tile, auto &x){
+            size_t mu = x[2], nu = x[3];
+            if (x[0] == rdm_states[0] && x[1] == rdm_states[1])
+                D1_bb_p[mu][nu] = tile[x];
+        });
+
+        // add D1_bb_ov
+        HelperD::forall(RDM_blks_["D1_bb_ov"], [D1_bb_p, ob, rdm_states](auto &tile, auto &x){
+            size_t mu = x[2], nu = x[3] + ob;
+            if (x[0] == rdm_states[0] && x[1] == rdm_states[1])
+                D1_bb_p[mu][nu] = tile[x];
+        });
+
+        // add D1_bb_vo
+        HelperD::forall(RDM_blks_["D1_bb_vo"], [D1_bb_p, ob, rdm_states](auto &tile, auto &x){
+            size_t mu = x[2] + ob, nu = x[3];
+            if (x[0] == rdm_states[0] && x[1] == rdm_states[1])
+                D1_bb_p[mu][nu] = tile[x];
+        });
+
+        // add D1_bb_vv
+        HelperD::forall(RDM_blks_["D1_bb_vv"], [D1_bb_p, ob, rdm_states](auto &tile, auto &x){
+            size_t mu = x[2] + ob, nu = x[3] + ob;
+            if (x[0] == rdm_states[0] && x[1] == rdm_states[1])
+                D1_bb_p[mu][nu] = tile[x];
+        });
+        world_.gop.fence();
+
+        /// diagonalize the RDMs
+        SharedMatrix D1_aa_evecs(new Matrix(nso, nso));
+        SharedMatrix D1_bb_evecs(new Matrix(nso, nso));
+        SharedVector D1_aa_evals(new Vector(nso));
+        SharedVector D1_bb_evals(new Vector(nso));
+
+        // should probably use nonsymmetric diagonalize...
+        D1_aa->diagonalize(D1_aa_evecs, D1_aa_evals, descending);
+        D1_bb->diagonalize(D1_bb_evecs, D1_bb_evals, descending);
+
+        double** D1_aa_evecs_p = D1_aa_evecs->pointer();
+        double** D1_bb_evecs_p = D1_bb_evecs->pointer();
+
+        /// build AO/NO basis transformation matrix
+
+        // alpha
+        SharedMatrix Ca = ref_wfn->Ca();
+        SharedMatrix Cnoa(new Matrix(nso, nso));
+        double** Ca_p = Ca->pointer();
+        double** Cnoa_p = Cnoa->pointer();
+
+        for (size_t mu = 0; mu < nso; ++mu) {
+            for (size_t nu = 0; nu < nso; ++nu) {
+                double sum = 0.0;
+                for (size_t i = 0; i < nso; ++i) {
+                    sum += Ca_p[mu][i] * D1_aa_evecs_p[i][nu];
+                }
+                Cnoa_p[mu][nu] = sum;
+            }
+        }
+
+        // beta
+        SharedMatrix Cb = ref_wfn->Cb();
+        SharedMatrix Cnob(new Matrix(nso, nso));
+        double** Cb_p = Cb->pointer();
+        double** Cnob_p = Cnob->pointer();
+
+        for (size_t mu = 0; mu < nso; ++mu) {
+            for (size_t nu = 0; nu < nso; ++nu) {
+                double sum = 0.0;
+                for (size_t i = 0; i < nso; ++i) {
+                    sum += Cb_p[mu][i] * D1_bb_evecs_p[i][nu];
+                }
+                Cnob_p[mu][nu] = sum;
+            }
+        }
+
+
+        /// build epsilon_a and epsilon_b in the NO basis
+        TArrayMap & F_blks = eom_driver_->cc_wfn_->F_blks_;
+
+        SharedVector Ea(new Vector(nso));
+        SharedVector Eb(new Vector(nso));
+        double* Ea_p = Ea->pointer();
+        double* Eb_p = Eb->pointer();
+
+        double DSE = eom_driver_->cc_wfn_->average_electric_dipole_self_energy_;
+        double enuc = eom_driver_->cc_wfn_->enuc_;
+
+        TArrayMap Cno_blks_;
+        Cno_blks_["aa_oo"] = HelperD::makeTensor(world_, {oa_}, {oa_}, Cnoa_p, {0, 0});
+        Cno_blks_["bb_oo"] = HelperD::makeTensor(world_, {ob_}, {ob_}, Cnob_p, {0, 0});
+        Cno_blks_["aa_vv"] = HelperD::makeTensor(world_, {va_}, {va_}, Cnoa_p, {oa_, oa_});
+        Cno_blks_["bb_vv"] = HelperD::makeTensor(world_, {vb_}, {vb_}, Cnoa_p, {ob_, ob_});
+        world_.gop.fence();
+
+        TArrayMap Fno_blks;
+        Fno_blks["aa_oo"]("i,j") = F_blks["aa_oo"]("mu, nu") * Cno_blks_["aa_oo"]("mu, i") * Cno_blks_["aa_oo"]("nu, j");
+        Fno_blks["bb_oo"]("i,j") = F_blks["bb_oo"]("mu, nu") * Cno_blks_["bb_oo"]("mu, i") * Cno_blks_["bb_oo"]("nu, j");
+        Fno_blks["aa_vv"]("i,j") = F_blks["aa_vv"]("mu, nu") * Cno_blks_["aa_vv"]("mu, i") * Cno_blks_["aa_vv"]("nu, j");
+        Fno_blks["bb_vv"]("i,j") = F_blks["bb_vv"]("mu, nu") * Cno_blks_["bb_vv"]("mu, i") * Cno_blks_["bb_vv"]("nu, j");
+
+        // alpha
+        HelperD::forall(Fno_blks["aa_oo"], [Ea_p, DSE, enuc](auto &tile, auto &x){
+            size_t mu = x[0], nu = x[1];
+            if (mu == nu)
+                Ea_p[mu] = tile[x] + DSE + enuc;
+        });
+        HelperD::forall(Fno_blks["aa_vv"], [Ea_p, oa, DSE, enuc](auto &tile, auto &x){
+            size_t mu = x[0], nu = x[1];
+            if (mu == nu)
+                Ea_p[mu+oa] = tile[x] + DSE + enuc;
+        });
+
+        // beta
+        HelperD::forall(Fno_blks["bb_oo"], [Eb_p, DSE, enuc](auto &tile, auto &x){
+            size_t mu = x[0], nu = x[1];
+            if (mu == nu)
+                Eb_p[mu] = tile[x] + DSE + enuc;
+        });
+        HelperD::forall(Fno_blks["bb_vv"], [Eb_p, ob, DSE, enuc](auto &tile, auto &x){
+            size_t mu = x[0], nu = x[1];
+            if (mu == nu)
+                Eb_p[mu+ob] = tile[x] + DSE + enuc;
+        });
+        world_.gop.fence();
+
+
+        /// make the molden file
+        std::shared_ptr<MoldenWriter> molden(new MoldenWriter(ref_wfn));
+        std::string molden_name = ref_wfn->molecule()->name() + ".molden";
+        molden->write(molden_name, Cnoa, Cnob, Ea, Eb, D1_aa_evals, D1_bb_evals, true);
     }
 
 } // cc_cavity

@@ -18,14 +18,17 @@ cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-include(psi4OptionsTools)
-
 find_package(pybind11 REQUIRED)
 find_package(psi4 1.3 REQUIRED)
+include(psi4OptionsTools)
+
 
 # add files for performing EOM-CC calculations if requested
 option(USE_QED_EOM_CC "Build QED-EOM-CC functionality" OFF)
 option(USE_QED_CC "Build QED-CC functionality" OFF)
+
+# add option for MAX_CC_LEVEL (default is 2, but can be set to 3 or 4)
+set(MAX_CC_LEVEL 2 CACHE STRING "CC level for QED-CC calculations")
 
 # add files for performing QED-CC calculations
 set(qed_cc "")
@@ -38,6 +41,7 @@ if (USE_QED_CC)
   else()
     message(STATUS "QED-EOM-CC will NOT be built")
   endif()
+  message(STATUS "MAX_CC_LEVEL is set to ${MAX_CC_LEVEL}")
 else()
     message(STATUS "QED-CC will NOT be built")
     if (USE_QED_EOM_CC)
@@ -54,7 +58,8 @@ if (USE_QED_CC)
   endif()
   find_package(MPI REQUIRED)
   find_package(Eigen3 REQUIRED)
-  find_package(OpenMP)
+  find_package(Boost REQUIRED COMPONENTS serialization)
+  find_package(OpenMP REQUIRED)
 
   # get include directory for mpi4py
   if (NOT MPI4PY_INCLUDE_DIR)
@@ -90,12 +95,9 @@ if (USE_QED_CC)
   # add files for performing QED-CC calculations
   set(qed_cc
           src/cc_cavity/src/cc_cavity.cc
+          src/cc_cavity/src/derived/residuals/ccsd_resid.cc
           src/cc_cavity/src/derived/qed_ccsd.cc
-          src/cc_cavity/src/derived/qed_ccsd_resid.cc
-          src/cc_cavity/src/derived/qed_ccsdt.cc
-#          src/cc_cavity/src/derived/qed_ccsdt_resid.cc  (not yet implemented)
-          src/cc_cavity/src/derived/qed_ccsdtq.cc
-#          src/cc_cavity/src/derived/qed_ccsdtq_resid.cc  (not yet implemented)
+          src/cc_cavity/src/derived/residuals/qed_ccsd_resid.cc
 
           src/cc_cavity/misc/diis_qed.cc
           src/cc_cavity/misc/nonsym_davidson_solver_qed.cc
@@ -104,6 +106,32 @@ if (USE_QED_CC)
           src/cc_cavity/misc/ta_helper.cc
           )
   add_definitions(-DUSE_QED_CC=1)
+
+  # set default MAX_CC_LEVEL to 2 if it is not set
+  if (NOT MAX_CC_LEVEL OR MAX_CC_LEVEL LESS 2)
+    set(MAX_CC_LEVEL 2)
+  endif()
+
+  # add files for performing QED-CC calculations at MAX_CC_LEVEL >= 3
+  if (MAX_CC_LEVEL GREATER 2)
+      set(qed_cc
+              ${qed_cc}
+              src/cc_cavity/src/derived/qed_ccsdt.cc
+#              src/cc_cavity/src/derived/residuals/qed_ccsdt_resid.cc
+              )
+  endif()
+
+  # add files for performing QED-CC calculations at MAX_CC_LEVEL >= 4
+  if (MAX_CC_LEVEL GREATER 3)
+      set(qed_cc
+              ${qed_cc}
+              src/cc_cavity/src/derived/qed_ccsdtq.cc
+#              src/cc_cavity/src/derived/residuals/qed_ccsdtq_resid.cc
+              )
+  endif()
+
+  # add MAX_CC_LEVEL to compiler flags
+  add_definitions(-DMAX_CC_LEVEL=${MAX_CC_LEVEL})
 endif()
 
 if (USE_QED_EOM_CC AND USE_QED_CC)
@@ -111,10 +139,12 @@ if (USE_QED_EOM_CC AND USE_QED_CC)
           src/cc_cavity/src/eom_driver.cc
           src/cc_cavity/src/eom_rdm.cc
 
-          src/cc_cavity/src/derived/eom_ee_driver.cc
-          src/cc_cavity/src/derived/eom_ee_build.cc
+          src/cc_cavity/src/derived/eom_ee_ccsd.cc
+          src/cc_cavity/src/derived/sigma_builds/eom_ee_ccsd_build.cc
+          src/cc_cavity/src/derived/eom_ee_qed_ccsd.cc
+          src/cc_cavity/src/derived/sigma_builds/eom_ee_qed_ccsd_build.cc
           src/cc_cavity/src/derived/eom_ea_driver.cc
-          src/cc_cavity/src/derived/eom_ea_build.cc
+          src/cc_cavity/src/derived/sigma_builds/eom_ea_build.cc
           src/cc_cavity/src/derived/eom_ee_rdm.cc
           )
   add_definitions(-DUSE_QED_EOM_CC=1)
