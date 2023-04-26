@@ -678,10 +678,10 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
             throw PsiException("QED_CCSDT requires MAX_CC_LEVEL >= 3 at compile time",__FILE__,__LINE__);
     #endif
         else {
-//            if (has_photon)
+            if (has_photon)
                 qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD(qed_ref_wfn, options));
-//            else
-//                qedcc = std::shared_ptr<CC_Cavity>(new CC_Cavity(qed_ref_wfn, options));
+            else
+                qedcc = std::shared_ptr<CC_Cavity>(new CC_Cavity(qed_ref_wfn, options));
         }
 
         // compute the energy

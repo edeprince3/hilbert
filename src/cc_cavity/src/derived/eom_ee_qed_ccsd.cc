@@ -675,22 +675,4 @@ namespace hilbert {
         return dominant_transitions;
     }
 
-    double* EOM_EE_QED_CCSD::build_ss_diagonal(){
-        // this just calls the EOM_EE_CCSD function for now
-//        Printf("WARNING: EOM_EE_QED_CCSD::build_ss_diagonal() is not implemented yet. Returning EOM_EE_CCSD::build_ss_diagonal() for now.\n");
-        return EOM_EE_CCSD::build_ss_diagonal();
-    }
-
-    void EOM_EE_QED_CCSD::build_common_ops(){
-        // this just calls the EOM_EE_CCSD function for now
-//        Printf("WARNING: EOM_EE_QED_CCSD::build_common_ops() is not implemented yet. Returning EOM_EE_CCSD::build_common_ops() for now.\n");
-        return EOM_EE_CCSD::build_common_ops();
-    }
-
-    void EOM_EE_QED_CCSD::build_Hc_cH(size_t L){
-        // this just calls the EOM_EE_CCSD function for now
-//        Printf("WARNING: EOM_EE_QED_CCSD::build_Hc_cH() is not implemented yet. Returning EOM_EE_CCSD::build_Hc_cH() for now.\n");
-        return EOM_EE_CCSD::build_Hc_cH(L);
-    }
-
 } // hilbert

@@ -140,6 +140,7 @@ if (USE_QED_EOM_CC AND USE_QED_CC)
           src/cc_cavity/src/eom_rdm.cc
 
           src/cc_cavity/src/derived/eom_ee_ccsd.cc
+          src/cc_cavity/src/derived/sigma_builds/eom_ee_ccsd_build.cc
           src/cc_cavity/src/derived/eom_ee_qed_ccsd.cc
           src/cc_cavity/src/derived/sigma_builds/eom_ee_qed_ccsd_build.cc
           src/cc_cavity/src/derived/eom_ea_driver.cc

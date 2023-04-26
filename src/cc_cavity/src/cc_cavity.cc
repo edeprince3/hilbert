@@ -80,8 +80,8 @@ namespace hilbert {
         }
 
         // if `has_photons` is true, but `n_photon_states` is not two, throw error
-//        if ( has_photon_ && n_photon_states_ != 2 )
-//            throw PsiException("CC Cavity requires two photon states if using bosonic operators",__FILE__,__LINE__);
+        if ( has_photon_ && n_photon_states_ != 2 )
+            throw PsiException("CC Cavity requires two photon states if using bosonic operators",__FILE__,__LINE__);
 
         world_.gop.fence();
         common_init();

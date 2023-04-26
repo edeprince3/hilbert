@@ -24,9 +24,9 @@
  *  @END LICENSE
  */
 
-#include "../../../include/derived/eom_ee_ccsd.h"
+#include "../../../include/derived/eom_ee_qed_ccsd.h"
 
-double* hilbert::EOM_EE_CCSD::build_ss_diagonal() {
+double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
 
     // get cavity information
 
@@ -970,7 +970,7 @@ double* hilbert::EOM_EE_CCSD::build_ss_diagonal() {
     H_u1u1_bbbb_ovov("m,e,i,a") += coherent_scalar * cH_u1u1_bbbb_ovov("m,e,i,a");
 
     // pluck out diagonals
-    size_t dim_tot = 1 + singleDim_;
+    size_t dim_tot = singleDim_;
     if (include_u0_) ++dim_tot;
     if (include_u1_) dim_tot += singleDim_;
     auto * ss_diag = (double*) calloc(dim_tot, sizeof(double));
@@ -1023,7 +1023,7 @@ double* hilbert::EOM_EE_CCSD::build_ss_diagonal() {
 
 }
 
-void hilbert::EOM_EE_CCSD::build_common_ops() {
+void hilbert::EOM_EE_QED_CCSD::build_common_ops() {
     
     if (!cc_wfn_->has_t1_integrals_) cc_wfn_->transform_integrals(true);
 
@@ -3685,7 +3685,7 @@ void hilbert::EOM_EE_CCSD::build_common_ops() {
 
 }
 
-void hilbert::EOM_EE_CCSD::build_Hc_cH(size_t L) {
+void hilbert::EOM_EE_QED_CCSD::build_Hc_cH(size_t L) {
 
     // ensure that the integrals are transformed with t1 amplitudes
     if (!cc_wfn_->has_t1_integrals_) cc_wfn_->transform_integrals(true);
