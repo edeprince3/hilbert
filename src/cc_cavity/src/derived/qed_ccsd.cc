@@ -182,7 +182,7 @@ namespace hilbert {
         /// residual norms for each amplitude
 
         // call parent function for t1 and t2
-        CC_Cavity::compute_residual_norms();
+        CC_Cavity::compute_residual_norms(false);
 
         // u residual norms
         if (include_u0_) {
@@ -234,10 +234,8 @@ namespace hilbert {
         // print norms of cluster amplitudes
         outfile->Printf("\n\n   Norms of cluster amplitudes:");
         outfile->Printf("\n   ------------------------------");
-        outfile->Printf("\n    T1: %15.12lf | %5.2f %%"
-                        "\n    T2: %15.12lf | %5.2f %%",
-                        sqrt(nT1), 100*nT1/total_norm,
-                        sqrt(nT2), 100*nT2/total_norm);
+        outfile->Printf("\n    T1: %15.12lf | %5.2f %%", sqrt(nT1), 100*nT1/total_norm);
+        outfile->Printf("\n    T2: %15.12lf | %5.2f %%", sqrt(nT2), 100*nT2/total_norm);
         if ( include_u0_ ) outfile->Printf("\n    U0: %15.12lf | %5.2f %%", u0_, 100.0*fabs(u0_*u0_)/total_norm);
         if ( include_u1_ ) outfile->Printf("\n    U1: %15.12lf | %5.2f %%", sqrt(nU1), 100.0*nU1/total_norm);
         if ( include_u2_ ) outfile->Printf("\n    U2: %15.12lf | %5.2f %%", sqrt(nU2), 100.0*nU2/total_norm);

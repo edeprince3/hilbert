@@ -80,8 +80,10 @@ namespace hilbert {
         size_t o_ = cc_wfn_->o_, oa_ = cc_wfn_->oa_, ob_ = cc_wfn_->ob_, // occupied
         v_ = cc_wfn_->v_, va_ = cc_wfn_->va_, vb_ = cc_wfn_->vb_, // virtual
         ns_ = cc_wfn_->ns_, // number of spin orbitals
-        nQ_ = cc_wfn_->nQ_; // number of auxiliary basis functions
+        nQ_ = cc_wfn_->nQ_, // number of auxiliary basis functions
+        nops_; // number of operators
 
+        // dimensions of operators
         size_t singleDim_ = cc_wfn_->singleDim_,
                 doubleDim_ = cc_wfn_->doubleDim_,
                 tripleDim_ = cc_wfn_->tripleDim_,
@@ -181,9 +183,14 @@ namespace hilbert {
         virtual void set_problem_size() = 0;
 
         /**
+         * Print the header for the EOM-CC summary of energies and properties
+         */
+        virtual void print_eom_header() const = 0;
+
+        /**
          * Print the EOM-CC summary of energies and properties
          */
-        virtual void print_eom_summary() const = 0;
+        virtual void print_eom_summary() const;
 
         /**
          * build the full hamiltonian (not implemented)
@@ -191,10 +198,10 @@ namespace hilbert {
         virtual void build_hamiltonian() = 0;
 
         /**
-         * Build the guess vector for the EOM-CC calculation (either uses orbital guess or singles guess)
+         * Build the preconditioner for the EOM-CC calculation (either uses orbital guess or singles guess)
          * @return guess vector
          */
-        virtual double* build_guess() = 0;
+        virtual double* build_preconditioner() = 0;
 
         /**
          * Build operators for the EOM-CC calculation that do not depend on the trial vectors
@@ -234,10 +241,23 @@ namespace hilbert {
          */
         virtual void unpack_eigenvectors() = 0;
 
+
+        // a map of the operator name to a priority queue of its dominant transitions with:
+        //     the magnitude of the transition
+        //     the spin of the transition
+        //     the indicies of the transition
+        typedef map<string, priority_queue<pair<double, pair<string, vector<size_t>>>>> DominantTransitionsType;
+
         /**
-         * Print the dominant transitions for each state
+         * find the dominant transitions for a given state
+         * @param I the state
          */
-        virtual void print_dominant_transitions() = 0;
+        virtual DominantTransitionsType find_dominant_transitions(size_t I) = 0;
+
+        /**
+         * Print the dominant transitions for all states
+         */
+        virtual void transitions_summary();
     };
 
 } // cc_cavity

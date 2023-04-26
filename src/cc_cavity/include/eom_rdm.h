@@ -92,9 +92,15 @@ namespace hilbert {
         virtual void init_rdms() = 0;
 
         /**
-         * Compute the 1-RDMs and 2-RDMs
+         * Compute the 1-RDMs
          */
         virtual void compute_eom_rdms() = 0;
+
+        /**
+         * save the 1-RDM to a molden file
+         */
+        virtual void molden(vector<int> rdm_states) = 0;
+
     };
 }
 

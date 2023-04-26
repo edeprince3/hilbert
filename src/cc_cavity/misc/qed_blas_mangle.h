@@ -49,15 +49,33 @@
 #define dgesvd FC_GLOBAL(dgesvd, DGESVD)
 #else // USE_FCMANGLE_H
 #if FC_SYMBOL==2
-#define dgemv  dgemv_
-#define dgemm  dgemm_
-#define dcopy  dcopy_
-#define daxpy  daxpy_
-#define dnrm2  drnm2_
-#define dgesv  dgesv_
-#define ddot   ddot_  
-#define dsyev  dsyev_ 
-#define dspev  dspev_
+#ifndef dgemv
+#define dgemv dgemv_
+#endif
+#ifndef dgemm
+#define dgemm dgemm_
+#endif
+#ifndef dcopy
+#define dcopy dcopy_
+#endif
+#ifndef daxpy
+#define daxpy daxpy_
+#endif
+#ifndef dnrm2
+#define dnrm2 drnm2_
+#endif
+#ifndef dgesv
+#define dgesv dgesv_
+#endif
+#ifndef ddot
+#define ddot  ddot_
+#endif
+#ifndef dsyev
+#define dsyev dsyev_
+#endif
+#ifndef dspev
+#define dspev dspev_
+#endif
 #define dgesvd dgesvd_
 #elif FC_SYMBOL==1
 #define dgemv  dgemv

@@ -27,7 +27,7 @@
 #ifndef CC_CAVITY_EOM_EE_RDM_H
 #define CC_CAVITY_EOM_EE_RDM_H
 
-#include "eom_ee_driver.h"
+#include "eom_ee_ccsd.h"
 #include "../eom_rdm.h"
 
 using namespace std;
@@ -41,12 +41,20 @@ namespace hilbert {
         EOM_EE_RDM(const shared_ptr<EOM_Driver>& eom_driver, Options & options);
 
 
+        /**
+         * Initialize the 1-RDMs
+         */
         void init_rdms() override;
 
         /**
-         * Compute the 1-RDMs and 2-RDMs
+         * Compute the 1-RDMs
          */
         void compute_eom_rdms() override;
+
+        /**
+         * Create a molden file with the 1-RDMs
+         */
+        void molden(vector<int> rdm_states) override;
 
     };
 
