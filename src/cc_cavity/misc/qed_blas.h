@@ -62,7 +62,7 @@ extern "C" {
             doublereal*X,myinteger&incx,doublereal&beta,doublereal*Y,myinteger&incy);
 };
 inline void DGEMV(char&trans,myinteger&m,myinteger&n,doublereal&alpha,doublereal*A,myinteger&lda,
-            doublereal*X,myinteger&incx,doublereal&beta,doublereal*Y,myinteger&incy){
+            doublereal*X,myinteger&incx,doublereal&beta,doublereal*Y,myinteger&incy) noexcept {
     dgemv(trans,m,n,alpha,A,lda,X,incx,beta,Y,incy);
 }
 /**
@@ -75,7 +75,7 @@ extern "C" {
 };
 inline void DGEMM(char&transa,char&transb,myinteger&m,myinteger&n,myinteger&k,
          doublereal&alpha,doublereal*A,myinteger&lda,doublereal*B,myinteger&ldb,
-         doublereal&beta,doublereal*C,myinteger&ldc)
+         doublereal&beta,doublereal*C,myinteger&ldc) noexcept
 {
     dgemm(transa,transb,m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
 };
@@ -87,7 +87,7 @@ extern "C" {
          myinteger&incy);
 };
 inline void DCOPY(myinteger&n,doublereal*dx,myinteger&incx,doublereal*dy,
-            myinteger&incy){
+            myinteger&incy) noexcept {
     dcopy(n,dx,incx,dy,incy);
 }
 /**
@@ -105,7 +105,7 @@ inline double DNRM2(myinteger&N,doublereal*X,myinteger&INCX){
 extern"C" {
     void dgesv(myinteger &N,myinteger &NRHS,doublereal*A,myinteger &LDA,myinteger*IPIV,doublereal*B,myinteger &LDB,myinteger &INFO);
 };
-inline void DGESV(myinteger &N,myinteger &NRHS,doublereal*A,myinteger &LDA,myinteger*IPIV,doublereal*B,myinteger &LDB,myinteger &INFO){
+inline void DGESV(myinteger &N,myinteger &NRHS,doublereal*A,myinteger &LDA,myinteger*IPIV,doublereal*B,myinteger &LDB,myinteger &INFO) noexcept {
     dgesv(N,NRHS,A,LDA,IPIV,B,LDB,INFO);
 };
 /**
@@ -114,7 +114,7 @@ inline void DGESV(myinteger &N,myinteger &NRHS,doublereal*A,myinteger &LDA,myint
 extern "C" {
     double ddot(myinteger&n,doublereal*dx,myinteger&incx,doublereal*dy,myinteger&incy);
 };
-inline double DDOT(myinteger&n,doublereal*dx,myinteger&incx,doublereal*dy,myinteger&incy){
+inline double DDOT(myinteger&n,doublereal*dx,myinteger&incx,doublereal*dy,myinteger&incy) noexcept {
     return ddot(n,dx,incx,dy,incy);
 }
 
@@ -129,7 +129,7 @@ void Diagonalize(myinteger N,doublereal*A,doublereal*W);
 extern "C" {
     void dsyev(char&JOBZ,char&UPLO,myinteger&N,doublereal*A,myinteger&LDA,doublereal*W,doublereal*WORK,myinteger&LWORK,myinteger&INFO);
 };
-inline void DSYEV(char&JOBZ,char&UPLO,myinteger&N,doublereal*A,myinteger&LDA,doublereal*W,doublereal*WORK,myinteger&LWORK,myinteger&INFO){
+inline void DSYEV(char&JOBZ,char&UPLO,myinteger&N,doublereal*A,myinteger&LDA,doublereal*W,doublereal*WORK,myinteger&LWORK,myinteger&INFO) noexcept {
     dsyev(JOBZ,UPLO,N,A,LDA,W,WORK,LWORK,INFO);
 }
 /**
@@ -138,7 +138,7 @@ inline void DSYEV(char&JOBZ,char&UPLO,myinteger&N,doublereal*A,myinteger&LDA,dou
 extern "C" {
     void dspev(char&JOBZ,char&UPLO,myinteger&N,doublereal*AP,doublereal*W,doublereal*Z,myinteger&LDZ,doublereal*WORK,myinteger&INFO);
 };
-inline void DSPEV(char&JOBZ,char&UPLO,myinteger&N,doublereal*AP,doublereal*W,doublereal*Z,myinteger&LDZ,doublereal*WORK,myinteger&INFO){
+inline void DSPEV(char&JOBZ,char&UPLO,myinteger&N,doublereal*AP,doublereal*W,doublereal*Z,myinteger&LDZ,doublereal*WORK,myinteger&INFO) noexcept {
     dspev(JOBZ,UPLO,N,AP,W,Z,LDZ,WORK,INFO);
 }
 
@@ -152,7 +152,7 @@ void SVD(myinteger M,myinteger N,doublereal*A,doublereal*U,doublereal*VT,doubler
 extern "C" {
     void dgesvd(char&JOBU,char&JOBVT,myinteger&M,myinteger&N,doublereal*A,myinteger&LDA,doublereal*S,doublereal*U,myinteger&LDU,doublereal*VT,myinteger&LDVT,doublereal*WORK,myinteger&LWORK,myinteger&INFO);
 };
-inline void DGESVD(char&JOBU,char&JOBVT,myinteger&M,myinteger&N,doublereal*A,myinteger&LDA,doublereal*S,doublereal*U,myinteger&LDU,doublereal*VT,myinteger&LDVT,doublereal*WORK,myinteger&LWORK,myinteger&INFO){
+inline void DGESVD(char&JOBU,char&JOBVT,myinteger&M,myinteger&N,doublereal*A,myinteger&LDA,doublereal*S,doublereal*U,myinteger&LDU,doublereal*VT,myinteger&LDVT,doublereal*WORK,myinteger&LWORK,myinteger&INFO) noexcept {
     dgesvd(JOBU,JOBVT,M,N,A,LDA,S,U,LDU,VT,LDVT,WORK,LWORK,INFO);
 }
 
@@ -167,7 +167,7 @@ extern "C" {
 };
 inline void DGEEV(char &jobvl,char &jobvr,myinteger &n,doublereal*a,myinteger &lda,
                   doublereal*wr,doublereal*wi, doublereal*vl,myinteger&ldvl,doublereal*vr,
-                  myinteger &ldvr,doublereal * work,myinteger &lwork,myinteger&info)
+                  myinteger &ldvr,doublereal * work,myinteger &lwork,myinteger&info) noexcept
 {
     dgeev(jobvl,jobvr,n,a,lda,wr,wi,vl,ldvl,vr,ldvr,work,lwork,info);
 }
@@ -176,11 +176,11 @@ inline void DGEEV(char &jobvl,char &jobvr,myinteger &n,doublereal*a,myinteger &l
  *   */
 extern "C" {
     void dgeqrf(myinteger &m,myinteger &n,doublereal *a,myinteger &lda,doublereal *tau,
-                doublereal * work,myinteger &lwork,myinteger &info);
+                doublereal * work,myinteger &lwork,myinteger &info) noexcept;
 };
 extern "C" {
     void dorgqr(myinteger &m,myinteger &n,myinteger &k,doublereal *a,myinteger &lda,doublereal *tau,
-                doublereal * work,myinteger &lwork,myinteger &info);
+                doublereal * work,myinteger &lwork,myinteger &info) noexcept;
 };
 
 

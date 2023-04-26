@@ -58,7 +58,8 @@ if (USE_QED_CC)
   find_package(Boost REQUIRED COMPONENTS serialization)
   find_package(MPI REQUIRED)
   find_package(Eigen3 REQUIRED)
-  find_package(OpenMP)
+  find_package(Boost REQUIRED COMPONENTS serialization)
+  find_package(OpenMP REQUIRED)
 
   # get include directory for mpi4py
   if (NOT MPI4PY_INCLUDE_DIR)
@@ -94,8 +95,9 @@ if (USE_QED_CC)
   # add files for performing QED-CC calculations
   set(qed_cc
           src/cc_cavity/src/cc_cavity.cc
+          src/cc_cavity/src/derived/residuals/ccsd_resid.cc
           src/cc_cavity/src/derived/qed_ccsd.cc
-          src/cc_cavity/src/derived/qed_ccsd_resid.cc
+          src/cc_cavity/src/derived/residuals/qed_ccsd_resid.cc
 
           src/cc_cavity/misc/diis_qed.cc
           src/cc_cavity/misc/nonsym_davidson_solver_qed.cc
@@ -112,20 +114,20 @@ if (USE_QED_CC)
 
   # add files for performing QED-CC calculations at MAX_CC_LEVEL >= 3
   if (MAX_CC_LEVEL GREATER 2)
-    set(qed_cc
-            ${qed_cc}
-            src/cc_cavity/src/derived/qed_ccsdt.cc
-            src/cc_cavity/src/derived/qed_ccsdt_resid.cc
-            )
+      set(qed_cc
+              ${qed_cc}
+              src/cc_cavity/src/derived/qed_ccsdt.cc
+#              src/cc_cavity/src/derived/residuals/qed_ccsdt_resid.cc
+              )
   endif()
 
   # add files for performing QED-CC calculations at MAX_CC_LEVEL >= 4
   if (MAX_CC_LEVEL GREATER 3)
-    set(qed_cc
-            ${qed_cc}
-            src/cc_cavity/src/derived/qed_ccsdtq.cc
-            src/cc_cavity/src/derived/qed_ccsdtq_resid.cc
-            )
+      set(qed_cc
+              ${qed_cc}
+              src/cc_cavity/src/derived/qed_ccsdtq.cc
+#              src/cc_cavity/src/derived/residuals/qed_ccsdtq_resid.cc
+              )
   endif()
 
   # add MAX_CC_LEVEL to compiler flags
@@ -137,10 +139,11 @@ if (USE_QED_EOM_CC AND USE_QED_CC)
           src/cc_cavity/src/eom_driver.cc
           src/cc_cavity/src/eom_rdm.cc
 
-          src/cc_cavity/src/derived/eom_ee_driver.cc
-          src/cc_cavity/src/derived/eom_ee_build.cc
+          src/cc_cavity/src/derived/eom_ee_ccsd.cc
+          src/cc_cavity/src/derived/eom_ee_qed_ccsd.cc
+          src/cc_cavity/src/derived/sigma_builds/eom_ee_qed_ccsd_build.cc
           src/cc_cavity/src/derived/eom_ea_driver.cc
-          src/cc_cavity/src/derived/eom_ea_build.cc
+          src/cc_cavity/src/derived/sigma_builds/eom_ea_build.cc
           src/cc_cavity/src/derived/eom_ee_rdm.cc
           )
   add_definitions(-DUSE_QED_EOM_CC=1)

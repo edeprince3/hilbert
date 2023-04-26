@@ -117,7 +117,7 @@ namespace hilbert {
         N_ = dim_e_ + dim_p_;
     }
 
-    void hilbert::EOM_EA_Driver::print_eom_summary() const {
+    void hilbert::EOM_EA_Driver::print_eom_header() const {
         // print out energies and amplitude norms
         Printf("\n%5s", "state");
         Printf(" %20s", "total energy (Eh)");
@@ -127,37 +127,13 @@ namespace hilbert {
         if (include_u1_) Printf(" %13s", "|m1*s1|");
         if (include_u2_) Printf(" %13s", "|m2*s2|");
         Printf("\n");
-
-        // count number of operators
-        int nid = 2; // r1, r2
-        if (include_u1_) nid++; // s1
-        if (include_u2_) nid++; // s2
-
-        // loop over roots
-        for (int i = 0; i < M_; i++) {
-            // calculate norms of amplitudes
-            double *norms = get_state_norms(i);
-
-            // print energies and excitation energies
-            double ee_energy = eigvals_->get(i);
-            Printf("%5d %20.12lf %17.12lf ", i, ee_energy,
-                   ee_energy - cc_wfn_->cc_energy_);
-
-            // print out the norm of the amplitudes. Ignore if less than 1e-10
-            for (int j = 0; j < nid; j++) {
-                if (fabs(norms[j]) > 1e-10) Printf("%13.10lf ", norms[j]);
-                else Printf("------------- ");
-            }
-            Printf("\n");
-            free(norms);
-        }
     }
 
     void hilbert::EOM_EA_Driver::build_hamiltonian() {
 
     }
 
-    double *hilbert::EOM_EA_Driver::build_guess() {
+    double *hilbert::EOM_EA_Driver::build_preconditioner() {
 
         // get properties from the CC_Cavity object
         double const *cavity_frequency_ = cc_wfn_->cavity_frequency_;
@@ -633,7 +609,8 @@ namespace hilbert {
         exit(0);
     }
 
-    void EOM_EA_Driver::print_dominant_transitions() {
-
+    EOM_Driver::DominantTransitionsType EOM_EA_Driver::find_dominant_transitions(size_t I) {
+        // this is not implemented for EA-EOM-CC. Return empty vector
+        return EOM_Driver::DominantTransitionsType();
     }
 } // cc_cavity

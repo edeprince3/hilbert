@@ -125,7 +125,7 @@ namespace hilbert {
         }
 
         // build the guess subspace
-        double *Hdiag = build_guess();
+        double *Hdiag = build_preconditioner();
         eigvals_ = make_shared<Vector>(M_);
         eigvals_->zero();
         revec_ = make_shared<Matrix>(M_, N_);
@@ -178,10 +178,8 @@ namespace hilbert {
         // save the eigenvectors to file if requested
         if (save_evecs_) save_eigenvectors();
 
-        Printf("\n\n    ==>  Dominant Transitions:  <==    \n", eom_type_.c_str());
-
         // print out dominant transitions for each root
-        print_dominant_transitions();
+        transitions_summary();
 
         // print the results
         Printf("\n");
@@ -203,27 +201,27 @@ namespace hilbert {
             }
         }
 
+        size_t Lsize = static_cast<size_t>(L);
+
         /// unpack the trial vectors from Q into the appropriate blocks of the left/right eigenvectors
-        unpack_trial_vectors((size_t) L, Q);
+        unpack_trial_vectors(Lsize, Q);
         world_.gop.fence();
-        pack_timer_.stop(false); // don't count this as a separate time
+        pack_timer_.stop(false); // don't count this as a separate instance of the timer
 
         build_timer_.start();
         /// build the sigma vectors
-        build_Hc_cH((size_t) L);
+        build_Hc_cH(Lsize);
         world_.gop.fence();
         build_timer_.stop();
 
         /// pack the sigma vectors into sigmar/sigmal
         pack_timer_.start();
-        pack_sigma_vectors((size_t) L, sigmar, sigmal);
+        pack_sigma_vectors(Lsize, sigmar, sigmal);
         world_.gop.fence();
 
         // clear the trial vectors and sigma vectors
         evec_blks_.clear();
         sigvec_blks_.clear();
-
-        pack_timer_.stop();
 
         // normalize the eigenvectors
         binormalize_states();
@@ -232,7 +230,38 @@ namespace hilbert {
         print_eom_summary();
 
         // print out the timers
+        pack_timer_.stop();
         print_timers();
+    }
+
+    void EOM_Driver::print_eom_summary() const {
+
+        // print out the header for the table
+        print_eom_header();
+
+        // loop over roots
+        for (int i = 0; i < M_; i++) {
+            // calculate norms of amplitudes
+            double *norms = get_state_norms(i);
+
+            // print energies and excitation energies
+            double ee_energy = eigvals_->get(i);
+            Printf("%5d %20.12lf %17.12lf ", i, ee_energy,
+                   ee_energy - cc_wfn_->cc_energy_);
+
+            // print out the norm of the amplitudes. Ignore if less than 1e-10
+            for (int j = 0; j < nops_; j++) {
+                if (fabs(norms[j]) > 1e-10) {
+                    Printf("%13.10lf ", norms[j]);
+                } else {
+                    Printf("------------- ");
+                }
+            }
+            Printf("\n");
+
+            // free memory
+            free(norms);
+        }
     }
 
     void EOM_Driver::binormalize_states() {
@@ -257,6 +286,70 @@ namespace hilbert {
                 relp_[i][I] /= fabs(RValue2);
             }
         }
+    }
+
+    void EOM_Driver::transitions_summary(){
+
+        Printf("\n\n    ==>  Dominant Transitions:  <==    \n", eom_type_.c_str());
+
+        for (size_t I = 0; I < M_; I++) {
+            // get the dominant transitions for state I
+            DominantTransitionsType dominant_transitions = find_dominant_transitions(I);
+
+            // print the dominant transitions
+            Printf("\n\n  --> Root %zu <--\n", I);
+            for(auto blk : dominant_transitions) { // print top 5 transitions for each block
+                // grab first 5 values from priority queue
+                vector<pair<double, pair<string,vector<size_t>>>> top5;
+                for (size_t i = 0; i < 5; i++) {
+                    if (blk.second.size() > 0) {
+                        top5.push_back(blk.second.top());
+                        blk.second.pop();
+                    }
+                }
+
+                // print top 5 in following format:
+                //     --> l1*r1_bbbb <--
+                //          1: (  i  )->(  a  ), (+-)0.1234
+                //          2: (  i  )->(  a  ), (+-)0.1234
+                //          3: (  i  )->(  a  ), (+-)0.1234
+                //          4: (  i  )->(  a  ), (+-)0.1234
+                //          5: (  i  )->(  a  ), (+-)0.1234
+                //     --> l2*r2_aaaa <--
+                //          1: (  i,  j  )->(  a,  b  ), (+-)0.1234
+                //          2: (  i,  j  )->(  a,  b  ), (+-)0.1234
+                //          3: (  i,  j  )->(  a,  b  ), (+-)0.1234
+                //          4: (  i,  j  )->(  a,  b  ), (+-)0.1234
+                //          5: (  i,  j  )->(  a,  b  ), (+-)0.1234
+
+                size_t top5_size = top5.size();
+                if (top5_size == 0) continue;
+
+                Printf("\n    %s", blk.first.c_str());
+                for (size_t i = 0; i < top5_size; i++) {
+                    pair<double, pair<string,vector<size_t>>> &tpair = top5[i];
+                    string &spin = tpair.second.first; // spin
+                    vector<size_t> &labels = tpair.second.second; // transition pairs
+
+                    double val = tpair.first; // value
+                    size_t size = labels.size(); // size of transition pairs
+                    if (size == 0) { // ground state
+                        Printf(": %15.12lf", i+1, val);
+                    } else if (size == 2) { // singles
+                        Printf("\n        %d: (%2d%c ) -> (%2d%c ), %15.12lf", i+1,
+                               labels[1], spin[0], labels[0], spin[0], val);
+                    } else if (size == 4) { // doubles
+                        Printf("\n        %d: (%2d%c,%2d%c ) -> (%2d%c,%2d%c ), %15.12lf", i+1,
+                               labels[2], spin[0], labels[3], spin[1],
+                               labels[0], spin[0], labels[1], spin[1], val);
+                    }
+                }
+            }
+
+            // free memory
+            dominant_transitions.clear();
+        }
+        Printf("\n\n");
     }
 
     void EOM_Driver::print_timers() const {

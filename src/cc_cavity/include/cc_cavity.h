@@ -120,7 +120,7 @@ namespace hilbert {
         bool include_u3_ = options_.get_bool("QED_CC_INCLUDE_U3");
         bool include_u4_ = options_.get_bool("QED_CC_INCLUDE_U4");
         bool has_photon_ = include_u0_ || include_u1_ || include_u2_ || include_u3_ || include_u4_
-                           || options_.get_bool("N_PHOTON_STATES") > 0;
+                           || options_.get_int("N_PHOTON_STATES") > 1;
 
         double lambda_[3] = {0,0,0}; // coupling strengths
         double * epsilon_; // orbital energies
@@ -152,11 +152,12 @@ namespace hilbert {
         }
 
         /**
-         * @brief zero all tiles of a TA object
+         * @brief reset all tiles of a TA object
          * @param array the TA object
          */
-        static void zero_tiles(TArrayD& array){
-            array(get_index(array)) = 0.0 * array(get_index(array));
+        static void zero_tiles(TArrayD& array) {
+            static TA::World& world = TA::get_default_world();
+            array = TArrayD(world, array.trange()); array.fill(0.0);
         }
 
         // true if t1 amplitudes are folded into the integrals
@@ -196,12 +197,12 @@ namespace hilbert {
         /**
          * print header for CC iterations
          */
-        virtual void print_iter_header() const = 0;
+        virtual void print_iter_header() const;
 
          /**
          * @brief print the CC energy and residual norm for current iteration
          */
-        virtual void print_iteration(size_t iter, double energy, double dele, double tnorm) const = 0;
+        virtual void print_iteration(size_t iter, double energy, double dele, double tnorm) const;
 
         /**
          * @brief use the modified MO Coefficients to build the the Fock, ERI, and Dipole integrals
@@ -235,9 +236,7 @@ namespace hilbert {
         /**
          * @brief compute the residual equations
          */
-        virtual double build_residuals() = 0;
-
-
+        virtual double build_residuals();
 
         /**
          * @brief update cluster amplitudes from residual equations
@@ -259,7 +258,7 @@ namespace hilbert {
         /**
         * @brief compute and print norms of the amplitudes
         */
-        virtual void print_properties() = 0;
+        virtual void print_properties();
 
     };
 }

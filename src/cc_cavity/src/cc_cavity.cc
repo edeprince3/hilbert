@@ -79,6 +79,10 @@ namespace hilbert {
             mkl_set_num_threads(numThreads);
         }
 
+        // if `has_photons` is true, but `n_photon_states` is not two, throw error
+//        if ( has_photon_ && n_photon_states_ != 2 )
+//            throw PsiException("CC Cavity requires two photon states if using bosonic operators",__FILE__,__LINE__);
+
         world_.gop.fence();
         common_init();
     }
@@ -554,6 +558,19 @@ namespace hilbert {
         return energy;
     }
 
+    void CC_Cavity::print_iter_header() const {
+        Printf("\n");
+        Printf("    ==>  Begin %s iterations <==    \n", cc_type_.c_str());
+        Printf("\n");
+        Printf("%5s %16s %15s %15s  | %8s %8s",  "Iter","energy","dE","|dT|","|dT1|","|dT2|");
+        Printf("\n");
+    }
+
+    void CC_Cavity::print_iteration(size_t iter, double energy, double dele, double tnorm) const {
+        Printf("%5i %17.12lf %15.12lf %15.12lf | %-8.1e %-8.1e",iter,energy,dele,tnorm,resid_norms_.at("t1"),resid_norms_.at("t2"));
+        Printf("\n");
+    }
+
     void CC_Cavity::apply_transform(TArrayMap &CL, TArrayMap &CR) {
         /// transform integrals to new basis
         t_oei.start();
@@ -593,7 +610,7 @@ namespace hilbert {
 
         /// build dipole integrals
 
-        if (has_photon_) {
+        if (has_photon_ || true) { // this does not work for ccsd yet, so always do it
             Dip_blks_.clear();
             size_t nso = nso_;
             for (int i = 0; i < 3; ++i) {
@@ -778,8 +795,9 @@ namespace hilbert {
         };
 
         // check if eri is in V_blks_
-        auto is_in_V_blks = [this](const string& eri_name) {
-            return this->V_blks_.find(eri_name) != this->V_blks_.end();
+        auto &V_blks = V_blks_;
+        auto is_in_V_blks = [&V_blks](const string& eri_name) {
+            return V_blks.find(eri_name) != V_blks.end();
         };
 
         // check if eri name is valid
@@ -976,7 +994,42 @@ namespace hilbert {
                                   + squared_norm(residuals_["t2_abab"])
                                   + squared_norm(residuals_["t2_bbbb"]));
 
-        return 0; // this is a placeholder, since derived classes will return something else
+        // total residual norm for all amplitudes (if requested)
+        if (return_tot) {
+            double norm = 0.0;
+            for (auto & amp : residuals_) {
+                if (!amp.second.is_initialized()) continue;
+                norm += squared_norm(amp.second);
+            }
+            return sqrt(norm);
+        }
+        else return 0.0;
+    }
+
+    void CC_Cavity::print_properties() {
+        // calculate norms of amplitudes
+        map<string, double> amp_norms;
+        double total_norm = 0.0;
+        for (auto& amp : amplitudes_) {
+            if(!amp.second.is_initialized()) continue;
+            // name of amplitude is first two characters of key
+            double amp_norm = squared_norm(amp.second);
+            string amp_name = amp.first.substr(0,2);
+            amp_norms[amp_name] += amp_norm;
+            total_norm += amp_norm;
+        }
+
+        double nT1 = amp_norms["t1"];
+        double nT2 = amp_norms["t2"];
+
+        // print norms of cluster amplitudes
+        outfile->Printf("\n\n   Norms of cluster amplitudes:");
+        outfile->Printf("\n   ------------------------------");
+        outfile->Printf("\n    T1: %15.12lf | %5.2f %%", sqrt(nT1), 100*nT1/total_norm);
+        outfile->Printf("\n    T2: %15.12lf | %5.2f %%", sqrt(nT2), 100*nT2/total_norm);
+        outfile->Printf("\n   ------------------------------");
+        outfile->Printf("\n    Total: %15.12lf\n\n", sqrt(total_norm));
+
     }
 
 }
