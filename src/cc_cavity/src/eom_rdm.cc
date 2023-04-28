@@ -92,14 +92,14 @@ namespace hilbert {
             yp = y->pointer();
             zp = z->pointer();
         } else if (options_.get_str("ROTATE_POLARIZATION_AXIS") == "ZXY"){
-            double** temp = xp;
-            xp = yp;
-            yp = zp;
+            double** temp = x->pointer();
+            xp = y->pointer();
+            yp = z->pointer();
             zp = temp;
         } else if (options_.get_str("ROTATE_POLARIZATION_AXIS") == "YZX"){
-            double** temp = xp;
-            xp = zp;
-            zp = yp;
+            double** temp = x->pointer();
+            xp = z->pointer();
+            zp = y->pointer();
             yp = temp;
         } else {
             throw PsiException("ROTATE_POLARIZATION_AXIS must be XYZ, ZXY, or YZX", __FILE__, __LINE__);
