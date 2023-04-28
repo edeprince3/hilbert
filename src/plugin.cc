@@ -719,7 +719,9 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
                 rdm->compute_eom_rdms();
                 rdm->compute_oscillators();
                 rdm->print_oscillators();
-                if (options.exists("RDM_STATES")) {
+
+                vector<int> rdm_states = options.get_int_vector("RDM_STATES");
+                if (rdm_states.size() > 0) {
                     vector<int> rdm_states = options.get_int_vector("RDM_STATES");
                     if (rdm_states.size() != 2 && rdm_states.size() != 1) {
                         throw PsiException("RDM_STATES must be a vector of length 1 or 2: provided size is " + std::to_string(rdm_states.size()), __FILE__, __LINE__);
