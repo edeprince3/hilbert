@@ -143,9 +143,13 @@ set hilbert {
   EXCITED_PROPERTIES        true # compute EOM properties (oscillator strengths, transition dipole moments, etc.)
   
   MAD_NUM_THREADS              1 # the number of MADNESS threads to use with mpirun 
-                                 # Note: if not using mpi or using eom, set this to 1 for best performance
+                                 # Note: if not using mpi or using eom, set this to 1 for best performanc
+                                 
   TILE_SIZE                   -1 # the spacing between tiles in a tiledarray (-1 places all data on a single tile)
                                  # Note: if not using mpi or using eom, set this to -1 for best performance
+                                 
+  RDM_STATES               [0,1] # designates to print the transition density matrix 
+                                 # for the ground and first excited state to a molden file                                 
 }
 
 # memory for Psi4 (note: this is for the integrals, not the CC calculation which does not restrict memory usage)
@@ -167,3 +171,10 @@ To run the calculation with mpi, you can use the following command:
 mpirun -n $NUM_THREADS psi4 input.dat output.dat
 ```
 Note: MPI functionality is not optimized as of now.
+
+Another important note is that `MAD_NUM_THREADS` may not be set properly through the input file. 
+It is ideal to instead add this to your bashrc
+``` bash
+export MAD_NUM_THREADS=1
+```
+
