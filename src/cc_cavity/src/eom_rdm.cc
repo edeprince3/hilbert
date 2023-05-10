@@ -123,14 +123,17 @@ namespace hilbert {
                 else outfile->Printf("  -- Excited State %d --\n", ref);
 
                 outfile->Printf("%5s %20s", "state", "omega (Eh)");
-                outfile->Printf(" %20s | %20s  %20s  %20s\n", "Oscillator Strength",
-                                "<n|mu_x|0><0|mu_x|n>", "<n|mu_y|0><0|mu_y|n>", "<n|mu_z|0><0|mu_z|n>");
+                outfile->Printf(" %20s | %20s | %12s  %12s | %12s  %12s | %12s  %12s\n", "Oscillator Strength", "<0|mu|n><n|mu|0>",
+                                "<0|mu_x|n>","<n|mu_x|0>", "<0|mu_y|n>","<n|mu_y|0>", "<0|mu_z|n>","<n|mu_z|0>");
                 for (int state = ref; state < M_; ++state) {
 
-                    double oscilator_strength = osc->get(ref, state),
-                            x_strength = x->get(ref, state) * x->get(state, ref),
-                            y_strength = y->get(ref, state) * y->get(state, ref),
-                            z_strength = z->get(ref, state) * z->get(state, ref);
+                    double oscilator_strength = osc->get(ref, state);
+                    double xket = x->get(state, ref),
+                           yket = y->get(state, ref),
+                           zket = z->get(state, ref);
+                    double xbra = x->get(ref, state),
+                           ybra = y->get(ref, state),
+                           zbra = z->get(ref, state);
 
                     if (state == ref) oscilator_strength = 0.0; // same state oscillator strength must be zero
 
@@ -139,19 +142,29 @@ namespace hilbert {
 
                     // print oscillator strength
                     outfile->Printf("%5d %20.12lf ", state, w);
-                    if (fabs(oscilator_strength) > 1e-12) {
-                        outfile->Printf("%20.12lf |", oscilator_strength);
-                    } else {
-                        outfile->Printf("-------------------- |");
-                    }
+                    if (fabs(oscilator_strength) > 1e-12) outfile->Printf("%20.12lf |", oscilator_strength);
+                    else outfile->Printf("-------------------- |");
+                    
+                    // print dipole strengths
+                    double dip_strength = xbra * xket + ybra * yket + zbra * zket;
+                    if (fabs(dip_strength) > 1e-12) outfile->Printf(" %20.12lf", dip_strength);
+                    else outfile->Printf(" --------------------");
 
                     // print transition dipole moments
-                    if (fabs(x_strength) > 1e-12) outfile->Printf("  %20.12lf", x_strength);
-                    else outfile->Printf("  --------------------");
-                    if (fabs(y_strength) > 1e-12) outfile->Printf("  %20.12lf", y_strength);
-                    else outfile->Printf("  --------------------");
-                    if (fabs(z_strength) > 1e-12) outfile->Printf("  %20.12lf", z_strength);
-                    else outfile->Printf("  --------------------");
+                    if (fabs(xbra) > 1e-8) outfile->Printf(" | %12.8lf", xbra);
+                    else outfile->Printf(" | ------------");
+                    if (fabs(xket) > 1e-8) outfile->Printf("  %12.8lf", xket);
+                    else outfile->Printf("  ------------");
+
+                    if (fabs(ybra) > 1e-8) outfile->Printf(" | %12.8lf", ybra);
+                    else outfile->Printf(" | ------------");
+                    if (fabs(yket) > 1e-8) outfile->Printf("  %12.8lf", yket);
+                    else outfile->Printf("  ------------");
+
+                    if (fabs(zbra) > 1e-8) outfile->Printf(" | %12.8lf", zbra);
+                    else outfile->Printf(" | ------------");
+                    if (fabs(zket) > 1e-8) outfile->Printf("  %12.8lf", zket);
+                    else outfile->Printf("  ------------");
                     outfile->Printf("\n");
                 }
                 outfile->Printf("\n");

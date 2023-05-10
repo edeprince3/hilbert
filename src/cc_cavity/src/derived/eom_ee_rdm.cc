@@ -49,17 +49,19 @@ namespace hilbert {
                 RDM_blks_[rdm_str] = TArrayD(world_, HelperD::makeRange({M_, M_, dim_vec[i], dim_vec[j]}));
                 RDM_blks_[rdm_str].fill(0.0);
 
-                // initialize the 2-RDMs
-                for (int k = 0; k < dims.size(); k++) {
-                    for (int l = 0; l < dims.size(); l++) {
-                        string dim3 = dims[k], dim4 = dims[l];
+                // initialize the 2-RDMs (not supported yet and very memory intensive)
+                if (false) {
+                    for (int k = 0; k < dims.size(); k++) {
+                        for (int l = 0; l < dims.size(); l++) {
+                            string dim3 = dims[k], dim4 = dims[l];
 
-                        ov += dim3.substr(0, 1) + dim4.substr(0, 1);
-                        spin += dim3.substr(1, 1) + dim4.substr(1, 1);
-                        rdm_str = "D2_" + spin + "_" + ov;
+                            ov += dim3.substr(0, 1) + dim4.substr(0, 1);
+                            spin += dim3.substr(1, 1) + dim4.substr(1, 1);
+                            rdm_str = "D2_" + spin + "_" + ov;
 
-                        RDM_blks_[rdm_str] = TArrayD(world_, HelperD::makeRange({M_, M_, dim_vec[i], dim_vec[j], dim_vec[k], dim_vec[l]}));
-                        RDM_blks_[rdm_str].fill(0.0);
+                            RDM_blks_[rdm_str] = TArrayD(world_, HelperD::makeRange({M_, M_, dim_vec[i], dim_vec[j], dim_vec[k], dim_vec[l]}));
+                            RDM_blks_[rdm_str].fill(0.0);
+                        }
                     }
                 }
             }
@@ -71,9 +73,6 @@ namespace hilbert {
 
         Timer rdm_timer; rdm_timer.start();
 
-        if (world_.rank() == 0) {
-            outfile->Printf("\n  Building %s transition RDMs... ", eom_driver_->eom_type_.c_str());
-        }
         // get cavity information
         double w0 = eom_driver_->cc_wfn_->cavity_frequency_[2];
         double coupling_factor_z = w0 * eom_driver_->cc_wfn_->cavity_coupling_strength_[2];
