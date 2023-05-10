@@ -226,8 +226,8 @@ double* hilbert::EOM_EE_CCSD::build_ss_diagonal() {
             // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o2v0: 1, 
             H_ss_bbbb_ovov("m,e,i,a") -= V_blks_["abab_oovv"]("j,i,b,c") * t2_abab_vvoo("b,c,j,m") * Id_blks_["bb_vv"]("e,a");
         }
-        world_.gop.fence(); tempArray[0].~TArrayD();
-        world_.gop.fence(); tempArray[1].~TArrayD();
+        tempArray[0].~TArrayD();
+        tempArray[1].~TArrayD();
         
     }
         // pluck out diagonals
@@ -4184,40 +4184,40 @@ void hilbert::EOM_EE_CCSD::build_Hc_cH(size_t L) {
             tempPerm_xbbbb_Lvvoo.fill(0.0); world_.gop.fence();
 
         }
-        world_.gop.fence(); tempArray[0].~TArrayD();
-        world_.gop.fence(); tempArray[1].~TArrayD();
-        world_.gop.fence(); tempArray[2].~TArrayD();
-        world_.gop.fence(); tempArray[3].~TArrayD();
-        world_.gop.fence(); tempArray[4].~TArrayD();
-        world_.gop.fence(); tempArray[5].~TArrayD();
-        world_.gop.fence(); tempArray[6].~TArrayD();
-        world_.gop.fence(); tempArray[7].~TArrayD();
-        world_.gop.fence(); tempArray[8].~TArrayD();
-        world_.gop.fence(); tempArray[9].~TArrayD();
-        world_.gop.fence(); tempArray[10].~TArrayD();
-        world_.gop.fence(); tempArray[11].~TArrayD();
-        world_.gop.fence(); tempArray[12].~TArrayD();
-        world_.gop.fence(); tempArray[13].~TArrayD();
-        world_.gop.fence(); tempArray[14].~TArrayD();
-        world_.gop.fence(); tempArray[15].~TArrayD();
-        world_.gop.fence(); tempArray[16].~TArrayD();
-        world_.gop.fence(); tempArray[17].~TArrayD();
-        world_.gop.fence(); tempArray[18].~TArrayD();
-        world_.gop.fence(); tempArray[19].~TArrayD();
-        world_.gop.fence(); tempArray[20].~TArrayD();
-        world_.gop.fence(); tempArray[21].~TArrayD();
-        world_.gop.fence(); tempArray[22].~TArrayD();
-        world_.gop.fence(); tempArray[23].~TArrayD();
-        world_.gop.fence(); tempArray[24].~TArrayD();
-        world_.gop.fence(); tempArray[25].~TArrayD();
-        world_.gop.fence(); tempArray[26].~TArrayD();
-        world_.gop.fence(); tempArray[27].~TArrayD();
-        world_.gop.fence(); tempArray[28].~TArrayD();
-        world_.gop.fence(); tempArray[29].~TArrayD();
-        world_.gop.fence(); tempArray[30].~TArrayD();
-        world_.gop.fence(); tempArray[31].~TArrayD();
-        world_.gop.fence(); tempArray[32].~TArrayD();
-        world_.gop.fence(); tempArray[33].~TArrayD();
+        tempArray[0].~TArrayD();
+        tempArray[1].~TArrayD();
+        tempArray[2].~TArrayD();
+        tempArray[3].~TArrayD();
+        tempArray[4].~TArrayD();
+        tempArray[5].~TArrayD();
+        tempArray[6].~TArrayD();
+        tempArray[7].~TArrayD();
+        tempArray[8].~TArrayD();
+        tempArray[9].~TArrayD();
+        tempArray[10].~TArrayD();
+        tempArray[11].~TArrayD();
+        tempArray[12].~TArrayD();
+        tempArray[13].~TArrayD();
+        tempArray[14].~TArrayD();
+        tempArray[15].~TArrayD();
+        tempArray[16].~TArrayD();
+        tempArray[17].~TArrayD();
+        tempArray[18].~TArrayD();
+        tempArray[19].~TArrayD();
+        tempArray[20].~TArrayD();
+        tempArray[21].~TArrayD();
+        tempArray[22].~TArrayD();
+        tempArray[23].~TArrayD();
+        tempArray[24].~TArrayD();
+        tempArray[25].~TArrayD();
+        tempArray[26].~TArrayD();
+        tempArray[27].~TArrayD();
+        tempArray[28].~TArrayD();
+        tempArray[29].~TArrayD();
+        tempArray[30].~TArrayD();
+        tempArray[31].~TArrayD();
+        tempArray[32].~TArrayD();
+        tempArray[33].~TArrayD();
 
         /*
 
