@@ -188,20 +188,24 @@ namespace hilbert {
 
         size_t nid = 3; // norm id
 
+        size_t off = dim_e_;
         if (include_u0_) {
-            norms[nid] = (rerp_[i][dim_e_]*relp_[i][dim_e_]);
+            norms[nid] = (rerp_[i][off]*relp_[i][off]);
             norms[nid] = fabs(norms[nid]) > 1e-12 ? norms[nid] : 0.0;
+            off++;
             nid++;
         }
         if (include_u1_) {
-            norms[nid] = C_DDOT(singleDim_, rerp_[i] + dim_e_ + 1, 1, relp_[i] + dim_e_ + 1, 1);
+            norms[nid] = C_DDOT(singleDim_, rerp_[i] + off, 1, relp_[i] + off, 1);
             norms[nid] = fabs(norms[nid]) > 1e-12 ? norms[nid] : 0.0;
+            off += singleDim_;
             nid++;
         }
         if (include_u2_) {
             norms[nid] =
-                    C_DDOT(doubleDim_, rerp_[i] + dim_e_ + singleDim_ + 1, 1, relp_[i] + dim_e_ + singleDim_ + 1, 1);
+                    C_DDOT(doubleDim_, rerp_[i] + off, 1, relp_[i] + off, 1);
             norms[nid] = fabs(norms[nid]) > 1e-12 ? norms[nid] : 0.0;
+            off += doubleDim_;
             nid++;
         }
 

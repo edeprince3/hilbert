@@ -69,6 +69,19 @@ namespace hilbert {
             return (2 * N - i - 3) * i / 2 + j - 1;
         }
 
+        /**
+         * Calculate the index of an element in an upper triangular array from its three component indices (i,j,k)
+         * @param i first index
+         * @param j second index
+         * @param k third index
+         * @param N leading dimension of the array
+         * @return index of the element in the triangular array
+         */
+        inline static size_t cube_2_tri_idx(size_t i, size_t j, size_t k, size_t N) {
+            size_t ij_pair = (N * (N - 1) / 2) - ((N - i) * (N - i - 1) / 2) + (j - i - 1);
+            return (ij_pair * (ij_pair + 1) / 2) + k - j - 1;
+        }
+
         /** ------------------------ Common Attributes ------------------------ */
 
         // CC_Cavity object

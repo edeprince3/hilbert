@@ -56,7 +56,7 @@ namespace hilbert {
 
         DominantTransitionsType find_dominant_transitions(size_t I) override;
 
-        double* build_ss_diagonal();
+        double* build_ss_diagonal() override;
 
     };
 

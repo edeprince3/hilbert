@@ -654,15 +654,25 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         psi::Process::environment.globals["MAD_NUM_THREADS"] = options.get_int("MAD_NUM_THREADS");
 
         // initialize tiledattay with MPIComm from mpi4py
-        TA::initialize(argc, argv, CavityHelper::comm_);
+        World &world = TA::initialize(argc, argv, CavityHelper::comm_);
 
         // create the CC_CAVITY object
         std::shared_ptr<CC_Cavity> qedcc;
 
+        // get the options
+        bool include_t3_ = options.get_bool("QED_CC_INCLUDE_T3");
+        bool include_t4_ = options.get_bool("QED_CC_INCLUDE_T4");
+        bool include_u0_ = options.get_bool("QED_CC_INCLUDE_U0");
+        bool include_u1_ = options.get_bool("QED_CC_INCLUDE_U1");
+        bool include_u2_ = options.get_bool("QED_CC_INCLUDE_U2");
+        bool include_u3_ = options.get_bool("QED_CC_INCLUDE_U3");
+        bool include_u4_ = options.get_bool("QED_CC_INCLUDE_U4");
+
         // determine the level of theory
-        bool three_body = options.get_bool("QED_CC_INCLUDE_T3") || options.get_bool("QED_CC_INCLUDE_U3");
-        bool four_body  = options.get_bool("QED_CC_INCLUDE_T4") || options.get_bool("QED_CC_INCLUDE_U4");
-        bool has_photon = options.get_int("N_PHOTON_STATES") > 1;
+        bool three_body = include_t3_ || include_u3_;
+        bool four_body  = include_t4_ || include_u4_;
+        bool has_photon = include_u0_ || include_u1_ || include_u2_ || include_u3_ || include_u4_
+                           || options.get_int("N_PHOTON_STATES") > 1;
 
         // select the appropriate derived CC_CAVITY object
         if (four_body)
@@ -715,6 +725,9 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
             // compute the RDMs and oscillator strengths for the given EOM type
             if (options.get_str("EOM_TYPE") == "EE") {
+                if (world.rank() == 0) {
+                    std::cout << "Computing EOM RDMs and oscillator strengths..." << std::endl;
+                }
                 std::shared_ptr<EOM_EE_RDM> rdm(new EOM_EE_RDM((std::shared_ptr<EOM_Driver>) eom_driver, options));
                 rdm->compute_eom_rdms();
                 rdm->compute_oscillators();

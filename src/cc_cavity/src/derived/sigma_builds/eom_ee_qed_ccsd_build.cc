@@ -73,8 +73,8 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
     TArrayMap &Id_blks_ = cc_wfn_->Id_blks_;
 
     // initialize diagonal blocks
-    double  H_u0u0;
-    double cH_u0u0;
+    double  H_u0u0 = 0;
+    double cH_u0u0 = 0;
     TArrayD    H_ss_aaaa_ovov = HelperD::makeTensor(world_, {oa_, va_,oa_, va_}, true);
     TArrayD    H_ss_bbbb_ovov = HelperD::makeTensor(world_, {ob_, vb_,ob_, vb_}, true);
     TArrayD   cH_ss_aaaa_ovov = HelperD::makeTensor(world_, {oa_, va_,oa_, va_}, true);
@@ -117,7 +117,6 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
 
 
         /// ****** p†q ****** ///
-
 
         {
 
