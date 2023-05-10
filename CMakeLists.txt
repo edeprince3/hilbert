@@ -84,13 +84,12 @@ if (USE_QED_CC)
   include(FetchContent)
   FetchContent_Declare( tiledarray
           GIT_REPOSITORY https://github.com/ValeevGroup/tiledarray.git
-          GIT_TAG c42361ce7f455eb3d77a86396d502f37c0b771e8
+          GIT_TAG b2254f352260d80e15c5f4a94b7bfcad71f118fb
           )
-  FetchContent_GetProperties(tiledarray)
-  if(NOT tiledarray_POPULATED)
-    FetchContent_Populate(tiledarray)
-    add_subdirectory(${tiledarray_SOURCE_DIR} ${tiledarray_BINARY_DIR})
-  endif()
+      FetchContent_MakeAvailable(tiledarray)
+
+  # change build type to release for tiledarray library
+  set_target_properties(tiledarray PROPERTIES CMAKE_BUILD_TYPE Release)
 
   # add files for performing QED-CC calculations
   set(qed_cc
@@ -142,6 +141,7 @@ if (USE_QED_EOM_CC AND USE_QED_CC)
           src/cc_cavity/src/derived/eom_ee_ccsd.cc
           src/cc_cavity/src/derived/sigma_builds/eom_ee_ccsd_build.cc
           src/cc_cavity/src/derived/eom_ee_qed_ccsd.cc
+          #src/cc_cavity/src/derived/eom_ee_qed_ccsdt.cc
           src/cc_cavity/src/derived/sigma_builds/eom_ee_qed_ccsd_build.cc
           src/cc_cavity/src/derived/eom_ea_driver.cc
           src/cc_cavity/src/derived/sigma_builds/eom_ea_build.cc
@@ -313,8 +313,8 @@ target_link_libraries(hilbert PUBLIC sdp)
 target_link_libraries(hilbert PUBLIC LBFGS::lib)
 
 if(USE_QED_CC)
-  target_include_directories(hilbert PRIVATE ${MPI4PY_INCLUDE_DIR})
-  target_include_directories(hilbert PRIVATE ${tiledarray_INCLUDE_DIR})
+  target_include_directories(hilbert PUBLIC ${MPI4PY_INCLUDE_DIR})
+  target_include_directories(hilbert PUBLIC ${tiledarray_INCLUDE_DIR})
   target_link_libraries(hilbert PUBLIC MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran tiledarray)
 endif()
 
