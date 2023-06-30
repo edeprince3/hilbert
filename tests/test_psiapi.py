@@ -93,8 +93,7 @@ def test_pp2rdm():
 
     psi4.set_options({
       'basis': '6-31g',
-      'scf_type': 'df',
-      'e_convergence': 1e-10,
+      'scf_type': 'df', 'e_convergence': 1e-10,
       'r_convergence': 1e-8,
       'orbopt_gradient_convergence': 1e-6,
       'orbopt_energy_convergence': 1e-8,
@@ -282,11 +281,11 @@ def test_v2rdm():
       'maxiter':         500,
       'restricted_docc': [ 2, 0, 0, 0, 0, 2, 0, 0 ],
       'active':          [ 1, 0, 1, 1, 0, 1, 1, 1 ],
+      'r_convergence':   1e-5,
+      'e_convergence':   1e-4,
     })
     psi4.set_module_options('hilbert', {
       'positivity':      'dqg',
-      'r_convergence':   1e-5,
-      'e_convergence':   1e-6,
       'maxiter':         20000,
     })
 
@@ -296,12 +295,25 @@ def test_v2rdm():
     refscf   = -108.95348837831371
     refv2rdm = -109.094404909477
 
-    psi4.energy('v2rdm-casscf')
+    # be sure to save three-index integrals after scf
+    psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
+
+    # get scf wfn
+    scf_energy,ref_wfn = psi4.energy('scf',return_wfn=True)
+
+    # grab options object
+    options = psi4.core.get_options()
+    options.set_current_module('HILBERT')
+
+    # evaluate v2RDM-DOCI energy
+    v2rdm = hilbert.v2RDMHelper(ref_wfn,options)
+    current_energy = v2rdm.compute_energy()
 
     assert psi4.compare_values(refscf, psi4.variable("SCF TOTAL ENERGY"), 8, "SCF total energy")
     assert psi4.compare_values(refv2rdm, psi4.variable("CURRENT ENERGY"), 5, "v2RDM-CASSCF total energy")
 
 #test_doci()
+test_v2rdm()
 #test_pp2rdm()
 #test_pccd()
-test_v2rdm()
+#test_v2rdm()
