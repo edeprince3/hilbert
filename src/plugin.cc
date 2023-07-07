@@ -30,6 +30,7 @@
 #include <psi4/libmints/wavefunction.h>
 #include <psi4/libpsio/psio.hpp>
 #include <psi4/libpsio/psio.hpp>
+#include <psi4/libpsi4util/process.h>
 
 #include <v2rdm_casscf/v2rdm_solver.h>
 #include <v2rdm_doci/v2rdm_doci_solver.h>
@@ -46,8 +47,28 @@
 #include <polaritonic_scf/rcis.h>
 #include <polaritonic_scf/rtddft.h>
 #include <polaritonic_scf/utddft.h>
-
 #include <misc/backtransform_tpdm.h>
+
+#ifdef USE_QED_CC
+    #include "python_api/python_helpers.h"
+    #include <tiledarray.h>
+    #include "cc_cavity/include/cc_cavity.h"
+    #include "cc_cavity/include/derived/qed_ccsd.h"
+    #if MAX_CC_LEVEL >= 3
+        #include "cc_cavity/include/derived/qed_ccsdt.h"
+    #endif
+    #if MAX_CC_LEVEL >= 4
+        #include "cc_cavity/include/derived/qed_ccsdtq.h"
+    #endif
+#endif
+
+#ifdef USE_QED_EOM_CC
+    #include "cc_cavity/include/derived/eom_ee_ccsd.h"
+    #include "cc_cavity/include/derived/eom_ee_qed_ccsd.h"
+    #include "cc_cavity/include/derived/eom_ea_driver.h"
+    #include "cc_cavity/include/derived/eom_ee_rdm.h"
+#endif
+
 
 using namespace psi;
 
@@ -61,7 +82,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_TDDFT");
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_TDDFT CC_CAVITY");
 
 
         /*- Do DIIS? -*/
@@ -380,6 +401,68 @@ int read_options(std::string name, Options& options)
 
         /*- number of roots -*/
         options.add_int("NUMBER_ROOTS", 5);
+
+
+        /*- SUBSECTION CC_Cavity -*/
+
+        /*- Maximum number of vectors in DIIS -*/
+        options.add_int("DIIS_MAX_VECS", 8);
+
+        /*- tile size for tiled array -*/
+        options.add_int("TILE_SIZE", -1); // -1 means to use all data in one tile
+
+        /*- number of threads to use for MADNESS -*/
+        options.add_int("MAD_NUM_THREADS", 1);
+
+        /*- do include triples in polaritioinic cc? -*/
+        options.add_bool("QED_CC_INCLUDE_T3", false);
+        options.add_bool("QED_CC_INCLUDE_U3", false);
+
+        /*- do include quadruples in polaritioinic cc? -*/
+        options.add_bool("QED_CC_INCLUDE_T4", false);
+        options.add_bool("QED_CC_INCLUDE_U4", false);
+
+        /*- do include u0 in polaritioinic ccsd? -*/
+        options.add_bool("QED_CC_INCLUDE_U0", false);
+
+        /*- do include u1 in polaritioinic ccsd? -*/
+        options.add_bool("QED_CC_INCLUDE_U1", false);
+
+        /*- do include u2 in polaritioinic ccsd? -*/
+        options.add_bool("QED_CC_INCLUDE_U2", false);
+
+        /*- explicitly set u0=0 -*/
+        options.add_bool("ZERO_U0", false);
+
+        /*- Perform EOM for cc_cavity -*/
+        options.add_bool("PERFORM_EOM", false);
+
+        /*- Perform EOM with full hamiltonian for qed-ccsd (not implemented) -*/
+        options.add_bool("BUILD_HAMILTONIAN", false);
+
+        /*- Convergence criteria for davidson solver -*/
+        options.add_double("EOM_R_CONV", 1e-6);
+        options.add_double("EOM_E_CONV", 1e-8);
+        options.add_int("EOM_MAXITER", 100);
+
+        /*- Use diagonals from singles block in EOM-CC -*/
+        options.add_bool("EOM_SS_GUESS", true);
+
+        /*- value of shift to apply to davidson solver -*/
+        options.add_double("EOM_SHIFT", 0.0l); // 0.0 means no shift
+
+        /*- Save and load eigenvectors -*/
+        options.add_bool("SAVE_EVECS", false); // save eigenvectors to file?
+        options.add_int("LOAD_ID", -1); // id of file to load eigenvectors from
+
+        /*- EOM-CC TYPE -*/
+        options.add_str("EOM_TYPE", "EE", "EE EA");
+
+        /*- do print excited state transition dipoles (computed either way) -*/
+        options.add_bool("EXCITED_PROPERTIES", true);
+
+        /*- Select left and right states to visualize density or transition density -*/
+        options.add_array("RDM_STATES");
     }
 
     return true;
@@ -533,12 +616,153 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         }
 
-    }else {
+    } else if ( options.get_str("HILBERT_METHOD") == "CC_CAVITY") {
+#ifndef USE_QED_CC
+        throw PsiException("CC_CAVITY requires the USE_QED_CC flag to be set at compile time",__FILE__,__LINE__);
+#else
 
-        throw PsiException("unknown HILBERT_METHODS",__FILE__,__LINE__);
+        // get the reference wavefunction
+        std::shared_ptr<Wavefunction> qed_ref_wfn;
+        if ( options.get_str("REFERENCE") == "UHF") {
 
+            std::shared_ptr<PolaritonicUHF> uhf (new PolaritonicUHF(ref_wfn,options));
+            double energy = uhf->compute_energy();
+
+            qed_ref_wfn = (std::shared_ptr<Wavefunction>)uhf;
+
+        } else if ( options.get_str("REFERENCE") == "ROHF" ) {
+
+            std::shared_ptr<PolaritonicROHF> rohf (new PolaritonicROHF(ref_wfn,options));
+            double energy = rohf->compute_energy();
+
+            qed_ref_wfn = (std::shared_ptr<Wavefunction>)rohf;
+
+        } else if ( options.get_str("REFERENCE") == "RHF" ) {
+
+            std::shared_ptr<PolaritonicRHF> rhf (new PolaritonicRHF(ref_wfn,options));
+            double energy = rhf->compute_energy();
+
+            qed_ref_wfn = (std::shared_ptr<Wavefunction>)rhf;
+
+        } else {
+            throw PsiException("unknown REFERENCE for polaritonic UHF",__FILE__,__LINE__);
+        }
+
+        // initialize the tiled array library
+        int argc = 1;
+        char **argv = nullptr;
+        psi::Process::environment.globals["MAD_NUM_THREADS"] = options.get_int("MAD_NUM_THREADS");
+
+        // initialize tiledattay with MPIComm from mpi4py
+        World &world = TA::initialize(argc, argv, CavityHelper::comm_);
+
+        // create the CC_CAVITY object
+        std::shared_ptr<CC_Cavity> qedcc;
+
+        // get the options
+        bool include_t3_ = options.get_bool("QED_CC_INCLUDE_T3");
+        bool include_t4_ = options.get_bool("QED_CC_INCLUDE_T4");
+        bool include_u0_ = options.get_bool("QED_CC_INCLUDE_U0");
+        bool include_u1_ = options.get_bool("QED_CC_INCLUDE_U1");
+        bool include_u2_ = options.get_bool("QED_CC_INCLUDE_U2");
+        bool include_u3_ = options.get_bool("QED_CC_INCLUDE_U3");
+        bool include_u4_ = options.get_bool("QED_CC_INCLUDE_U4");
+
+        // determine the level of theory
+        bool three_body = include_t3_ || include_u3_;
+        bool four_body  = include_t4_ || include_u4_;
+        bool has_photon = include_u0_ || include_u1_ || include_u2_ || include_u3_ || include_u4_
+                           || options.get_int("N_PHOTON_STATES") > 1;
+
+        // select the appropriate derived CC_CAVITY object
+        if (four_body)
+    #if MAX_CC_LEVEL >= 4
+            qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSDTQ(qed_ref_wfn, options));
+    #else
+            throw PsiException("QED_CCSDTQ requires MAX_CC_LEVEL >= 4 at compile time",__FILE__,__LINE__);
+    #endif
+        else if (three_body)
+    #if MAX_CC_LEVEL >= 3
+            qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSDT(qed_ref_wfn, options));
+    #else
+            throw PsiException("QED_CCSDT requires MAX_CC_LEVEL >= 3 at compile time",__FILE__,__LINE__);
+    #endif
+        else {
+            if (has_photon)
+                qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD(qed_ref_wfn, options));
+            else
+                qedcc = std::shared_ptr<CC_Cavity>(new CC_Cavity(qed_ref_wfn, options));
+        }
+
+        // compute the energy
+        double energy = qedcc->compute_energy();
+
+        // perform QED-EOM-CC if requested
+        bool do_eom = options.get_bool("PERFORM_EOM");
+
+        if (do_eom && !four_body && !three_body) {
+        #ifndef USE_QED_EOM_CC
+            throw PsiException("QED-EOM-CC calculations require the `USE_QED_EOM_CC` flag to be set at compile time",__FILE__,__LINE__);
+        #else
+            std::shared_ptr<EOM_Driver> eom_driver;
+            if (options.get_str("EOM_TYPE") == "EE") { // use EOM for excitation energies
+                if (has_photon)
+                    eom_driver = std::shared_ptr<EOM_Driver>(
+                        new EOM_EE_QED_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
+                else
+                    eom_driver = std::shared_ptr<EOM_Driver>(
+                        new EOM_EE_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
+            }
+            else if (options.get_str("EOM_TYPE") == "EA") { // use EOM for electron attachment
+                throw PsiException("QED-EOM-EA-CC is not fuctional for release yet.", __FILE__, __LINE__);
+                eom_driver = std::shared_ptr<EOM_Driver>(
+                        new EOM_EA_Driver((std::shared_ptr<CC_Cavity>) qedcc, options));
+            }
+            else throw PsiException("EOM_TYPE not recognized. Please choose EE or EA.", __FILE__, __LINE__);
+
+            // compute the excited state energies for the given EOM type
+            eom_driver->compute_eom_energy();
+
+            // compute the RDMs and oscillator strengths for the given EOM type
+            if (options.get_str("EOM_TYPE") == "EE") {
+                if (world.rank() == 0) {
+                    std::cout << "Computing EOM RDMs and oscillator strengths..." << std::endl;
+                }
+                std::shared_ptr<EOM_EE_RDM> rdm(new EOM_EE_RDM((std::shared_ptr<EOM_Driver>) eom_driver, options));
+                rdm->compute_eom_rdms();
+                rdm->compute_oscillators();
+                rdm->print_oscillators();
+
+                vector<int> rdm_states = options.get_int_vector("RDM_STATES");
+                if (rdm_states.size() > 0) {
+                    vector<int> rdm_states = options.get_int_vector("RDM_STATES");
+                    if (rdm_states.size() != 2 && rdm_states.size() != 1) {
+                        throw PsiException("RDM_STATES must be a vector of length 1 or 2: provided size is " + std::to_string(rdm_states.size()), __FILE__, __LINE__);
+                    }
+
+                    for (auto state : rdm_states) {
+                        if (state < 0 || state > eom_driver->M_) {
+                            throw PsiException("RDM_STATES must be between 0 and the number of states.", __FILE__, __LINE__);
+                        }
+                    }
+
+                    rdm->molden(rdm_states);
+                }
+
+            }
+        #endif
+
+        }
+
+        // Tear down the parallel runtime_ for last energy call when FINALIZE = true
+        TA::finalize();
+
+        // return the wavefunction
+        return (std::shared_ptr<Wavefunction>)qedcc;
+#endif
+    } else {
+        throw PsiException("unknown HILBERT_METHOD",__FILE__,__LINE__);
     }
-
 
     return ref_wfn;
 }

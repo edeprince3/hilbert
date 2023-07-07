@@ -34,6 +34,13 @@
 #include <p2rdm/p2rdm_solver.h>
 #include <misc/real_space_density.h>
 
+#ifdef USE_QED_CC
+    #include <mpi.h>
+    #include <mpi4py/mpi4py.h>
+#endif
+
+
+
 namespace hilbert{
 
 class RealSpaceDensityHelper{
@@ -53,7 +60,7 @@ class RealSpaceDensityHelper{
 
   protected:
 
-    /// the RealSpaceDensity class 
+    /// the RealSpaceDensity class
     std::shared_ptr<RealSpaceDensity> real_space_density;
 
 };
@@ -68,7 +75,7 @@ class DOCIHelper{
 
   protected:
 
-    /// the DOCISolver 
+    /// the DOCISolver
     std::shared_ptr<DOCISolver> doci;
 
 };
@@ -84,7 +91,7 @@ class pp2RDMHelper{
 
   protected:
 
-    /// the pp2RDMSolver 
+    /// the pp2RDMSolver
     std::shared_ptr<pp2RDMSolver> pp2rdm;
 
 };
@@ -100,7 +107,7 @@ class p2RDMHelper{
 
   protected:
 
-    /// the p2RDMSolver 
+    /// the p2RDMSolver
     std::shared_ptr<p2RDMSolver> p2rdm;
 
 };
@@ -116,7 +123,7 @@ class v2RDM_DOCIHelper{
 
   protected:
 
-    /// the v2RDMSolver 
+    /// the v2RDMSolver
     std::shared_ptr<v2RDM_DOCISolver> v2rdm_doci;
 
 };
@@ -166,13 +173,25 @@ class v2RDMHelper{
 
   protected:
 
-    /// the v2RDMSolver 
+    /// the v2RDMSolver
     std::shared_ptr<v2RDMSolver> v2rdm;
 
     /// Find out which orbitals belong where
     void orbital_locations(const std::string &orbital_name, int *start, int *end);
 
 };
+
+#ifdef USE_QED_CC
+
+class CavityHelper {
+    public:
+    CavityHelper() = default;
+    ~CavityHelper() = default;
+
+    static MPI_Comm comm_;
+};
+
+#endif
 
 }
 
