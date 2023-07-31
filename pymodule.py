@@ -186,17 +186,31 @@ def run_polaritonic_scf_gradient(name, **kwargs):
     # (iii) polaritonic-scf densities
     # onto reference wave function 
 
+    # set alpha orbitals, densities, and energies
     for irrep in range (0,ref_wfn.Ca().nirrep()):
         ref_wfn.Ca().nph[irrep][:,:] = rhf_wfn.Ca().nph[irrep][:,:]
-        ref_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Cb().nph[irrep][:,:]
         ref_wfn.Da().nph[irrep][:,:] = rhf_wfn.Da().nph[irrep][:,:]
-        ref_wfn.Db().nph[irrep][:,:] = rhf_wfn.Db().nph[irrep][:,:]
         ref_wfn.epsilon_a().nph[irrep][:] = rhf_wfn.epsilon_a().nph[irrep][:]
-        ref_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_b().nph[irrep][:]
 
+    # check if reference wave function is restricted
+    if ("rks" in lowername or "rhf" in lowername or "rohf" in lowername):
+        # copy alpha quantities to beta quantities
+        for irrep in range (0,ref_wfn.Cb().nirrep()):
+            ref_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Ca().nph[irrep][:,:]
+            ref_wfn.Db().nph[irrep][:,:] = rhf_wfn.Da().nph[irrep][:,:]
+            ref_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_a().nph[irrep][:]
+    else:
+        # set beta quantities
+        for irrep in range (0,ref_wfn.Cb().nirrep()):
+            ref_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Cb().nph[irrep][:,:]
+            ref_wfn.Db().nph[irrep][:,:] = rhf_wfn.Db().nph[irrep][:,:]
+            ref_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_b().nph[irrep][:]
+
+
+    #### call scfgrad for electron-only part of gradient ####
     gradient = psi4.core.scfgrad(ref_wfn)
 
-    # dipole self energy portion of gradient
+    #### dipole self energy portion of gradient ####
 
     # OPDM
     Da = np.asarray(rhf_wfn.Da())
@@ -214,7 +228,7 @@ def run_polaritonic_scf_gradient(name, **kwargs):
 
     # exchange contribution to dipole self energy 
 
-    # D(p,q) = - mu(r,s) [ Da(p,r)Da(s,q) + Db(p,r) Da(s,q) ]
+    #### D(p,q) = - mu(r,s) [ Da(p,r)Da(s,q) + Db(p,r) Da(s,q) ] ####
 
     tmpa = -np.einsum('rs,pr,sq->pq',mu_z, Da, Da) 
     tmpb = -np.einsum('rs,pr,sq->pq',mu_z, Db, Db)
@@ -226,7 +240,6 @@ def run_polaritonic_scf_gradient(name, **kwargs):
 
     en  = 0.5 * lambda_z * lambda_z * np.einsum('pq,pq',tmpa,mu_z)
     en += 0.5 * lambda_z * lambda_z * np.einsum('pq,pq',tmpb,mu_z)
-    #print('exchange dse:',en)
 
     D = tmpa + tmpb
 
@@ -257,7 +270,7 @@ def run_polaritonic_scf_gradient(name, **kwargs):
     dse_gradient_z_scaled = psi4.core.Matrix.from_array(dse_gradient_z)
     dse_gradient_z_scaled.scale(lambda_z*lambda_z)
 
-    # quadrupole integral gradient
+    #### quadrupole integral gradient ####
       
     C = [0.0, 0.0, 0.0] # origin
     maxorder = 2 # quadrupole
