@@ -177,6 +177,14 @@ def run_polaritonic_scf_gradient(name, **kwargs):
     # Please note that setting the reference wavefunction in this way is ONLY for plugins
     rhf_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
 
+    # check if reference wave function is restricted
+    if ("rks" in lowername or "rhf" in lowername or "rohf" in lowername):
+        # copy alpha quantities to beta quantities in polaritonic wave function
+        for irrep in range (0,ref_wfn.Cb().nirrep()):
+            rhf_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Ca().nph[irrep][:,:]
+            rhf_wfn.Db().nph[irrep][:,:] = rhf_wfn.Da().nph[irrep][:,:]
+            rhf_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_a().nph[irrep][:]
+
     # gradient of photon-free hamiltonian
 
     # some quantities aren't set correctly in hilbert's wave functions, so we can't call
@@ -189,23 +197,11 @@ def run_polaritonic_scf_gradient(name, **kwargs):
     # set alpha orbitals, densities, and energies
     for irrep in range (0,ref_wfn.Ca().nirrep()):
         ref_wfn.Ca().nph[irrep][:,:] = rhf_wfn.Ca().nph[irrep][:,:]
+        ref_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Cb().nph[irrep][:,:]
         ref_wfn.Da().nph[irrep][:,:] = rhf_wfn.Da().nph[irrep][:,:]
+        ref_wfn.Db().nph[irrep][:,:] = rhf_wfn.Db().nph[irrep][:,:]
         ref_wfn.epsilon_a().nph[irrep][:] = rhf_wfn.epsilon_a().nph[irrep][:]
-
-    # check if reference wave function is restricted
-    if ("rks" in lowername or "rhf" in lowername):
-        # copy alpha quantities to beta quantities
-        for irrep in range (0,ref_wfn.Cb().nirrep()):
-            ref_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Ca().nph[irrep][:,:]
-            ref_wfn.Db().nph[irrep][:,:] = rhf_wfn.Da().nph[irrep][:,:]
-            ref_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_a().nph[irrep][:]
-    else:
-        # set beta quantities
-        for irrep in range (0,ref_wfn.Cb().nirrep()):
-            ref_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Cb().nph[irrep][:,:]
-            ref_wfn.Db().nph[irrep][:,:] = rhf_wfn.Db().nph[irrep][:,:]
-            ref_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_b().nph[irrep][:]
-
+        ref_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_b().nph[irrep][:]
 
     #### call scfgrad for electron-only part of gradient ####
     gradient = psi4.core.scfgrad(ref_wfn)
