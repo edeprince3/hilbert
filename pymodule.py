@@ -193,7 +193,7 @@ def run_polaritonic_scf_gradient(name, **kwargs):
         ref_wfn.epsilon_a().nph[irrep][:] = rhf_wfn.epsilon_a().nph[irrep][:]
 
     # check if reference wave function is restricted
-    if ("rks" in lowername or "rhf" in lowername or "rohf" in lowername):
+    if ("rks" in lowername or "rhf" in lowername):
         # copy alpha quantities to beta quantities
         for irrep in range (0,ref_wfn.Cb().nirrep()):
             ref_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Ca().nph[irrep][:,:]
