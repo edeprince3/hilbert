@@ -533,6 +533,12 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         }
 
+    }else if ( options.get_str("HILBERT_METHOD") == "RPA") {
+
+        std::shared_ptr<RPASolver> rpa (new RPASolver(ref_wfn,options));
+        double energy = rpa->compute_energy();
+        return (std::shared_ptr<Wavefunction>)rpa;
+
     }else {
 
         throw PsiException("unknown HILBERT_METHODS",__FILE__,__LINE__);
