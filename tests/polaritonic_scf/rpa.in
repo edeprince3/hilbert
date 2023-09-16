@@ -15,9 +15,10 @@ symmetry c1
 
 set {
   basis cc-pvdz
-  scf_type df 
-  e_convergence 1e-8
-  d_convergence 1e-8 
+  scf_type cd 
+  df_ints_io save
+  e_convergence 1e-12
+  d_convergence 1e-12
 } 
 
 
@@ -30,8 +31,8 @@ set hilbert {
 
 activate(h2)
 
-set reference rks
-en,wfn = energy('b3lyp',return_wfn=True)
+set reference rhf
+en,wfn = energy('scf',return_wfn=True)
 energy('polaritonic-rpa', ref_wfn=wfn)
 
 set reference rhf

@@ -66,10 +66,8 @@ PolaritonicRRPA::PolaritonicRRPA(std::shared_ptr<Wavefunction> reference_wavefun
 
 PolaritonicRRPA::~PolaritonicRRPA() {
 
-/*
     free(int1_);
     free(int2_);
-*/
 
 }
 
@@ -281,8 +279,8 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix() {
                     size_t bj = b * o_ + j;
                     double A_aibj = (i == j) * (a == b) * epsilon_a_->pointer()[a + o_]
                                   - (i == j) * (a == b) * epsilon_a_->pointer()[i]
-                                  + int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
-                                  + int2_[a * o_ * o_ * v_ + b * o_ * o_ + i * o_ + j];
+                                  + 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
+                                  - int2_[a * o_ * o_ * v_ + b * o_ * o_ + i * o_ + j];
                     H->pointer()[ai][bj] = A_aibj;
                 }
             }
