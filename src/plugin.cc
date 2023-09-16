@@ -534,16 +534,6 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         }
 
-    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_RPA") {
-
-        std::shared_ptr<PolaritonicRKS> rks (new PolaritonicRKS(ref_wfn,options));
-        double energy = rks->compute_energy();
-
-        std::shared_ptr<PolaritonicRRPA> rpa (new PolaritonicRRPA((std::shared_ptr<Wavefunction>)rks,options,ref_wfn));
-        double dum = rpa->compute_energy();
-
-        return (std::shared_ptr<Wavefunction>)rks;
-
     }else {
 
         throw PsiException("unknown HILBERT_METHODS",__FILE__,__LINE__);
