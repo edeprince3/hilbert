@@ -293,6 +293,7 @@ double PolaritonicRRPA::compute_energy() {
 
     std::shared_ptr<Matrix> tda_matrix = build_rpa_matrix(true);
 
+    eigval->zero();
     DGEEV(job, job, dim, &(tda_matrix->pointer()[0][0]), dim, eigval->pointer(), wi, vl, dim, vr, dim, work, lwork, info);
 
     // sort excitation energies
@@ -318,16 +319,17 @@ double PolaritonicRRPA::compute_energy() {
     free(skip);
 
 
-    //outfile->Printf("\n");
-    //outfile->Printf("    ==> excitation energies <==\n");
-    //outfile->Printf("\n");
+    outfile->Printf("\n");
+    outfile->Printf("    ==> excitation energies <==\n");
+    outfile->Printf("\n");
     double correlation_energy = 0.0;
     for (size_t i = 0; i < o_ * v_ + 1; i++) {
         double rpa = rpa_excitation_energies->pointer()[i];
         double tda = tda_excitation_energies->pointer()[i];
-        //outfile->Printf("%20.12lf %20.12lf\n",rpa, tda);
+        outfile->Printf("%20.12lf %20.12lf\n",rpa, tda);
         correlation_energy += rpa - tda;
     }
+    correlation_energy *= 0.5;
     outfile->Printf("\n");
     outfile->Printf("    * RPA correlation energy: %20.12lf\n", correlation_energy);
     outfile->Printf("\n");
