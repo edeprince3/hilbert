@@ -247,12 +247,14 @@ double PolaritonicRRPA::compute_energy() {
         throw PsiException("polaritonic TDDFT does not work with N_PHOTON_STATES > 2",__FILE__,__LINE__);
     }
 
-    std::shared_ptr<Matrix> H = build_rpa_matrix();
+    std::shared_ptr<Matrix> rpa_matrix = build_rpa_matrix(false);
     std::shared_ptr<Matrix> eigvec (new Matrix(2 * o_ * v_ + 2, 2 * o_ * v_ + 2));
     std::shared_ptr<Vector> eigval (new Vector(2 * o_ * v_ + 2));
 
     //H->diagonalize(eigvec, eigval);
     //eigval->print();
+
+    // RPA
 
     long int dim = 2 * o_ * v_ + 2;
     double * wi = (double*)malloc(dim * sizeof(double));
@@ -263,14 +265,72 @@ double PolaritonicRRPA::compute_energy() {
     long int info;
     char job = 'N';
     
-    DGEEV(job, job, dim, &(H->pointer()[0][0]), dim, eigval->pointer(), wi, vl, dim, vr, dim, work, lwork, info);
+    DGEEV(job, job, dim, &(rpa_matrix->pointer()[0][0]), dim, eigval->pointer(), wi, vl, dim, vr, dim, work, lwork, info);
 
-    outfile->Printf("\n");
-    outfile->Printf("    ==> RPA excitation energies <==\n");
-    outfile->Printf("\n");
-    for (size_t i = 0; i < dim; i++) {
-        outfile->Printf("%20.12lf\n",eigval->pointer()[i]);
+    // sort excitation energies, take only non-negative ones
+    std::shared_ptr<Vector> rpa_excitation_energies (new Vector(o_ * v_ + 1));
+   
+    bool * skip = (bool*)malloc(dim * sizeof(bool));
+    memset((void*)skip, '\0', dim * sizeof(bool));
+    for (size_t i = 0; i < o_ * v_ + 1; i++) {
+        double val = 0.0;
+        size_t minj = 0;
+        double min = 9e9;
+        for (size_t j = 0; j < dim; j++) {
+            if ( eigval->pointer()[j] < 0.0 || skip[j] ) {
+                continue;
+            }
+            if ( eigval->pointer()[j] < min ) {
+                min = eigval->pointer()[j];
+                minj = j;
+            }
+        }
+        skip[minj] = true;
+        rpa_excitation_energies->pointer()[i] = min;
     }
+
+    // TDA
+
+    std::shared_ptr<Matrix> tda_matrix = build_rpa_matrix(true);
+
+    DGEEV(job, job, dim, &(tda_matrix->pointer()[0][0]), dim, eigval->pointer(), wi, vl, dim, vr, dim, work, lwork, info);
+
+    // sort excitation energies
+    std::shared_ptr<Vector> tda_excitation_energies (new Vector(o_ * v_ + 1));
+  
+    memset((void*)skip, '\0', dim * sizeof(bool));
+    for (size_t i = 0; i < o_ * v_ + 1; i++) {
+        double val = 0.0;
+        size_t minj = 0;
+        double min = 9e9;
+        for (size_t j = 0; j < dim; j++) {
+            if ( eigval->pointer()[j] < 0.0 || skip[j] ) {
+                continue;
+            }
+            if ( eigval->pointer()[j] < min ) {
+                min = eigval->pointer()[j];
+                minj = j;
+            }
+        }
+        skip[minj] = true;
+        tda_excitation_energies->pointer()[i] = min;
+    }
+    free(skip);
+
+
+    //outfile->Printf("\n");
+    //outfile->Printf("    ==> excitation energies <==\n");
+    //outfile->Printf("\n");
+    double correlation_energy = 0.0;
+    for (size_t i = 0; i < o_ * v_ + 1; i++) {
+        double rpa = rpa_excitation_energies->pointer()[i];
+        double tda = tda_excitation_energies->pointer()[i];
+        //outfile->Printf("%20.12lf %20.12lf\n",rpa, tda);
+        correlation_energy += rpa - tda;
+    }
+    outfile->Printf("\n");
+    outfile->Printf("    * RPA correlation energy: %20.12lf\n", correlation_energy);
+    outfile->Printf("\n");
 
     free(wi);
     free(vl);
@@ -290,7 +350,7 @@ double PolaritonicRRPA::compute_energy() {
 // 
 // 
 // this function solves the generalized eigenvalue problem S c = 1/w H c
-std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix() {
+std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
 
     size_t off = o_ * v_ + 1;
     std::shared_ptr<Matrix> H (new Matrix(2 * off, 2 * off));
@@ -310,10 +370,12 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix() {
                     H->pointer()[ai][bj] = A_aibj;
                     H->pointer()[ai + off][bj + off] = -A_aibj;
 
-                    double B_aibj = 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
-                                  - int1_[j * o_ * v_ * v_ + a * o_ * v_ + i * v_ + b];
-                    H->pointer()[ai][bj + off] = -B_aibj;
-                    H->pointer()[ai + off][bj] =  B_aibj;
+                    if ( !is_tda ) {
+                        double B_aibj = 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
+                                      - int1_[j * o_ * v_ * v_ + a * o_ * v_ + i * v_ + b];
+                        H->pointer()[ai][bj + off] = -B_aibj;
+                        H->pointer()[ai + off][bj] =  B_aibj;
+                    }
 
                 }
             }

@@ -48,7 +48,7 @@ class PolaritonicRRPA: public PolaritonicHF {
 
   protected:
 
-    std::shared_ptr<Matrix> build_rpa_matrix();
+    std::shared_ptr<Matrix> build_rpa_matrix(bool is_tda);
 
     long int nQ_; 
     long int o_; 
