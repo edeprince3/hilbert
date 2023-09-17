@@ -4,10 +4,11 @@ sys.path.insert(0, '../../..')
 import hilbert
 
 molecule h2 {
-
-h 0.0 0.0 0.0
-h 0.0 0.0 1.0
-
+#H 0.0 0.0 0.0
+#H 0.0 0.0 1.0
+         O            0.000000000000     0.000000000000    -0.068516219320
+         H            0.000000000000    -0.790689573744     0.543701060715
+         H            0.000000000000     0.790689573744     0.543701060715
 no_reorient
 nocom
 symmetry c1
@@ -25,7 +26,7 @@ set {
 set hilbert {
   maxiter 500
   n_photon_states          2
-  cavity_frequency         [0.0, 0.0, 0.0]
+  cavity_frequency         [0.0, 0.0, 1.0]
   cavity_coupling_strength [0.0, 0.0, 0.0]
 }
 
@@ -34,8 +35,9 @@ activate(h2)
 set reference rhf
 en,wfn = energy('scf',return_wfn=True)
 energy('polaritonic-rpa', ref_wfn=wfn)
+energy('polaritonic-tddft', ref_wfn=wfn)
 
-set reference rhf
-set ex_level = 1
-set num_roots 4
-energy('detci')
+#set reference rhf
+#set ex_level = 1
+#set num_roots 4
+#energy('detci')

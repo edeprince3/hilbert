@@ -251,8 +251,31 @@ double PolaritonicRRPA::compute_energy() {
     std::shared_ptr<Matrix> eigvec (new Matrix(2 * o_ * v_ + 2, 2 * o_ * v_ + 2));
     std::shared_ptr<Vector> eigval (new Vector(2 * o_ * v_ + 2));
 
-    H->diagonalize(eigvec, eigval);
-    eigval->print();
+    //H->diagonalize(eigvec, eigval);
+    //eigval->print();
+
+    long int dim = 2 * o_ * v_ + 2;
+    double * wi = (double*)malloc(dim * sizeof(double));
+    double * vl = (double*)malloc(dim * dim * sizeof(double));
+    double * vr = (double*)malloc(dim * dim * sizeof(double));
+    long int lwork = 3 * dim;
+    double * work = (double*)malloc(lwork * sizeof(double));
+    long int info;
+    char job = 'N';
+    
+    DGEEV(job, job, dim, &(H->pointer()[0][0]), dim, eigval->pointer(), wi, vl, dim, vr, dim, work, lwork, info);
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> RPA excitation energies <==\n");
+    outfile->Printf("\n");
+    for (size_t i = 0; i < dim; i++) {
+        outfile->Printf("%20.12lf\n",eigval->pointer()[i]);
+    }
+
+    free(wi);
+    free(vl);
+    free(vr);
+    free(work);
 
     return 0.0;
 }
@@ -269,23 +292,37 @@ double PolaritonicRRPA::compute_energy() {
 // this function solves the generalized eigenvalue problem S c = 1/w H c
 std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix() {
 
-    std::shared_ptr<Matrix> H (new Matrix(2 * o_ * v_ + 2, 2 * o_ * v_ + 2));
+    size_t off = o_ * v_ + 1;
+    std::shared_ptr<Matrix> H (new Matrix(2 * off, 2 * off));
 
+    // electronic part
     for (size_t a = 0; a < v_; a++) {
         for (size_t i = 0; i < o_; i++) {
             size_t ai = a * o_ + i;
             for (size_t b = 0; b < v_; b++) {
                 for (size_t j = 0; j < o_; j++) {
                     size_t bj = b * o_ + j;
+
                     double A_aibj = (i == j) * (a == b) * epsilon_a_->pointer()[a + o_]
                                   - (i == j) * (a == b) * epsilon_a_->pointer()[i]
                                   + 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
-                                  - int2_[a * o_ * o_ * v_ + b * o_ * o_ + i * o_ + j];
+                                  - int2_[i * o_ * v_ * v_ + j * v_ * v_ + a * v_ + b];
                     H->pointer()[ai][bj] = A_aibj;
+                    H->pointer()[ai + off][bj + off] = -A_aibj;
+
+                    double B_aibj = 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
+                                  - int1_[j * o_ * v_ * v_ + a * o_ * v_ + i * v_ + b];
+                    H->pointer()[ai][bj + off] = -B_aibj;
+                    H->pointer()[ai + off][bj] =  B_aibj;
+
                 }
             }
         }
     }
+
+    // photon part
+    H->pointer()[o_ * v_][o_ * v_] = cavity_frequency_[2];
+    H->pointer()[off + o_ * v_][off + o_ * v_] = -cavity_frequency_[2];
     
 
     return H;
