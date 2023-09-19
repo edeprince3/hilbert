@@ -278,6 +278,7 @@ double PolaritonicRRPA::compute_energy() {
         double min = 9e9;
         for (size_t j = 0; j < dim; j++) {
             if ( eigval->pointer()[j] < 0.0 || skip[j] ) {
+                // should really exit in case of instability
                 continue;
             }
             if ( eigval->pointer()[j] < min ) {
@@ -334,6 +335,10 @@ double PolaritonicRRPA::compute_energy() {
     outfile->Printf("    * RPA correlation energy: %20.12lf\n", correlation_energy);
     outfile->Printf("\n");
 
+    double crpa_ = 0.0;
+    crpa_ = correlation_energy;
+    Process::environment.globals["RPA_CORRELATION_ENERGY"]  = crpa_;
+
     free(wi);
     free(vl);
     free(vr);
@@ -367,14 +372,14 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
 
                     double A_aibj = (i == j) * (a == b) * epsilon_a_->pointer()[a + o_]
                                   - (i == j) * (a == b) * epsilon_a_->pointer()[i]
-                                  + 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
-                                  - int2_[i * o_ * v_ * v_ + j * v_ * v_ + a * v_ + b];
+                                  + 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b];
+                                 // - int2_[i * o_ * v_ * v_ + j * v_ * v_ + a * v_ + b];
                     H->pointer()[ai][bj] = A_aibj;
                     H->pointer()[ai + off][bj + off] = -A_aibj;
 
                     if ( !is_tda ) {
-                        double B_aibj = 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
-                                      - int1_[j * o_ * v_ * v_ + a * o_ * v_ + i * v_ + b];
+                        double B_aibj = 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b];
+                                      //- int1_[j * o_ * v_ * v_ + a * o_ * v_ + i * v_ + b];
                         H->pointer()[ai][bj + off] = -B_aibj;
                         H->pointer()[ai + off][bj] =  B_aibj;
                     }

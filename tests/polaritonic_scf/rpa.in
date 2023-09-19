@@ -3,7 +3,7 @@
 sys.path.insert(0, '../../..')
 import hilbert
 
-molecule h2 {
+molecule h2o {
 #H 0.0 0.0 0.0
 #H 0.0 0.0 1.0
          O            0.000000000000     0.000000000000    -0.068516219320
@@ -16,7 +16,7 @@ symmetry c1
 
 set {
   basis cc-pvdz
-  scf_type cd 
+  scf_type df 
   df_ints_io save
   e_convergence 1e-12
   d_convergence 1e-12
@@ -30,12 +30,31 @@ set hilbert {
   cavity_coupling_strength [0.0, 0.0, 0.0]
 }
 
-activate(h2)
+activate(h2o)
 
-set reference rhf
-en,wfn = energy('scf',return_wfn=True)
-energy('polaritonic-rpa', ref_wfn=wfn)
-energy('polaritonic-tddft', ref_wfn=wfn)
+set reference rks
+en,wfn = energy('pbe',return_wfn=True)
+my_file=wfn.get_scratch_filename(180) + '.npy'
+wfn.to_file(my_file)
+
+
+set scf maxiter=0
+set guess read
+set scf fail_on_maxiter=False
+ehxx = energy('scf')
+
+crpa, wfn_rpa = energy('polaritonic-rpa', ref_wfn=wfn, return_wfn=True)
+
+ecrpa=variable("RPA_CORRELATION_ENERGY")
+
+psi4.print_out("\n")
+psi4.print_out("RPA Energies in au\n\n")
+psi4.print_out("RPA correlation energy:  %20.12f\n" % (ecrpa))
+psi4.print_out("HXX energy:              %20.12f\n" % (ehxx))
+psi4.print_out("RPA total energy:        %20.12f\n" % (ecrpa + ehxx))
+
+#energy('polaritonic-tddft', ref_wfn=wfn)
+#
 
 #set reference rhf
 #set ex_level = 1
