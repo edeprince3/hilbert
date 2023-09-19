@@ -46,7 +46,6 @@
 #include <polaritonic_scf/rcis.h>
 #include <polaritonic_scf/rtddft.h>
 #include <polaritonic_scf/utddft.h>
-#include <polaritonic_scf/rrpa.h>
 
 #include <misc/backtransform_tpdm.h>
 
