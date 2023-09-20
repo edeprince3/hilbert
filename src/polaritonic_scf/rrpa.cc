@@ -84,24 +84,20 @@ void PolaritonicRRPA::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
     outfile->Printf( "        *******************************************************\n");
     outfile->Printf("\n");
 
-    // RTTDFT only works with TDA for now
-    if ( !options_.get_bool("TDSCF_TDA") ) {
-        //throw PsiException("polaritonic rtddft only works with TDA df for now",__FILE__,__LINE__);
-    }
 
     // ensure scf_type df
     if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" ) {
-        throw PsiException("polaritonic utddft only works with scf_type df for now",__FILE__,__LINE__);
+        throw PsiException("polaritonic RPA only works with scf_type df and cd for now",__FILE__,__LINE__);
     }
 
     // ensure running in c1 symmetry
     if ( reference_wavefunction_->nirrep() > 1 ) {
-        throw PsiException("polaritonic utddft only works with c1 symmetry for now.",__FILE__,__LINE__);
+        throw PsiException("polaritonic RPA only works with c1 symmetry for now.",__FILE__,__LINE__);
     }
 
     // ensure closed shell
     if ( nalpha_ != nbeta_ ) {
-        throw PsiException("polaritonic TDDFT only works with nalpha = nbeta (for now)",__FILE__,__LINE__);
+        throw PsiException("polaritonic RPA only works with nalpha = nbeta (for now)",__FILE__,__LINE__);
     }
 
     // get primary basis:
@@ -267,6 +263,7 @@ double PolaritonicRRPA::compute_energy() {
     
     DGEEV(job, job, dim, &(rpa_matrix->pointer()[0][0]), dim, eigval->pointer(), wi, vl, dim, vr, dim, work, lwork, info);
 
+
     // sort excitation energies, take only non-negative ones
     std::shared_ptr<Vector> rpa_excitation_energies (new Vector(o_ * v_ + 1));
    
@@ -278,7 +275,6 @@ double PolaritonicRRPA::compute_energy() {
         double min = 9e9;
         for (size_t j = 0; j < dim; j++) {
             if ( eigval->pointer()[j] < 0.0 || skip[j] ) {
-                // should really exit in case of instability
                 continue;
             }
             if ( eigval->pointer()[j] < min ) {
@@ -362,7 +358,22 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
     size_t off = o_ * v_ + 1;
     std::shared_ptr<Matrix> H (new Matrix(2 * off, 2 * off));
 
+    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+
+    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
+    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+
+    double ** dx = dipole_[0]->pointer();
+    double ** dy = dipole_[1]->pointer();
+    double ** dz = dipole_[2]->pointer();
+
+
     // electronic part
+    double dipole_Ja = 0.0;
+
     for (size_t a = 0; a < v_; a++) {
         for (size_t i = 0; i < o_; i++) {
             size_t ai = a * o_ + i;
@@ -372,13 +383,15 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
 
                     double A_aibj = (i == j) * (a == b) * epsilon_a_->pointer()[a + o_]
                                   - (i == j) * (a == b) * epsilon_a_->pointer()[i]
-                                  + 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b];
+                                  + 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
+                                  + lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_];
                                  // - int2_[i * o_ * v_ * v_ + j * v_ * v_ + a * v_ + b];
                     H->pointer()[ai][bj] = A_aibj;
                     H->pointer()[ai + off][bj + off] = -A_aibj;
 
                     if ( !is_tda ) {
-                        double B_aibj = 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b];
+                        double B_aibj = 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
+                                        + lambda_z * lambda_z * dz[i][a+o_] * dz[b+o_][j];
                                       //- int1_[j * o_ * v_ * v_ + a * o_ * v_ + i * v_ + b];
                         H->pointer()[ai][bj + off] = -B_aibj;
                         H->pointer()[ai + off][bj] =  B_aibj;
@@ -389,10 +402,24 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
         }
     }
 
+
     // photon part
     H->pointer()[o_ * v_][o_ * v_] = cavity_frequency_[2];
     H->pointer()[off + o_ * v_][off + o_ * v_] = -cavity_frequency_[2];
     
+    // coupling part
+    for (size_t I = 0; I < n_photon_states_ ; I++) {
+        // couple |0,1> to |ia,0>
+        for (size_t a = 0; a < v_; a++) {
+             for (size_t i = 0; i < o_; i++) {
+                 size_t ai = a * o_ + i;
+                 // <ia| H |0,1>
+                 H->pointer()[ai][o_ * v_ + I] = coupling_factor_z * dz[i][a+o_];
+                 H->pointer()[o_ * v_ + I][ai] = coupling_factor_z * dz[i][a+o_];
+            }
+        }
+    }
+
 
     return H;
 
