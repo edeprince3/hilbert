@@ -22,18 +22,28 @@ set {
   d_convergence 1e-12
 } 
 
+w = 0.265754876050
+g = 0.05 / np.sqrt(2.0 * w )
+#w = 1.0
+#g = 0.0
 
 set hilbert {
   maxiter 500
   n_photon_states          2
-  cavity_frequency         [0.0, 0.0, 1.0]
-  cavity_coupling_strength [0.0, 0.0, 0.0]
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
 }
 
 activate(h2o)
 
+# KS reference
 set reference rks
 en,wfn = energy('pbe',return_wfn=True)
+
+# HF reference (for debugging)
+set reference rhf
+en,wfn = energy('hf',return_wfn=True)
+
 my_file=wfn.get_scratch_filename(180) + '.npy'
 wfn.to_file(my_file)
 
@@ -53,10 +63,12 @@ psi4.print_out("RPA correlation energy:  %20.12f\n" % (ecrpa))
 psi4.print_out("HXX energy:              %20.12f\n" % (ehxx))
 psi4.print_out("RPA total energy:        %20.12f\n" % (ecrpa + ehxx))
 
-#energy('polaritonic-tddft', ref_wfn=wfn)
+set use_coherent_state_basis false
+set qed_use_relaxed_orbitals false
+set num_roots 4
+energy('polaritonic-tddft', ref_wfn=wfn)
 #
 
 #set reference rhf
 #set ex_level = 1
-#set num_roots 4
 #energy('detci')

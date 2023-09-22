@@ -372,7 +372,6 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
 
 
     // electronic part
-    double dipole_Ja = 0.0;
 
     for (size_t a = 0; a < v_; a++) {
         for (size_t i = 0; i < o_; i++) {
@@ -382,17 +381,15 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
                     size_t bj = b * o_ + j;
 
                     double A_aibj = (i == j) * (a == b) * epsilon_a_->pointer()[a + o_]
-                                  - (i == j) * (a == b) * epsilon_a_->pointer()[i]
-                                  + 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
-                                  + lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_];
-                                 // - int2_[i * o_ * v_ * v_ + j * v_ * v_ + a * v_ + b];
+                                  - (i == j) * (a == b) * epsilon_a_->pointer()[i]              // diagonal
+                                  + 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]   // Coulomb
+                                  - int2_[i * o_ * v_ * v_ + j * v_ * v_ + a * v_ + b];       // Exchange
                     H->pointer()[ai][bj] = A_aibj;
                     H->pointer()[ai + off][bj + off] = -A_aibj;
 
                     if ( !is_tda ) {
                         double B_aibj = 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
-                                        + lambda_z * lambda_z * dz[i][a+o_] * dz[b+o_][j];
-                                      //- int1_[j * o_ * v_ * v_ + a * o_ * v_ + i * v_ + b];
+                                      - int1_[j * o_ * v_ * v_ + a * o_ * v_ + i * v_ + b];
                         H->pointer()[ai][bj + off] = -B_aibj;
                         H->pointer()[ai + off][bj] =  B_aibj;
                     }
@@ -401,24 +398,60 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
             }
         }
     }
+    
+    // dipole self energy (for singles)
+    // use unrelaxed reference (for now); no K-like contributions
+    //
+    
+    //for (size_t I = 0; I < n_photon_states_; I++) {
+        for (size_t a = 0; a < v_; a++) {
+            for (size_t i = 0; i < o_; i++) {
+                size_t ai = a * o_ + i;
+                for (size_t b = 0; b < v_; b++) {
+                    for (size_t j = 0; j < o_; j++) {
+                         size_t bj = b * o_ + j;
+
+                         H->pointer()[ai][bj]             +=  2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_];
+                         H->pointer()[ai + off][bj + off] += -2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_];
+
+                         if ( !is_tda ) {
+
+                            H->pointer()[ai][bj + off] += -2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_]; //dz[b+o_][j];
+                            H->pointer()[ai + off][bj] +=  2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_]; //dz[b+o_][j];
+                        }
+                    }
+                }
+            }
+        }
+    //}
 
 
     // photon part
+    // 2 photon states
+    
     H->pointer()[o_ * v_][o_ * v_] = cavity_frequency_[2];
     H->pointer()[off + o_ * v_][off + o_ * v_] = -cavity_frequency_[2];
     
     // coupling part
-    for (size_t I = 0; I < n_photon_states_ ; I++) {
+    
+    //for (size_t I = 0; I < n_photon_states_ ; I++) {
         // couple |0,1> to |ia,0>
         for (size_t a = 0; a < v_; a++) {
              for (size_t i = 0; i < o_; i++) {
                  size_t ai = a * o_ + i;
                  // <ia| H |0,1>
-                 H->pointer()[ai][o_ * v_ + I] = coupling_factor_z * dz[i][a+o_];
-                 H->pointer()[o_ * v_ + I][ai] = coupling_factor_z * dz[i][a+o_];
+                 H->pointer()[o_ * v_][ai      ]       =  sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
+                 H->pointer()[o_ * v_ + off][ai]       =  sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
+                 H->pointer()[ai][o_ * v_]             =  sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
+                 H->pointer()[ai + off][o_ * v_]       =  sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
+                 
+                 H->pointer()[o_ * v_][ai + off]       = -sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
+                 H->pointer()[o_ * v_ + off][ai + off] = -sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
+                 H->pointer()[ai][o_ * v_ + off]       = -sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
+                 H->pointer()[ai + off][o_ * v_ + off] = -sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
             }
         }
-    }
+    //}
 
 
     return H;
