@@ -388,6 +388,7 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
                     H->pointer()[ai + off][bj + off] = -A_aibj;
 
                     if ( !is_tda ) {
+
                         double B_aibj = 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
                                       - int1_[j * o_ * v_ * v_ + a * o_ * v_ + i * v_ + b];
                         H->pointer()[ai][bj + off] = -B_aibj;
@@ -412,12 +413,19 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
                          size_t bj = b * o_ + j;
 
                          H->pointer()[ai][bj]             +=  2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_];
+                         H->pointer()[ai][bj]             -=        lambda_z * lambda_z * dz[i][j] * dz[a+o_][b+o_];
+
                          H->pointer()[ai + off][bj + off] += -2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_];
+                         H->pointer()[ai + off][bj + off] -= -      lambda_z * lambda_z * dz[i][j] * dz[a+o_][b+o_];
+
 
                          if ( !is_tda ) {
 
                             H->pointer()[ai][bj + off] += -2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_]; //dz[b+o_][j];
+                            H->pointer()[ai][bj + off] -= -      lambda_z * lambda_z * dz[i][b+o_] * dz[j][a+o_]; //dz[b+o_][j];
+
                             H->pointer()[ai + off][bj] +=  2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_]; //dz[b+o_][j];
+                            H->pointer()[ai + off][bj] -=        lambda_z * lambda_z * dz[i][b+o_] * dz[j][a+o_]; //dz[b+o_][j];
                         }
                     }
                 }
@@ -440,15 +448,34 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
              for (size_t i = 0; i < o_; i++) {
                  size_t ai = a * o_ + i;
                  // <ia| H |0,1>
-                 H->pointer()[o_ * v_][ai      ]       =  sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
-                 H->pointer()[o_ * v_ + off][ai]       =  sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
+
+                 // <X(ai) | H | M>
                  H->pointer()[ai][o_ * v_]             =  sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
-                 H->pointer()[ai + off][o_ * v_]       =  sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
-                 
-                 H->pointer()[o_ * v_][ai + off]       = -sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
+
+                 // <M | H | X(ai)>
+                 H->pointer()[o_ * v_][ai      ]       =  sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
+
+                 // <N | H | Y(ai)>
                  H->pointer()[o_ * v_ + off][ai + off] = -sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
-                 H->pointer()[ai][o_ * v_ + off]       = -sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
+
+                 // <Y(ai) | H | N>
                  H->pointer()[ai + off][o_ * v_ + off] = -sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
+
+                 if ( !is_tda ) {
+
+                     // <N | H | X(ai)>
+                     H->pointer()[o_ * v_ + off][ai]       =  sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
+                         
+                     // <X(ai) | H | N>
+                     H->pointer()[ai][o_ * v_ + off]       = -sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
+
+                     // <Y(ai) | H | M>
+                     H->pointer()[ai + off][o_ * v_]       =  sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
+
+                     // <M | H | Y(ai)>
+                     H->pointer()[o_ * v_][ai + off]       = -sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
+
+                 }
             }
         }
     //}
