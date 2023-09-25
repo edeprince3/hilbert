@@ -202,8 +202,8 @@ double PolaritonicROHF::compute_energy() {
 
     // guess (from existing reference)
 
-    if ( !options_.get_bool("QED_USE_RELAXED_ORBITALS") && use_coherent_state_basis_ ) {
-        throw PsiException("QED_USE_RELAXED_ORBITALS false is not compatible with USE_COHERENT_STATE_BASIS true",__FILE__,__LINE__);
+    if ( !options_.get_bool("QED_USE_RELAXED_ORBITALS") && !use_coherent_state_basis_ ) {
+        throw PsiException("QED_USE_RELAXED_ORBITALS false is not compatible with USE_COHERENT_STATE_BASIS false",__FILE__,__LINE__);
     }
 
     // form initial Feff
