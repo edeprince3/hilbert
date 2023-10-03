@@ -568,8 +568,11 @@ void PolaritonicRTDDFT::build_sigma_generalized(int N, int maxdim, int L, double
     // x, y
     for (int i = 0; i < o*v; i++) {
         for (int I = 0; I < L; I++) {
-            sigmah[i      ][I] =  Ax[I*N+i] + By[I*N+i] + gm[I*N+i] + gn[I*N+i];
-            sigmah[i + o*v][I] =  Bx[I*N+i] + Ay[I*N+i] + gm[I*N+i] + gn[I*N+i];
+            sigmah[i      ][I] =  Ax[I*N+i] +  By[I*N+i] + gm[I*N+i] +  gn[I*N+i];
+            sigmah[i + o*v][I] =  Bx[I*N+i] + Ay[I*N+i] +  gm[I*N+i] + gn[I*N+i];
+            //TDA version
+            //sigmah[i      ][I] =  0.0* Ax[I*N+i] +  By[I*N+i] + gm[I*N+i] +  0.0* gn[I*N+i];
+            //sigmah[i + o*v][I] =  0.0* Bx[I*N+i] + Ay[I*N+i] +  0.0* gm[I*N+i] + gn[I*N+i];
 
             sigmas[i      ][I] =  x[I*N+i];
             sigmas[i + o*v][I] = -y[I*N+i];
@@ -1128,8 +1131,11 @@ void PolaritonicRTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
 
                 int ia = i * v + a;
 
-                Au[I*N+ia] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia - dipole_Ka_A);
-                Bu[I*N+ia] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia - dipole_Ka_B);
+                Au[I*N+ia] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia -  dipole_Ka_A);
+                Bu[I*N+ia] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia -  dipole_Ka_B);
+                // TDA version
+                //Au[I*N+ia] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia - 0.0 * dipole_Ka_A);
+                //Bu[I*N+ia] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia - 0.0 * dipole_Ka_B);
             }
         }
 
@@ -1215,8 +1221,11 @@ void PolaritonicRTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
                 // <ia| H |0,1>
                 double factor = -sqrt(2.0)*coupling_factor_z * dz[i][a+o];
                     
-                sigma_m_r[I] += factor * ( x[I*N+ia] + y[I*N+ia] );
-                sigma_m_l[I] += factor * ( x[I*N+ia] - y[I*N+ia] );
+                sigma_m_r[I] += factor * ( x[I*N+ia] +  y[I*N+ia] );
+                sigma_m_l[I] += factor * ( x[I*N+ia] -  y[I*N+ia] );
+                //TDA version ??? not sure
+                //sigma_m_r[I] += factor * ( x[I*N+ia] +  y[I*N+ia] );
+                //sigma_m_l[I] += factor * ( x[I*N+ia] -  y[I*N+ia] );
             }
         }
     }

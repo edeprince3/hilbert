@@ -37,8 +37,8 @@ set hilbert {
 activate(h2o)
 
 # KS reference
-set reference rks
-en,wfn = energy('pbe',return_wfn=True)
+#set reference rks
+#en,wfn = energy('pbe',return_wfn=True)
 
 # HF reference (for debugging)
 set reference rhf
@@ -48,7 +48,12 @@ my_file=wfn.get_scratch_filename(180) + '.npy'
 wfn.to_file(my_file)
 
 
+set qed_use_relaxed_orbitals true 
+set use_coherent_state_basis true
+set rpa_exchange true
 set scf maxiter=0
+set tdscf_tda false
+
 set guess read
 set scf fail_on_maxiter=False
 ehxx = energy('scf')
@@ -63,11 +68,12 @@ psi4.print_out("RPA correlation energy:  %20.12f\n" % (ecrpa))
 psi4.print_out("HXX energy:              %20.12f\n" % (ehxx))
 psi4.print_out("RPA total energy:        %20.12f\n" % (ecrpa + ehxx))
 
-set use_coherent_state_basis false
-set qed_use_relaxed_orbitals false
-set num_roots 4
+set num_roots 6
 energy('polaritonic-tddft', ref_wfn=wfn)
 #
+#set TDSCF_STATES 4
+#set tdscf_maxiter 400
+#energy('td-hf')
 
 #set reference rhf
 #set ex_level = 1

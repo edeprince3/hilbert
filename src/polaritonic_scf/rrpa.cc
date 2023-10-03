@@ -207,6 +207,12 @@ double PolaritonicRRPA::compute_energy() {
     outfile->Printf("\n");
     outfile->Printf("    No. basis functions:            %5i\n",nso_);
     outfile->Printf("    No. electrons:                  %5i\n",nalpha_ + nbeta_);
+    if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+        outfile->Printf("    Relaxed orbitals are used. K terms included in g\n");
+    }
+    if ( options_.get_bool("RPA_EXCHANGE") ) {
+        outfile->Printf("    Exchange added to A and B in RPA kernel\n");
+    }
 
     if ( n_photon_states_ > 1 ) {
         update_cavity_terms();
@@ -382,15 +388,19 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
 
                     double A_aibj = (i == j) * (a == b) * epsilon_a_->pointer()[a + o_]
                                   - (i == j) * (a == b) * epsilon_a_->pointer()[i]              // diagonal
-                                  + 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]   // Coulomb
-                                  - int2_[i * o_ * v_ * v_ + j * v_ * v_ + a * v_ + b];       // Exchange
+                                  + 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b];   // Coulomb
+                    if ( options_.get_bool("RPA_EXCHANGE") ) {
+                          A_aibj -= int2_[i * o_ * v_ * v_ + j * v_ * v_ + a * v_ + b];       // Exchange
+                    }
                     H->pointer()[ai][bj] = A_aibj;
                     H->pointer()[ai + off][bj + off] = -A_aibj;
 
                     if ( !is_tda ) {
 
-                        double B_aibj = 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b]
-                                      - int1_[j * o_ * v_ * v_ + a * o_ * v_ + i * v_ + b];
+                        double B_aibj = 2.0 * int1_[i * o_ * v_ * v_ + a * o_ * v_ + j * v_ + b];   // Coulomb
+                        if ( options_.get_bool("RPA_EXCHANGE") ) {
+                          B_aibj -= int1_[j * o_ * v_ * v_ + a * o_ * v_ + i * v_ + b];             // Exchange
+                        }
                         H->pointer()[ai][bj + off] = -B_aibj;
                         H->pointer()[ai + off][bj] =  B_aibj;
                     }
@@ -401,7 +411,6 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
     }
     
     // dipole self energy (for singles)
-    // use unrelaxed reference (for now); no K-like contributions
     //
     
     //for (size_t I = 0; I < n_photon_states_; I++) {
@@ -413,19 +422,24 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
                          size_t bj = b * o_ + j;
 
                          H->pointer()[ai][bj]             +=  2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_];
-                         H->pointer()[ai][bj]             -=        lambda_z * lambda_z * dz[i][j] * dz[a+o_][b+o_];
 
                          H->pointer()[ai + off][bj + off] += -2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_];
-                         H->pointer()[ai + off][bj + off] -= -      lambda_z * lambda_z * dz[i][j] * dz[a+o_][b+o_];
 
+                         if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+                            H->pointer()[ai][bj]             -=        lambda_z * lambda_z * dz[i][j] * dz[a+o_][b+o_];
+                            H->pointer()[ai + off][bj + off] -= -      lambda_z * lambda_z * dz[i][j] * dz[a+o_][b+o_];
+                         }
 
                          if ( !is_tda ) {
 
                             H->pointer()[ai][bj + off] += -2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_]; //dz[b+o_][j];
-                            H->pointer()[ai][bj + off] -= -      lambda_z * lambda_z * dz[i][b+o_] * dz[j][a+o_]; //dz[b+o_][j];
 
                             H->pointer()[ai + off][bj] +=  2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_]; //dz[b+o_][j];
-                            H->pointer()[ai + off][bj] -=        lambda_z * lambda_z * dz[i][b+o_] * dz[j][a+o_]; //dz[b+o_][j];
+
+                             if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+                                 H->pointer()[ai][bj + off] -= -      lambda_z * lambda_z * dz[i][b+o_] * dz[j][a+o_]; //dz[b+o_][j];
+                                 H->pointer()[ai + off][bj] -=        lambda_z * lambda_z * dz[i][b+o_] * dz[j][a+o_]; //dz[b+o_][j];
+                            }
                         }
                     }
                 }
@@ -455,20 +469,20 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
                  // <M | H | X(ai)>
                  H->pointer()[o_ * v_][ai      ]       =  sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
 
-                 // <N | H | Y(ai)>
-                 H->pointer()[o_ * v_ + off][ai + off] = -sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
-
                  // <Y(ai) | H | N>
                  H->pointer()[ai + off][o_ * v_ + off] = -sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
 
+                 // <N | H | Y(ai)>
+                 H->pointer()[o_ * v_ + off][ai + off] = -sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
+
                  if ( !is_tda ) {
+
+                     // <X(ai) | H | N>
+                     H->pointer()[ai][o_ * v_ + off]       = -sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
 
                      // <N | H | X(ai)>
                      H->pointer()[o_ * v_ + off][ai]       =  sqrt(2.0) * coupling_factor_z * dz[a+o_][i];
                          
-                     // <X(ai) | H | N>
-                     H->pointer()[ai][o_ * v_ + off]       = -sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
-
                      // <Y(ai) | H | M>
                      H->pointer()[ai + off][o_ * v_]       =  sqrt(2.0) * coupling_factor_z * dz[i][a+o_];
 

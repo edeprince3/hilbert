@@ -381,6 +381,9 @@ int read_options(std::string name, Options& options)
 
         /*- number of roots -*/
         options.add_int("NUMBER_ROOTS", 5);
+
+        /*- include exchange in RPA ground state energy? -*/
+        options.add_bool("RPA_EXCHANGE", false);
     }
 
     return true;
