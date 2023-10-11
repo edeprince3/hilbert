@@ -2095,7 +2095,6 @@ void v2RDMSolver::BuildConstraints(){
                 b_p[offset++] = 0.0;
             }
         }
-
     }
 
     if ( constrain_q2_ ) {
@@ -2368,8 +2367,75 @@ void v2RDMSolver::BuildConstraints(){
     }
 
     if ( constrain_d3_ ) {
-        //if (  nalpha_ - nrstc_ - nfrzc_ > 2 ) {
-            // D3aaa -> D2aa
+        if ( constrain_sz_ ) {
+            //if (  nalpha_ - nrstc_ - nfrzc_ > 2 ) {
+                // D3aaa -> D2aa
+                for (int h = 0; h < nirrep_; h++) {
+                    for(int i = 0; i < gems_aa[h]; i++){
+                        for(int j = 0; j < gems_aa[h]; j++){
+                            b_p[offset + i*gems_aa[h]+j] = 0.0;
+                        }
+                    }
+                    offset += gems_aa[h]*gems_aa[h];
+                }
+            //}
+            //if (  nbeta_ - nrstc_ - nfrzc_ > 2 ) {
+                // D3bbb -> D2bb
+                for (int h = 0; h < nirrep_; h++) {
+                    for(int i = 0; i < gems_aa[h]; i++){
+                        for(int j = 0; j < gems_aa[h]; j++){
+                            b_p[offset + i*gems_aa[h]+j] = 0.0;
+                        }
+                    }
+                    offset += gems_aa[h]*gems_aa[h];
+                }
+            //}
+            //if (  nalpha_ - nrstc_ - nfrzc_ > 1 ) {
+                // D3aab -> D2aa
+                for (int h = 0; h < nirrep_; h++) {
+                    for(int i = 0; i < gems_aa[h]; i++){
+                        for(int j = 0; j < gems_aa[h]; j++){
+                            b_p[offset + i*gems_aa[h]+j] = 0.0;
+                        }
+                    }
+                    offset += gems_aa[h]*gems_aa[h];
+                }
+            //}
+            //if (  nbeta_ - nrstc_ - nfrzc_ > 1 ) {
+                // D3bba -> D2bb
+                for (int h = 0; h < nirrep_; h++) {
+                    for(int i = 0; i < gems_aa[h]; i++){
+                        for(int j = 0; j < gems_aa[h]; j++){
+                            b_p[offset + i*gems_aa[h]+j] = 0.0;
+                        }
+                    }
+                    offset += gems_aa[h]*gems_aa[h];
+                }
+            //}
+            //if (  nalpha_ - nrstc_ - nfrzc_ > 1 ) {
+                // D3aab -> D2ab
+                for (int h = 0; h < nirrep_; h++) {
+                    for(int i = 0; i < gems_ab[h]; i++){
+                        for(int j = 0; j < gems_ab[h]; j++){
+                            b_p[offset + i*gems_ab[h]+j] = 0.0;
+                        }
+                    }
+                    offset += gems_ab[h]*gems_ab[h];
+                }
+            //}
+            //if (  nbeta_ - nrstc_ - nfrzc_ > 1 ) {
+                // D3bba -> D2ab
+                for (int h = 0; h < nirrep_; h++) {
+                    for(int i = 0; i < gems_ab[h]; i++){
+                        for(int j = 0; j < gems_ab[h]; j++){
+                            b_p[offset + i*gems_ab[h]+j] = 0.0;
+                        }
+                    }
+                    offset += gems_ab[h]*gems_ab[h];
+                }
+            //}
+        }else {
+            // D3aaa + D3aab -> D2aa
             for (int h = 0; h < nirrep_; h++) {
                 for(int i = 0; i < gems_aa[h]; i++){
                     for(int j = 0; j < gems_aa[h]; j++){
@@ -2378,9 +2444,7 @@ void v2RDMSolver::BuildConstraints(){
                 }
                 offset += gems_aa[h]*gems_aa[h];
             }
-        //}
-        //if (  nbeta_ - nrstc_ - nfrzc_ > 2 ) {
-            // D3bbb -> D2bb
+            // D3bbb + D3bba -> D2bb
             for (int h = 0; h < nirrep_; h++) {
                 for(int i = 0; i < gems_aa[h]; i++){
                     for(int j = 0; j < gems_aa[h]; j++){
@@ -2389,31 +2453,7 @@ void v2RDMSolver::BuildConstraints(){
                 }
                 offset += gems_aa[h]*gems_aa[h];
             }
-        //}
-        //if (  nalpha_ - nrstc_ - nfrzc_ > 1 ) {
-            // D3aab -> D2aa
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_aa[h]; i++){
-                    for(int j = 0; j < gems_aa[h]; j++){
-                        b_p[offset + i*gems_aa[h]+j] = 0.0;
-                    }
-                }
-                offset += gems_aa[h]*gems_aa[h];
-            }
-        //}
-        //if (  nbeta_ - nrstc_ - nfrzc_ > 1 ) {
-            // D3bba -> D2bb
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_aa[h]; i++){
-                    for(int j = 0; j < gems_aa[h]; j++){
-                        b_p[offset + i*gems_aa[h]+j] = 0.0;
-                    }
-                }
-                offset += gems_aa[h]*gems_aa[h];
-            }
-        //}
-        //if (  nalpha_ - nrstc_ - nfrzc_ > 1 ) {
-            // D3aab -> D2ab
+            // D3abb + D3bba -> D2ab
             for (int h = 0; h < nirrep_; h++) {
                 for(int i = 0; i < gems_ab[h]; i++){
                     for(int j = 0; j < gems_ab[h]; j++){
@@ -2422,18 +2462,7 @@ void v2RDMSolver::BuildConstraints(){
                 }
                 offset += gems_ab[h]*gems_ab[h];
             }
-        //}
-        //if (  nbeta_ - nrstc_ - nfrzc_ > 1 ) {
-            // D3bba -> D2ab
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_ab[h]; i++){
-                    for(int j = 0; j < gems_ab[h]; j++){
-                        b_p[offset + i*gems_ab[h]+j] = 0.0;
-                    }
-                }
-                offset += gems_ab[h]*gems_ab[h];
-            }
-        //}
+        }
         // additional spin constraints for singlets:
         if ( constrain_spin_ && nalpha_ == nbeta_ ) {
             for (int h = 0; h < nirrep_; h++) {
@@ -3693,36 +3722,48 @@ void v2RDMSolver::determine_n_dual() {
         }
     }
     if ( constrain_d3_ ) {
-        //if ( nalpha_ - nrstc_ - nfrzc_ > 2 ) {
+        if ( constrain_sz_ ) {
+            //if ( nalpha_ - nrstc_ - nfrzc_ > 2 ) {
+                for (int h = 0; h < nirrep_; h++) {
+                    n_dual_ += gems_aa[h]*gems_aa[h]; // D3aaa -> D2aa
+                }
+            //}
+            //if ( nbeta_ - nrstc_ - nfrzc_ > 2 ) {
+                for (int h = 0; h < nirrep_; h++) {
+                    n_dual_ += gems_aa[h]*gems_aa[h]; // D3bbb -> D2bb
+                }
+            //}
+            //if ( nalpha_ - nrstc_ - nfrzc_ > 2 ) {
+                for (int h = 0; h < nirrep_; h++) {
+                    n_dual_ += gems_aa[h]*gems_aa[h]; // D3aab -> D2aa
+                }
+            //}
+            //if ( nbeta_ - nrstc_ - nfrzc_ > 2 ) {
             for (int h = 0; h < nirrep_; h++) {
-                n_dual_ += gems_aa[h]*gems_aa[h]; // D3aaa -> D2aa
+                n_dual_ += gems_aa[h]*gems_aa[h]; // D3bba -> D2bb
             }
-        //}
-        //if ( nbeta_ - nrstc_ - nfrzc_ > 2 ) {
+            //}
+            //if ( nalpha_ - nrstc_ - nfrzc_ > 1 ) {
+                for (int h = 0; h < nirrep_; h++) {
+                    n_dual_ += gems_ab[h]*gems_ab[h]; // D3aab -> D2ab
+                }
+            //}
+            //if ( nbeta_ - nrstc_ - nfrzc_ > 1 ) {
+                for (int h = 0; h < nirrep_; h++) {
+                    n_dual_ += gems_ab[h]*gems_ab[h]; // D3bba -> D2ab
+                }
+            //}
+        }else {
             for (int h = 0; h < nirrep_; h++) {
-                n_dual_ += gems_aa[h]*gems_aa[h]; // D3bbb -> D2bb
+                n_dual_ += gems_aa[h]*gems_aa[h]; // D3aaa + D3aab -> D2aa
             }
-        //}
-        //if ( nalpha_ - nrstc_ - nfrzc_ > 2 ) {
             for (int h = 0; h < nirrep_; h++) {
-                n_dual_ += gems_aa[h]*gems_aa[h]; // D3aab -> D2aa
+                n_dual_ += gems_aa[h]*gems_aa[h]; // D3bbb + D3bba -> D2bb
             }
-        //}
-        //if ( nbeta_ - nrstc_ - nfrzc_ > 2 ) {
-        for (int h = 0; h < nirrep_; h++) {
-            n_dual_ += gems_aa[h]*gems_aa[h]; // D3bba -> D2bb
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += gems_ab[h]*gems_ab[h]; // D3aab + D3bba -> D2ab
+            }
         }
-        //}
-        //if ( nalpha_ - nrstc_ - nfrzc_ > 1 ) {
-            for (int h = 0; h < nirrep_; h++) {
-                n_dual_ += gems_ab[h]*gems_ab[h]; // D3aab -> D2ab
-            }
-        //}
-        //if ( nbeta_ - nrstc_ - nfrzc_ > 1 ) {
-            for (int h = 0; h < nirrep_; h++) {
-                n_dual_ += gems_ab[h]*gems_ab[h]; // D3bba -> D2ab
-            }
-        //}
         // additional spin constraints for singlets:
         if ( constrain_spin_ && nalpha_ == nbeta_ ) {
             for (int h = 0; h < nirrep_; h++) {
