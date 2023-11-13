@@ -1,0 +1,64 @@
+# PYTHONPATH must include directory above plugin directory.
+#     Define either externally or here, then import plugin.
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule hf {
+#H 0.0 0.0 0.0
+#H 0.0 0.0 1.0
+         F            0.000000000000     0.000000000000 0.0
+         H            0.000000000000     0.0        1.0
+no_reorient
+nocom
+symmetry c1
+}
+
+set {
+#  basis def2-sv(p)
+  basis sto-3g
+  df_basis_scf def2-svp-ri
+  scf_type df
+  df_ints_io save
+  e_convergence 1e-12
+  d_convergence 1e-12
+} 
+
+w = 0.265754876050
+g = 0.05 / np.sqrt(2.0 * w )
+w = 1.0
+g = 0.0
+
+set hilbert {
+  maxiter 500
+  n_photon_states          2
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
+}
+
+activate(hf)
+
+# KS reference
+set reference rks
+en,wfn = energy('pbe',return_wfn=True)
+
+# HF reference (for debugging)
+#set reference rhf
+#en,wfn = energy('hf',return_wfn=True)
+
+my_file=wfn.get_scratch_filename(180) + '.npy'
+wfn.to_file(my_file)
+
+
+set qed_use_relaxed_orbitals false
+set use_coherent_state_basis true
+set rpa_exchange true
+set scf maxiter=0
+set tdscf_tda false
+
+set guess read
+set scf fail_on_maxiter=False
+ehxx = energy('scf')
+
+crpa, wfn_rpa = energy('polaritonic-rdfrpa', ref_wfn=wfn, return_wfn=True)
+
+

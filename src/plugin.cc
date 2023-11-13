@@ -47,6 +47,7 @@
 #include <polaritonic_scf/rtddft.h>
 #include <polaritonic_scf/utddft.h>
 #include <polaritonic_scf/rrpa.h>
+#include <polaritonic_scf/rdfrpa.h>
 
 #include <misc/backtransform_tpdm.h>
 
@@ -62,7 +63,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_TDDFT POLARITONIC_RPA");
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_TDDFT POLARITONIC_RPA POLARITONIC_RDFRPA");
 
 
         /*- Do DIIS? -*/
@@ -544,6 +545,16 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         std::shared_ptr<PolaritonicRRPA> rpa (new PolaritonicRRPA((std::shared_ptr<Wavefunction>)rks,options,ref_wfn));
         double dum = rpa->compute_energy();
+
+        return (std::shared_ptr<Wavefunction>)rks;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_RDFRPA") {
+
+        std::shared_ptr<PolaritonicRKS> rks (new PolaritonicRKS(ref_wfn,options));
+        double energy = rks->compute_energy();
+
+        std::shared_ptr<PolaritonicRDFRPA> dfrpa (new PolaritonicRDFRPA((std::shared_ptr<Wavefunction>)rks,options,ref_wfn));
+        double dum = dfrpa->compute_energy();
 
         return (std::shared_ptr<Wavefunction>)rks;
 
