@@ -76,8 +76,14 @@ def run_polaritonic_scf(name, **kwargs):
     # Fock matrices, and more
     #print('Attention! This SCF may be density-fitted.')
     ref_wfn = kwargs.get('ref_wfn', None)
+    #if ref_wfn is None:
+    #    ref_wfn = psi4.driver.scf_helper(name, **kwargs)
     if ref_wfn is None:
-        ref_wfn = psi4.driver.scf_helper(name, **kwargs)
+        if ( lowername == 'polaritonic-uks' ):
+            func = psi4.core.get_option('HILBERT','CAVITY_QED_DFT_FUNCTIONAL')
+            en, ref_wfn = psi4.driver.energy(func, **kwargs, return_wfn=True)
+        else :
+            ref_wfn = psi4.driver.scf_helper(name, **kwargs)
 
     scf_aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_SCF",
                                         psi4.core.get_option("SCF", "DF_BASIS_SCF"),
@@ -101,6 +107,225 @@ def run_polaritonic_scf(name, **kwargs):
 
     optstash.restore()
 
+    return rhf_wfn
+
+def run_polaritonic_scf_gradient(name, **kwargs):
+    r"""Function encoding sequence of PSI module and plugin calls so that
+    polaritonic scf can be called via :py:func:`~driver.gradient`. For post-scf plugins.
+
+    >>> energy('polaritonic-rhf')
+
+    """
+    lowername = name.lower()
+    kwargs = p4util.kwargs_lower(kwargs)
+
+    optstash = p4util.OptionsState(
+        ['SCF', 'DF_INTS_IO'])
+
+    psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
+
+    if ( lowername == 'polaritonic-rhf' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RHF')
+    elif ( lowername == 'polaritonic-uhf' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UHF')
+    elif ( lowername == 'polaritonic-rohf' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_ROHF')
+    elif ( lowername == 'polaritonic-uks' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UKS')
+    elif ( lowername == 'polaritonic-rks' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UKS')
+    elif ( lowername == 'polaritonic-rcis' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RCIS')
+    elif ( lowername == 'polaritonic-uccsd' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UCCSD')
+
+    # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
+    # Fock matrices, and more
+    #print('Attention! This SCF may be density-fitted.')
+    ref_wfn = kwargs.get('ref_wfn', None)
+    if ref_wfn is None:
+        if ( lowername == 'polaritonic-uks' or lowername == 'polaritonic-rks' ):
+
+            # get functional from options
+            func = psi4.core.get_option('HILBERT','CAVITY_QED_DFT_FUNCTIONAL')
+
+            # check if dertype is present in kwargs and handle accordingly
+            try:
+                dertype = kwargs.pop('dertype') # must remove dertype for energy call if present
+            except:
+                 dertype = "gradient" # set default dertype for analytic gradient if not present
+
+            # call energy and grab wfn
+            en, ref_wfn = psi4.driver.energy(func, **kwargs, return_wfn=True)
+            kwargs['dertype'] = dertype # restore dertype for gradient call
+        else :
+            ref_wfn = psi4.driver.scf_helper(name, **kwargs)
+
+    scf_aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_SCF",
+                                        psi4.core.get_option("SCF", "DF_BASIS_SCF"),
+                                        "JKFIT", psi4.core.get_global_option('BASIS'),
+                                        puream=ref_wfn.basisset().has_puream())
+    ref_wfn.set_basisset("DF_BASIS_SCF", scf_aux_basis)
+
+    aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_CC",
+                                        psi4.core.get_global_option("DF_BASIS_CC"),
+                                        "RIFIT", psi4.core.get_global_option("BASIS"))
+    ref_wfn.set_basisset("DF_BASIS_CC", aux_basis)
+
+    # Ensure IWL files have been written when not using DF/CD
+    scf_type = psi4.core.get_option('SCF', 'SCF_TYPE')
+    if ( scf_type == 'PK' or scf_type == 'DIRECT' ):
+        proc_util.check_iwl_file_from_scf_type(psi4.core.get_option('SCF', 'SCF_TYPE'), ref_wfn)
+
+    # Call the Psi4 plugin
+    # Please note that setting the reference wavefunction in this way is ONLY for plugins
+    rhf_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
+
+    # check if reference wave function is restricted
+    if ("rks" in lowername or "rhf" in lowername or "rohf" in lowername):
+        # copy alpha quantities to beta quantities in polaritonic wave function
+        for irrep in range (0,ref_wfn.Cb().nirrep()):
+            rhf_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Ca().nph[irrep][:,:]
+            rhf_wfn.Db().nph[irrep][:,:] = rhf_wfn.Da().nph[irrep][:,:]
+            rhf_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_a().nph[irrep][:]
+
+    # gradient of photon-free hamiltonian
+
+    # some quantities aren't set correctly in hilbert's wave functions, so we can't call
+    # scfgrad directly. to get the photon-free part of the gradient, just push 
+    # (i)   polaritonic-scf orbitals 
+    # (ii)  polaritonic-scf orbital energies
+    # (iii) polaritonic-scf densities
+    # onto reference wave function 
+
+    # set alpha orbitals, densities, and energies
+    for irrep in range (0,ref_wfn.Ca().nirrep()):
+        ref_wfn.Ca().nph[irrep][:,:] = rhf_wfn.Ca().nph[irrep][:,:]
+        ref_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Cb().nph[irrep][:,:]
+        ref_wfn.Da().nph[irrep][:,:] = rhf_wfn.Da().nph[irrep][:,:]
+        ref_wfn.Db().nph[irrep][:,:] = rhf_wfn.Db().nph[irrep][:,:]
+        ref_wfn.epsilon_a().nph[irrep][:] = rhf_wfn.epsilon_a().nph[irrep][:]
+        ref_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_b().nph[irrep][:]
+
+    #### call scfgrad for electron-only part of gradient ####
+    gradient = psi4.core.scfgrad(ref_wfn)
+
+    #### dipole self energy portion of gradient ####
+
+    # OPDM
+    Da = np.asarray(rhf_wfn.Da())
+    Db = np.asarray(rhf_wfn.Db())
+
+    # dipole integrals
+    mints = psi4.core.MintsHelper(ref_wfn.basisset())
+    dipole = mints.so_dipole()
+
+    mu_z = np.asarray(dipole[2])
+    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "YZX" ):
+        mu_z = np.asarray(dipole[0])
+    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "ZXY" ):
+        mu_z = np.asarray(dipole[1])
+
+    # exchange contribution to dipole self energy 
+
+    #### D(p,q) = - mu(r,s) [ Da(p,r)Da(s,q) + Db(p,r) Da(s,q) ] ####
+
+    tmpa = -np.einsum('rs,pr,sq->pq',mu_z, Da, Da) 
+    tmpb = -np.einsum('rs,pr,sq->pq',mu_z, Db, Db)
+
+    # test exchange energy from dressed RDM
+    g = psi4.core.get_option("HILBERT","CAVITY_COUPLING_STRENGTH")
+    w = psi4.core.get_option("HILBERT","CAVITY_FREQUENCY")
+    lambda_z = g[2] * np.sqrt(2.0 * w[2])
+
+    en  = 0.5 * lambda_z * lambda_z * np.einsum('pq,pq',tmpa,mu_z)
+    en += 0.5 * lambda_z * lambda_z * np.einsum('pq,pq',tmpb,mu_z)
+
+    D = tmpa + tmpb
+
+    # symmetrize D because dipole_grad only uses 1/2 the elements
+    D = 0.5 * ( D + np.einsum('rs->sr',D) )
+
+    D = psi4.core.Matrix.from_array(D)
+
+    # number of atoms
+    mol = psi4.core.get_active_molecule()
+    natom = mol.natom()
+
+    tmp = mints.dipole_grad(D)
+    dse_gradient = np.asarray(tmp)
+
+    # unpack z-component 3N x 3 matrix (the third column)
+    dse_gradient_z = np.zeros((natom,3))
+    zdir = 2
+    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "YZX" ):
+        zdir = 0
+    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "ZXY" ):
+        zdir = 1
+    for atom in range (0,natom):
+        for cart in range (0,3):
+            dse_gradient_z[atom,cart] = dse_gradient[atom*3+cart,zdir] 
+
+    # scale by lambda^2
+    dse_gradient_z_scaled = psi4.core.Matrix.from_array(dse_gradient_z)
+    dse_gradient_z_scaled.scale(lambda_z*lambda_z)
+
+    #### quadrupole integral gradient ####
+      
+    C = [0.0, 0.0, 0.0] # origin
+    maxorder = 2 # quadrupole
+    D = Da + Db # OPDM
+    
+    # symmetrize D because dipole_grad only uses 1/2 the elements
+    D = 0.5 * ( D + np.einsum('rs->sr',D) )
+    D = psi4.core.Matrix.from_array(D)
+    
+    # 3N x 9 matrix of quadrupole derivatives
+    quad_grad = np.asarray(mints.multipole_grad(D, maxorder, C))
+    
+    # get requested component of quadrupole gradient
+    zzdir = 8 # zz component
+    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "YZX" ):
+        zzdir = 3 # xx component
+    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "ZXY" ):
+        zzdir = 6 # yy component
+
+    # unpack zz-component 3N x 3 matrix (the 9th column)
+    dse_gradient_zz = np.zeros((natom,3))
+    for atom in range (0,natom):
+        for cart in range (0,3):
+            dse_gradient_zz[atom,cart] = quad_grad[atom*3+cart,zzdir]
+    
+    dse_gradient_z_scaled_2 = psi4.core.Matrix.from_array(dse_gradient_zz)
+    dse_gradient_z_scaled_2.scale(-0.5 * lambda_z*lambda_z)
+    dse_gradient_z_scaled.add(dse_gradient_z_scaled_2)
+
+    #### print out gradients ####
+
+    # electronic gradient
+    eg_norm = np.linalg.norm(gradient)
+    eg_norm_xyz = np.linalg.norm(gradient, axis=0)
+    psi4.core.print_out(f"\nElectronic Gradient: norm = {eg_norm:-20.12f}\n\n") # total norm
+    gradient.print_out()
+    psi4.core.Vector.from_array(eg_norm_xyz, name="Electronic Gradient |xyz|").print_out() # norm along each axis
+
+    # total polaritonic gradient
+    gradient.add(dse_gradient_z_scaled)
+    pg_norm = np.linalg.norm(gradient)
+    pg_norm_xyz = np.linalg.norm(gradient, axis=0)
+    psi4.core.print_out(f"\nPolaritonic Gradient: norm = {pg_norm:-20.12f}\n\n") # total norm
+    gradient.print_out() 
+    psi4.core.Vector.from_array(pg_norm_xyz, name="Polaritonic Gradient |xyz|").print_out() # norm along each axis
+
+    # difference between polaritonic and electronic gradients
+    psi4.core.print_out(f"Gradient Difference: norm = {pg_norm-eg_norm:-20.12f}\n") # total norm
+    pg_norm_xyz -= eg_norm_xyz
+    psi4.core.Vector.from_array(pg_norm_xyz, name="Gradient Difference |xyz|").print_out() # norm along each axis
+
+    optstash.restore()
+
+    # set the gradient and return the wavefunction
+    rhf_wfn.set_gradient(gradient)
     return rhf_wfn
 
 def run_doci(name, **kwargs):
@@ -499,4 +724,10 @@ psi4.driver.procedures['energy']['polaritonic-rks'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-rcis'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-tddft'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-uccsd'] = run_polaritonic_scf
+
+psi4.driver.procedures['gradient']['polaritonic-rhf'] = run_polaritonic_scf_gradient
+psi4.driver.procedures['gradient']['polaritonic-rohf'] = run_polaritonic_scf_gradient
+psi4.driver.procedures['gradient']['polaritonic-uhf'] = run_polaritonic_scf_gradient
+psi4.driver.procedures['gradient']['polaritonic-rks'] = run_polaritonic_scf_gradient
+psi4.driver.procedures['gradient']['polaritonic-uks'] = run_polaritonic_scf_gradient
 
