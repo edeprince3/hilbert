@@ -728,7 +728,6 @@ psi4.driver.procedures['energy']['polaritonic-uccsd'] = run_polaritonic_scf
 psi4.driver.procedures['gradient']['polaritonic-rhf'] = run_polaritonic_scf_gradient
 psi4.driver.procedures['gradient']['polaritonic-rohf'] = run_polaritonic_scf_gradient
 psi4.driver.procedures['gradient']['polaritonic-uhf'] = run_polaritonic_scf_gradient
-
 psi4.driver.procedures['gradient']['polaritonic-rks'] = run_polaritonic_scf_gradient
 psi4.driver.procedures['gradient']['polaritonic-uks'] = run_polaritonic_scf_gradient
 
