@@ -40,227 +40,6 @@ from psi4.driver.procrouting import proc
 import qcelemental as qcel
 from psi4.driver import qcdb
 
-###############################################################
-#
-# begin andy's functions for quadrupole derivative integrals
-#
-###############################################################
-
-from scipy.special import hyp1f1
-from scipy.special import factorial2 as doublefactorial
-
-np.set_printoptions(suppress=True, linewidth=200)
-
-# These integrals are implemented using the McMurchie-Davidson scheme, described in Helgaker's
-# purple book (Molecular Electronic Structure Theory).  The various equation numbers scattered
-# throughout the code correspond to equation numbers in that book
-#
-# Andy Simmonett (01/22)
-
-class GaussianShell(object):
-    def __init__(self, origin, L, exps, coefs, atom_number):
-        assert len(exps) == len(coefs)
-        assert len(origin) == 3
-        self.origin = np.array(origin)
-        self.L = L
-        self.exps = np.array(exps)
-        self.coefs = np.array(coefs)
-        self.atom_number = atom_number
-
-def generate_quanta(am):
-    """ Generates angular momentum compontents in CCA's lexicographic order http://dx.doi.org/10.1002/jcc.20815 """
-    index = 0
-    for l in range(am, -1, -1):
-        for n in range(am - l + 1):
-            m = am - l - n
-            yield l, m, n, index
-            index += 1
-
-def cumulative_cart_dim(L):
-    """ The number of Cartesian components in all shell with angular momentum L and lower """
-    return ((L + 1) * (L + 2) * (L + 3)) // 6
-
-def cart_dim(L):
-    """ The number of Cartesian components in a shell with angular momentum L """
-    return ((L + 1) * (L + 2)) // 2
-
-def generate_E_matrix(maxam1, maxam2, P, A, B, a, b):
-    """ Makes the Hermite->Cartesian conversion factors by recursion """
-    Ex = np.zeros((maxam1 + 1, maxam2 + 1, maxam1 + maxam2 + 2))
-    Ey = np.zeros((maxam1 + 1, maxam2 + 1, maxam1 + maxam2 + 2))
-    Ez = np.zeros((maxam1 + 1, maxam2 + 1, maxam1 + maxam2 + 2))
-
-    # 9.2.11
-    p = a + b
-    # 9.2.14
-    AB = A - B
-    PA = P - A
-    PB = P - B
-    # 9.2.12
-    mu = a * b / p
-
-    # 9.2.15
-    Ex[0, 0, 0] = np.exp(-mu * AB[0] * AB[0])
-    Ey[0, 0, 0] = np.exp(-mu * AB[1] * AB[1])
-    Ez[0, 0, 0] = np.exp(-mu * AB[2] * AB[2])
-    oo2p = 1 / (2 * p)
-    for i in range(maxam1 + 1):
-        for j in range(maxam2 + 1):
-            uppert = i + j + 1
-            # handle t = 0 case
-            if i > 0:
-                Ex[i, j, 0] += PA[0] * Ex[i - 1, j, 0] + Ex[i - 1, j, 1]
-                Ey[i, j, 0] += PA[1] * Ey[i - 1, j, 0] + Ey[i - 1, j, 1]
-                Ez[i, j, 0] += PA[2] * Ez[i - 1, j, 0] + Ez[i - 1, j, 1]
-            elif j > 0:
-                Ex[i, j, 0] += PB[0] * Ex[i, j - 1, 0] + Ex[i, j - 1, 1]
-                Ey[i, j, 0] += PB[1] * Ey[i, j - 1, 0] + Ey[i, j - 1, 1]
-                Ez[i, j, 0] += PB[2] * Ez[i, j - 1, 0] + Ez[i, j - 1, 1]
-            for t in range(1, uppert):
-                if i > 0:
-                    # 9.5.6
-                    Ex[i, j, t] += PA[0] * Ex[i - 1, j, t] + (t + 1) * Ex[i - 1, j, t + 1] + oo2p * Ex[i - 1, j, t - 1]
-                    Ey[i, j, t] += PA[1] * Ey[i - 1, j, t] + (t + 1) * Ey[i - 1, j, t + 1] + oo2p * Ey[i - 1, j, t - 1]
-                    Ez[i, j, t] += PA[2] * Ez[i - 1, j, t] + (t + 1) * Ez[i - 1, j, t + 1] + oo2p * Ez[i - 1, j, t - 1]
-                elif j > 0:
-                    # 9.5.7
-                    Ex[i, j, t] += PB[0] * Ex[i, j - 1, t] + (t + 1) * Ex[i, j - 1, t + 1] + oo2p * Ex[i, j - 1, t - 1]
-                    Ey[i, j, t] += PB[1] * Ey[i, j - 1, t] + (t + 1) * Ey[i, j - 1, t + 1] + oo2p * Ey[i, j - 1, t - 1]
-                    Ez[i, j, t] += PB[2] * Ez[i, j - 1, t] + (t + 1) * Ez[i, j - 1, t + 1] + oo2p * Ez[i, j - 1, t - 1]
-    return Ex, Ey, Ez
-
-def generate_M_matrix(maxam, maxpow, PC, exp_a, exp_b):
-    """ Generate multipole intermediates using equations
-        (9.5.31) to (9.5.36) from Helgaker's book """
-    p = exp_a + exp_b
-    prefac = 1 / (2 * p)
-    Mx = np.zeros((maxpow + 1, maxam + 3))
-    My = np.zeros((maxpow + 1, maxam + 3))
-    Mz = np.zeros((maxpow + 1, maxam + 3))
-
-    Mx[0, 0] = My[0, 0] = Mz[0, 0] = np.sqrt(np.pi / p)
-    for e in range(1, maxpow + 1):
-        # t > e is zero!
-        uppert = min(e + 1, maxam + 2)
-        Mx[e, 0] += PC[0] * Mx[e - 1, 0] + prefac * Mx[e - 1, 1]
-        My[e, 0] += PC[1] * My[e - 1, 0] + prefac * My[e - 1, 1]
-        Mz[e, 0] += PC[2] * Mz[e - 1, 0] + prefac * Mz[e - 1, 1]
-        for t in range(1, uppert):
-            Mx[e, t] += PC[0] * Mx[e - 1, t] + prefac * Mx[e - 1, t + 1] + t * Mx[e - 1, t - 1]
-            My[e, t] += PC[1] * My[e - 1, t] + prefac * My[e - 1, t + 1] + t * My[e - 1, t - 1]
-            Mz[e, t] += PC[2] * Mz[e - 1, t] + prefac * Mz[e - 1, t + 1] + t * Mz[e - 1, t - 1]
-    return Mx, My, Mz
-
-def generate_M_pair_deriv(shell1, shell2, C, max_order):
-    """ Computes derivatives of multipole moment integrals for a pair of shells """
-    am1 = shell1.L
-    am2 = shell2.L
-    A = shell1.origin
-    B = shell2.origin
-    m_mats = [ np.zeros((cart_dim(am1), cart_dim(am2))) for i in range(6*cumulative_cart_dim(max_order)) ]
-    for ca, a in zip(shell1.coefs, shell1.exps):
-        for cb, b in zip(shell2.coefs, shell2.exps):
-            p = a + b
-            P = (a * A + b * B) / p
-            PC = P - C
-            prefac = ca * cb
-            Ex, Ey, Ez = generate_E_matrix(am1 + 1, am2 + 1, P, A, B, a, b)
-            Mx, My, Mz = generate_M_matrix(am1 + am2, max_order, PC, a, b)
-            Sx = np.zeros((am1 + 2, am2 + 2, max_order + 1))
-            Sy = np.zeros((am1 + 2, am2 + 2, max_order + 1))
-            Sz = np.zeros((am1 + 2, am2 + 2, max_order + 1))
-            for i in range(am1 + 2):
-                for j in range(am2 + 2):
-                    for e in range(max_order + 1):
-                        for t in range(min(i + j, e) + 1):
-                            # 9.5.39
-                            Sx[i, j, e] += Ex[i, j, t] * Mx[e, t]
-                            Sy[i, j, e] += Ey[i, j, t] * My[e, t]
-                            Sz[i, j, e] += Ez[i, j, t] * Mz[e, t]
-
-            m_count = 0
-            for order in range(max_order + 1):
-                for ex, ey, ez, _ in generate_quanta(order):
-                    for l1, m1, n1, index1 in generate_quanta(am1):
-                        for l2, m2, n2, index2 in generate_quanta(am2):
-                            sx = Sx[l1, l2, ex]
-                            sy = Sy[m1, m2, ey]
-                            sz = Sz[n1, n2, ez]
-                            # Use eqn. 9.3.30 to define derivatives
-                            # Ax
-                            DAx = -2 * a * Sx[l1+1, l2, ex]
-                            if l1 > 0:
-                                DAx += l1 * Sx[l1-1, l2, ex]
-                            m_mats[m_count+0][index1, index2] += prefac * DAx * sy * sz
-                            # Ay
-                            DAy = -2 * a * Sy[m1+1, m2, ey]
-                            if m1 > 0:
-                                DAy += m1 * Sy[m1-1, m2, ey]
-                            m_mats[m_count+1][index1, index2] += prefac * sx * DAy * sz
-                            # Az
-                            DAz = -2 * a * Sz[n1+1, n2, ez]
-                            if n1 > 0:
-                                DAz += n1 * Sz[n1-1, n2, ez]
-                            m_mats[m_count+2][index1, index2] += prefac * sx * sy * DAz
-                            # Bx
-                            DBx = -2 * b * Sx[l1, l2+1, ex]
-                            if l2 > 0:
-                                DBx += l2 * Sx[l1, l2-1, ex]
-                            m_mats[m_count+3][index1, index2] += prefac * DBx * sy * sz
-                            # By
-                            DBy = -2 * b * Sy[m1, m2+1, ey]
-                            if m2 > 0:
-                                DBy += m2 * Sy[m1, m2-1, ey]
-                            m_mats[m_count+4][index1, index2] += prefac * sx * DBy * sz
-                            # Bz
-                            DBz = -2 * b * Sz[n1, n2+1, ez]
-                            if n2 > 0:
-                                DBz += n2 * Sz[n1, n2-1, ez]
-                            m_mats[m_count+5][index1, index2] += prefac * sx * sy * DBz
-                    m_count += 6
-    return m_mats
-
-def build_derivative_integral_matrices(shells, maxorder, D, natoms, callback, antisymmetric=False):
-    nbf = np.sum([cart_dim(s.L) for s in shells])
-    mats = [np.zeros((natoms, 3)) for i in range(cumulative_cart_dim(maxorder))]
-    Poff = 0
-    for P, shellP in enumerate(shells):
-        Pdim = cart_dim(shellP.L)
-        Patom = shellP.atom_number
-        Qoff = 0
-        for Q, shellQ in enumerate(shells[:P+1]):
-            Qdim = cart_dim(shellQ.L)
-            Qatom = shellQ.atom_number
-            # make sure we don't double count diagonal blocks when (anti)symmetrizing
-            scale = 1.0 if P == Q else 2.0
-            Dblock = D[Poff : Poff + Pdim, Qoff : Qoff + Qdim]
-            contributions = callback(shellP, shellQ)
-            assert len(contributions) % 6 == 0
-            nchunks = len(contributions) // 6
-            for chunk in range(nchunks):
-                # Ax
-                mats[chunk][Patom, 0] += scale * np.tensordot(contributions[6*chunk+0], Dblock)
-                # Ay
-                mats[chunk][Patom, 1] += scale * np.tensordot(contributions[6*chunk+1], Dblock)
-                # Az
-                mats[chunk][Patom, 2] += scale * np.tensordot(contributions[6*chunk+2], Dblock)
-                # Bx
-                mats[chunk][Qatom, 0] += scale * np.tensordot(contributions[6*chunk+3], Dblock)
-                # By
-                mats[chunk][Qatom, 1] += scale * np.tensordot(contributions[6*chunk+4], Dblock)
-                # Bz
-                mats[chunk][Qatom, 2] += scale * np.tensordot(contributions[6*chunk+5], Dblock)
-            Qoff += Qdim
-        Poff += Pdim
-    return mats
-
-###############################################################
-#
-# end andy's functions for quadrupole derivative integrals
-#
-###############################################################
-
-
 def run_polaritonic_scf(name, **kwargs):
     r"""Function encoding sequence of PSI module and plugin calls so that
     polaritonic scf can be called via :py:func:`~driver.energy`. For post-scf plugins.
@@ -349,6 +128,8 @@ def run_polaritonic_scf_gradient(name, **kwargs):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_ROHF')
     elif ( lowername == 'polaritonic-uks' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UKS')
+    elif ( lowername == 'polaritonic-rks' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UKS')
     elif ( lowername == 'polaritonic-rcis' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RCIS')
     elif ( lowername == 'polaritonic-uccsd' ):
@@ -359,9 +140,20 @@ def run_polaritonic_scf_gradient(name, **kwargs):
     #print('Attention! This SCF may be density-fitted.')
     ref_wfn = kwargs.get('ref_wfn', None)
     if ref_wfn is None:
-        if ( lowername == 'polaritonic-uks' ):
+        if ( lowername == 'polaritonic-uks' or lowername == 'polaritonic-rks' ):
+
+            # get functional from options
             func = psi4.core.get_option('HILBERT','CAVITY_QED_DFT_FUNCTIONAL')
+
+            # check if dertype is present in kwargs and handle accordingly
+            try:
+                dertype = kwargs.pop('dertype') # must remove dertype for energy call if present
+            except:
+                 dertype = "gradient" # set default dertype for analytic gradient if not present
+
+            # call energy and grab wfn
             en, ref_wfn = psi4.driver.energy(func, **kwargs, return_wfn=True)
+            kwargs['dertype'] = dertype # restore dertype for gradient call
         else :
             ref_wfn = psi4.driver.scf_helper(name, **kwargs)
 
@@ -385,6 +177,14 @@ def run_polaritonic_scf_gradient(name, **kwargs):
     # Please note that setting the reference wavefunction in this way is ONLY for plugins
     rhf_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
 
+    # check if reference wave function is restricted
+    if ("rks" in lowername or "rhf" in lowername or "rohf" in lowername):
+        # copy alpha quantities to beta quantities in polaritonic wave function
+        for irrep in range (0,ref_wfn.Cb().nirrep()):
+            rhf_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Ca().nph[irrep][:,:]
+            rhf_wfn.Db().nph[irrep][:,:] = rhf_wfn.Da().nph[irrep][:,:]
+            rhf_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_a().nph[irrep][:]
+
     # gradient of photon-free hamiltonian
 
     # some quantities aren't set correctly in hilbert's wave functions, so we can't call
@@ -394,6 +194,7 @@ def run_polaritonic_scf_gradient(name, **kwargs):
     # (iii) polaritonic-scf densities
     # onto reference wave function 
 
+    # set alpha orbitals, densities, and energies
     for irrep in range (0,ref_wfn.Ca().nirrep()):
         ref_wfn.Ca().nph[irrep][:,:] = rhf_wfn.Ca().nph[irrep][:,:]
         ref_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Cb().nph[irrep][:,:]
@@ -402,9 +203,10 @@ def run_polaritonic_scf_gradient(name, **kwargs):
         ref_wfn.epsilon_a().nph[irrep][:] = rhf_wfn.epsilon_a().nph[irrep][:]
         ref_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_b().nph[irrep][:]
 
+    #### call scfgrad for electron-only part of gradient ####
     gradient = psi4.core.scfgrad(ref_wfn)
 
-    # dipole self energy portion of gradient
+    #### dipole self energy portion of gradient ####
 
     # OPDM
     Da = np.asarray(rhf_wfn.Da())
@@ -422,7 +224,7 @@ def run_polaritonic_scf_gradient(name, **kwargs):
 
     # exchange contribution to dipole self energy 
 
-    # D(p,q) = - mu(r,s) [ Da(p,r)Da(s,q) + Db(p,r) Da(s,q) ]
+    #### D(p,q) = - mu(r,s) [ Da(p,r)Da(s,q) + Db(p,r) Da(s,q) ] ####
 
     tmpa = -np.einsum('rs,pr,sq->pq',mu_z, Da, Da) 
     tmpb = -np.einsum('rs,pr,sq->pq',mu_z, Db, Db)
@@ -434,7 +236,6 @@ def run_polaritonic_scf_gradient(name, **kwargs):
 
     en  = 0.5 * lambda_z * lambda_z * np.einsum('pq,pq',tmpa,mu_z)
     en += 0.5 * lambda_z * lambda_z * np.einsum('pq,pq',tmpb,mu_z)
-    #print('exchange dse:',en)
 
     D = tmpa + tmpb
 
@@ -465,61 +266,62 @@ def run_polaritonic_scf_gradient(name, **kwargs):
     dse_gradient_z_scaled = psi4.core.Matrix.from_array(dse_gradient_z)
     dse_gradient_z_scaled.scale(lambda_z*lambda_z)
 
-    # quadrupole integral gradient
-
-    # Make a lightweight list of shells
-    basis = ref_wfn.basisset()
-    shells = []
-    for shellnum in range(basis.nshell()):
-        shell = basis.shell(shellnum)
-        xyz = mol.xyz(shell.ncenter)
-        coefs = [shell.coef(primitive) for primitive in range(shell.nprimitive)]
-        exps = [shell.exp(primitive) for primitive in range(shell.nprimitive)]
-        shells.append(GaussianShell([xyz[0], xyz[1], xyz[2]], shell.am, exps, coefs, shell.ncenter))
-    natoms = basis.molecule().natom()
+    #### quadrupole integral gradient ####
+      
+    C = [0.0, 0.0, 0.0] # origin
+    maxorder = 2 # quadrupole
+    D = Da + Db # OPDM
     
-    C = [0.0, 0.0, 0.0]
-    maxorder = 2
-
-    # now get densities in cartesian ao basis
-    Da = np.asarray(rhf_wfn.Da_subset("CartAO"))
-    Db = np.asarray(rhf_wfn.Db_subset("CartAO"))
-    D = Da + Db
-    derivmats = build_derivative_integral_matrices(shells, maxorder, D, natoms, lambda P, Q: generate_M_pair_deriv(P, Q, C, maxorder))
-    #count = 0
-    #for order in range(maxorder + 1):
-    #    for ex, ey, ez, _ in generate_quanta(order):
-    #        print(count,"X"*ex + "Y"*ey + "Z"*ez + " multipole derivatives")
-    #        print(derivmats[count])
-    #        print()
-    #        count += 1    
-
-    zz = 9
+    # symmetrize D because dipole_grad only uses 1/2 the elements
+    D = 0.5 * ( D + np.einsum('rs->sr',D) )
+    D = psi4.core.Matrix.from_array(D)
+    
+    # 3N x 9 matrix of quadrupole derivatives
+    quad_grad = np.asarray(mints.multipole_grad(D, maxorder, C))
+    
+    # get requested component of quadrupole gradient
+    zzdir = 8 # zz component
     if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "YZX" ):
-        zz = 4
+        zzdir = 3 # xx component
     if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "ZXY" ):
-        zz = 7
+        zzdir = 6 # yy component
 
-    dse_gradient_z_scaled_2 = psi4.core.Matrix.from_array(derivmats[zz])
+    # unpack zz-component 3N x 3 matrix (the 9th column)
+    dse_gradient_zz = np.zeros((natom,3))
+    for atom in range (0,natom):
+        for cart in range (0,3):
+            dse_gradient_zz[atom,cart] = quad_grad[atom*3+cart,zzdir]
+    
+    dse_gradient_z_scaled_2 = psi4.core.Matrix.from_array(dse_gradient_zz)
     dse_gradient_z_scaled_2.scale(-0.5 * lambda_z*lambda_z)
-
-    # print
-    #dse_gradient_z_scaled.print_out()
-    #dse_gradient_z_scaled_2.print_out()
-
     dse_gradient_z_scaled.add(dse_gradient_z_scaled_2)
-    #dse_gradient_z_scaled.print_out()
 
+    #### print out gradients ####
+
+    # electronic gradient
+    eg_norm = np.linalg.norm(gradient)
+    eg_norm_xyz = np.linalg.norm(gradient, axis=0)
+    psi4.core.print_out(f"\nElectronic Gradient: norm = {eg_norm:-20.12f}\n\n") # total norm
     gradient.print_out()
+    psi4.core.Vector.from_array(eg_norm_xyz, name="Electronic Gradient |xyz|").print_out() # norm along each axis
 
-    # total gradient
+    # total polaritonic gradient
     gradient.add(dse_gradient_z_scaled)
-    gradient.print_out()
+    pg_norm = np.linalg.norm(gradient)
+    pg_norm_xyz = np.linalg.norm(gradient, axis=0)
+    psi4.core.print_out(f"\nPolaritonic Gradient: norm = {pg_norm:-20.12f}\n\n") # total norm
+    gradient.print_out() 
+    psi4.core.Vector.from_array(pg_norm_xyz, name="Polaritonic Gradient |xyz|").print_out() # norm along each axis
+
+    # difference between polaritonic and electronic gradients
+    psi4.core.print_out(f"Gradient Difference: norm = {pg_norm-eg_norm:-20.12f}\n") # total norm
+    pg_norm_xyz -= eg_norm_xyz
+    psi4.core.Vector.from_array(pg_norm_xyz, name="Gradient Difference |xyz|").print_out() # norm along each axis
 
     optstash.restore()
 
+    # set the gradient and return the wavefunction
     rhf_wfn.set_gradient(gradient)
-
     return rhf_wfn
 
 def run_doci(name, **kwargs):
@@ -917,8 +719,12 @@ psi4.driver.procedures['energy']['polaritonic-uks'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-rcis'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-uccsd'] = run_polaritonic_scf
 
-psi4.driver.procedures['gradient']['polaritonic-uks'] = run_polaritonic_scf_gradient
+psi4.driver.procedures['gradient']['polaritonic-rhf'] = run_polaritonic_scf_gradient
+psi4.driver.procedures['gradient']['polaritonic-rohf'] = run_polaritonic_scf_gradient
 psi4.driver.procedures['gradient']['polaritonic-uhf'] = run_polaritonic_scf_gradient
+
+psi4.driver.procedures['gradient']['polaritonic-rks'] = run_polaritonic_scf_gradient
+psi4.driver.procedures['gradient']['polaritonic-uks'] = run_polaritonic_scf_gradient
 
 #psi4.driver.procedures['energy']['polaritonic-uhf'] = run_polaritonic_scf
 
