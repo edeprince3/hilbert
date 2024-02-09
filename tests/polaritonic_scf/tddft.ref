@@ -1,0 +1,1772 @@
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 undefined 
+
+                         Git: Rev {HEAD} 77475b5 
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, M. H. Lechner, and A. Jiang
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Monday, 10 October 2022 12:09PM
+
+    Process ID: 251582
+    Host:       edx
+    PSIDATADIR: /home/deprince/edeprince3/psi4/install/master/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input File <==
+
+--------------------------------------------------------------------------
+# PYTHONPATH must include directory above plugin directory.
+#     Define either externally or here, then import plugin.
+sys.path.insert(0, '../../..')
+import hilbert
+import numpy as np
+
+molecule h2 {
+
+#h 0.0 0.0 0.0
+#h 0.0 0.0 r
+#o 
+#h 1 1.0
+#h 1 1.0 2 104.5
+         O            0.000000000000     0.000000000000    -0.068516219320 
+         H            0.000000000000    -0.790689573744     0.543701060715 
+         H            0.000000000000     0.790689573744     0.543701060715 
+no_reorient
+nocom
+symmetry c1
+}
+
+set { basis cc-pvdz
+  scf_type cd 
+  e_convergence 1e-8
+  d_convergence 1e-8
+  cholesky_tolerance 1e-12
+} 
+
+
+# freq: w from CIS
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+
+w = 0.265754876050
+g = 0.05 / np.sqrt(2.0 * w)
+set hilbert {
+  maxiter 500
+  n_photon_states          2
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
+}
+
+activate(h2)
+
+h2.r = 0.76
+set num_roots 10
+
+#set wcombine false
+set reference rks
+set TDSCF_TDA false
+set TDSCF_STATES 10
+energy('td-b3lyp')
+set df_ints_io save
+set reference rks
+en,wfn = energy('b3lyp',return_wfn=True)
+energy('polaritonic-tddft',ref_wfn=wfn) 
+
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+*** tstart() called on edx
+*** at Mon Oct 10 12:09:44 2022
+
+   => Loading Basis Set <=
+
+    Name: CC-PVDZ
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line   198 file /home/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz.gbs 
+    atoms 2-3 entry H          line    22 file /home/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              RKS Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.12555  B =     13.37733  C =      8.72955 [cm^-1]
+  Rotational constants: A = 753245.07149  B = 401042.16706  C = 261705.25473 [MHz]
+  Nuclear repulsion =    8.801465564563406
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is CD.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-08
+  Density threshold  = 1.00e-08
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: CC-PVDZ
+    Blend: CC-PVDZ
+    Number of shells: 12
+    Number of basis functions: 24
+    Number of Cartesian functions: 25
+    Spherical Harmonics?: true
+    Max angular momentum: 2
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 5.1.5
+    S. Lehtola, C. Steigemann, M. J. Oliveira, and M. A. Marques, SoftwareX 7, 1 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: B3LYP <= 
+
+    B3LYP Hyb-GGA Exchange-Correlation Functional
+
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch, J. Phys. Chem. 98, 11623 (1994) (10.1021/j100096a001)
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =           TRUE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    0.0800   Slater exchange
+    0.7200         Becke 88
+
+   => Exact (HF) Exchange <=
+
+    0.2000               HF 
+
+   => Correlation Functionals <=
+
+    0.1900   Vosko, Wilk & Nusair (VWN5_RPA)
+    0.8100   Lee, Yang & Parr
+
+   => LibXC Density Thresholds  <==
+
+    XC_HYB_GGA_XC_B3LYP:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            302
+    Total Points           =          66208
+    Total Blocks           =            555
+    Max Points             =            256
+    Max Functions          =             24
+    Weights Tolerance      =       1.00E-15
+
+  ==> Integral Setup <==
+
+  ==> CDJK: Cholesky-decomposed J/K Matrices <==
+
+    J tasked:                     Yes
+    K tasked:                     Yes
+    wK tasked:                     No
+    OpenMP threads:                 1
+    Integrals threads:              1
+    Memory [MiB]:                 327
+    Algorithm:                   Core
+    Integral Cache:              NONE
+    Schwarz Cutoff:             1E-12
+    Cholesky tolerance:      1.00E-12
+    No. Cholesky vectors:         279
+
+  Cached 100.0% of DFT collocation blocks in 0.046 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 3.7382439197E-02.
+  Reciprocal condition number of the overlap matrix is 1.0328862040E-02.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A         24      24 
+   -------------------------
+    Total      24      24
+   -------------------------
+
+  ==> Iterations <==
+
+                        Total Energy        Delta E     RMS |[F,P]|
+
+   @RKS iter SAD:   -76.07329144459575   -7.60733e+01   0.00000e+00 
+   @RKS iter   1:   -76.27197823513042   -1.98687e-01   2.60923e-02 DIIS/ADIIS
+   @RKS iter   2:   -76.10130541739893    1.70673e-01   3.79041e-02 DIIS/ADIIS
+   @RKS iter   3:   -76.41791371971297   -3.16608e-01   2.10304e-03 DIIS/ADIIS
+   @RKS iter   4:   -76.41875886028056   -8.45141e-04   1.26517e-04 DIIS/ADIIS
+   @RKS iter   5:   -76.41876198201572   -3.12174e-06   1.77371e-05 DIIS
+   @RKS iter   6:   -76.41876204418980   -6.21741e-08   8.38002e-07 DIIS
+   @RKS iter   7:   -76.41876204438753   -1.97730e-10   8.66028e-08 DIIS
+   @RKS iter   8:   -76.41876204438944   -1.90425e-12   1.78792e-09 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Ntotal   =   10.0000000529 ; deviation = 5.289e-08 
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Doubly Occupied:                                                      
+
+       1A    -19.128614     2A     -0.977901     3A     -0.498738  
+       4A     -0.361782     5A     -0.285089  
+
+    Virtual:                                                              
+
+       6A      0.042008     7A      0.116901     8A      0.536490  
+       9A      0.580512    10A      0.901964    11A      0.916856  
+      12A      0.994831    13A      1.211904    14A      1.224719  
+      15A      1.422457    16A      1.600416    17A      1.629596  
+      18A      2.028077    19A      2.062398    20A      2.885727  
+      21A      2.927256    22A      3.078274    23A      3.428489  
+      24A      3.692712  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+
+  @RKS Final Energy:   -76.41876204438944
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.8014655645634061
+    One-Electron Energy =                -122.5182632364084725
+    Two-Electron Energy =                  44.8449000978727383
+    DFT Exchange-Correlation Energy =      -7.5468644704171011
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -76.4187620443894389
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Y            :          0.0000000            0.0000000            0.0000000
+ Dipole Z            :         -0.2615819            1.0190771            0.7574952
+ Magnitude           :                                                    0.7574952
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on edx at Mon Oct 10 12:09:45 2022
+Module time:
+	user time   =       1.94 seconds =       0.03 minutes
+	system time =       2.79 seconds =       0.05 minutes
+	total time  =          1 seconds =       0.02 minutes
+Total time:
+	user time   =       1.94 seconds =       0.03 minutes
+	system time =       2.79 seconds =       0.05 minutes
+	total time  =          1 seconds =       0.02 minutes
+
+******************************************************************************************
+**********                               WARNING                                **********
+**********       The names of excited state variables changed between 1.5       **********
+**********     and 1.6. For a quick solution, remove the symmetry specifier     **********
+**********   from the variable name. For full details, see 'Notes on Psivars'   **********
+**********                        in the documentation.                         **********
+******************************************************************************************
+
+
+
+         ---------------------------------------------------------
+                         TDSCF excitation energies                
+                 by Andrew M. James and Daniel G. A. Smith        
+         ---------------------------------------------------------
+
+  ==> Options <==
+
+     Residual threshold  : 1.0000e-06
+     Initial guess       : denominators
+     Reference           : RHF
+     Solver type         : RPA (Hamiltonian)
+
+
+  ==> Requested Excitations <==
+
+      10 singlet states with A symmetry
+
+
+  ==> Seeking the lowest 10 singlet states with A symmetry
+
+                        Generalized Hamiltonian Solver                       
+                              By Andrew M. James                             
+
+  ==> Options <==
+
+    Max number of iterations        = 60   
+    Eigenvector tolerance           = 1.0000e-06
+    Max number of expansion vectors = 3000 
+
+  => Iterations <=
+                              Max[D[value]]     Max[|R|]   # vectors
+  HamiltonianSolver iter   1:   8.77706e-01  1.48892e-01     40      
+  HamiltonianSolver iter   2:   2.47862e-03  1.29700e-02     60      
+  HamiltonianSolver iter   3:   7.50972e-06  1.53452e-03     80      
+  HamiltonianSolver iter   4:   3.47840e-08  8.69000e-06     93      
+  HamiltonianSolver iter   5:   9.10272e-13  1.91002e-12     95      Converged
+
+******************************************************************************************
+**********                               WARNING                                **********
+**********  Length-gauge rotatory strengths are **NOT** gauge-origin invariant  **********
+******************************************************************************************
+
+                                    Excitation Energy         Total Energy        Oscillator Strength             Rotatory Strength       
+     #   Sym: GS->ES (Trans)        au              eV              au          au (length)    au (velocity)    au (length)    au (velocity) 
+    ---- -------------------- --------------- --------------- --------------- --------------- --------------- --------------- ---------------
+     1        A->A (1 A)       0.26575         7.23156        -76.15301        0.0193          0.1092         -0.0000         -0.0000        
+     2        A->A (1 A)       0.33258         9.05008        -76.08618        0.0000          0.0000         -0.0000         -0.0000        
+     3        A->A (1 A)       0.35426         9.63997        -76.06450        0.0825          0.1856          0.0000          0.0000        
+     4        A->A (1 A)       0.42402         11.53810       -75.99474        0.0603          0.0701          0.0000          0.0000        
+     5        A->A (1 A)       0.49284         13.41076       -75.92593        0.3196          0.3368          0.0000          0.0000        
+     6        A->A (1 A)       0.60080         16.34873       -75.81796        0.1382          0.1535          0.0000          0.0000        
+     7        A->A (1 A)       0.74063         20.15364       -75.67813        0.0000          0.0000         -0.0000         -0.0000        
+     8        A->A (1 A)       0.79493         21.63107       -75.62383        0.0646          0.0652         -0.0000         -0.0000        
+     9        A->A (1 A)       0.85511         23.26862       -75.56366        0.1044          0.0968         -0.0000          0.0000        
+     10       A->A (1 A)       0.87689         23.86137       -75.54187        0.0029          0.0101          0.0000          0.0000        
+
+
+
+Contributing excitations and de-excitations
+Only contributions with coefficients > 1.00e-01 will be printed:
+
+Excited State    1 (1 A):   0.26575 au   171.45 nm f = 0.0193
+  Sums of squares: Xssq =  1.000961e+00; Yssq =  9.605077e-04; Xssq - Yssq =  1.000000e+00
+     5 ->  6    1.000004 (100.001%)
+
+Excited State    2 (1 A):   0.33258 au   137.00 nm f = 0.0000
+  Sums of squares: Xssq =  1.000195e+00; Yssq =  1.950726e-04; Xssq - Yssq =  1.000000e+00
+     5 ->  7   -0.998850 (99.770%)
+
+Excited State    3 (1 A):   0.35426 au   128.61 nm f = 0.0825
+  Sums of squares: Xssq =  1.002205e+00; Yssq =  2.205089e-03; Xssq - Yssq =  1.000000e+00
+     3 ->  7   -0.110427 ( 1.219%)
+     4 ->  6   -0.993377 (98.680%)
+
+Excited State    4 (1 A):   0.42402 au   107.46 nm f = 0.0603
+  Sums of squares: Xssq =  1.001282e+00; Yssq =  1.281639e-03; Xssq - Yssq =  1.000000e+00
+     3 ->  6   -0.138162 ( 1.909%)
+     4 ->  7   -0.989492 (97.909%)
+
+Excited State    5 (1 A):   0.49284 au   92.45 nm f = 0.3196
+  Sums of squares: Xssq =  1.001406e+00; Yssq =  1.405791e-03; Xssq - Yssq =  1.000000e+00
+     3 ->  6   -0.989264 (97.864%)
+     4 ->  7    0.137218 ( 1.883%)
+
+Excited State    6 (1 A):   0.60080 au   75.84 nm f = 0.1382
+  Sums of squares: Xssq =  1.005813e+00; Yssq =  5.813093e-03; Xssq - Yssq =  1.000000e+00
+     3 ->  7   -0.980382 (96.115%)
+     4 ->  6    0.104388 ( 1.090%)
+     5 -> 11    0.106237 ( 1.129%)
+
+Excited State    7 (1 A):   0.74063 au   61.52 nm f = 0.0000
+  Sums of squares: Xssq =  1.000070e+00; Yssq =  6.994301e-05; Xssq - Yssq =  1.000000e+00
+     5 ->  8   -0.998970 (99.794%)
+
+Excited State    8 (1 A):   0.79493 au   57.32 nm f = 0.0646
+  Sums of squares: Xssq =  1.000631e+00; Yssq =  6.309320e-04; Xssq - Yssq =  1.000000e+00
+     5 ->  9   -0.997582 (99.517%)
+
+Excited State    9 (1 A):   0.85511 au   53.28 nm f = 0.1044
+  Sums of squares: Xssq =  1.001711e+00; Yssq =  1.711491e-03; Xssq - Yssq =  1.000000e+00
+     3 ->  9   -0.222709 ( 4.960%)
+     4 ->  8    0.969263 (93.947%)
+
+Excited State   10 (1 A):   0.87689 au   51.96 nm f = 0.0029
+  Sums of squares: Xssq =  1.000566e+00; Yssq =  5.664039e-04; Xssq - Yssq =  1.000000e+00
+     2 ->  6   -0.162380 ( 2.637%)
+     3 ->  8   -0.156517 ( 2.450%)
+     4 ->  9    0.968338 (93.768%)
+
+
+******************************************************************************************
+**********                               WARNING                                **********
+**********       The names of excited state variables changed between 1.5       **********
+**********     and 1.6. For a quick solution, remove the symmetry specifier     **********
+**********   from the variable name. For full details, see 'Notes on Psivars'   **********
+**********                        in the documentation.                         **********
+******************************************************************************************
+
+
+Scratch directory: /tmp/
+
+*** tstart() called on edx
+*** at Mon Oct 10 12:09:48 2022
+
+   => Loading Basis Set <=
+
+    Name: CC-PVDZ
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line   198 file /home/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz.gbs 
+    atoms 2-3 entry H          line    22 file /home/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              RKS Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.12555  B =     13.37733  C =      8.72955 [cm^-1]
+  Rotational constants: A = 753245.07149  B = 401042.16706  C = 261705.25473 [MHz]
+  Nuclear repulsion =    8.801465564563406
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is CD.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-08
+  Density threshold  = 1.00e-08
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: CC-PVDZ
+    Blend: CC-PVDZ
+    Number of shells: 12
+    Number of basis functions: 24
+    Number of Cartesian functions: 25
+    Spherical Harmonics?: true
+    Max angular momentum: 2
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 5.1.5
+    S. Lehtola, C. Steigemann, M. J. Oliveira, and M. A. Marques, SoftwareX 7, 1 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: B3LYP <= 
+
+    B3LYP Hyb-GGA Exchange-Correlation Functional
+
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch, J. Phys. Chem. 98, 11623 (1994) (10.1021/j100096a001)
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =           TRUE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    0.0800   Slater exchange
+    0.7200         Becke 88
+
+   => Exact (HF) Exchange <=
+
+    0.2000               HF 
+
+   => Correlation Functionals <=
+
+    0.1900   Vosko, Wilk & Nusair (VWN5_RPA)
+    0.8100   Lee, Yang & Parr
+
+   => LibXC Density Thresholds  <==
+
+    XC_HYB_GGA_XC_B3LYP:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            302
+    Total Points           =          66208
+    Total Blocks           =            555
+    Max Points             =            256
+    Max Functions          =             24
+    Weights Tolerance      =       1.00E-15
+
+  ==> Integral Setup <==
+
+  ==> CDJK: Cholesky-decomposed J/K Matrices <==
+
+    J tasked:                     Yes
+    K tasked:                     Yes
+    wK tasked:                     No
+    OpenMP threads:                 1
+    Integrals threads:              1
+    Memory [MiB]:                 327
+    Algorithm:                   Core
+    Integral Cache:              SAVE
+    Schwarz Cutoff:             1E-12
+    Cholesky tolerance:      1.00E-12
+    No. Cholesky vectors:         279
+
+  Cached 100.0% of DFT collocation blocks in 0.046 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 3.7382439197E-02.
+  Reciprocal condition number of the overlap matrix is 1.0328862040E-02.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A         24      24 
+   -------------------------
+    Total      24      24
+   -------------------------
+
+  ==> Iterations <==
+
+                        Total Energy        Delta E     RMS |[F,P]|
+
+   @RKS iter SAD:   -76.07329144459575   -7.60733e+01   0.00000e+00 
+   @RKS iter   1:   -76.27197823513042   -1.98687e-01   2.60923e-02 DIIS/ADIIS
+   @RKS iter   2:   -76.10130541739893    1.70673e-01   3.79041e-02 DIIS/ADIIS
+   @RKS iter   3:   -76.41791371971297   -3.16608e-01   2.10304e-03 DIIS/ADIIS
+   @RKS iter   4:   -76.41875886028056   -8.45141e-04   1.26517e-04 DIIS/ADIIS
+   @RKS iter   5:   -76.41876198201572   -3.12174e-06   1.77371e-05 DIIS
+   @RKS iter   6:   -76.41876204418980   -6.21741e-08   8.38002e-07 DIIS
+   @RKS iter   7:   -76.41876204438753   -1.97730e-10   8.66028e-08 DIIS
+   @RKS iter   8:   -76.41876204438944   -1.90425e-12   1.78792e-09 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Ntotal   =   10.0000000529 ; deviation = 5.289e-08 
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Doubly Occupied:                                                      
+
+       1A    -19.128614     2A     -0.977901     3A     -0.498738  
+       4A     -0.361782     5A     -0.285089  
+
+    Virtual:                                                              
+
+       6A      0.042008     7A      0.116901     8A      0.536490  
+       9A      0.580512    10A      0.901964    11A      0.916856  
+      12A      0.994831    13A      1.211904    14A      1.224719  
+      15A      1.422457    16A      1.600416    17A      1.629596  
+      18A      2.028077    19A      2.062398    20A      2.885727  
+      21A      2.927256    22A      3.078274    23A      3.428489  
+      24A      3.692712  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+
+  @RKS Final Energy:   -76.41876204438944
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.8014655645634061
+    One-Electron Energy =                -122.5182632364084725
+    Two-Electron Energy =                  44.8449000978727383
+    DFT Exchange-Correlation Energy =      -7.5468644704171011
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -76.4187620443894389
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Y            :          0.0000000            0.0000000            0.0000000
+ Dipole Z            :         -0.2615819            1.0190771            0.7574952
+ Magnitude           :                                                    0.7574952
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on edx at Mon Oct 10 12:09:49 2022
+Module time:
+	user time   =       1.79 seconds =       0.03 minutes
+	system time =       2.23 seconds =       0.04 minutes
+	total time  =          1 seconds =       0.02 minutes
+Total time:
+	user time   =       7.21 seconds =       0.12 minutes
+	system time =       7.54 seconds =       0.13 minutes
+	total time  =          5 seconds =       0.08 minutes
+
+Scratch directory: /tmp/
+   => Loading Basis Set <=
+
+    Name: (CC-PVDZ AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   221 file /home/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 2-3 entry H          line    51 file /home/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (CC-PVDZ AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   235 file /home/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-ri.gbs 
+    atoms 2-3 entry H          line    19 file /home/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = CC-PVDZ
+    Blend                  = CC-PVDZ
+    Total number of shells = 12
+    Number of primitives   = 32
+    Number of AO           = 25
+    Number of SO           = 24
+    Maximum AM             = 2
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     17s 4p 1d // 3s 2p 1d 
+       2     H     4s 1p // 2s 1p 
+       3     H     4s 1p // 2s 1p 
+
+  ==> AO Basis Functions <==
+
+    [ CC-PVDZ ]
+    spherical
+    ****
+    O   1
+    S   8 1.00
+                     11720.00000000           0.00071000
+                      1759.00000000           0.00547000
+                       400.80000000           0.02783700
+                       113.70000000           0.10480000
+                        37.03000000           0.28306200
+                        13.27000000           0.44871900
+                         5.02500000           0.27095200
+                         1.01300000           0.01545800
+    S   8 1.00
+                     11720.00000000          -0.00016000
+                      1759.00000000          -0.00126300
+                       400.80000000          -0.00626700
+                       113.70000000          -0.02571600
+                        37.03000000          -0.07092400
+                        13.27000000          -0.16541100
+                         5.02500000          -0.11695500
+                         1.01300000           0.55736800
+    S   1 1.00
+                         0.30230000           1.00000000
+    P   3 1.00
+                        17.70000000           0.04301800
+                         3.85400000           0.22891300
+                         1.04600000           0.50872800
+    P   1 1.00
+                         0.27530000           1.00000000
+    D   1 1.00
+                         1.18500000           1.00000000
+    ****
+    H   2
+    S   3 1.00
+                        13.01000000           0.01968500
+                         1.96200000           0.13797700
+                         0.44460000           0.47814800
+    S   1 1.00
+                         0.12200000           1.00000000
+    P   1 1.00
+                         0.72700000           1.00000000
+    ****
+    H   3
+    S   3 1.00
+                        13.01000000           0.01968500
+                         1.96200000           0.13797700
+                         0.44460000           0.47814800
+    S   1 1.00
+                         0.12200000           1.00000000
+    P   1 1.00
+                         0.72700000           1.00000000
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic RKS                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = CC-PVDZ
+    Blend                  = CC-PVDZ
+    Total number of shells = 12
+    Number of primitives   = 32
+    Number of AO           = 25
+    Number of SO           = 24
+    Maximum AM             = 2
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     17s 4p 1d // 3s 2p 1d 
+       2     H     4s 1p // 2s 1p 
+       3     H     4s 1p // 2s 1p 
+
+  ==> AO Basis Functions <==
+
+    [ CC-PVDZ ]
+    spherical
+    ****
+    O   1
+    S   8 1.00
+                     11720.00000000           0.00071000
+                      1759.00000000           0.00547000
+                       400.80000000           0.02783700
+                       113.70000000           0.10480000
+                        37.03000000           0.28306200
+                        13.27000000           0.44871900
+                         5.02500000           0.27095200
+                         1.01300000           0.01545800
+    S   8 1.00
+                     11720.00000000          -0.00016000
+                      1759.00000000          -0.00126300
+                       400.80000000          -0.00626700
+                       113.70000000          -0.02571600
+                        37.03000000          -0.07092400
+                        13.27000000          -0.16541100
+                         5.02500000          -0.11695500
+                         1.01300000           0.55736800
+    S   1 1.00
+                         0.30230000           1.00000000
+    P   3 1.00
+                        17.70000000           0.04301800
+                         3.85400000           0.22891300
+                         1.04600000           0.50872800
+    P   1 1.00
+                         0.27530000           1.00000000
+    D   1 1.00
+                         1.18500000           1.00000000
+    ****
+    H   2
+    S   3 1.00
+                        13.01000000           0.01968500
+                         1.96200000           0.13797700
+                         0.44460000           0.47814800
+    S   1 1.00
+                         0.12200000           1.00000000
+    P   1 1.00
+                         0.72700000           1.00000000
+    ****
+    H   3
+    S   3 1.00
+                        13.01000000           0.01968500
+                         1.96200000           0.13797700
+                         0.44460000           0.47814800
+    S   1 1.00
+                         0.12200000           1.00000000
+    P   1 1.00
+                         0.72700000           1.00000000
+    ****
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 5.1.5
+    S. Lehtola, C. Steigemann, M. J. Oliveira, and M. A. Marques, SoftwareX 7, 1 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: B3LYP <= 
+
+    B3LYP Hyb-GGA Exchange-Correlation Functional
+
+    P. J. Stephens, F. J. Devlin, C. F. Chabalowski, and M. J. Frisch, J. Phys. Chem. 98, 11623 (1994) (10.1021/j100096a001)
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =           TRUE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    0.0800   Slater exchange
+    0.7200         Becke 88
+
+   => Exact (HF) Exchange <=
+
+    0.2000               HF 
+
+   => Correlation Functionals <=
+
+    0.1900   Vosko, Wilk & Nusair (VWN5_RPA)
+    0.8100   Lee, Yang & Parr
+
+   => LibXC Density Thresholds  <==
+
+    XC_HYB_GGA_XC_B3LYP:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            302
+    Total Points           =          66208
+    Total Blocks           =            555
+    Max Points             =            256
+    Max Functions          =             24
+    Weights Tolerance      =       1.00E-15
+
+
+    No. basis functions:               24
+    cholesky_tolerance:             1.000000e-12
+    No. alpha electrons:                5
+    No. beta electrons:                 5
+    e_convergence:              1.000e-08
+    d_convergence:              1.000e-08
+    maxiter:                          500
+
+
+
+    Guess energy:      -73.709704527773
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -76.413635359917      -2.703930832144       0.000117537249
+        1     -76.413639964853      -0.000004604937       0.000113208559
+        2     -76.413637120265       0.000002844588       0.000162995375
+        3     -76.413642587747      -0.000005467482       0.000001423789
+        4     -76.413642588424      -0.000000000677       0.000000115414
+        5     -76.413642588427      -0.000000000004       0.000000024098
+        6     -76.413642588428      -0.000000000000       0.000000001002
+
+    SCF iterations converged!
+
+    * Polaritonic RKS total energy:     -76.413642588428
+
+
+    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
+
+    one-electron part;        0.008116831943
+    two-electron part:       -0.003004553295
+    total:                    0.005112278648
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       5.252594278364
+    one electron (xy):       0.000000000000
+    one electron (xz):      -0.000000000000
+    one electron (yy):       7.586976482921
+    one electron (yz):      -0.000000000000
+    one electron (zz):       6.493465554757
+
+    two electron (xx):      -1.735260356299
+    two electron (xy):       0.000000000000
+    two electron (xz):       0.000000000000
+    two electron (yy):      -2.970593592748
+    two electron (yz):       0.000000000000
+    two electron (zz):      -2.403642636358
+
+    total (xx):              3.517333922065
+    total (xy):              0.000000000000
+    total (xz):              0.000000000000
+    total (yy):              4.616382890173
+    total (yz):             -0.000000000000
+    total (zz):              4.089822918399
+
+
+ #  #
+ Irrep: 1
+      1:  -19.126885639894951
+      2:   -0.977573742773836
+      3:   -0.497393711357682
+      4:   -0.360542173565223
+      5:   -0.283705267507169
+      6:    0.046534610281036
+      7:    0.120913956000801
+      8:    0.538935600896157
+      9:    0.584020246830450
+     10:    0.905419966271301
+     11:    0.918555750922915
+     12:    0.997390580187292
+     13:    1.214178751347604
+     14:    1.226651631411123
+     15:    1.424120568811498
+     16:    1.602515529154602
+     17:    1.632447511401016
+     18:    2.030596018844601
+     19:    2.064785891832281
+     20:    2.887261936045269
+     21:    2.928648946160715
+     22:    3.080308154954254
+     23:    3.430299778414885
+     24:    3.694870292756263
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = CC-PVDZ
+    Blend                  = CC-PVDZ
+    Total number of shells = 12
+    Number of primitives   = 32
+    Number of AO           = 25
+    Number of SO           = 24
+    Maximum AM             = 2
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     17s 4p 1d // 3s 2p 1d 
+       2     H     4s 1p // 2s 1p 
+       3     H     4s 1p // 2s 1p 
+
+  ==> AO Basis Functions <==
+
+    [ CC-PVDZ ]
+    spherical
+    ****
+    O   1
+    S   8 1.00
+                     11720.00000000           0.00071000
+                      1759.00000000           0.00547000
+                       400.80000000           0.02783700
+                       113.70000000           0.10480000
+                        37.03000000           0.28306200
+                        13.27000000           0.44871900
+                         5.02500000           0.27095200
+                         1.01300000           0.01545800
+    S   8 1.00
+                     11720.00000000          -0.00016000
+                      1759.00000000          -0.00126300
+                       400.80000000          -0.00626700
+                       113.70000000          -0.02571600
+                        37.03000000          -0.07092400
+                        13.27000000          -0.16541100
+                         5.02500000          -0.11695500
+                         1.01300000           0.55736800
+    S   1 1.00
+                         0.30230000           1.00000000
+    P   3 1.00
+                        17.70000000           0.04301800
+                         3.85400000           0.22891300
+                         1.04600000           0.50872800
+    P   1 1.00
+                         0.27530000           1.00000000
+    D   1 1.00
+                         1.18500000           1.00000000
+    ****
+    H   2
+    S   3 1.00
+                        13.01000000           0.01968500
+                         1.96200000           0.13797700
+                         0.44460000           0.47814800
+    S   1 1.00
+                         0.12200000           1.00000000
+    P   1 1.00
+                         0.72700000           1.00000000
+    ****
+    H   3
+    S   3 1.00
+                        13.01000000           0.01968500
+                         1.96200000           0.13797700
+                         0.44460000           0.47814800
+    S   1 1.00
+                         0.12200000           1.00000000
+    P   1 1.00
+                         0.72700000           1.00000000
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic Restricted TDDFT                     *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+
+
+    No. basis functions:               24
+    No. electrons:                     10
+
+
+    ==> excitation energies <==
+
+                 Re(eig)             Im(eig)
+
+          3.795265926504       0.000000000000
+          2.752641067230       0.000000000000
+          3.692458130142       0.000000000000
+          2.980093527995       0.000000000000
+          1.626089002452       0.000000000000
+          2.324484507961       0.000000000000
+          2.011063614228       0.000000000000
+          1.134534486569       0.000000000000
+          1.347387194777       0.000000000000
+          1.249507348641       0.000000000000
+          1.007120647686       0.000000000000
+          0.977348124732       0.000000000000
+          1.159755819390       0.000000000000
+          0.874668871802       0.000000000000
+          0.947367833835       0.000000000000
+          0.932659593399       0.000000000000
+          0.916155508473       0.000000000000
+          0.744099233663       0.000000000000
+          0.849476028268       0.000000000000
+          0.846843897955       0.000000000000
+          0.791985716544       0.000000000000
+          0.655201324767       0.000000000000
+          0.674258998252       0.000000000000
+          0.760788389407       0.000000000000
+          0.756460164224       0.000000000000
+          0.459447442551       0.000000000000
+          0.487190000633       0.000000000000
+          0.597690668240       0.000000000000
+          0.514445098167       0.000000000000
+          0.429387603530       0.000000000000
+          0.428865771541       0.000000000000
+          0.434807623240       0.000000000000
+          0.708065935449       0.000000000000
+          0.686105388769       0.000000000000
+          0.671089496749       0.000000000000
+          0.452022781355       0.000000000000
+          0.558534249741       0.000000000000
+          0.553882072841       0.000000000000
+          0.469000254471       0.000000000000
+          0.665168621442       0.000000000000
+          0.496348261870       0.000000000000
+          0.603289998878       0.000000000000
+          0.601955712391       0.000000000000
+          0.580215840009       0.000000000000
+          0.522030983310       0.000000000000
+          0.525017991798       0.000000000000
+          0.537604469526       0.000000000000
+          0.543261327451       0.000000000000
+          0.549706550648       0.000000000000
+          0.547087663695       0.000000000000
+
+info:     0
+inverse eig, dimension 50
+inverse eig0       7.169821700760
+inverse eig1       7.369448492285
+inverse eig2       9.131048990368
+inverse eig3       9.885553305135
+inverse eig4      11.706414866094
+inverse eig5      13.530840003015
+inverse eig6      16.734250068084
+inverse eig7      20.195664694961
+inverse eig8      21.777687045695
+inverse eig9      23.463025186046
+residual norm, dimension 50
+residual norm0       0.106712287408 
+residual norm1       0.265002238668 
+residual norm2       0.077412993202 
+residual norm3       0.207308254279 
+residual norm4       0.217422591687 
+residual norm5       0.124150398366 
+residual norm6       0.250252264516 
+residual norm7       0.031450662233 
+residual norm8       0.126830469665 
+residual norm9       0.150124291958 
+check_convergence 0
+eig_error, dimension 50
+eig_error0             3.7952659265035602
+ eig_error1             3.6924581301418278
+ eig_error2             2.9800935279948439
+ eig_error3             2.7526410672295434
+ eig_error4             2.3244845079610532
+ eig_error5             2.0110636142276990
+ eig_error6             1.6260890024524515
+ eig_error7             1.3473871947769689
+ eig_error8             1.2495073486410246
+ eig_error9             1.1597558193895556
+ 
+ Use residual norm to control the numer of correction vectors added to new subspace
+info1 0
+info2 0
+
+    ==> excitation energies <==
+
+                 Re(eig)             Im(eig)
+
+          3.802203939729       0.000000000000
+          2.778361193352       0.000000000000
+          3.715697416938       0.000000000000
+         -1.274319453177       0.000000000000
+          2.982849867604       0.000000000000
+         -1.506896788943       0.000000000000
+          2.340697797123       0.000000000000
+          1.656317577510       0.000000000000
+          2.019497299911       0.000000000000
+         -0.522300104308       0.000000000000
+         -0.978494141880       0.000000000000
+         -1.003549656125       0.000000000000
+         -0.336199402598       0.000000000000
+         -0.563468519250       0.000000000000
+         -0.198200854244       0.000000000000
+          1.347743785783       0.000000000000
+          1.136025447134       0.000000000000
+         -0.033804926596       0.000000000000
+          1.254117126471       0.000000000000
+          1.167192924985       0.000000000000
+          1.010292315711       0.000000000000
+          0.981762001053       0.000000000000
+          0.157331715136       0.000000000000
+          0.876657126145       0.000000000000
+          0.950446401035       0.000000000000
+          0.941503291948       0.000000000000
+          0.916904623352       0.000000000000
+          0.754362317773       0.000000000000
+          0.850235673558       0.000000000000
+          0.846904635761       0.000000000000
+          0.792168495733       0.000000000000
+          0.757574807928       0.000000000000
+          0.760834912049       0.000000000000
+          0.656875336445       0.000000000000
+          0.677363097579       0.000000000000
+          0.465672473294       0.000000000000
+          0.487257927486       0.000000000000
+          0.708402154101       0.000000000000
+          0.687985849120       0.000000000000
+          0.675169526392       0.000000000000
+          0.585189728880       0.000000000000
+          0.606275287932       0.000000000000
+          0.429458073837       0.000000000000
+          0.431044767534       0.000000000000
+          0.436509728949       0.000000000000
+          0.554201271415       0.000000000000
+          0.452023317334       0.000000000000
+          0.665214644127       0.000000000000
+          0.522248612929       0.000000000000
+          0.469114026353       0.000000000000
+          0.496730143318       0.000000000000
+          0.606362591861       0.000000000000
+          0.602549248167       0.000000000000
+          0.581247150780       0.000000000000
+          0.522157509544       0.000000000000
+          0.525686558458       0.000000000000
+          0.550431318611       0.000000000000
+          0.540318793518       0.000000000000
+          0.543349662646       0.000000000000
+          0.547092039579       0.000000000000
+
+info:     0
+inverse eig, dimension 60
+inverse eig0       7.156738678762
+inverse eig1       7.323357353038
+inverse eig2       9.122611330706
+inverse eig3       9.794039761681
+inverse eig4      11.625328153616
+inverse eig5      13.474333439908
+inverse eig6      16.428842131172
+inverse eig7      20.190321251742
+inverse eig8      21.697638462661
+inverse eig9      23.313523769297
+residual norm, dimension 60
+residual norm0       0.010397291233 
+residual norm1       0.013103069234 
+residual norm2       0.003049253052 
+residual norm3       0.009463799728 
+residual norm4       0.007179504099 
+residual norm5       0.004199626506 
+residual norm6       0.010842496236 
+residual norm7       0.000844207561 
+residual norm8       0.004658763618 
+residual norm9       0.003470291621 
+check_convergence 0
+eig_error, dimension 60
+eig_error0             0.0069380132256676
+ eig_error1             0.0232392867966000
+ eig_error2             0.0027563396091734
+ eig_error3             0.0257201261224309
+ eig_error4             0.0162132891619096
+ eig_error5             0.0084336856836340
+ eig_error6             0.0302285750577238
+ eig_error7             0.0003565910061183
+ eig_error8             0.0046097778299941
+ eig_error9             0.0074371055957487
+ 
+ Use residual norm to control the numer of correction vectors added to new subspace
+info1 0
+info2 0
+
+    ==> excitation energies <==
+
+                 Re(eig)             Im(eig)
+
+          3.802261334894       0.000000000000
+          3.715760820775       0.000000000000
+         -2.203578918138       0.000000000000
+          2.778390016566       0.000000000000
+         -2.368170805013       0.000000000000
+         -2.203412573360       0.000000000000
+          2.982853634322       0.000000000000
+         -1.174949866375       0.000000000000
+         -1.438157522076       0.000000000000
+          2.340723699160       0.000000000000
+         -1.082645841460       0.000000000000
+          2.019503520704       0.000000000000
+          1.656356914041       0.000000000000
+         -0.491684043838       0.000000000000
+         -0.579711114690       0.000000000000
+         -0.546784533376       0.000000000000
+         -0.320939739889       0.000000000000
+         -0.384189809413       0.000000000000
+         -0.386443987821       0.000000000000
+         -0.355652188877       0.000000000000
+         -0.290942293130       0.000000000000
+         -0.050033154801       0.000000000000
+          1.347744009090       0.000000000000
+          1.136368272877       0.000000000000
+          0.134710076798       0.000000000000
+         -0.059793239396       0.000000000000
+          1.254124372163       0.000000000000
+          1.167198080597       0.000000000000
+          1.012800468487       0.000000000000
+          0.983557359200       0.000000000000
+          0.158444839147       0.000000000000
+          0.877213519843       0.000000000000
+          0.213225941645       0.000000000000
+          0.950775013329       0.000000000000
+          0.941620936315       0.000000000000
+          0.283901856398       0.000000000000
+          0.917012306185       0.000000000000
+          0.756299004049       0.000000000000
+          0.846914933084       0.000000000000
+          0.850293238630       0.000000000000
+          0.792183795326       0.000000000000
+          0.760866310151       0.000000000000
+          0.757665310376       0.000000000000
+          0.657300747872       0.000000000000
+          0.678022901280       0.000000000000
+          0.466155918562       0.000000000000
+          0.487335713522       0.000000000000
+          0.608239739685       0.000000000000
+          0.589496618032       0.000000000000
+          0.708445806024       0.000000000000
+          0.688136613555       0.000000000000
+          0.675416534381       0.000000000000
+          0.554405857306       0.000000000000
+          0.431435061918       0.000000000000
+          0.429485103142       0.000000000000
+          0.437023985359       0.000000000000
+          0.524164911163       0.000000000000
+          0.452024208653       0.000000000000
+          0.665218665992       0.000000000000
+          0.469140614718       0.000000000000
+          0.496756104883       0.000000000000
+          0.606541370908       0.000000000000
+          0.602559470285       0.000000000000
+          0.581312083679       0.000000000000
+          0.522232900434       0.000000000000
+          0.525705544631       0.000000000000
+          0.550674879675       0.000000000000
+          0.540392355220       0.000000000000
+          0.543371892280       0.000000000000
+          0.547094205850       0.000000000000
+
+info:     0
+inverse eig, dimension 70
+inverse eig0       7.156630647735
+inverse eig1       7.323232391024
+inverse eig2       9.122599810763
+inverse eig3       9.793938157622
+inverse eig4      11.625199509776
+inverse eig5      13.474291934145
+inverse eig6      16.428451965471
+inverse eig7      20.190317906425
+inverse eig8      21.697513104751
+inverse eig9      23.313420791507
+residual norm, dimension 70
+residual norm0       0.000490084428 
+residual norm1       0.000408465167 
+residual norm2       0.000051911811 
+residual norm3       0.000256389919 
+residual norm4       0.000128476506 
+residual norm5       0.000080369282 
+residual norm6       0.000415586809 
+residual norm7       0.000010812517 
+residual norm8       0.000122571373 
+residual norm9       0.000060428276 
+check_convergence 0
+eig_error, dimension 70
+eig_error0             0.0000573951647000
+ eig_error1             0.0000634038370042
+ eig_error2             0.0000037667179962
+ eig_error3             0.0000288232139320
+ eig_error4             0.0000259020372986
+ eig_error5             0.0000062207926708
+ eig_error6             0.0000393365308911
+ eig_error7             0.0000002233065992
+ eig_error8             0.0000072456922700
+ eig_error9             0.0000051556118394
+ 
+ Use residual norm to control the numer of correction vectors added to new subspace
+info1 0
+info2 0
+
+    ==> excitation energies <==
+
+                 Re(eig)             Im(eig)
+
+          3.802261451351       0.000000000000
+         -2.739758916063       0.000000000000
+         -2.882078818659       0.000000000000
+         -2.111167579903       0.000000000000
+          3.715760871220       0.000000000000
+          2.778390041461       0.000000000000
+         -2.426470969410       0.000000000000
+          2.982853635307       0.000000000000
+         -1.664649020783       0.000000000000
+         -1.629317752122       0.000000000000
+          2.340723705559       0.000000000000
+         -0.817104458937       0.000000000000
+          2.019503522000       0.000000000000
+          1.656356968856       0.000000000000
+         -0.739196872407       0.000000000000
+         -0.547797077051       0.000000000000
+         -0.669058471958       0.000000000000
+          1.347744009126       0.000000000000
+         -0.601913906927       0.000000000000
+          1.136504474546       0.000000000000
+         -0.474534721467       0.000000000000
+         -0.243945088372       0.000000000000
+         -0.486482298066       0.000000000000
+         -0.477096698835       0.000000000000
+         -0.454005276699       0.000000000000
+         -0.386833179830       0.000000000000
+          1.254124376624       0.000000000000
+         -0.308319940867       0.000000000000
+          1.167198081734       0.000000000000
+         -0.205547819569       0.000000000000
+         -0.075292297242       0.000000000000
+          0.073438345214       0.000000000000
+          1.012967080495       0.000000000000
+          0.983868241287       0.000000000000
+         -0.127966791728       0.000000000000
+         -0.140613416487       0.000000000000
+         -0.092405221375       0.000000000000
+         -0.065731690408       0.000000000000
+          0.877380413545       0.000000000000
+          0.163952965311       0.000000000000
+          0.260822230669       0.000000000000
+          0.950786347607       0.000000000000
+          0.941707101109       0.000000000000
+          0.239456666330       0.000000000000
+          0.917019769063       0.000000000000
+          0.269312532347       0.000000000000
+          0.756342303090       0.000000000000
+          0.846924131220       0.000000000000
+          0.850320995960       0.000000000000
+          0.354061773505       0.000000000000
+          0.792189009242       0.000000000000
+          0.760867838604       0.000000000000
+          0.757700256535       0.000000000000
+          0.657413133004       0.000000000000
+          0.678024434472       0.000000000000
+          0.466523652385       0.000000000000
+          0.487382844961       0.000000000000
+          0.608755103903       0.000000000000
+          0.590554713328       0.000000000000
+          0.708458766112       0.000000000000
+          0.688155405532       0.000000000000
+          0.675467854861       0.000000000000
+          0.665224456410       0.000000000000
+          0.554577172309       0.000000000000
+          0.524183450075       0.000000000000
+          0.429562584864       0.000000000000
+          0.431460517304       0.000000000000
+          0.437241198722       0.000000000000
+          0.452030537573       0.000000000000
+          0.469144098271       0.000000000000
+          0.496764058942       0.000000000000
+          0.606566435683       0.000000000000
+          0.602603485697       0.000000000000
+          0.581337045771       0.000000000000
+          0.522253865784       0.000000000000
+          0.525717233808       0.000000000000
+          0.540453391813       0.000000000000
+          0.543388099882       0.000000000000
+          0.550780468063       0.000000000000
+          0.547095022910       0.000000000000
+
+info:     0
+inverse eig, dimension 80
+inverse eig0       7.156630428539
+inverse eig1       7.323232291605
+inverse eig2       9.122599807752
+inverse eig3       9.793938069865
+inverse eig4      11.625199477999
+inverse eig5      13.474291925501
+inverse eig6      16.428451421794
+inverse eig7      20.190317905882
+inverse eig8      21.697513027584
+inverse eig9      23.313420768802
+residual norm, dimension 80
+residual norm0       0.000021843122 
+residual norm1       0.000007878140 
+residual norm2       0.000000585791 
+residual norm3       0.000006691757 
+residual norm4       0.000003452247 
+residual norm5       0.000001032971 
+residual norm6       0.000010214021 
+residual norm7       0.000000154372 
+residual norm8       0.000001770243 
+residual norm9       0.000001198652 
+check_convergence 6
+eig_error, dimension 80
+eig_error0             0.0000001164571919
+ eig_error1             0.0000000504444322
+ eig_error2             0.0000000009846177
+ eig_error3             0.0000000248952996
+ eig_error4             0.0000000063984453
+ eig_error5             0.0000000012955237
+ eig_error6             0.0000000548149137
+ eig_error7             0.0000000000361995
+ eig_error8             0.0000000044602388
+ eig_error9             0.0000000011367098
+ 
+ Use residual norm to control the numer of correction vectors added to new subspace
+info1 0
+info2 0
+
+    ==> excitation energies <==
+
+                 Re(eig)             Im(eig)
+
+          3.802261451475       0.000000000000
+         -2.792096938390       0.000000000000
+         -2.334537134819       0.000000000000
+         -2.891490465794       0.000000000000
+          3.715760871242       0.000000000000
+          2.778390041480       0.000000000000
+         -2.426470969410       0.000000000000
+          2.982853635307       0.000000000000
+         -1.273261740334       0.000000000000
+         -1.629317752122       0.000000000000
+         -1.664649020783       0.000000000000
+          2.340723705559       0.000000000000
+          2.019503522000       0.000000000000
+          1.656356968889       0.000000000000
+         -0.819203668059       0.000000000000
+         -0.636572136711       0.000000000000
+         -0.739196872407       0.000000000000
+         -0.561710875561       0.000000000000
+         -0.669058471958       0.000000000000
+          1.347744009126       0.000000000000
+          1.136571755486       0.000000000000
+         -0.545769841905       0.000000000000
+         -0.347683842995       0.000000000000
+         -0.268391145618       0.000000000000
+         -0.486482298066       0.000000000000
+         -0.477096698835       0.000000000000
+         -0.454005276699       0.000000000000
+          1.254124376624       0.000000000000
+         -0.382155457261       0.000000000000
+          1.167198081734       0.000000000000
+         -0.170553314508       0.000000000000
+         -0.308319940867       0.000000000000
+          1.012982198997       0.000000000000
+          0.983907440764       0.000000000000
+         -0.114413905002       0.000000000000
+          0.080934951639       0.000000000000
+         -0.137374360282       0.000000000000
+         -0.140613416487       0.000000000000
+         -0.092405221375       0.000000000000
+         -0.127966791728       0.000000000000
+         -0.033447805363       0.000000000000
+          0.169679737539       0.000000000000
+          0.877402396257       0.000000000000
+          0.163952965311       0.000000000000
+          0.950786347607       0.000000000000
+          0.941707101109       0.000000000000
+          0.917020391667       0.000000000000
+          0.338024254390       0.000000000000
+          0.239456666330       0.000000000000
+          0.272695195750       0.000000000000
+          0.846924131220       0.000000000000
+          0.850339914199       0.000000000000
+          0.756416108740       0.000000000000
+          0.354061773505       0.000000000000
+          0.792189009242       0.000000000000
+          0.657438490397       0.000000000000
+          0.678049542714       0.000000000000
+          0.760867838604       0.000000000000
+          0.757700256535       0.000000000000
+          0.466688591659       0.000000000000
+          0.487442636803       0.000000000000
+          0.708460596998       0.000000000000
+          0.609223117015       0.000000000000
+          0.591234223605       0.000000000000
+          0.688155405532       0.000000000000
+          0.675467854861       0.000000000000
+          0.665224456410       0.000000000000
+          0.554623661021       0.000000000000
+          0.524494799487       0.000000000000
+          0.429569301436       0.000000000000
+          0.431460517304       0.000000000000
+          0.437250844023       0.000000000000
+          0.452030537573       0.000000000000
+          0.469144098271       0.000000000000
+          0.496764058942       0.000000000000
+          0.606566435683       0.000000000000
+          0.602605129534       0.000000000000
+          0.581337075856       0.000000000000
+          0.522253865784       0.000000000000
+          0.525717233808       0.000000000000
+          0.550791562701       0.000000000000
+          0.540454689283       0.000000000000
+          0.543388099882       0.000000000000
+          0.547095022910       0.000000000000
+
+info:     0
+inverse eig, dimension 84
+inverse eig0       7.156630428306
+inverse eig1       7.323232291562
+inverse eig2       9.122599807752
+inverse eig3       9.793938069799
+inverse eig4      11.625199477999
+inverse eig5      13.474291925501
+inverse eig6      16.428451421462
+inverse eig7      20.190317905882
+inverse eig8      21.697513027576
+inverse eig9      23.313420768802
+residual norm, dimension 84
+residual norm0       0.000000485279 
+residual norm1       0.000000161720 
+residual norm2       0.000000585791 
+residual norm3       0.000000117749 
+residual norm4       0.000003452247 
+residual norm5       0.000001032971 
+residual norm6       0.000000169120 
+residual norm7       0.000000154372 
+residual norm8       0.000000967747 
+residual norm9       0.000001198652 
+check_convergence 10
+eig_error, dimension 84
+eig_error0             0.0000000001235967
+ eig_error1             0.0000000000220539
+ eig_error2             0.0000000000000000
+ eig_error3             0.0000000000185780
+ eig_error4             0.0000000000000111
+ eig_error5            -0.0000000000000018
+ eig_error6             0.0000000000334615
+ eig_error7             0.0000000000000007
+ eig_error8             0.0000000000004572
+ eig_error9             0.0000000000000024
+ energy and eigenvectors converged
+
+    cQED-TDDFT energies:
+
+    state  type          energy (Eh)       ex energy (Eh)        photon weight       mu_x       mu_y       mu_z          f
+        0    ex       0.263001377670     -76.150641210757       0.987045432989   0.000000  -0.000000   0.106133   0.003950
+        1    ex       0.269123884623     -76.144518703804       0.000000000000   0.232298   0.000000   0.000000   0.019363
+        2    ex       0.335249436366     -76.078393152061       0.000000000000  -0.000000  -0.000000  -0.000000   0.000000
+        3    ex       0.359920668110     -76.053721920317       0.011846509443   0.000000  -0.000000   0.402210   0.077634
+        4    ex       0.427218299035     -75.986424289392       0.000000000000   0.000000   0.322732   0.000000   0.059330
+        5    ex       0.495171208719     -75.918471379709       0.000000000000  -0.000000  -0.698735   0.000000   0.322343
+        6    ex       0.603734592713     -75.809907995714       0.000843311219  -0.000000   0.000000   0.413280   0.137491
+        7    ex       0.741980667863     -75.671661920564      -0.000000000000  -0.000000   0.000000   0.000000   0.000000
+        8    ex       0.797369079686     -75.616273508742       0.000000000000  -0.248438   0.000000  -0.000000   0.065620
+        9    ex       0.856752607505     -75.556889980923       0.000000000000   0.000000   0.303503   0.000000   0.105225
+5 19 192
+state =    0 eig =       7.156630428306 eV
+  57      -0.113314704042	electron    excitation   4   ->   6
+ 190       1.000000000000	photon excitation
+state =    1 eig =       7.323232291562 eV
+  76      -1.000000000000	electron    excitation   5   ->   6
+state =    2 eig =       9.122599807752 eV
+  77       1.000000000000	electron    excitation   5   ->   7
+state =    3 eig =       9.793938069799 eV
+  39       0.120005978390	electron    excitation   3   ->   7
+  57      -1.000000000000	electron    excitation   4   ->   6
+ 190      -0.111595744040	photon excitation
+state =    4 eig =      11.625199477999 eV
+  38       0.143031846809	electron    excitation   3   ->   6
+  58      -1.000000000000	electron    excitation   4   ->   7
+state =    5 eig =      13.474291925501 eV
+  38       1.000000000000	electron    excitation   3   ->   6
+  58       0.142055664355	electron    excitation   4   ->   7
+state =    6 eig =      16.428451421462 eV
+  39      -1.000000000000	electron    excitation   3   ->   7
+  57      -0.112137697371	electron    excitation   4   ->   6
+  81      -0.109201718270	electron    excitation   5   ->  11
+state =    7 eig =      20.190317905882 eV
+  78      -1.000000000000	electron    excitation   5   ->   8
+state =    8 eig =      21.697513027576 eV
+  79      -1.000000000000	electron    excitation   5   ->   9
+state =    9 eig =      23.313420768802 eV
+  41       0.230068959260	electron    excitation   3   ->   9
+  59       1.000000000000	electron    excitation   4   ->   8
+
+    Psi4 stopped on: Monday, 10 October 2022 12:10PM
+    Psi4 wall time for execution: 0:00:23.75
+
+*** Psi4 exiting successfully. Buy a developer a beer!

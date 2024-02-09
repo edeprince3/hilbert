@@ -484,7 +484,6 @@ double DOCISolver::compute_energy() {
 
     // the rest
     GenerateConfigurations( configurations_[0].to_ulong() );
-    
 
     double * ci_wfn = (double*)malloc(n_*sizeof(double));
     memset((void*)ci_wfn,'\0',n_*sizeof(double));
@@ -612,6 +611,10 @@ double DOCISolver::compute_energy() {
 
     if ( options_.get_bool("PRINT_RDMS") ) {
         print_rdms();
+    }
+
+    if ( options_.get_bool("FCIDUMP") ) {
+        FCIDUMP();
     }
 
     // free memory allocated in compute_energy()

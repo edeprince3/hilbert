@@ -45,6 +45,7 @@ inline void DGEEV(char &jobvl,char &jobvr,long int &n,double*a,long int &lda,
    F77NAME(dgeev)(jobvl,jobvr,n,a,lda,wr,wi,vl,ldvl,vr,ldvr,work,lwork,info);
 };
 
+
 void v2RDMSolver::ExtendedKoopmans() {
 
     Dimension noccpi(nirrep_,"Number of occupied / partially occupied orbitals per irrep");

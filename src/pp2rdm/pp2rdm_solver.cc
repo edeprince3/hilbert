@@ -540,7 +540,12 @@ double pp2RDMSolver::compute_energy() {
     }
 
     std::shared_ptr<Vector> NOs (new Vector("Natural Orbital Occupation Numbers (spin free)",nmo_));
-    BuildSeniorityZeroRDMs(false);
+    double rdm_energy = 0.0;
+    if ( options_.get_str("P2RDM_TYPE") != "CCD" ) {
+        rdm_energy = BuildSeniorityZeroRDMs(true);
+    }else {
+        rdm_energy = BuildSeniorityZeroRDMs_pCCD(true);
+    }
     for (int i = 0; i < nmo_; i++) {
         NOs->pointer()[i] = d1_[INDEX(i,i)];
     }
@@ -970,6 +975,8 @@ double pp2RDMSolver::z_iterations(int & iter) {
     outfile->Printf(
       "        iter          energy       d(Energy)          |d(Z)|\n");
 
+    //C_DCOPY(o*v, t2_, 1, z2_, 1);
+
     do { 
 
         evaluate_residual_z(r2_);
@@ -1198,7 +1205,7 @@ void pp2RDMSolver::evaluate_residual_z(double * residual) {
     // -2 * (2 (ii|aa) - (ia|ai) - 2 (ia|ia) t(ia) ) z(ia)
     for (int i = 0; i < o; i++) {
         for (int a = 0; a < v; a++) {
-            residual[i * v + a] -= 2.0 * ( 2.0 * v_iiaa_[i * v + a] - v_iaia_[i * v + a] - v_iaia_[i * v + a] * t2_[i * v + a] ) * z2_[i * v + a];
+            residual[i * v + a] -= 2.0 * ( 2.0 * v_iiaa_[i * v + a] - v_iaia_[i * v + a] - 2.0 * v_iaia_[i * v + a] * t2_[i * v + a] ) * z2_[i * v + a];
         }
     }
 

@@ -72,6 +72,7 @@ class PolaritonicHF: public Wavefunction {
     int multiplicity_;
 
     std::vector< std::shared_ptr<Matrix> > dipole_;
+    std::vector< std::shared_ptr<Matrix> > quadrupole_;
     std::shared_ptr<Matrix> dipole_scaled_sum_;
     std::shared_ptr<Matrix> quadrupole_scaled_sum_;
     std::shared_ptr<Matrix> scaled_e_n_dipole_squared_;
@@ -98,6 +99,12 @@ class PolaritonicHF: public Wavefunction {
 
     /// do use coherent-state basis? default true
     bool use_coherent_state_basis_ = true;
+
+    /// evaluate constant and one- and two-electron components of the dipole self energy
+    void evaluate_dipole_self_energy();
+
+    /// evaluate constant and one- and two-electron components of the dipole variance
+    void evaluate_dipole_variance();
 
 };
 

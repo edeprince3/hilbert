@@ -81,8 +81,8 @@ void PolaritonicHF::common_init() {
 
     AO2SO_ = std::shared_ptr<Matrix>(reference_wavefunction_->aotoso());
 
-    Ca_ = std::shared_ptr<Matrix>(reference_wavefunction_->Ca());
-    Cb_ = std::shared_ptr<Matrix>(reference_wavefunction_->Cb());
+    Ca_ = (std::shared_ptr<Matrix>)(new Matrix(reference_wavefunction_->Ca()));
+    Cb_ = (std::shared_ptr<Matrix>)(new Matrix(reference_wavefunction_->Cb()));
 
     S_  = (std::shared_ptr<Matrix>)(new Matrix(reference_wavefunction_->S()));
 
@@ -108,6 +108,9 @@ void PolaritonicHF::common_init() {
 
     // memory is from process::environment
     memory_ = Process::environment.get_memory();
+
+    // use coherent-state basis? 
+    use_coherent_state_basis_ = options_.get_bool("USE_COHERENT_STATE_BASIS");
 
     average_electric_dipole_self_energy_ = 0.0;
 
@@ -212,7 +215,7 @@ void PolaritonicHF::initialize_cavity() {
     dipole_ = mints->so_dipole();
 
     // quadrupole integrals
-    std::vector< std::shared_ptr<Matrix> > quadrupole = mints->so_quadrupole();
+    quadrupole_ = mints->so_quadrupole();
 
     // reorder dipole / quadrupole integrals integrals
     // if polarization other than "z" is desired
@@ -237,17 +240,17 @@ void PolaritonicHF::initialize_cavity() {
         nuc_dip_z_ = old_nuc_dip_x;
 
         // 0: xx
-        quadrupole[0]->copy(old_q[3]);
+        quadrupole_[0]->copy(old_q[3]);
         // 1: xy
-        quadrupole[1]->copy(old_q[4]);
+        quadrupole_[1]->copy(old_q[4]);
         // 2: xz
-        quadrupole[2]->copy(old_q[1]);
+        quadrupole_[2]->copy(old_q[1]);
         // 3: yy
-        quadrupole[3]->copy(old_q[5]);
+        quadrupole_[3]->copy(old_q[5]);
         // 4: yz
-        quadrupole[4]->copy(old_q[2]);
+        quadrupole_[4]->copy(old_q[2]);
         // 5: zz
-        quadrupole[5]->copy(old_q[0]);
+        quadrupole_[5]->copy(old_q[0]);
     }else if ( order == "ZXY" ) {
         // 0: x
         dipole_[0]->copy(old_d[2]);
@@ -260,17 +263,17 @@ void PolaritonicHF::initialize_cavity() {
         nuc_dip_z_ = old_nuc_dip_y;
 
         // 0: xx
-        quadrupole[0]->copy(old_q[5]);
+        quadrupole_[0]->copy(old_q[5]);
         // 1: xy
-        quadrupole[1]->copy(old_q[2]);
+        quadrupole_[1]->copy(old_q[2]);
         // 2: xz
-        quadrupole[2]->copy(old_q[4]);
+        quadrupole_[2]->copy(old_q[4]);
         // 3: yy
-        quadrupole[3]->copy(old_q[0]);
+        quadrupole_[3]->copy(old_q[0]);
         // 4: yz
-        quadrupole[4]->copy(old_q[1]);
+        quadrupole_[4]->copy(old_q[1]);
         // 5: zz
-        quadrupole[5]->copy(old_q[3]);
+        quadrupole_[5]->copy(old_q[3]);
     }else {
         throw PsiException("invalid choice for ROTATE_POLARIZATION_AXIS",__FILE__,__LINE__);
     }
@@ -280,18 +283,26 @@ void PolaritonicHF::initialize_cavity() {
     double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
     double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
 
-    quadrupole[0]->scale(0.5 * lambda_x * lambda_x);
-    quadrupole[1]->scale(1.0 * lambda_x * lambda_y); // scaled by 2 for xy + yx
-    quadrupole[2]->scale(1.0 * lambda_x * lambda_z); // scaled by 2 for xz + zx
-    quadrupole[3]->scale(0.5 * lambda_y * lambda_y);
-    quadrupole[4]->scale(1.0 * lambda_y * lambda_z); // scaled by 2 for yz + zy
-    quadrupole[5]->scale(0.5 * lambda_z * lambda_z);
+    //quadrupole[0]->scale(0.5 * lambda_x * lambda_x);
+    //quadrupole[1]->scale(1.0 * lambda_x * lambda_y); // scaled by 2 for xy + yx
+    //quadrupole[2]->scale(1.0 * lambda_x * lambda_z); // scaled by 2 for xz + zx
+    //quadrupole[3]->scale(0.5 * lambda_y * lambda_y);
+    //quadrupole[4]->scale(1.0 * lambda_y * lambda_z); // scaled by 2 for yz + zy
+    //quadrupole[5]->scale(0.5 * lambda_z * lambda_z);
 
     quadrupole_scaled_sum_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
     quadrupole_scaled_sum_->zero();
-    for (int i = 0; i < 6; i++) {
-        quadrupole_scaled_sum_->add(quadrupole[i]);
-    }
+
+    quadrupole_scaled_sum_->axpy(0.5 * lambda_x * lambda_x, quadrupole_[0]);
+    quadrupole_scaled_sum_->axpy(1.0 * lambda_x * lambda_y, quadrupole_[1]); // scaled by 2 for xy + yx
+    quadrupole_scaled_sum_->axpy(1.0 * lambda_x * lambda_z, quadrupole_[2]); // scaled by 2 for xz + zx
+    quadrupole_scaled_sum_->axpy(0.5 * lambda_y * lambda_y, quadrupole_[3]);
+    quadrupole_scaled_sum_->axpy(1.0 * lambda_y * lambda_z, quadrupole_[4]); // scaled by 2 for yz + zy
+    quadrupole_scaled_sum_->axpy(0.5 * lambda_z * lambda_z, quadrupole_[5]);
+
+    //for (int i = 0; i < 6; i++) {
+    //    quadrupole_scaled_sum_->add(quadrupole[i]);
+    //}
 
     // for two-electron part of 1/2 (lambda.d)^2 (1/2 picked up in rhf.cc)
 
@@ -391,7 +402,7 @@ void PolaritonicHF::update_cavity_terms(){
     // 
     // n-<d> contribution: lambda . (dn - <d>)
     double nuc_dipdot = 0.0;
-    if ( use_coherent_state_basis_ ) {
+    if ( use_coherent_state_basis_ && options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
         nuc_dipdot += lambda_x * ( nuc_dip_x_ - tot_dip_x_ );
         nuc_dipdot += lambda_y * ( nuc_dip_y_ - tot_dip_y_ );
         nuc_dipdot += lambda_z * ( nuc_dip_z_ - tot_dip_z_ );
@@ -412,6 +423,339 @@ void PolaritonicHF::update_cavity_terms(){
     // 
     // constant terms:  0.5 ( lambda . ( dn - <d> ) )^2
     average_electric_dipole_self_energy_ = 0.5 * nuc_dipdot * nuc_dipdot;
+
+}
+
+/*
+ *
+ * evaluate_dipole_self_energy():
+ *
+ * evaluate one- and two-electron contributions to the dipole self 
+ * energy in the coherent-state basis: 
+ *
+ * < ( lambda.[mu - <mu>] )^2 >  =  lambda^2 ( <mu^2> - <mu>^2 )
+ *
+ * or not
+ *
+ * < (lambda.mu)^2 > = ( lambda . <mu> )^2
+*/
+void PolaritonicHF::evaluate_dipole_self_energy() {
+
+    if ( use_coherent_state_basis_ ) {
+
+        double one_electron = 0.0;
+        double two_electron = 0.0;
+
+        if ( n_photon_states_ < 1 ) return;
+
+        // one-electron part if <mu^2> depends on quadrupole integrals: -Tr(D.q)
+        std::shared_ptr<Matrix> oei (new Matrix(quadrupole_scaled_sum_));
+        oei->scale(-1.0);
+
+        one_electron += Da_->vector_dot(oei);
+        if ( same_a_b_dens_ ) {
+            one_electron *= 2.0;
+        }else {
+            one_electron += Db_->vector_dot(oei);
+        }
+
+        // two-electron part of <mu^2> is just the exchange contribution
+        std::shared_ptr<Matrix> dipole_Ka (new Matrix(nso_,nso_));
+        std::shared_ptr<Matrix> dipole_Kb (new Matrix(nso_,nso_));
+
+        dipole_Ka->zero();
+        dipole_Kb->zero();
+
+        // Kpq += mu_pr * mu_qs * Drs
+        double ** dp  = dipole_scaled_sum_->pointer();
+        double ** dap = Da_->pointer();
+        double ** dbp = Db_->pointer();
+        double ** kap = dipole_Ka->pointer();
+        double ** kbp = dipole_Kb->pointer();
+
+        std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
+        double ** tp = tmp->pointer();
+
+        C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+        C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(kap[0][0]),nso_);
+
+        if ( !same_a_b_dens_ ) {
+            C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+            C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,0.0,&(kbp[0][0]),nso_);
+        }
+
+        two_electron -= 0.5 * Da_->vector_dot(dipole_Ka);
+        if ( same_a_b_dens_ ) {
+            two_electron *= 2.0;
+        }else {
+            two_electron -= 0.5 * Db_->vector_dot(dipole_Kb);
+        }
+
+        outfile->Printf("\n");
+        outfile->Printf("    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==\n");
+        outfile->Printf("\n");
+        outfile->Printf("    one-electron part;  %20.12lf\n",one_electron);
+        outfile->Printf("    two-electron part:  %20.12lf\n",two_electron);
+        outfile->Printf("    total:              %20.12lf\n",one_electron + two_electron);
+        outfile->Printf("\n");
+
+    }else{
+
+        // evaluate the electronic contribute to the molecule's dipole moment
+
+        e_dip_x_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
+        e_dip_y_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
+        e_dip_z_ = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+
+        if ( same_a_b_dens_ ) {
+            e_dip_x_ *= 2.0;
+            e_dip_y_ *= 2.0;
+            e_dip_z_ *= 2.0;
+        }else {
+            e_dip_x_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
+            e_dip_y_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
+            e_dip_z_ += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+        }
+
+        // evaluate the total dipole moment:
+
+        tot_dip_x_ = e_dip_x_ + nuc_dip_x_;
+        tot_dip_y_ = e_dip_y_ + nuc_dip_y_;
+        tot_dip_z_ = e_dip_z_ + nuc_dip_z_;
+
+        double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
+        double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
+        double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+
+        // 1/2 (lambda.<mu>)^2
+        double dse = lambda_x * tot_dip_x_ + lambda_y * tot_dip_y_ + lambda_z * tot_dip_z_;
+        dse *= 0.5 * dse;
+
+        outfile->Printf("\n");
+        outfile->Printf("    ==> dipole self-energy <==\n");
+        outfile->Printf("\n");
+        outfile->Printf("    1/2 ( lambda . <mu> )^2: %20.12lf\n",dse);
+        outfile->Printf("\n");
+
+        // add dse to scf energy. only necessary if not relaxing the orbitals and not using coherent state basis
+        if ( !options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+            energy_ += dse;
+        }
+    }
+}
+
+/*
+ *
+ * evaluate_dipole_variance():
+ *
+ * evaluate one- and two-electron contributions to the dipole variance
+ *
+ * < ( [mu - <mu>] )^2 > = <mu_e>^2 - <mu_e>^2
+ *
+ * technically, this quantity should have 6 components:
+ *
+ * x.x
+ * x.y + y.x
+ * x.z + z.x
+ * y.y
+ * y.z + z.y
+ * z.z
+ *
+*/
+void PolaritonicHF::evaluate_dipole_variance() {
+
+    double one_electron_xx = 0.0;
+    double one_electron_xy = 0.0;
+    double one_electron_xz = 0.0;
+    double one_electron_yy = 0.0;
+    double one_electron_yz = 0.0;
+    double one_electron_zz = 0.0;
+
+    double two_electron_xx = 0.0;
+    double two_electron_xy = 0.0;
+    double two_electron_xz = 0.0;
+    double two_electron_yy = 0.0;
+    double two_electron_yz = 0.0;
+    double two_electron_zz = 0.0;
+
+    // one-electron part depends on quadrupole integrals: -Tr(D.q)
+
+    one_electron_xx =       Da_->vector_dot(quadrupole_[0]);
+    one_electron_xy = 2.0 * Da_->vector_dot(quadrupole_[1]);
+    one_electron_xz = 2.0 * Da_->vector_dot(quadrupole_[2]);
+    one_electron_yy =       Da_->vector_dot(quadrupole_[3]);
+    one_electron_yz = 2.0 * Da_->vector_dot(quadrupole_[4]);
+    one_electron_zz =       Da_->vector_dot(quadrupole_[5]);
+    if ( same_a_b_dens_ ) {
+        one_electron_xx *= 2.0;
+        one_electron_xy *= 2.0;
+        one_electron_xz *= 2.0;
+        one_electron_yy *= 2.0;
+        one_electron_yz *= 2.0;
+        one_electron_zz *= 2.0;
+    }else {
+        one_electron_xx +=       Db_->vector_dot(quadrupole_[0]);
+        one_electron_xy += 2.0 * Db_->vector_dot(quadrupole_[1]);
+        one_electron_xz += 2.0 * Db_->vector_dot(quadrupole_[2]);
+        one_electron_yy +=       Db_->vector_dot(quadrupole_[3]);
+        one_electron_yz += 2.0 * Db_->vector_dot(quadrupole_[4]);
+        one_electron_zz +=       Db_->vector_dot(quadrupole_[5]);
+    }
+
+    one_electron_xx *= -1.0;
+    one_electron_xy *= -1.0;
+    one_electron_xz *= -1.0;
+    one_electron_yy *= -1.0;
+    one_electron_yz *= -1.0;
+    one_electron_zz *= -1.0;
+
+    // two-electron part is just exchange part of <mu^2>
+    std::shared_ptr<Matrix> dipole_Ka (new Matrix(nso_,nso_));
+    std::shared_ptr<Matrix> dipole_Kb (new Matrix(nso_,nso_));
+
+    dipole_Ka->zero();
+    dipole_Kb->zero();
+
+    // Kpq += mu_pr * mu_qs * Drs
+
+    double ** dx  = dipole_[0]->pointer();
+    double ** dy  = dipole_[1]->pointer();
+    double ** dz  = dipole_[2]->pointer();
+
+    double ** dap = Da_->pointer();
+    double ** dbp = Db_->pointer();
+    double ** kap = dipole_Ka->pointer();
+    double ** kbp = dipole_Kb->pointer();
+
+    std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
+    double ** tp = tmp->pointer();
+
+    // xx
+
+    C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dx[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+    C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dx[0][0]),nso_,0.0,&(kap[0][0]),nso_);
+
+    if ( !same_a_b_dens_ ) {
+        C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dx[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+        C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dx[0][0]),nso_,0.0,&(kbp[0][0]),nso_);
+    }
+
+    two_electron_xx -= 0.5 * Da_->vector_dot(dipole_Ka);
+    if ( same_a_b_dens_ ) {
+        two_electron_xx *= 2.0;
+    }else {
+        two_electron_xx -= 0.5 * Db_->vector_dot(dipole_Kb);
+    }
+
+    // xy
+
+    C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dx[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+    C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dy[0][0]),nso_,0.0,&(kap[0][0]),nso_);
+
+    if ( !same_a_b_dens_ ) {
+        C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dx[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+        C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dy[0][0]),nso_,0.0,&(kbp[0][0]),nso_);
+    }
+
+    two_electron_xy -= 0.5 * Da_->vector_dot(dipole_Ka);
+    if ( same_a_b_dens_ ) {
+        two_electron_xy *= 2.0;
+    }else {
+        two_electron_xy -= 0.5 * Db_->vector_dot(dipole_Kb);
+    }
+
+    // xz
+
+    C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dx[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+    C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dz[0][0]),nso_,0.0,&(kap[0][0]),nso_);
+
+    if ( !same_a_b_dens_ ) {
+        C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dx[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+        C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dz[0][0]),nso_,0.0,&(kbp[0][0]),nso_);
+    }
+
+    two_electron_xz -= 0.5 * Da_->vector_dot(dipole_Ka);
+    if ( same_a_b_dens_ ) {
+        two_electron_xz *= 2.0;
+    }else {
+        two_electron_xz -= 0.5 * Db_->vector_dot(dipole_Kb);
+    }
+
+    // yy
+
+    C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dy[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+    C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dy[0][0]),nso_,0.0,&(kap[0][0]),nso_);
+
+    if ( !same_a_b_dens_ ) {
+        C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dy[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+        C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dy[0][0]),nso_,0.0,&(kbp[0][0]),nso_);
+    }
+
+    two_electron_yy -= 0.5 * Da_->vector_dot(dipole_Ka);
+    if ( same_a_b_dens_ ) {
+        two_electron_yy *= 2.0;
+    }else {
+        two_electron_yy -= 0.5 * Db_->vector_dot(dipole_Kb);
+    }
+
+    // yz
+
+    C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dy[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+    C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dz[0][0]),nso_,0.0,&(kap[0][0]),nso_);
+
+    if ( !same_a_b_dens_ ) {
+        C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dy[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+        C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dz[0][0]),nso_,0.0,&(kbp[0][0]),nso_);
+    }
+
+    two_electron_yz -= 0.5 * Da_->vector_dot(dipole_Ka);
+    if ( same_a_b_dens_ ) {
+        two_electron_yz *= 2.0;
+    }else {
+        two_electron_yz -= 0.5 * Db_->vector_dot(dipole_Kb);
+    }
+
+    // zz
+
+    C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dz[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+    C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dz[0][0]),nso_,0.0,&(kap[0][0]),nso_);
+
+    if ( !same_a_b_dens_ ) {
+        C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dz[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+        C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dz[0][0]),nso_,0.0,&(kbp[0][0]),nso_);
+    }
+
+    two_electron_zz -= 0.5 * Da_->vector_dot(dipole_Ka);
+    if ( same_a_b_dens_ ) {
+        two_electron_zz *= 2.0;
+    }else {
+        two_electron_zz -= 0.5 * Db_->vector_dot(dipole_Kb);
+    }
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== \n");
+    outfile->Printf("\n");
+    outfile->Printf("    one electron (xx): %20.12lf\n",one_electron_xx);
+    outfile->Printf("    one electron (xy): %20.12lf\n",one_electron_xy);
+    outfile->Printf("    one electron (xz): %20.12lf\n",one_electron_xz);
+    outfile->Printf("    one electron (yy): %20.12lf\n",one_electron_yy);
+    outfile->Printf("    one electron (yz): %20.12lf\n",one_electron_yz);
+    outfile->Printf("    one electron (zz): %20.12lf\n",one_electron_zz);
+    outfile->Printf("\n");
+    outfile->Printf("    two electron (xx): %20.12lf\n",two_electron_xx * 2.0);
+    outfile->Printf("    two electron (xy): %20.12lf\n",two_electron_xy * 2.0);
+    outfile->Printf("    two electron (xz): %20.12lf\n",two_electron_xz * 2.0);
+    outfile->Printf("    two electron (yy): %20.12lf\n",two_electron_yy * 2.0);
+    outfile->Printf("    two electron (yz): %20.12lf\n",two_electron_yz * 2.0);
+    outfile->Printf("    two electron (zz): %20.12lf\n",two_electron_zz * 2.0);
+    outfile->Printf("\n");
+    outfile->Printf("    total (xx):        %20.12lf\n",one_electron_xx + two_electron_xx * 2.0);
+    outfile->Printf("    total (xy):        %20.12lf\n",one_electron_xy + two_electron_xy * 2.0);
+    outfile->Printf("    total (xz):        %20.12lf\n",one_electron_xz + two_electron_xz * 2.0);
+    outfile->Printf("    total (yy):        %20.12lf\n",one_electron_yy + two_electron_yy * 2.0);
+    outfile->Printf("    total (yz):        %20.12lf\n",one_electron_yz + two_electron_yz * 2.0);
+    outfile->Printf("    total (zz):        %20.12lf\n",one_electron_zz + two_electron_zz * 2.0);
+    outfile->Printf("\n");
 
 }
 

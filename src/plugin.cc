@@ -40,9 +40,12 @@
 #include <polaritonic_scf/rhf.h>
 #include <polaritonic_scf/uhf.h>
 #include <polaritonic_scf/rohf.h>
+#include <polaritonic_scf/rks.h>
 #include <polaritonic_scf/uks.h>
 #include <polaritonic_scf/uccsd.h>
 #include <polaritonic_scf/rcis.h>
+#include <polaritonic_scf/rtddft.h>
+#include <polaritonic_scf/utddft.h>
 
 #include <misc/backtransform_tpdm.h>
 
@@ -58,7 +61,8 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RCIS POLARITONIC_UCCSD");
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_TDDFT POLARITONIC_RPA");
+
 
         /*- Do DIIS? -*/
         options.add_bool("DIIS", true);
@@ -153,7 +157,7 @@ int read_options(std::string name, Options& options)
         options.add_int("ORBOPT_NUM_DIIS_VECTORS",0);
 
         /*- maximum number of iterations for orbital optimization -*/
-        options.add_int("ORBOPT_MAXITER",1);
+        options.add_int("ORBOPT_MAXITER",10);
 
         /*- Do write a ORBOPT output file?  If so, the filename will end in
         .molden, and the prefix is determined by |globals__writer_file_label|
@@ -356,8 +360,26 @@ int read_options(std::string name, Options& options)
         /*- do include u2 in polaritioinic ccsd? -*/
         options.add_bool("POLARITONIC_CC_INCLUDE_U2",false);
 
+        /*- do use TDA in TDDFT? -*/
+        options.add_bool("TDSCF_TDA",false);
+
+        /*- do relax orbitals in QED-SCF [unlike QED-TDDFT described in J. Chem. Phys. 155, 064107 (2021)?] -*/
+        options.add_bool("QED_USE_RELAXED_ORBITALS", true);
+
         /*- change cavity mode polarization by redefining x, y, and z -*/
         options.add_str("ROTATE_POLARIZATION_AXIS", "XYZ");
+
+        /*- residual norm -*/
+        options.add_double("RESIDUAL_NORM",1.0e-5);
+
+        /*- initial size of Davidson subspace (will be multiplied by number of desired roots) -*/
+        options.add_int("INDIM", 5);
+
+        /*- maximum size of Davidson subspace (will be multiplied by number of desired roots) -*/
+        options.add_int("MAXDIM", 20);
+
+        /*- number of roots -*/
+        options.add_int("NUMBER_ROOTS", 5);
     }
 
     return true;
@@ -427,6 +449,16 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         return (std::shared_ptr<Wavefunction>)rhf;
 
+    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_TDDFT") {
+
+        std::shared_ptr<PolaritonicRKS> rks (new PolaritonicRKS(ref_wfn,options));
+        double energy = rks->compute_energy();
+
+        std::shared_ptr<PolaritonicRTDDFT> rtddft (new PolaritonicRTDDFT((std::shared_ptr<Wavefunction>)rks,options,ref_wfn));
+        double dum = rtddft->compute_energy();
+
+        return (std::shared_ptr<Wavefunction>)rks;
+
     }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_RCIS") {
 
         std::shared_ptr<PolaritonicRHF> rhf (new PolaritonicRHF(ref_wfn,options));
@@ -450,6 +482,14 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         double energy = rohf->compute_energy();
 
         return (std::shared_ptr<Wavefunction>)rohf;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_RKS") {
+
+        std::shared_ptr<PolaritonicRKS> rks (new PolaritonicRKS(ref_wfn,options));
+        double energy = rks->compute_energy();
+
+        return (std::shared_ptr<Wavefunction>)rks;
+
 
     }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_UKS") {
 

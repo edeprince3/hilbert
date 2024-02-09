@@ -1168,7 +1168,7 @@ double PolaritonicUCCSD::t1_transformation_molecular_hamiltonian(std::shared_ptr
         ec += 0.5 * fp[i][i];
     }
     // adjust ec and recall that reference energy contains both 
-    // nuclear repulsion energy and 1/2 [lambda.<de>]^2
+    // nuclear repulsion energy and 1/2 [lambda.<de>]^2 
     ec += enuc_ - reference_wavefunction_->energy() + average_electric_dipole_self_energy_;
 
     // update orbital energies
@@ -4091,8 +4091,13 @@ void PolaritonicUCCSD::residual_u0() {
 
     // molecular hamiltonian treated in coherent state basis
     if ( !is_hubbard_ ) {
-        // + 1.00000 b+
-        r0 += coupling_factor_z * e_dip_z_;
+        if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+            // + 1.00000 b+
+            r0 += coupling_factor_z * e_dip_z_;
+        }else {
+            // + 1.00000 b+
+            r0 -= coupling_factor_z * nuc_dip_z_;
+        }
     }
 
     if ( include_u1_ ) {
@@ -4399,8 +4404,13 @@ void PolaritonicUCCSD::residual_t1() {
 
         // molecular hamiltonian treated in coherent state basis
         if ( !is_hubbard_ ) {
-            // + 1.00000 u1(e,m) b- 
-            dii += coupling_factor_z * e_dip_z_;
+            if ( options_.get_bool("QED_USE_RELAXED_ORBITALS")) {
+                // + 1.00000 u1(e,m) b- 
+                dii += coupling_factor_z * e_dip_z_;
+            }else {
+                // + 1.00000 u1(e,m) b- 
+                dii -= coupling_factor_z * nuc_dip_z_;
+            }
         }
 
 
@@ -4935,8 +4945,13 @@ void PolaritonicUCCSD::residual_t2() {
         }
         // molecular hamiltonian treated in coherent state basis
         if ( !is_hubbard_ ) {
-            // + u2(e,f,m,n) b- 
-            dii += coupling_factor_z * e_dip_z_;
+            if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+                // + u2(e,f,m,n) b- 
+                dii += coupling_factor_z * e_dip_z_;
+            }else {
+                // + u2(e,f,m,n) b- 
+                dii -= coupling_factor_z * nuc_dip_z_;
+            }
         }
         C_DAXPY(o_*o_*v_*v_,dii,u2_,1,rt2_,1);
         
@@ -5158,8 +5173,13 @@ double PolaritonicUCCSD::correlation_energy() {
 
         // molecular hamiltonian treated in coherent state basis
         if ( !is_hubbard_ ) {
-            // + 1.00000 u0 b- 
-            ec += u0_[0] * coupling_factor_z * e_dip_z_;
+            if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+                // + 1.00000 u0 b- 
+                ec += u0_[0] * coupling_factor_z * e_dip_z_;
+            }else {
+                // + 1.00000 u0 b- 
+                ec -= u0_[0] * coupling_factor_z * nuc_dip_z_;
+            }
         }
 
     }

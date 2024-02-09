@@ -80,7 +80,10 @@ void PolaritonicROHF::common_init() {
 
     // this code only works in the coheren-state basis
     if ( !options_.get_bool("USE_COHERENT_STATE_BASIS") ) {
-        throw PsiException("polaritonic rohf only works within the coherent-state basis",__FILE__,__LINE__);
+        // but there is only a problem if we are relaxing the orbitals:
+        if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+            throw PsiException("polaritonic uhf can only relax orbitals within the coherent-state basis", __FILE__, __LINE__);
+        }
     }
 
 }
@@ -199,6 +202,10 @@ double PolaritonicROHF::compute_energy() {
 
     // guess (from existing reference)
 
+    if ( !options_.get_bool("QED_USE_RELAXED_ORBITALS") && !use_coherent_state_basis_ ) {
+        throw PsiException("QED_USE_RELAXED_ORBITALS false is not compatible with USE_COHERENT_STATE_BASIS false",__FILE__,__LINE__);
+    }
+
     // form initial Feff
     form_Feff(Feff);
 
@@ -214,7 +221,10 @@ double PolaritonicROHF::compute_energy() {
     C_DGEMM('n','t',nso_,nso_,nalpha_,1.0,&(Ca_->pointer()[0][0]),nso_,&(Ca_->pointer()[0][0]),nso_,0.0,&(Da_->pointer()[0][0]),nso_);
     C_DGEMM('n','t',nso_,nso_,nbeta_,1.0,&(Ca_->pointer()[0][0]),nso_,&(Ca_->pointer()[0][0]),nso_,0.0,&(Db_->pointer()[0][0]),nso_);
 
-    energy_  = enuc_ + average_electric_dipole_self_energy_;
+    energy_  = enuc_;
+    if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+        energy_  += average_electric_dipole_self_energy_;
+    }
     energy_ += 0.5 * Da_->vector_dot(h);
     energy_ += 0.5 * Db_->vector_dot(h);
     energy_ += 0.5 * Da_->vector_dot(Fa_);
@@ -277,45 +287,48 @@ double PolaritonicROHF::compute_energy() {
 
             update_cavity_terms();
 
-            // dipole self energy:
+            // dipole self energy ... ignore if not relaxing the orbitals
 
-            // e-n term: 1/2 lambda^2 * 2 de ( dn - <d> )
-            oei->axpy(1.0,scaled_e_n_dipole_squared_);
+            if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
 
-            // one-electron part of e-e term 
-            oei->axpy(-1.0,quadrupole_scaled_sum_);
+                // e-n term: 1/2 lambda^2 * 2 de ( dn - <d> )
+                oei->axpy(1.0,scaled_e_n_dipole_squared_);
 
-            // two-electron part of e-e term (J)
-            double scaled_mu_a = Da_->vector_dot(dipole_scaled_sum_);
-            double scaled_mu_b = Db_->vector_dot(dipole_scaled_sum_);
+                // one-electron part of e-e term 
+                oei->axpy(-1.0,quadrupole_scaled_sum_);
 
-            jk->J()[0]->axpy(scaled_mu_a,dipole_scaled_sum_);
-            jk->J()[1]->axpy(scaled_mu_b,dipole_scaled_sum_);
+                // two-electron part of e-e term (J)
+                double scaled_mu_a = Da_->vector_dot(dipole_scaled_sum_);
+                double scaled_mu_b = Db_->vector_dot(dipole_scaled_sum_);
 
-            //Fa_->axpy(scaled_mu_a,dipole_scaled_sum_);
-            //Fa_->axpy(scaled_mu_b,dipole_scaled_sum_);
+                jk->J()[0]->axpy(scaled_mu_a,dipole_scaled_sum_);
+                jk->J()[1]->axpy(scaled_mu_b,dipole_scaled_sum_);
 
-            //Fb_->axpy(scaled_mu_a,dipole_scaled_sum_);
-            //Fb_->axpy(scaled_mu_b,dipole_scaled_sum_);
+                //Fa_->axpy(scaled_mu_a,dipole_scaled_sum_);
+                //Fa_->axpy(scaled_mu_b,dipole_scaled_sum_);
 
-            // two-electron part of e-e term (K)
+                //Fb_->axpy(scaled_mu_a,dipole_scaled_sum_);
+                //Fb_->axpy(scaled_mu_b,dipole_scaled_sum_);
 
-            // Kpq += mu_pr * mu_qs * Drs
-            double ** dp  = dipole_scaled_sum_->pointer();
-            double ** dap = Da_->pointer();
-            double ** dbp = Db_->pointer();
-            double ** kap = jk->K()[0]->pointer();
-            double ** kbp = jk->K()[1]->pointer();
+                // two-electron part of e-e term (K)
 
-            std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
-            double ** tp = tmp->pointer();
+                // Kpq += mu_pr * mu_qs * Drs
+                double ** dp  = dipole_scaled_sum_->pointer();
+                double ** dap = Da_->pointer();
+                double ** dbp = Db_->pointer();
+                double ** kap = jk->K()[0]->pointer();
+                double ** kbp = jk->K()[1]->pointer();
 
-            C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
-            C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(kap[0][0]),nso_);
+                std::shared_ptr<Matrix> tmp (new Matrix(nso_,nso_));
+                double ** tp = tmp->pointer();
 
-            C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
-            C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(kbp[0][0]),nso_);
+                C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+                C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(kap[0][0]),nso_);
 
+                C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dbp[0][0]),nso_,0.0,&(tp[0][0]),nso_);
+                C_DGEMM('n','t',nso_,nso_,nso_,1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(kbp[0][0]),nso_);
+
+            }
         }
 
         // form Fa = h + Ja + Jb - Ka
@@ -334,7 +347,10 @@ double PolaritonicROHF::compute_energy() {
         C_DGEMM('n','t',nso_,nso_,nbeta_,1.0,&(Ca_->pointer()[0][0]),nso_,&(Ca_->pointer()[0][0]),nso_,0.0,&(Db_->pointer()[0][0]),nso_);
 
         // evaluate the current energy, E = D(H+F) + Enuc
-        energy_  = enuc_ + average_electric_dipole_self_energy_;
+        energy_  = enuc_;
+        if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+            energy_  += average_electric_dipole_self_energy_;
+        }
 
         energy_ += Da_->vector_dot(oei);
         energy_ += Db_->vector_dot(oei);
@@ -391,6 +407,13 @@ double PolaritonicROHF::compute_energy() {
     outfile->Printf("\n");
     outfile->Printf("    SCF iterations converged!\n");
     outfile->Printf("\n");
+
+    // evaluate dipole self energy
+    if ( n_photon_states_ > 1 ) {
+        evaluate_dipole_self_energy();
+    }
+
+    evaluate_dipole_variance();
 
     outfile->Printf("    * Polaritonic ROHF total energy: %20.12lf\n",energy_);
 

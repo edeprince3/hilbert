@@ -1,0 +1,76 @@
+# PYTHONPATH must include directory above plugin directory.
+#     Define either externally or here, then import plugin.
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule mol1 {
+         O            0.000000000000     0.000000000000    -0.068516219320    
+         H            0.000000000000    -0.790689573744     0.543701060715    
+         H            0.000000000000     0.790689573744     0.543701060715    
+no_reorient
+nocom
+symmetry c1
+}
+molecule mol2 {
+         O             0.000000000000    -0.068516219320    0.000000000000    
+         H            -0.790689573744     0.543701060715    0.000000000000    
+         H             0.790689573744     0.543701060715    0.000000000000    
+no_reorient
+nocom
+symmetry c1
+}
+molecule mol3 {
+         O         -0.068516219320      0.000000000000     0.000000000000     
+         H          0.543701060715      0.000000000000    -0.790689573744     
+         H          0.543701060715      0.000000000000     0.790689573744     
+no_reorient
+nocom
+symmetry c1
+}
+
+set {
+  basis def2-tzvppd
+  scf_type df 
+  e_convergence 1e-10
+  d_convergence 1e-10 
+} 
+
+# apparently lambda = 0.149557981435142
+set hilbert {
+  maxiter 500
+  n_photon_states          2
+  cavity_frequency         [0.0, 0.0, 0.495589583372]
+  cavity_coupling_strength [0.0, 0.0, 0.150221990521748]
+}
+
+ref_dft = -76.409786399931
+
+set reference uks
+activate(mol1)
+set basis def2-tzvppd
+en,wfn = energy('tpssh',return_wfn=True)
+energy('polaritonic-uks',ref_wfn=wfn)
+
+compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QEDFT total energy (xyz)") # TEST
+
+set reference uks
+activate(mol2)
+set basis def2-tzvppd
+set hilbert {
+    rotate_polarization_axis "ZXY"
+}
+en,wfn = energy('tpssh',return_wfn=True)
+energy('polaritonic-uks',ref_wfn=wfn)
+
+compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QEDFT total energy (zxy)") # TEST
+
+set reference uks
+activate(mol3)
+set basis def2-tzvppd
+set hilbert {
+    rotate_polarization_axis "YZX"
+}
+en,wfn = energy('tpssh',return_wfn=True)
+energy('polaritonic-uks',ref_wfn=wfn)
+
+compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QEDFT total energy (yzx)") # TEST

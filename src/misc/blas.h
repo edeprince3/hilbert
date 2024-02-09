@@ -157,6 +157,47 @@ inline void DGESVD(char&JOBU,char&JOBVT,integer&M,integer&N,doublereal*A,integer
     dgesvd(JOBU,JOBVT,M,N,A,LDA,S,U,LDU,VT,LDVT,WORK,LWORK,INFO);
 }
 
+/**
+ *  name mangling dggev
+ */
+extern "C" {
+    void F77NAME(dgeqrf)(integer &m,integer &n,doublereal *a,integer &lda,doublereal *tau,
+                doublereal * work,integer &lwork,integer &info);
+};
+
+inline void DGEQRF(integer &m,integer &n,doublereal *a,integer &lda,doublereal *tau,
+                    doublereal * work,integer &lwork,integer &info)
+{
+   F77NAME(dgeqrf)(m,n,a,lda,tau,work,lwork,info);
+};
+
+extern "C" {
+    void F77NAME(dorgqr)(integer &m,integer &n,integer &k,doublereal *a,integer &lda,doublereal *tau,
+                doublereal * work,integer &lwork,integer &info);
+};
+
+inline void DORGQR(integer &m,integer &n,integer &k,doublereal *a,integer &lda,doublereal *tau,
+                    doublereal * work,integer &lwork,integer &info)
+{
+   F77NAME(dorgqr)(m,n,k,a,lda,tau,work,lwork,info);
+};
+
+/**
+ *  name mangling dgeev
+ */
+extern "C" {
+void F77NAME(dgeev)(char &jobvl,char &jobvr,long int &n,double *a,long int &lda,
+           double *wr,double *wi, double *vl,long int &ldvl,double *vr,
+           long int &ldvr,double * work,long int &lwork, long int &info);
+};
+
+inline void DGEEV(char &jobvl,char &jobvr,long int &n,double*a,long int &lda,
+           double *wr,double *wi, double *vl,long int &ldvl,double *vr,
+           long int &ldvr,double * work,long int &lwork,long int &info)
+{
+   F77NAME(dgeev)(jobvl,jobvr,n,a,lda,wr,wi,vl,ldvl,vr,ldvr,work,lwork,info);
+};
+
 }}
 
 #endif

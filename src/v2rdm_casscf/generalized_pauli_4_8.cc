@@ -65,8 +65,8 @@ void v2RDMSolver::Generalized_Pauli_4_8_constraints_ATu(double* A,double* u, int
     GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,0,0,0,0,1,-1,-1,-1); //=0,
 
     GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,1,-1,0,0,0,0); //=2,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,0,0,0,0,0,-1); //=2,
-    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,0,0,0,-1,0,0); //=2,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,0,0,0,0,1,-1); //=2,
+    GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,1,0,0,1,-1,0,0); //=2,
     GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,1,0,1,0,-1,0); //=2,
     GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,1,0,0,1,0,-1); //=2,
     GP_N_8_ATu(gpc_rdm_sign_a_[state],gpc_rdm_sign_b_[state],gpc_rdm_nrm_[state],u[offset++],off,A,gpc_rdm_map_a_[state],gpc_rdm_map_b_[state],orb_p,1,0,0,1,1,0,0,-1); //=2,
@@ -113,8 +113,8 @@ void v2RDMSolver::Generalized_Pauli_4_8_constraints_Au(double* A,double* u,int s
     A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,0,0,0,0,1,-1,-1,-1); //=0,
  
     A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,1,1,-1,0,0,0,0); //=2,
-    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,1,0,0,0,0,0,-1); //=2,
-    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,1,0,0,0,-1,0,0); //=2,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,1,0,0,0,0,1,-1); //=2,
+    A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,1,0,0,1,-1,0,0); //=2,
     A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,0,1,0,1,0,-1,0); //=2,
     A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,0,1,0,0,1,0,-1); //=2,
     A[offset++] = GP_N_8_Au(off,u,orb_p,eigvals,1,0,0,1,1,0,0,-1); //=2,

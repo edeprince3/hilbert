@@ -385,7 +385,7 @@ std::shared_ptr<Matrix> v2RDMSolver::get_opdm() {
         for (int i = 0; i < amopi_[h]; i++) {
             for (int j = 0; j < amopi_[h]; j++) {
                 opdm_p[i][j]  = x_p[d1aoff[h]+i*amopi_[h]+j];
-                opdm_p[i][j] += x_p[d1aoff[h]+i*amopi_[h]+j];
+                opdm_p[i][j] += x_p[d1boff[h]+i*amopi_[h]+j];
             }
         }
     }
