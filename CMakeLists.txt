@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
-set(CMAKE_POLICY_DEFAULT_CMP0148 NEW)
+if (POLICY CMP0025)
+  cmake_policy(SET CMP0025 NEW)
+endif ()
+
+cmake_policy(SET CMP0048 NEW)  # project_VERSION* variables populated from project(... VERSION x.x.x) string
 
 project(hilbert
         VERSION 0.1
@@ -11,20 +14,14 @@ set(hilbert_URL          "https://github.com/edeprince3/hilbert")
 set(hilbert_LICENSE      "GPL-3.0+")
 set(CMAKE_CXX_STANDARD 17)
 
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-find_package(pybind11 CONFIG REQUIRED)
-find_package(Boost REQUIRED COMPONENTS serialization)
-find_package(MPI REQUIRED COMPONENTS C CXX Fortran)
-find_package(Eigen3 REQUIRED)
-find_package(Boost REQUIRED COMPONENTS serialization)
-find_package(OpenMP REQUIRED)
-link_libraries(${MPI_CXX_LIBRARIES} ${MPI_C_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
-include_directories(${MPI_CXX_INCLUDE_DIRS} ${MPI_C_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${OpenMP_CXX_INCLUDE_DIRS})
-
-find_package(psi4 REQUIRED)
 include(psi4OptionsTools)
+
+find_package(pybind11 REQUIRED)
+find_package(psi4 REQUIRED)
 
 # add files for performing EOM-CC calculations if requested
 option(USE_QED_EOM_CC "Build QED-EOM-CC functionality" OFF)
@@ -53,8 +50,6 @@ else()
 endif()
 
 if (USE_QED_CC)
-
-  set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "Enable -fPIC for all targets")
 
   # find prerequisites
   if(Fortran_COMPILER_ID MATCHES "Intel" AND NOT I_MPI_ROOT)
@@ -85,12 +80,13 @@ if (USE_QED_CC)
   include(FetchContent)
   FetchContent_Declare( tiledarray
           GIT_REPOSITORY https://github.com/ValeevGroup/tiledarray.git
-          GIT_TAG b2254f352260d80e15c5f4a94b7bfcad71f118fb 
+          GIT_TAG b2254f352260d80e15c5f4a94b7bfcad71f118fb
           )
   FetchContent_MakeAvailable(tiledarray)
 
   # change build type to release for tiledarray library
   set_target_properties(tiledarray PROPERTIES CMAKE_BUILD_TYPE Release)
+  set_target_properties(tiledarray PROPERTIES CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #  set(TA_PYTHON ON CACHE BOOL "Build Python bindings for TiledArray" FORCE)
   # add files for performing QED-CC calculations
@@ -157,7 +153,8 @@ if (USE_QED_EOM_CC AND USE_QED_CC)
   add_definitions(-DUSE_QED_EOM_CC=1)
 endif()
 
-# files for performing polaritonic calculations
+#### groups for different calculation types ###
+
 set(polaritonic_scf
         src/polaritonic_scf/hf.cc
         src/polaritonic_scf/rhf.cc
@@ -186,20 +183,9 @@ set(p2rdm
         src/p2rdm/write_tpdm.cc
         )
 set(pp2rdm
-        src/pp2rdm/pp2rdm_solver.cc
         src/pp2rdm/minimization_routines.cc
+        src/pp2rdm/pp2rdm_solver.cc
         src/pp2rdm/write_tpdm.cc
-        )
-set(misc
-        src/misc/real_space_density.cc
-        src/misc/backtransform_tpdm.cc
-        src/misc/davidson_solver.cc
-        src/misc/nonsym_davidson_solver.cc
-        src/misc/diis.cc
-        src/misc/lbfgs_helper.cc
-        src/misc/integraltransform_sort_so_tpdm.cc
-        src/misc/integraltransform_tpdm_unrestricted.cc
-        src/misc/threeindexintegrals.cc
         )
 set(focas
         src/focas/update_transformation_matrix.cc
@@ -287,6 +273,19 @@ set(v2rdm_casscf
         src/v2rdm_casscf/write_tpdm_iwl.cc
         )
 
+set(misc
+        src/misc/real_space_density.cc
+        src/misc/backtransform_tpdm.cc
+        src/misc/diis.cc
+        src/misc/lbfgs_helper.cc
+        src/misc/integraltransform_sort_so_tpdm.cc
+        src/misc/integraltransform_tpdm_unrestricted.cc
+        src/misc/threeindexintegrals.cc
+        src/misc/schmidt_add.cc
+        src/misc/sq_rsp.cc
+        src/misc/davidson_solver.cc
+        src/misc/nonsym_davidson_solver.cc
+)
 
 add_psi4_plugin(hilbert
 
@@ -335,4 +334,4 @@ install(DIRECTORY ${hilbert_BINARY_DIR}/
         PATTERN "cmake_install.cmake" EXCLUDE
         PATTERN "Makefile" EXCLUDE
         PATTERN "install_manifest.txt" EXCLUDE
-        )
+)

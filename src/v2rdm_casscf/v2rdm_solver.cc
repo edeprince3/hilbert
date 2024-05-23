@@ -630,12 +630,12 @@ void v2RDMSolver::initialize_with_molecular_hamiltonian() {
     Db_  = (SharedMatrix)(new Matrix(reference_wavefunction_->Db()));
 
     // Lagrangian matrix
-    Lagrangian_ = SharedMatrix(reference_wavefunction_->Lagrangian());
+    Lagrangian_ = SharedMatrix(reference_wavefunction_->lagrangian());
 
-    epsilon_a_= SharedVector(new Vector(nirrep_, nmopi_));
-    epsilon_a_->copy(reference_wavefunction_->epsilon_a().get());
-    epsilon_b_= SharedVector(new Vector(nirrep_, nmopi_));
-    epsilon_b_->copy(reference_wavefunction_->epsilon_b().get());
+    epsilon_a_ = std::make_shared<Vector>(nmopi_);
+    epsilon_a_->copy(*reference_wavefunction_->epsilon_a());
+    epsilon_b_ = std::make_shared<Vector>(nmopi_);
+    epsilon_b_->copy(*reference_wavefunction_->epsilon_b());
 
     amo_      = 0;
     nfrzc_    = 0;
@@ -920,8 +920,8 @@ void v2RDMSolver::initialize_with_hubbard_hamiltonian() {
     // Lagrangian matrix
     Lagrangian_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
 
-    epsilon_a_= SharedVector(new Vector(nirrep_, nmopi_));
-    epsilon_b_= SharedVector(new Vector(nirrep_, nmopi_));
+    epsilon_a_ = std::make_shared<Vector>(nmopi_);
+    epsilon_b_ = std::make_shared<Vector>(nmopi_);
 
     // memory is from process::environment
     memory_ = Process::environment.get_memory();
@@ -1043,8 +1043,8 @@ void v2RDMSolver::initialize_with_external_hamiltonian() {
     // Lagrangian matrix
     Lagrangian_ = (SharedMatrix)(new Matrix(nmo_,nmo_));
 
-    epsilon_a_= SharedVector(new Vector(nirrep_, nmopi_));
-    epsilon_b_= SharedVector(new Vector(nirrep_, nmopi_));
+    epsilon_a_ = std::make_shared<Vector>(nmopi_);
+    epsilon_b_ = std::make_shared<Vector>(nmopi_);
 
     // memory is from process::environment
     memory_ = Process::environment.get_memory();
@@ -1266,27 +1266,26 @@ double v2RDMSolver::compute_energy() {
     if ( options_.get_bool("GUESS_ORBITALS_WRITE") && !is_hubbard_ && !is_external_hamiltonian_) {
 
         std::shared_ptr<MoldenWriter> molden(new MoldenWriter(reference_wavefunction_));
-        std::shared_ptr<Vector> zero (new Vector("",nirrep_,nmopi_));
+        std::shared_ptr<Vector> zero = std::make_shared<Vector>(nmopi_);
         zero->zero();
         std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".guess.molden";
 
         Ca_ = SharedMatrix(reference_wavefunction_->Ca());
         Cb_ = SharedMatrix(reference_wavefunction_->Cb());
 
-        SharedVector occupation_a= SharedVector(new Vector(nirrep_, nmopi_));
-		SharedVector occupation_b= SharedVector(new Vector(nirrep_, nmopi_));
+        SharedVector occupation_a = std::make_shared<Vector>(nmopi_);
+        SharedVector occupation_b = std::make_shared<Vector>(nmopi_);
 
-		for (int h = 0; h < nirrep_; h++) {
-			for (int i = 0; i < nalphapi_[h]; i++) {
-				occupation_a->set(h, i, 1.0);
-			}
-			for (int i = 0; i < nbetapi_[h]; i++) {
-				occupation_b->set(h, i, 1.0);
-			}
-		}
+        for (int h = 0; h < nirrep_; h++) {
+            for (int i = 0; i < nalphapi_[h]; i++) {
+                occupation_a->set(h, i, 1.0);
+            }
+            for (int i = 0; i < nbetapi_[h]; i++) {
+                occupation_b->set(h, i, 1.0);
+            }
+        }
 
         molden->write(filename, Ca_, Cb_, zero, zero, occupation_a, occupation_b, true);
-
     }
 
     // hartree-fock guess
@@ -1659,7 +1658,7 @@ void v2RDMSolver::WriteMoldenFile() {
     // it is possible the 1-RDM is already in the NO basis:
     if ( options_.get_bool("NAT_ORBS") || options_.get_bool("FCIDUMP") || options_.get_bool("EXTENDED_KOOPMANS") ) {
 
-        std::shared_ptr<Vector> eigval (new Vector("Natural Orbital Occupation Numbers (spin free)",nirrep_,nmopi_));
+        std::shared_ptr<Vector> eigval = std::make_shared<Vector>("Natural Orbital Occupation Numbers (spin free)",nmopi_);
         for (int h = 0; h < nirrep_; h++) {
             for (int i = 0; i < frzcpi_[h] + rstcpi_[h]; i++) {
                 eigval->pointer(h)[i] = 1.0;
@@ -1675,7 +1674,7 @@ void v2RDMSolver::WriteMoldenFile() {
         }
         //std::shared_ptr<MoldenWriter> molden(new MoldenWriter((std::shared_ptr<Wavefunction>)this));
         std::shared_ptr<MoldenWriter> molden(new MoldenWriter(reference_wavefunction_));
-        std::shared_ptr<Vector> zero (new Vector("",nirrep_,nmopi_));
+        std::shared_ptr<Vector> zero = std::make_shared<Vector>(nmopi_);
         zero->zero();
         std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".molden";
         molden->write(filename,Ca_,Ca_,zero, zero,eigval,eigval,true);
@@ -1684,7 +1683,7 @@ void v2RDMSolver::WriteMoldenFile() {
     }else {
         std::shared_ptr<Matrix> D (new Matrix(nirrep_,nmopi_,nmopi_));
         std::shared_ptr<Matrix> eigvec (new Matrix(nirrep_,nmopi_,nmopi_));
-        std::shared_ptr<Vector> eigval (new Vector("Natural Orbital Occupation Numbers (spin free)",nirrep_,nmopi_));
+        std::shared_ptr<Vector> eigval = std::make_shared<Vector>("Natural Orbital Occupation Numbers (spin free)",nmopi_);
         for (int h = 0; h < nirrep_; h++) {
             for (int i = 0; i < frzcpi_[h] + rstcpi_[h]; i++) {
                 D->pointer(h)[i][i] = 1.0;
@@ -1729,7 +1728,7 @@ void v2RDMSolver::WriteMoldenFile() {
         }
         //std::shared_ptr<MoldenWriter> molden(new MoldenWriter((std::shared_ptr<Wavefunction>)this));
         std::shared_ptr<MoldenWriter> molden(new MoldenWriter(reference_wavefunction_));
-        std::shared_ptr<Vector> zero (new Vector("",nirrep_,nmopi_));
+        std::shared_ptr<Vector> zero = std::make_shared<Vector>(nmopi_);
         zero->zero();
         std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".molden";
         molden->write(filename,Cno,Cno,zero, zero,eigval,eigval,true);
@@ -2095,7 +2094,6 @@ void v2RDMSolver::BuildConstraints(){
                 b_p[offset++] = 0.0;
             }
         }
-
     }
 
     if ( constrain_q2_ ) {
@@ -2368,8 +2366,75 @@ void v2RDMSolver::BuildConstraints(){
     }
 
     if ( constrain_d3_ ) {
-        //if (  nalpha_ - nrstc_ - nfrzc_ > 2 ) {
-            // D3aaa -> D2aa
+        if ( constrain_sz_ ) {
+            //if (  nalpha_ - nrstc_ - nfrzc_ > 2 ) {
+                // D3aaa -> D2aa
+                for (int h = 0; h < nirrep_; h++) {
+                    for(int i = 0; i < gems_aa[h]; i++){
+                        for(int j = 0; j < gems_aa[h]; j++){
+                            b_p[offset + i*gems_aa[h]+j] = 0.0;
+                        }
+                    }
+                    offset += gems_aa[h]*gems_aa[h];
+                }
+            //}
+            //if (  nbeta_ - nrstc_ - nfrzc_ > 2 ) {
+                // D3bbb -> D2bb
+                for (int h = 0; h < nirrep_; h++) {
+                    for(int i = 0; i < gems_aa[h]; i++){
+                        for(int j = 0; j < gems_aa[h]; j++){
+                            b_p[offset + i*gems_aa[h]+j] = 0.0;
+                        }
+                    }
+                    offset += gems_aa[h]*gems_aa[h];
+                }
+            //}
+            //if (  nalpha_ - nrstc_ - nfrzc_ > 1 ) {
+                // D3aab -> D2aa
+                for (int h = 0; h < nirrep_; h++) {
+                    for(int i = 0; i < gems_aa[h]; i++){
+                        for(int j = 0; j < gems_aa[h]; j++){
+                            b_p[offset + i*gems_aa[h]+j] = 0.0;
+                        }
+                    }
+                    offset += gems_aa[h]*gems_aa[h];
+                }
+            //}
+            //if (  nbeta_ - nrstc_ - nfrzc_ > 1 ) {
+                // D3bba -> D2bb
+                for (int h = 0; h < nirrep_; h++) {
+                    for(int i = 0; i < gems_aa[h]; i++){
+                        for(int j = 0; j < gems_aa[h]; j++){
+                            b_p[offset + i*gems_aa[h]+j] = 0.0;
+                        }
+                    }
+                    offset += gems_aa[h]*gems_aa[h];
+                }
+            //}
+            //if (  nalpha_ - nrstc_ - nfrzc_ > 1 ) {
+                // D3aab -> D2ab
+                for (int h = 0; h < nirrep_; h++) {
+                    for(int i = 0; i < gems_ab[h]; i++){
+                        for(int j = 0; j < gems_ab[h]; j++){
+                            b_p[offset + i*gems_ab[h]+j] = 0.0;
+                        }
+                    }
+                    offset += gems_ab[h]*gems_ab[h];
+                }
+            //}
+            //if (  nbeta_ - nrstc_ - nfrzc_ > 1 ) {
+                // D3bba -> D2ab
+                for (int h = 0; h < nirrep_; h++) {
+                    for(int i = 0; i < gems_ab[h]; i++){
+                        for(int j = 0; j < gems_ab[h]; j++){
+                            b_p[offset + i*gems_ab[h]+j] = 0.0;
+                        }
+                    }
+                    offset += gems_ab[h]*gems_ab[h];
+                }
+            //}
+        }else {
+            // D3aaa + D3aab -> D2aa
             for (int h = 0; h < nirrep_; h++) {
                 for(int i = 0; i < gems_aa[h]; i++){
                     for(int j = 0; j < gems_aa[h]; j++){
@@ -2378,9 +2443,7 @@ void v2RDMSolver::BuildConstraints(){
                 }
                 offset += gems_aa[h]*gems_aa[h];
             }
-        //}
-        //if (  nbeta_ - nrstc_ - nfrzc_ > 2 ) {
-            // D3bbb -> D2bb
+            // D3bbb + D3bba -> D2bb
             for (int h = 0; h < nirrep_; h++) {
                 for(int i = 0; i < gems_aa[h]; i++){
                     for(int j = 0; j < gems_aa[h]; j++){
@@ -2389,31 +2452,7 @@ void v2RDMSolver::BuildConstraints(){
                 }
                 offset += gems_aa[h]*gems_aa[h];
             }
-        //}
-        //if (  nalpha_ - nrstc_ - nfrzc_ > 1 ) {
-            // D3aab -> D2aa
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_aa[h]; i++){
-                    for(int j = 0; j < gems_aa[h]; j++){
-                        b_p[offset + i*gems_aa[h]+j] = 0.0;
-                    }
-                }
-                offset += gems_aa[h]*gems_aa[h];
-            }
-        //}
-        //if (  nbeta_ - nrstc_ - nfrzc_ > 1 ) {
-            // D3bba -> D2bb
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_aa[h]; i++){
-                    for(int j = 0; j < gems_aa[h]; j++){
-                        b_p[offset + i*gems_aa[h]+j] = 0.0;
-                    }
-                }
-                offset += gems_aa[h]*gems_aa[h];
-            }
-        //}
-        //if (  nalpha_ - nrstc_ - nfrzc_ > 1 ) {
-            // D3aab -> D2ab
+            // D3abb + D3bba -> D2ab
             for (int h = 0; h < nirrep_; h++) {
                 for(int i = 0; i < gems_ab[h]; i++){
                     for(int j = 0; j < gems_ab[h]; j++){
@@ -2422,18 +2461,7 @@ void v2RDMSolver::BuildConstraints(){
                 }
                 offset += gems_ab[h]*gems_ab[h];
             }
-        //}
-        //if (  nbeta_ - nrstc_ - nfrzc_ > 1 ) {
-            // D3bba -> D2ab
-            for (int h = 0; h < nirrep_; h++) {
-                for(int i = 0; i < gems_ab[h]; i++){
-                    for(int j = 0; j < gems_ab[h]; j++){
-                        b_p[offset + i*gems_ab[h]+j] = 0.0;
-                    }
-                }
-                offset += gems_ab[h]*gems_ab[h];
-            }
-        //}
+        }
         // additional spin constraints for singlets:
         if ( constrain_spin_ && nalpha_ == nbeta_ ) {
             for (int h = 0; h < nirrep_; h++) {
@@ -3693,36 +3721,48 @@ void v2RDMSolver::determine_n_dual() {
         }
     }
     if ( constrain_d3_ ) {
-        //if ( nalpha_ - nrstc_ - nfrzc_ > 2 ) {
+        if ( constrain_sz_ ) {
+            //if ( nalpha_ - nrstc_ - nfrzc_ > 2 ) {
+                for (int h = 0; h < nirrep_; h++) {
+                    n_dual_ += gems_aa[h]*gems_aa[h]; // D3aaa -> D2aa
+                }
+            //}
+            //if ( nbeta_ - nrstc_ - nfrzc_ > 2 ) {
+                for (int h = 0; h < nirrep_; h++) {
+                    n_dual_ += gems_aa[h]*gems_aa[h]; // D3bbb -> D2bb
+                }
+            //}
+            //if ( nalpha_ - nrstc_ - nfrzc_ > 2 ) {
+                for (int h = 0; h < nirrep_; h++) {
+                    n_dual_ += gems_aa[h]*gems_aa[h]; // D3aab -> D2aa
+                }
+            //}
+            //if ( nbeta_ - nrstc_ - nfrzc_ > 2 ) {
             for (int h = 0; h < nirrep_; h++) {
-                n_dual_ += gems_aa[h]*gems_aa[h]; // D3aaa -> D2aa
+                n_dual_ += gems_aa[h]*gems_aa[h]; // D3bba -> D2bb
             }
-        //}
-        //if ( nbeta_ - nrstc_ - nfrzc_ > 2 ) {
+            //}
+            //if ( nalpha_ - nrstc_ - nfrzc_ > 1 ) {
+                for (int h = 0; h < nirrep_; h++) {
+                    n_dual_ += gems_ab[h]*gems_ab[h]; // D3aab -> D2ab
+                }
+            //}
+            //if ( nbeta_ - nrstc_ - nfrzc_ > 1 ) {
+                for (int h = 0; h < nirrep_; h++) {
+                    n_dual_ += gems_ab[h]*gems_ab[h]; // D3bba -> D2ab
+                }
+            //}
+        }else {
             for (int h = 0; h < nirrep_; h++) {
-                n_dual_ += gems_aa[h]*gems_aa[h]; // D3bbb -> D2bb
+                n_dual_ += gems_aa[h]*gems_aa[h]; // D3aaa + D3aab -> D2aa
             }
-        //}
-        //if ( nalpha_ - nrstc_ - nfrzc_ > 2 ) {
             for (int h = 0; h < nirrep_; h++) {
-                n_dual_ += gems_aa[h]*gems_aa[h]; // D3aab -> D2aa
+                n_dual_ += gems_aa[h]*gems_aa[h]; // D3bbb + D3bba -> D2bb
             }
-        //}
-        //if ( nbeta_ - nrstc_ - nfrzc_ > 2 ) {
-        for (int h = 0; h < nirrep_; h++) {
-            n_dual_ += gems_aa[h]*gems_aa[h]; // D3bba -> D2bb
+            for (int h = 0; h < nirrep_; h++) {
+                n_dual_ += gems_ab[h]*gems_ab[h]; // D3aab + D3bba -> D2ab
+            }
         }
-        //}
-        //if ( nalpha_ - nrstc_ - nfrzc_ > 1 ) {
-            for (int h = 0; h < nirrep_; h++) {
-                n_dual_ += gems_ab[h]*gems_ab[h]; // D3aab -> D2ab
-            }
-        //}
-        //if ( nbeta_ - nrstc_ - nfrzc_ > 1 ) {
-            for (int h = 0; h < nirrep_; h++) {
-                n_dual_ += gems_ab[h]*gems_ab[h]; // D3bba -> D2ab
-            }
-        //}
         // additional spin constraints for singlets:
         if ( constrain_spin_ && nalpha_ == nbeta_ ) {
             for (int h = 0; h < nirrep_; h++) {

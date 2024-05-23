@@ -48,7 +48,7 @@ inline void DGEEV(char &jobvl,char &jobvr,long int &n,double*a,long int &lda,
 
 void v2RDMSolver::ExtendedKoopmans() {
 
-    Dimension noccpi(nirrep_,"Number of occupied / partially occupied orbitals per irrep");
+    int * noccpi = (int*)malloc(nirrep_*sizeof(int));
     for (int h = 0; h < nirrep_; h++) {
         noccpi[h] = frzcpi_[h] + rstcpi_[h] + amopi_[h];
     }
@@ -467,11 +467,13 @@ void v2RDMSolver::ExtendedKoopmans() {
 
     // beta
     EKTEigensolver(Vb,Db,epsilon_b_,false,"beta");
+
+    free(noccpi);
 }
 
 void v2RDMSolver::EKTEigensolver(std::shared_ptr<Matrix> V, std::shared_ptr<Matrix> D, std::shared_ptr<Vector> epsilon, bool use_dggev,std::string spin) {
 
-    Dimension noccpi(nirrep_,"Number of occupied / partially occupied orbitals per irrep");
+    int * noccpi = (int*)malloc(nirrep_*sizeof(int));
     for (int h = 0; h < nirrep_; h++) {
         noccpi[h] = frzcpi_[h] + rstcpi_[h] + amopi_[h];
     }
@@ -584,6 +586,7 @@ void v2RDMSolver::EKTEigensolver(std::shared_ptr<Matrix> V, std::shared_ptr<Matr
         free(eigval);
     }
 
+    free(noccpi);
 }
 
 } // End namespaces

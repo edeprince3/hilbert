@@ -67,8 +67,6 @@ void PolaritonicHF::common_init() {
     nbeta_    = reference_wavefunction_->nbeta();
     nalphapi_ = reference_wavefunction_->nalphapi();
     nbetapi_  = reference_wavefunction_->nbetapi();
-    doccpi_   = reference_wavefunction_->doccpi();
-    soccpi_   = reference_wavefunction_->soccpi();
     frzcpi_   = reference_wavefunction_->frzcpi();
     frzvpi_   = reference_wavefunction_->frzvpi();
     nmopi_    = reference_wavefunction_->nmopi();
@@ -95,12 +93,12 @@ void PolaritonicHF::common_init() {
     Db_  = (std::shared_ptr<Matrix>)(new Matrix(reference_wavefunction_->Db()));
 
     // Lagrangian matrix
-    Lagrangian_ = std::shared_ptr<Matrix>(reference_wavefunction_->Lagrangian());
+    Lagrangian_ = std::shared_ptr<Matrix>(reference_wavefunction_->lagrangian());
 
-    epsilon_a_= SharedVector(new Vector(nirrep_, nmopi_));
-    epsilon_a_->copy(reference_wavefunction_->epsilon_a().get());
-    epsilon_b_= SharedVector(new Vector(nirrep_, nmopi_));
-    epsilon_b_->copy(reference_wavefunction_->epsilon_b().get());
+    epsilon_a_ = std::make_shared<Vector>(nmopi_);
+    epsilon_a_->copy(*reference_wavefunction_->epsilon_a().get());
+    epsilon_b_ = std::make_shared<Vector>(nmopi_);
+    epsilon_b_->copy(*reference_wavefunction_->epsilon_b().get());
 
     // other stuff:
     gradient_     =  reference_wavefunction_->matrix_factory()->create_shared_matrix("Total gradient", molecule_->natom(), 3);

@@ -276,7 +276,12 @@ double rdm_entropy(int nirrep, int * dim, double * x, int * off){
 
     SharedMatrix mat (new Matrix(nirrep,dim,dim));
     SharedMatrix eigvec (new Matrix(nirrep,dim,dim));
-    SharedVector eigval (new Vector(nirrep,dim));
+
+    Dimension psi_dim (nirrep);
+    for (int i = 0; i < nirrep; i++) {
+        psi_dim[i] = dim[i];
+    }
+    SharedVector eigval = std::make_shared<Vector>(psi_dim);
 
     double entropy = 0.0;
 

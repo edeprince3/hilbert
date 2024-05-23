@@ -65,6 +65,12 @@ class v2RDM_DOCISolver: public Wavefunction{
 
   protected:
 
+    // DOCC array
+    Dimension doccpi_;
+
+    // SOCC array
+    Dimension soccpi_;
+
     /// the sdp solver
     std::shared_ptr<libsdp::SDPSolver> sdp_;
 

@@ -5,6 +5,11 @@ print('        Jellium SCF / 8 electrons / 60 basis functions / 50 grid points')
 sys.path.insert(0, '../../..')
 import hilbert
 
+molecule {
+H
+H 1 1.0
+}
+
 set {
   n_grid_points         50
   n_electrons           8

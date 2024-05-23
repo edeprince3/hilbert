@@ -84,7 +84,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_TDDFT CC_CAVITY");
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_TDDFT POLARITONIC_RPA CC_CAVITY");
 
 
         /*- Do DIIS? -*/
@@ -774,11 +774,11 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
                     rdm->compute_oscillators();
                     rdm->print_oscillators();
                 }
-                
+
                 // designate which density matrix to store
                 vector<int> rdm_states = options.get_int_vector("RDM_STATES");
                 if (rdm_states.empty()) rdm_states = {0};
-                
+
                 // check that the requested RDM states are valid
                 if (rdm_states.size() != 2 && rdm_states.size() != 1) {
                     throw PsiException("RDM_STATES must be a vector of length 1 or 2: provided size is " + std::to_string(rdm_states.size()), __FILE__, __LINE__);
