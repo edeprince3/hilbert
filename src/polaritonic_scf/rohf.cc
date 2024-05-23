@@ -118,7 +118,7 @@ double PolaritonicROHF::compute_energy() {
         // total number of auxiliary basis functions
         nQ = auxiliary->nbf();
 
-        std::shared_ptr<DiskDFJK> myjk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary));
+        std::shared_ptr<DiskDFJK> myjk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary,options_));
 
         // memory for jk (say, 80% of what is available)
         myjk->set_memory(0.8 * memory_);
@@ -137,7 +137,7 @@ double PolaritonicROHF::compute_energy() {
 
     }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
 
-        std::shared_ptr<CDJK> myjk = (std::shared_ptr<CDJK>)(new CDJK(primary,options_.get_double("CHOLESKY_TOLERANCE")));
+        std::shared_ptr<CDJK> myjk = (std::shared_ptr<CDJK>)(new CDJK(primary,options_,options_.get_double("CHOLESKY_TOLERANCE")));
 
         // memory for jk (say, 80% of what is available)
         myjk->set_memory(0.8 * memory_);
@@ -472,15 +472,15 @@ void PolaritonicROHF::form_Feff(std::shared_ptr<Matrix> Feff) {
     Feff->scale(0.5);
 
     for (int h = 0; h < nirrep_; ++h) {
-        for (int i = doccpi_[h]; i < doccpi_[h] + soccpi_[h]; ++i) {
+        for (int i = nbetapi_[h]; i < nalphapi_[h]; ++i) {
             // Set the open/closed portion
-            for (int j = 0; j < doccpi_[h]; ++j) {
+            for (int j = 0; j < nbetapi_[h]; ++j) {
                 double val = moFb->get(h, i, j);
                 Feff->set(h, i, j, val);
                 Feff->set(h, j, i, val);
             }
             // Set the open/virtual portion
-            for (int j = doccpi_[h] + soccpi_[h]; j < nmopi_[h]; ++j) {
+            for (int j = nalphapi_[h]; j < nmopi_[h]; ++j) {
                 double val = moFa->get(h, i, j);
                 Feff->set(h, i, j, val);
                 Feff->set(h, j, i, val);
@@ -514,6 +514,8 @@ std::shared_ptr<Matrix> PolaritonicROHF::OrbitalGradientROHF(std::shared_ptr<Mat
 
     // Only the inact-act, inact-vir, and act-vir rotations are non-redundant
     Dimension dim_zero = Dimension(nirrep_, "Zero Dim");
+    Dimension doccpi_ = doccpi();
+    Dimension soccpi_ = soccpi();
     Dimension noccpi = doccpi_ + soccpi_;
     Dimension virpi = nmopi_ - doccpi_;
     Slice row_slice(dim_zero, noccpi);

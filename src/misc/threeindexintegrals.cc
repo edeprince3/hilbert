@@ -28,7 +28,8 @@
 #include <psi4/libmints/wavefunction.h>
 #include <psi4/libmints/basisset.h>
 #include <psi4/libpsio/psio.hpp>
-#include <psi4/libmints/sieve.h>
+#include <psi4/libmints/integral.h>
+#include <psi4/libmints/twobody.h>
 #include <psi4/libmints/matrix.h>
 #include <psi4/libmints/vector.h>
 #include <psi4/psifiles.h>
@@ -52,8 +53,9 @@ void ThreeIndexIntegrals(std::shared_ptr<Wavefunction> ref, long int &nQ, long i
     std::shared_ptr<BasisSet> basisset = ref->basisset();
 
     // get ntri from sieve
-    std::shared_ptr<ERISieve> sieve (new ERISieve(basisset, ref->options().get_double("INTS_TOLERANCE")));
-    const std::vector<std::pair<int, int> >& function_pairs = sieve->function_pairs();
+    IntegralFactory factory(basisset, basisset, basisset, basisset);
+    auto eri_computer = std::shared_ptr<TwoBodyAOInt>(factory.eri());
+    const std::vector<std::pair<int, int> >& function_pairs = eri_computer->function_pairs();
     long int ntri = function_pairs.size();
 
     // read integrals that were written to disk in the scf
