@@ -161,7 +161,11 @@ double Jellium_SCFSolver::compute_energy(){
     h->add(V_);
 
     // eigenvectors / eigenvalues of fock matrix
-    std::shared_ptr<Vector> epsilon_a = std::make_shared<Vector>(nsopi_);
+    Dimension nsopi(nirrep_);
+    for (int h = 0; h < nirrep_; h++){
+        nsopi[h] = nsopi_[h];
+    }
+    std::shared_ptr<Vector> epsilon_a = std::make_shared<Vector>(nsopi);
 
     // diagonalize core hamiltonian, get orbitals
     Fa_->diagonalize(Ca_,epsilon_a);
@@ -466,8 +470,8 @@ void Jellium_SCFSolver::CIS_in_core() {
     int o = nelectron_ / 2;
     int v = nso_ - o;
 
-    int * virpi = (int*)malloc(nirrep_*sizeof(int));
-    int * ovpi  = (int*)malloc(nirrep_*sizeof(int));
+    Dimension virpi(nirrep_);
+    Dimension ovpi(nirrep_);
     for (int h = 0; h < nirrep_; h++) {
         virpi[h] = nsopi_[h] - doccpi_[h];
         ovpi[h]  = 0;
@@ -1063,8 +1067,8 @@ void Jellium_SCFSolver::CIS_in_core() {
     outfile->Printf("    ||eps|| = %20.12lf\n",check);
     outfile->Printf("\n");
 
-    free(virpi);
-    free(ovpi);
+    //free(virpi);
+    //free(ovpi);
 }
 void Jellium_SCFSolver::CIS_in_core_n6() {
 
@@ -1081,8 +1085,8 @@ void Jellium_SCFSolver::CIS_in_core_n6() {
     int o = nelectron_ / 2;
     int v = nso_ - o;
 
-    int * virpi = (int*)malloc(nirrep_*sizeof(int));
-    int * ovpi  = (int*)malloc(nirrep_*sizeof(int));
+    Dimension virpi(nirrep_);
+    Dimension ovpi(nirrep_);
     for (int h = 0; h < nirrep_; h++) {
         virpi[h] = nsopi_[h] - doccpi_[h];
         ovpi[h]  = 0;
@@ -1525,8 +1529,8 @@ void Jellium_SCFSolver::CIS_in_core_n6() {
     outfile->Printf("    ||eps|| = %20.12lf\n",check);
     outfile->Printf("\n");
 
-    free(virpi);
-    free(ovpi);
+    //free(virpi);
+    //free(ovpi);
 }
 void Jellium_SCFSolver::CIS_slow() {
 
@@ -1543,8 +1547,8 @@ void Jellium_SCFSolver::CIS_slow() {
     int o = nelectron_ / 2;
     int v = nso_ - o;
 
-    int * virpi = (int*)malloc(nirrep_*sizeof(int));
-    int * ovpi  = (int*)malloc(nirrep_*sizeof(int));
+    Dimension virpi(nirrep_);
+    Dimension ovpi(nirrep_);
     for (int h = 0; h < nirrep_; h++) {
         virpi[h] = nsopi_[h] - doccpi_[h];
         ovpi[h]  = 0;
@@ -1789,8 +1793,8 @@ void Jellium_SCFSolver::CIS_slow() {
     outfile->Printf("    ||eps|| = %20.12lf\n",check);
     outfile->Printf("\n");
 
-    free(virpi);
-    free(ovpi);
+    //free(virpi);
+    //free(ovpi);
 }
 void Jellium_SCFSolver::CIS_direct() {
 
@@ -1807,8 +1811,8 @@ void Jellium_SCFSolver::CIS_direct() {
     int o = nelectron_ / 2;
     int v = nso_ - o;
 
-    int * virpi = (int*)malloc(nirrep_*sizeof(int));
-    int * ovpi  = (int*)malloc(nirrep_*sizeof(int));
+    Dimension virpi(nirrep_);
+    Dimension ovpi(nirrep_);
     for (int h = 0; h < nirrep_; h++) {
         virpi[h] = nsopi_[h] - doccpi_[h];
         ovpi[h]  = 0;
@@ -2056,8 +2060,8 @@ void Jellium_SCFSolver::CIS_direct() {
     outfile->Printf("    ||eps|| = %20.12lf\n",check);
     outfile->Printf("\n");
 
-    free(virpi);
-    free(ovpi);
+    //free(virpi);
+    //free(ovpi);
 }
 
 void Jellium_SCFSolver::CIS_evaluate_sigma(size_t N, size_t maxdim, double ** bmat, double ** sigma) {

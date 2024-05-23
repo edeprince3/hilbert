@@ -40,9 +40,9 @@ add_psi4_plugin(hilbert
     src/polaritonic_scf/utddft.cc
     src/polaritonic_scf/uccsd.cc
 
-    #src/jellium/jellium_scf_solver.cc
-    #src/jellium/jellium_integrals.cc
-    #src/jellium/legendre.cc
+    src/jellium/jellium_scf_solver.cc
+    src/jellium/jellium_integrals.cc
+    src/jellium/legendre.cc
 
     src/doci/doci_solver.cc
     src/doci/write_tpdm.cc
