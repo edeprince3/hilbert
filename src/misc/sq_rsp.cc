@@ -96,7 +96,7 @@ void sq_rsp(int /*nm*/, int n, double** array, double* e_vals, int matz, double*
 
         // Get scratch vector and call DSYEV
         // The eigenvectors are placed in e_vecs in ascending order
-        int lwork_sqrsp = 3 * n;
+        int lwork_sqrsp  = (1 + 6 * n + 2 * n * n);
         double* work_sqrsp = (double*)malloc(lwork_sqrsp*sizeof(double));
 
         int liwork = 3 + 5 * n;
@@ -168,7 +168,7 @@ void sq_rsp(int /*nm*/, int n, double** array, double* e_vals, int matz, double*
         //'N' in parameter 1 to DSYEV terminates
         // the algorithm after eigenvectors are found
         // Canonical order is ascending in LAPACK
-        int lwork_sqrsp = 3 * n;
+        int lwork_sqrsp  = (1 + 6 * n + 2 * n * n);
         double* work_sqrsp = (double*)malloc(lwork_sqrsp*sizeof(double));
 
         int liwork = 3 + 5 * n;
