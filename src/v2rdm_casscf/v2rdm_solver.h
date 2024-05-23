@@ -137,6 +137,12 @@ class v2RDMSolver: public Wavefunction{
 
   protected:
 
+    // DOCC array
+    Dimension doccpi_;
+
+    // SOCC array
+    Dimension soccpi_;
+
     // GG orbital optimization class def
     std::shared_ptr<OrbitalOptimizer> orbopt_;
 

@@ -130,8 +130,8 @@ void  v2RDM_DOCISolver::common_init(){
     nbeta_    = reference_wavefunction_->nbeta();
     nalphapi_ = reference_wavefunction_->nalphapi();
     nbetapi_  = reference_wavefunction_->nbetapi();
-    doccpi_   = doccpi();
-    soccpi_   = soccpi();
+    doccpi_   = reference_wavefunction_->doccpi();
+    soccpi_   = reference_wavefunction_->soccpi();
     frzcpi_   = reference_wavefunction_->frzcpi();
     frzvpi_   = reference_wavefunction_->frzvpi();
     nmopi_    = reference_wavefunction_->nmopi();

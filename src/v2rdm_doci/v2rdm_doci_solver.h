@@ -65,8 +65,10 @@ class v2RDM_DOCISolver: public Wavefunction{
 
   protected:
 
-    /// DOCC and SOCC arrays
+    // DOCC array
     Dimension doccpi_;
+
+    // SOCC array
     Dimension soccpi_;
 
     /// the sdp solver
