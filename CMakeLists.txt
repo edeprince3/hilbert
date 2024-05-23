@@ -29,8 +29,6 @@ add_psi4_plugin(hilbert
 
     src/python_api/python_helpers.cc
 
-    src/misc/real_space_density.cc
-
     src/polaritonic_scf/hf.cc
     src/polaritonic_scf/rhf.cc
     src/polaritonic_scf/uhf.cc
@@ -42,9 +40,9 @@ add_psi4_plugin(hilbert
     src/polaritonic_scf/utddft.cc
     src/polaritonic_scf/uccsd.cc
 
-    src/jellium/jellium_scf_solver.cc
-    src/jellium/jellium_integrals.cc
-    src/jellium/legendre.cc
+    #src/jellium/jellium_scf_solver.cc
+    #src/jellium/jellium_integrals.cc
+    #src/jellium/legendre.cc
 
     src/doci/doci_solver.cc
     src/doci/write_tpdm.cc
@@ -57,15 +55,6 @@ add_psi4_plugin(hilbert
     src/pp2rdm/minimization_routines.cc
     src/pp2rdm/pp2rdm_solver.cc
     src/pp2rdm/write_tpdm.cc
-
-    src/misc/backtransform_tpdm.cc
-    src/misc/davidson_solver.cc
-    src/misc/nonsym_davidson_solver.cc
-    src/misc/diis.cc
-    src/misc/lbfgs_helper.cc
-    src/misc/integraltransform_sort_so_tpdm.cc
-    src/misc/integraltransform_tpdm_unrestricted.cc
-    src/misc/threeindexintegrals.cc
 
     src/focas/update_transformation_matrix.cc
     src/focas/orbital_optimizer.cc
@@ -146,6 +135,19 @@ add_psi4_plugin(hilbert
     src/v2rdm_casscf/write_opdm.cc
     src/v2rdm_casscf/write_tpdm.cc
     src/v2rdm_casscf/write_tpdm_iwl.cc
+
+    src/misc/real_space_density.cc
+    src/misc/backtransform_tpdm.cc
+    src/misc/diis.cc
+    src/misc/lbfgs_helper.cc
+    src/misc/integraltransform_sort_so_tpdm.cc
+    src/misc/integraltransform_tpdm_unrestricted.cc
+    src/misc/threeindexintegrals.cc
+    src/misc/schmidt_add.cc
+    src/misc/sq_rsp.cc
+    src/misc/davidson_solver.cc
+    src/misc/nonsym_davidson_solver.cc
+
 )
 
 # external projects 

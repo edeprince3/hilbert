@@ -24,7 +24,7 @@
  *  @END LICENSE
  */
 
-#include <algorithm>
+//#include <algorithm>
 
 #include <psi4/psi4-dec.h>
 #include <psi4/physconst.h>
@@ -161,7 +161,7 @@ double Jellium_SCFSolver::compute_energy(){
     h->add(V_);
 
     // eigenvectors / eigenvalues of fock matrix
-    std::shared_ptr<Vector> epsilon_a (new Vector(nirrep_,nsopi_));
+    std::shared_ptr<Vector> epsilon_a = std::make_shared<Vector>(nsopi_);
 
     // diagonalize core hamiltonian, get orbitals
     Fa_->diagonalize(Ca_,epsilon_a);
@@ -484,9 +484,9 @@ void Jellium_SCFSolver::CIS_in_core() {
     F->transform(Ca_);
 
     // dipole integrals
-    std::shared_ptr<Vector> dipole_x (new Vector(nirrep_,ovpi));
-    std::shared_ptr<Vector> dipole_y (new Vector(nirrep_,ovpi));
-    std::shared_ptr<Vector> dipole_z (new Vector(nirrep_,ovpi));
+    std::shared_ptr<Vector> dipole_x = std::make_shared<Vector>(ovpi);
+    std::shared_ptr<Vector> dipole_y = std::make_shared<Vector>(ovpi);
+    std::shared_ptr<Vector> dipole_z = std::make_shared<Vector>(ovpi);
 
     int * symmetry = (int*)malloc(nso_*sizeof(int));
     for (int h = 0; h < nirrep_; h++) {
@@ -1015,7 +1015,7 @@ void Jellium_SCFSolver::CIS_in_core() {
 
     outfile->Printf("    diagonalize CIS Hamiltonian..."); fflush(stdout);
     std::shared_ptr<Matrix> cis_eigvec (new Matrix(cis_ham));
-    std::shared_ptr<Vector> cis_eigval (new Vector(nirrep_,ovpi));
+    std::shared_ptr<Vector> cis_eigval = std::make_shared<Vector>(ovpi);
     cis_ham->diagonalize(cis_eigvec,cis_eigval,ascending);
     outfile->Printf("done.\n");
 
@@ -1134,9 +1134,9 @@ void Jellium_SCFSolver::CIS_in_core_n6() {
 */
 
     // dipole integrals
-    std::shared_ptr<Vector> dipole_x (new Vector(nirrep_,ovpi));
-    std::shared_ptr<Vector> dipole_y (new Vector(nirrep_,ovpi));
-    std::shared_ptr<Vector> dipole_z (new Vector(nirrep_,ovpi));
+    std::shared_ptr<Vector> dipole_x = std::make_shared<Vector>(ovpi);
+    std::shared_ptr<Vector> dipole_y = std::make_shared<Vector>(ovpi);
+    std::shared_ptr<Vector> dipole_z = std::make_shared<Vector>(ovpi);
 
     /// transform ERIs to mo basis
 
@@ -1477,7 +1477,7 @@ void Jellium_SCFSolver::CIS_in_core_n6() {
 
     outfile->Printf("    diagonalize CIS Hamiltonian..."); fflush(stdout);
     std::shared_ptr<Matrix> cis_eigvec (new Matrix(cis_ham));
-    std::shared_ptr<Vector> cis_eigval (new Vector(nirrep_,ovpi));
+    std::shared_ptr<Vector> cis_eigval = std::make_shared<Vector>(ovpi);
     cis_ham->diagonalize(cis_eigvec,cis_eigval,ascending);
     outfile->Printf("done.\n");
 
@@ -1561,9 +1561,9 @@ void Jellium_SCFSolver::CIS_slow() {
     F->transform(Ca_);
 
     // dipole integrals
-    std::shared_ptr<Vector> dipole_x (new Vector(nirrep_,ovpi));
-    std::shared_ptr<Vector> dipole_y (new Vector(nirrep_,ovpi));
-    std::shared_ptr<Vector> dipole_z (new Vector(nirrep_,ovpi));
+    std::shared_ptr<Vector> dipole_x = std::make_shared<Vector>(ovpi);
+    std::shared_ptr<Vector> dipole_y = std::make_shared<Vector>(ovpi);
+    std::shared_ptr<Vector> dipole_z = std::make_shared<Vector>(ovpi);
 
     /// transform ERIs to mo basis
 
@@ -1741,7 +1741,7 @@ void Jellium_SCFSolver::CIS_slow() {
 
     outfile->Printf("    diagonalize CIS Hamiltonian..."); fflush(stdout);
     std::shared_ptr<Matrix> cis_eigvec (new Matrix(cis_ham));
-    std::shared_ptr<Vector> cis_eigval (new Vector(nirrep_,ovpi));
+    std::shared_ptr<Vector> cis_eigval = std::make_shared<Vector>(ovpi);
     cis_ham->diagonalize(cis_eigvec,cis_eigval,ascending);
     outfile->Printf("done.\n");
 
@@ -1825,9 +1825,9 @@ void Jellium_SCFSolver::CIS_direct() {
     F->transform(Ca_);
 
     // dipole integrals
-    std::shared_ptr<Vector> dipole_x (new Vector(nirrep_,ovpi));
-    std::shared_ptr<Vector> dipole_y (new Vector(nirrep_,ovpi));
-    std::shared_ptr<Vector> dipole_z (new Vector(nirrep_,ovpi));
+    std::shared_ptr<Vector> dipole_x = std::make_shared<Vector>(ovpi);
+    std::shared_ptr<Vector> dipole_y = std::make_shared<Vector>(ovpi);
+    std::shared_ptr<Vector> dipole_z = std::make_shared<Vector>(ovpi);
 
     // diagonalize blocks by irrep
     double check = 0.0; 
