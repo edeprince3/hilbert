@@ -24,6 +24,7 @@
  *  @END LICENSE
  */
 
+#include <psi4/libpsi4util/process.h>
 #include "../include/eom_driver.h"
 
 namespace hilbert {
@@ -117,23 +118,56 @@ namespace hilbert {
             Printf("\n");
         }
 
+        // allocate memory for eigenvectors and eigenvalues
+        eigvals_ = make_shared<Vector>(M_);
+        revec_ = make_shared<Matrix>(M_, N_);
+        levec_ = make_shared<Matrix>(M_, N_);
+        eigvals_->zero();
+        revec_->zero();
+        levec_->zero();
+
         // compute the energy of the requested roots
+        eigsolve_timer_.start();
         if (build_hamiltonian_) {
             // build the entire EOM Hamiltonian
             build_hamiltonian();
-            return;
+        } else {
+            // build the EOM Hamiltonian subspace
+            build_eom_subspace();
         }
+        eigsolve_timer_.stop();
 
+        // normalize the eigenvectors
+        binormalize_states();
+
+        // unpack the final eigenvectors into tiled array objects
+        unpack_eigenvectors();
+
+        // save the eigenvectors to file if requested
+        if (save_evecs_) save_eigenvectors();
+
+        // print out dominant transitions for each root
+        Printf("\n");
+        Printf("    ==>  Dominant Transitions:  <==    \n");
+        transitions_summary();
+
+        // print the results
+        Printf("\n");
+        Printf("    ==>  %s energies:  <==    \n", eom_type_.c_str());
+        print_eom_summary();
+
+        // print out the transition dipole moments
+
+        // print out the timers
+        print_timers();
+
+    }
+
+    void EOM_Driver::build_eom_subspace() {
         // build the guess subspace
         double *Hdiag = build_preconditioner();
-        eigvals_ = make_shared<Vector>(M_);
-        eigvals_->zero();
-        revec_ = make_shared<Matrix>(M_, N_);
-        revec_->zero();
-        levec_ = make_shared<Matrix>(M_, N_);
-        levec_->zero();
-
-        if (read_guess_) load_eigenvectors(load_id_); // read guess eigenvectors from file?
+        if (read_guess_)
+            load_eigenvectors(load_id_); // read guess eigenvectors from file?
 
 
         Printf("\n\n  Building trial independent contractions across iterations...");
@@ -142,8 +176,6 @@ namespace hilbert {
         common_timer_.stop();
         Printf(" Done.\n      Finished in %s\n", common_timer_.elapsed().c_str());
 
-        // solve the eigenvalue problem
-        eigsolve_timer_.start();
         eigensolver_->solve(Hdiag,
                             N_,
                             M_,
@@ -163,45 +195,24 @@ namespace hilbert {
 
                             }, maxdim_, initdim_, eom_maxiter_, eom_e_conv_, eom_r_conv_, use_res_norm_, read_guess_,
                             eom_shift_);
-        free(Hdiag); // free memory
+
+        // free memory
+
+        free(Hdiag); // free the preconditioner
         sigmaOps.clear(); // clear the sigma operators
+        reuse_tmps_.clear(); // clear the temporary operators
         sigvec_blks_.clear(); // clear the sigma vectors
         evec_blks_.clear(); // clear the eigenvectors
-        eigsolve_timer_.stop();
-
-        // normalize the eigenvectors
-        binormalize_states();
-
-        // unpack the final eigenvectors
-        unpack_eigenvectors();
-
-        // save the eigenvectors to file if requested
-        if (save_evecs_) save_eigenvectors();
-
-        // print out dominant transitions for each root
-        transitions_summary();
-
-        // print the results
-        Printf("\n");
-        Printf("    ==>  %s energies:  <==    \n", eom_type_.c_str());
-        print_eom_summary();
-
-        // print out the timers
-        print_timers();
-
     }
 
     void EOM_Driver::build_sigma(int L, double **Q, double **sigmar, double **sigmal) {
 
         pack_timer_.start();
-        // initialize sigma vectors with zeros
-        for (int i = 0; i < N_; i++) {
-            for (int j = 0; j < maxdim_; j++) {
-                memset(sigmar[i], 0, maxdim_ * sizeof(double));
-            }
-        }
 
-        size_t Lsize = static_cast<size_t>(L);
+        // initialize sigma vectors with zeros
+        memset(*sigmar, 0, maxdim_ * N_ * sizeof(double));
+
+        auto Lsize = static_cast<size_t>(L);
 
         /// unpack the trial vectors from Q into the appropriate blocks of the left/right eigenvectors
         unpack_trial_vectors(Lsize, Q);
@@ -232,12 +243,26 @@ namespace hilbert {
         // print out the timers
         pack_timer_.stop();
         print_timers();
+
+        // set environment variables using target state
+        int target_state;
+
+        vector<int> rdm_states = options_.get_int_vector("RDM_STATES");
+        if (rdm_states.empty()) target_state = 0; // default to ground state
+        else target_state = rdm_states.front(); // use the first state in the list
+
+        Process::environment.globals["EOM TARGET ENERGY"] = eigvals_->get(target_state);
+        Process::environment.globals["CURRENT ENERGY"]    = eigvals_->get(target_state);
     }
 
-    void EOM_Driver::print_eom_summary() const {
+    void EOM_Driver::print_eom_summary() {
 
         // print out the header for the table
         print_eom_header();
+
+
+        double last_en = 0.0;
+        bool no_degeneracy = options_.get_bool("NO_DEGENERACY");
 
         // loop over roots
         for (int i = 0; i < M_; i++) {
@@ -246,8 +271,12 @@ namespace hilbert {
 
             // print energies and excitation energies
             double ee_energy = eigvals_->get(i);
+            if (fabs(last_en - ee_energy) < 1e-10 && no_degeneracy)
+                continue;
+            last_en = ee_energy;
+
             Printf("%5d %20.12lf %17.12lf ", i, ee_energy,
-                   ee_energy - cc_wfn_->cc_energy_);
+                   ee_energy - ground_energy_ref_);
 
             // print out the norm of the amplitudes. Ignore if less than 1e-10
             for (int j = 0; j < nops_; j++) {
@@ -265,8 +294,7 @@ namespace hilbert {
     }
 
     void EOM_Driver::binormalize_states() {
-        double RValue1;
-        double RValue2;
+        double RValue1, RValue2;
         double** rerp_ = revec_->pointer();
         double** relp_ = levec_->pointer();
         for (size_t i = 0; i < M_; i++) {
@@ -279,9 +307,8 @@ namespace hilbert {
             }
 
             RValue2 = C_DDOT(N_, rerp_[i], 1, relp_[i], 1);
-            if (fabs(RValue2) < 1e-16) {
-                continue;
-            }
+            if (fabs(RValue2) < 1e-16) continue;
+
             for (size_t I = 0; I < N_; I++) {
                 relp_[i][I] /= fabs(RValue2);
             }
@@ -290,58 +317,62 @@ namespace hilbert {
 
     void EOM_Driver::transitions_summary(){
 
-        Printf("\n\n    ==>  Dominant Transitions:  <==    \n", eom_type_.c_str());
+        // print out the dominant transitions for each root if requested
+        if (options_.get_bool("PRINT_TRANSITIONS"))
+            Printf("\n\n    ==>  Dominant Transitions:  <==    \n", eom_type_.c_str());
+        else return;
 
         for (size_t I = 0; I < M_; I++) {
             // get the dominant transitions for state I
             DominantTransitionsType dominant_transitions = find_dominant_transitions(I);
-
+            size_t num_print = options_.get_int("NUM_PRINT_TRANSITIONS");
             // print the dominant transitions
             Printf("\n\n  --> Root %zu <--\n", I);
-            for(auto blk : dominant_transitions) { // print top 5 transitions for each block
+
+            // print top `n` transitions for each excitation block
+            for(auto transitionBlock : dominant_transitions) {
                 // grab first 5 values from priority queue
-                vector<pair<double, pair<string,vector<size_t>>>> top5;
-                for (size_t i = 0; i < 5; i++) {
-                    if (blk.second.size() > 0) {
-                        top5.push_back(blk.second.top());
-                        blk.second.pop();
+                deque<TransitionType> topTransitions;
+
+                for (size_t i = 0; i < num_print; i++) {
+                    if (!transitionBlock.second.empty()) {
+                        topTransitions.push_back(transitionBlock.second.top());
+                        transitionBlock.second.pop();
                     }
                 }
 
                 // print top 5 in following format:
                 //     --> l1*r1_bbbb <--
-                //          1: (  i  )->(  a  ), (+-)0.1234
-                //          2: (  i  )->(  a  ), (+-)0.1234
-                //          3: (  i  )->(  a  ), (+-)0.1234
-                //          4: (  i  )->(  a  ), (+-)0.1234
-                //          5: (  i  )->(  a  ), (+-)0.1234
+                //          1: (  i  )->(  a  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
+                //          2: (  i  )->(  a  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
+                //          3: (  i  )->(  a  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
+                //          4: (  i  )->(  a  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
+                //          5: (  i  )->(  a  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
                 //     --> l2*r2_aaaa <--
-                //          1: (  i,  j  )->(  a,  b  ), (+-)0.1234
-                //          2: (  i,  j  )->(  a,  b  ), (+-)0.1234
-                //          3: (  i,  j  )->(  a,  b  ), (+-)0.1234
-                //          4: (  i,  j  )->(  a,  b  ), (+-)0.1234
-                //          5: (  i,  j  )->(  a,  b  ), (+-)0.1234
+                //          1: (  i,  j  )->(  a,  b  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
+                //          2: (  i,  j  )->(  a,  b  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
+                //          3: (  i,  j  )->(  a,  b  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
+                //          4: (  i,  j  )->(  a,  b  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
+                //          5: (  i,  j  )->(  a,  b  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
 
-                size_t top5_size = top5.size();
-                if (top5_size == 0) continue;
+                size_t top_size = topTransitions.size();
+                if (top_size == 0) continue;
 
-                Printf("\n    %s", blk.first.c_str());
-                for (size_t i = 0; i < top5_size; i++) {
-                    pair<double, pair<string,vector<size_t>>> &tpair = top5[i];
-                    string &spin = tpair.second.first; // spin
-                    vector<size_t> &labels = tpair.second.second; // transition pairs
+                Printf("\n    %s", transitionBlock.first.c_str());
+                for (size_t i = 0; i < top_size; i++) {
+                    TransitionType &tpair = topTransitions[i];
 
-                    double val = tpair.first; // value
-                    size_t size = labels.size(); // size of transition pairs
+                    auto [lr, l, r, spin, labels] = tpair;
+                    size_t size = labels.size(); // size of transitionBlock pairs
                     if (size == 0) { // ground state
-                        Printf(": %15.12lf", i+1, val);
-                    } else if (size == 2) { // singles
-                        Printf("\n        %d: (%2d%c ) -> (%2d%c ), %15.12lf", i+1,
-                               labels[1], spin[0], labels[0], spin[0], val);
-                    } else if (size == 4) { // doubles
-                        Printf("\n        %d: (%2d%c,%2d%c ) -> (%2d%c,%2d%c ), %15.12lf", i+1,
+                        Printf(": l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1, lr, l, r);
+                    } else if (size == 2 || size == 1) { // singles
+                        Printf("\n        %3d: (%2d%c ) -> (%2d%c ), l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1,
+                               labels[1], spin[0], labels[0], spin[0], lr, l, r);
+                    } else if (size == 4 || size == 3) { // doubles
+                        Printf("\n        %3d: (%2d%c,%2d%c ) -> (%2d%c,%2d%c ), l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1,
                                labels[2], spin[0], labels[3], spin[1],
-                               labels[0], spin[0], labels[1], spin[1], val);
+                               labels[0], spin[0], labels[1], spin[1], lr, l, r);
                     }
                 }
             }
@@ -380,10 +411,10 @@ namespace hilbert {
         std::shared_ptr<PSIO> psio(new PSIO());
         Printf("Saving eigenvectors to file %s\n", ("evec_" + psio->getpid() + ".bin").c_str());
         world_.gop.fence();
-        if (world_.rank() == 0) {
+        world_.gop.serial_invoke([=] () {
             revec_->save("revec_" + psio->getpid() + ".bin", false, false);
             levec_->save("levec_" + psio->getpid() + ".bin", false, false);
-        }
+        });
         world_.gop.fence();
     }
 

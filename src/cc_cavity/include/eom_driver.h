@@ -47,15 +47,16 @@ namespace hilbert {
 
         // thread safe print function
         inline void Printf(const char *format, ...) const {
-            if (world_.rank() == 0) {
-                va_list argptr;
-                va_start(argptr, format);
-                char input[2048];
-                vsprintf(input, format, argptr);
-                va_end(argptr);
-                outfile->Printf("%s", input);
-            }
-            world_.gop.fence();
+            va_list argptr;
+            va_start(argptr, format);
+            char input[1024];
+            vsprintf(input, format, argptr);
+            va_end(argptr);
+            world_.gop.serial_invoke(
+                    [=]() {
+                        outfile->Printf("%s", input);
+                    }
+            );
         }
 
         /**
@@ -66,7 +67,52 @@ namespace hilbert {
          * @return index of the element in the triangular array
          */
         inline static size_t sqr_2_tri_idx(size_t i, size_t j, size_t N) {
+            if (N < 2) {
+                cout << "The leading dimension of the array must be at least 2.\n"
+                        "Check number of occupied and virtual orbitals.\n"
+                        "row index: " << i << ", column index: " << j << "\n";
+                exit(1);
+            }
+            if (N == 2)
+                return i;
+
+            if (i > j) {
+                cout << "The row index must be less than or equal to the column index.\n"
+                        "Check the indices of the element in the upper triangular array.\n"
+                        "row index: " << i << ", column index: " << j << "\n";
+                exit(1);
+            }
+
             return (2 * N - i - 3) * i / 2 + j - 1;
+        }
+
+        /**
+         * Calculate the index of an element in an upper triangular array from its three component indices (i,j,k)
+         * @param i first index
+         * @param j second index
+         * @param k third index
+         * @param N leading dimension of the array
+         * @return index of the element in the triangular array
+         */
+        inline static size_t cube_2_tri_idx(size_t i, size_t j, size_t k, size_t N) {
+            if (N < 3){
+                cout << "The leading dimension of the array must be at least 3.\n"
+                        "Check number of occupied and virtual orbitals.\n"
+                        "row index: " << i << ", column index: " << j << ", third index: " << k << "\n";
+                exit(1);
+            }
+            if (N == 3) return sqr_2_tri_idx(i, j, N);
+
+            if (i > j || j > k) {
+                cout << "The first index must be less than or equal to the second index. "
+                        "and the second index must be less than the third index.\n"
+                        "Check the indices of the element in the upper triangular array.\n"
+                        "first index: " << i << ", second index: " << j << ", third index: " << k << "\n";
+                exit(1);
+            }
+
+            size_t ij_pair = (N * (N - 1) / 2) - ((N - i) * (N - i - 1) / 2) + (j - i - 1);
+            return (ij_pair * (ij_pair + 1) / 2) + k - j - 1;
         }
 
         /** ------------------------ Common Attributes ------------------------ */
@@ -75,6 +121,8 @@ namespace hilbert {
         std::shared_ptr<CC_Cavity> cc_wfn_;
         Options & options_;
 
+        // reference energy from ground state calculation or other source
+        double ground_energy_ref_ = cc_wfn_->cc_energy_;
 
         // dimensions of the wavefunction
         size_t o_ = cc_wfn_->o_, oa_ = cc_wfn_->oa_, ob_ = cc_wfn_->ob_, // occupied
@@ -115,7 +163,6 @@ namespace hilbert {
         double eom_shift_ = options_.get_double("EOM_SHIFT"); // use shift?
 //        bool use_res_norm_ = options_.get_bool("USE_RES_NORM"); // use residual norm?
         bool use_res_norm_ = true; // residual norm is always used to adjust the subspace size
-        bool excited_transitions_ = options_.get_bool("EXCITED_PROPERTIES"); // compute excited state properties?
 
         bool save_evecs_ = options_.get_bool("SAVE_EVECS"); // save eigenvectors to file?
         size_t load_id_ = options_.get_int("LOAD_ID"); // id of file to load
@@ -127,6 +174,8 @@ namespace hilbert {
 
         string eom_type_; // eom type
         vector<TArrayD> sigmaOps; // trial independent operators
+        map<string, TArrayD> reuse_tmps_; // trial independent operators
+        map<string, double> scalars_; // trial independent scalars
         SharedVector eigvals_; // left/right eigenvalue blocks
         SharedMatrix revec_, levec_; // left/right eigenvalue blocks
         TArrayMap evec_blks_;   // left/right trial vector blocks
@@ -185,12 +234,12 @@ namespace hilbert {
         /**
          * Print the header for the EOM-CC summary of energies and properties
          */
-        virtual void print_eom_header() const = 0;
+        virtual void print_eom_header() = 0;
 
         /**
          * Print the EOM-CC summary of energies and properties
          */
-        virtual void print_eom_summary() const;
+        virtual void print_eom_summary();
 
         /**
          * build the full hamiltonian (not implemented)
@@ -241,12 +290,28 @@ namespace hilbert {
          */
         virtual void unpack_eigenvectors() = 0;
 
+        typedef // custom type for storing information of transitions:
+        tuple<double, // the weight of the transition (l*r)
+              double, // the value of l
+              double, // the value of r
+              string, // the spin of the transition
+              vector<size_t> // the indices of the transition
+            > TransitionType;
 
-        // a map of the operator name to a priority queue of its dominant transitions with:
-        //     the magnitude of the transition
-        //     the spin of the transition
-        //     the indicies of the transition
-        typedef map<string, priority_queue<pair<double, pair<string, vector<size_t>>>>> DominantTransitionsType;
+        // a comparison function for the priority queue that sorts by the magnitude of the transition
+        struct TransitionCompare {
+            bool operator()(const TransitionType &lhs, const TransitionType &rhs) const {
+                return fabs(get<0>(lhs)) < fabs(get<0>(rhs));
+            }
+        };
+
+        typedef // a map of the excitation operator blocks to a priority queue of its dominant transitions
+        map<string, // the excitation operator block name
+            priority_queue<TransitionType, // the priority queue of transitions
+                deque<TransitionType>, // the container for storing transitions (deque is faster than vector here)
+                TransitionCompare // the comparison function for the priority queue
+            >
+        > DominantTransitionsType;
 
         /**
          * find the dominant transitions for a given state
@@ -258,6 +323,8 @@ namespace hilbert {
          * Print the dominant transitions for all states
          */
         virtual void transitions_summary();
+
+        void build_eom_subspace();
     };
 
 } // cc_cavity

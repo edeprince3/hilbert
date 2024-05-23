@@ -24,8 +24,8 @@
  *  @END LICENSE
  */
 
-#ifndef CC_CAVITY_CC_CAVITY_H
-#define CC_CAVITY_CC_CAVITY_H
+#ifndef CC_CAVITY_H
+#define CC_CAVITY_H
 
 
 #include <tiledarray.h>
@@ -35,6 +35,7 @@
 #include "../misc/nonsym_davidson_solver_qed.h"
 #include "../misc/ta_helper.h"
 #include "../misc/diis_qed.h"
+#include "../misc/qed_blas.h"
 #include "../misc/timer.h"
 
 using namespace std;
@@ -53,15 +54,16 @@ namespace hilbert {
         TA::World& world_ = TA::get_default_world(); // TA world object
         // thread safe print function
         inline void Printf(const char *format, ...) const {
-            if (world_.rank() == 0) {
-                va_list argptr;
-                va_start(argptr, format);
-                char input[1024];
-                vsprintf(input, format, argptr);
-                va_end(argptr);
-                outfile->Printf("%s", input);
-            }
-            world_.gop.fence();
+            va_list argptr;
+            va_start(argptr, format);
+            char input[1024];
+            vsprintf(input, format, argptr);
+            va_end(argptr);
+            world_.gop.serial_invoke(
+                [=]() {
+                    outfile->Printf("%s", input);
+                }
+            );
         }
 
 
@@ -169,6 +171,17 @@ namespace hilbert {
         */
         virtual void transform_integrals(bool use_t1);
 
+
+        /**
+         * @brief set the density matrices from the similarity transformed density matrices
+         * @param Da alpha density matrix in AO basis
+         * @param Db beta density matrix in AO basis
+         */
+        void save_density(const SharedMatrix& Da, const SharedMatrix& Db){ Da_ = Da; Db_ = Db;}
+
+        // DIIS object for amplitudes
+        std::shared_ptr<DIISTA> diis_ta;
+
     protected:
 
         /**
@@ -191,8 +204,6 @@ namespace hilbert {
          * @return the CC energy
          */
         virtual double cc_iterations();
-
-        std::shared_ptr<DIISTA> diis_ta; // DIIS object for amplitudes
 
         /**
          * print header for CC iterations
@@ -264,4 +275,4 @@ namespace hilbert {
 }
 
 
-#endif //CC_CAVITY_CC_CAVITY_H
+#endif //CC_CAVITY_H

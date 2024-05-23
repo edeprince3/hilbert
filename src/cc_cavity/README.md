@@ -140,7 +140,9 @@ set hilbert {
   EOM_R_CONV               1e-10 # residual convergence criteria for the EOM-CC iterations
   EOM_SS_GUESS              true # use the singles hamiltonian to guess the EOM-CC subspace
   EOM_MAXITER                250 # maximum number of iterations for the EOM-CC iterations
-  EXCITED_PROPERTIES        true # compute EOM properties (oscillator strengths, transition dipole moments, etc.)
+  PRINT_EXCITED_PROPERTIES  true # compute and print EOM properties (oscillator strengths, transition dipole moments, etc.)
+  PRINT_TRANSITIONS         true # print the dominant transitions of each state
+  NUM_PRINT_TRANSITIONS        8 # number of dominant transitions of each state to print
   
   MAD_NUM_THREADS              1 # the number of MADNESS threads to use with mpirun 
                                  # Note: if not using mpi or using eom, set this to 1 for best performanc
@@ -171,10 +173,3 @@ To run the calculation with mpi, you can use the following command:
 mpirun -n $NUM_THREADS psi4 input.dat output.dat
 ```
 Note: MPI functionality is not optimized as of now.
-
-Another important note is that `MAD_NUM_THREADS` may not be set properly through the input file. 
-It is ideal to instead add this to your bashrc
-``` bash
-export MAD_NUM_THREADS=1
-```
-

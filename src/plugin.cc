@@ -54,6 +54,8 @@
     #include <tiledarray.h>
     #include "cc_cavity/include/cc_cavity.h"
     #include "cc_cavity/include/derived/qed_ccsd.h"
+    #include "cc_cavity/include/lambda_driver.h"
+
     #if MAX_CC_LEVEL >= 3
         #include "cc_cavity/include/derived/qed_ccsdt.h"
     #endif
@@ -77,7 +79,7 @@ namespace hilbert {
 extern "C" PSI_API
 int read_options(std::string name, Options& options)
 {
-    if (name == "HILBERT"|| options.read_globals()) {
+    if (name == "HILBERT" || options.read_globals()) {
 
         /*- SUBSECTION General -*/
 
@@ -437,6 +439,9 @@ int read_options(std::string name, Options& options)
         /*- Perform EOM for cc_cavity -*/
         options.add_bool("PERFORM_EOM", false);
 
+        /*- Generate lambda amplitudes for cc_cavity -*/
+        options.add_bool("PERFORM_LAMBDA", false);
+
         /*- Perform EOM with full hamiltonian for qed-ccsd (not implemented) -*/
         options.add_bool("BUILD_HAMILTONIAN", false);
 
@@ -451,6 +456,9 @@ int read_options(std::string name, Options& options)
         /*- value of shift to apply to davidson solver -*/
         options.add_double("EOM_SHIFT", 0.0l); // 0.0 means no shift
 
+        /*- keep degenerate states in EOM-CC -*/
+        options.add_bool("NO_DEGENERACY", false);
+
         /*- Save and load eigenvectors -*/
         options.add_bool("SAVE_EVECS", false); // save eigenvectors to file?
         options.add_int("LOAD_ID", -1); // id of file to load eigenvectors from
@@ -459,10 +467,24 @@ int read_options(std::string name, Options& options)
         options.add_str("EOM_TYPE", "EE", "EE EA");
 
         /*- do print excited state transition dipoles (computed either way) -*/
-        options.add_bool("EXCITED_PROPERTIES", true);
+        options.add_bool("PRINT_EXCITED_PROPERTIES", true);
+
+        /*- do print dominant transitions in each state -*/
+        options.add_bool("PRINT_TRANSITIONS", true);
+
+        /*- number of dominant transitions to print in each state -*/
+        options.add_int("NUM_PRINT_TRANSITIONS", 8);
 
         /*- Select left and right states to visualize density or transition density -*/
         options.add_array("RDM_STATES");
+
+        /*- boolean for whether to compute the 2-RDM -*/
+        options.add_bool("COMPUTE_2RDM", false);
+
+        // TODO: remove this and call HF directly on anion
+        options.add_double("ANION_EDIPZ", 0.0);
+        options.add_double("ANION_DSE", 0.0);
+
     }
 
     return true;
@@ -648,21 +670,34 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
             throw PsiException("unknown REFERENCE for polaritonic UHF",__FILE__,__LINE__);
         }
 
-        // initialize the tiled array library
-        int argc = 1;
-        char **argv = nullptr;
-        psi::Process::environment.globals["MAD_NUM_THREADS"] = options.get_int("MAD_NUM_THREADS");
+        // set the number of threads for MADNESS
+        int mad_num_threads = options.get_int("MAD_NUM_THREADS");
+        psi::Process::environment.globals["MAD_NUM_THREADS"] = mad_num_threads;
+        string mad_num_env = "MAD_NUM_THREADS=" + std::to_string(mad_num_threads);
+        putenv(const_cast<char *>(mad_num_env.c_str()));
 
-        // initialize tiledattay with MPIComm from mpi4py
-        TA::initialize(argc, argv, CavityHelper::comm_);
+        // initialize tiledarray with MPIComm from mpi4py if not already initialized
+        if (!CavityHelper::initialized_)
+            CavityHelper::ta_initialize();
+
 
         // create the CC_CAVITY object
         std::shared_ptr<CC_Cavity> qedcc;
 
+        // get the options
+        bool include_t3_ = options.get_bool("QED_CC_INCLUDE_T3");
+        bool include_t4_ = options.get_bool("QED_CC_INCLUDE_T4");
+        bool include_u0_ = options.get_bool("QED_CC_INCLUDE_U0");
+        bool include_u1_ = options.get_bool("QED_CC_INCLUDE_U1");
+        bool include_u2_ = options.get_bool("QED_CC_INCLUDE_U2");
+        bool include_u3_ = options.get_bool("QED_CC_INCLUDE_U3");
+        bool include_u4_ = options.get_bool("QED_CC_INCLUDE_U4");
+
         // determine the level of theory
-        bool three_body = options.get_bool("QED_CC_INCLUDE_T3") || options.get_bool("QED_CC_INCLUDE_U3");
-        bool four_body  = options.get_bool("QED_CC_INCLUDE_T4") || options.get_bool("QED_CC_INCLUDE_U4");
-        bool has_photon = options.get_int("N_PHOTON_STATES") > 1;
+        bool three_body = include_t3_ || include_u3_;
+        bool four_body  = include_t4_ || include_u4_;
+        bool has_photon = include_u0_ || include_u1_ || include_u2_ || include_u3_ || include_u4_
+                           || options.get_int("N_PHOTON_STATES") > 1;
 
         // select the appropriate derived CC_CAVITY object
         if (four_body)
@@ -687,6 +722,17 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         // compute the energy
         double energy = qedcc->compute_energy();
 
+        // perform lambda iterations if requested
+        bool do_lambda = options.get_bool("PERFORM_LAMBDA");
+
+        if (do_lambda) {
+            if (!has_photon)
+                throw PsiException("LAMBDA iterations require the `QED_CC_INCLUDE_U*` flags to be set (for now)",
+                                   __FILE__, __LINE__);
+            std::shared_ptr<LambdaDriver> lambda_driver(new LambdaDriver(qedcc, options));
+            lambda_driver->compute_lambda();
+        }
+
         // perform QED-EOM-CC if requested
         bool do_eom = options.get_bool("PERFORM_EOM");
 
@@ -704,9 +750,9 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
                         new EOM_EE_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
             }
             else if (options.get_str("EOM_TYPE") == "EA") { // use EOM for electron attachment
-                throw PsiException("QED-EOM-EA-CC is not fuctional for release yet.", __FILE__, __LINE__);
+//throw PsiException("QED-EOM-EA-CC is not fuctional for release yet.", __FILE__, __LINE__);
                 eom_driver = std::shared_ptr<EOM_Driver>(
-                        new EOM_EA_Driver((std::shared_ptr<CC_Cavity>) qedcc, options));
+                        new EOM_EA_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
             }
             else throw PsiException("EOM_TYPE not recognized. Please choose EE or EA.", __FILE__, __LINE__);
 
@@ -715,25 +761,45 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
             // compute the RDMs and oscillator strengths for the given EOM type
             if (options.get_str("EOM_TYPE") == "EE") {
+                TA::get_default_world().gop.serial_invoke([]() {
+                    outfile->Printf("Computing EOM 1-RDM and oscillator strengths...");
+                });
+
+                // compute the RDMs
                 std::shared_ptr<EOM_EE_RDM> rdm(new EOM_EE_RDM((std::shared_ptr<EOM_Driver>) eom_driver, options));
-                rdm->compute_eom_rdms();
-                rdm->compute_oscillators();
-                rdm->print_oscillators();
+                rdm->compute_eom_1rdm();
 
+                // compute the oscillator strengths
+                if (options.get_bool("PRINT_EXCITED_PROPERTIES")) {
+                    rdm->compute_oscillators();
+                    rdm->print_oscillators();
+                }
+                
+                // designate which density matrix to store
                 vector<int> rdm_states = options.get_int_vector("RDM_STATES");
-                if (rdm_states.size() > 0) {
-                    vector<int> rdm_states = options.get_int_vector("RDM_STATES");
-                    if (rdm_states.size() != 2 && rdm_states.size() != 1) {
-                        throw PsiException("RDM_STATES must be a vector of length 1 or 2: provided size is " + std::to_string(rdm_states.size()), __FILE__, __LINE__);
+                if (rdm_states.empty()) rdm_states = {0};
+                
+                // check that the requested RDM states are valid
+                if (rdm_states.size() != 2 && rdm_states.size() != 1) {
+                    throw PsiException("RDM_STATES must be a vector of length 1 or 2: provided size is " + std::to_string(rdm_states.size()), __FILE__, __LINE__);
+                }
+                for (auto state : rdm_states) {
+                    if (state < 0 || state > eom_driver->M_) {
+                        throw PsiException("RDM_STATES must be between 0 and the number of states.", __FILE__, __LINE__);
                     }
+                }
 
-                    for (auto state : rdm_states) {
-                        if (state < 0 || state > eom_driver->M_) {
-                            throw PsiException("RDM_STATES must be between 0 and the number of states.", __FILE__, __LINE__);
-                        }
-                    }
+                // store the requested 1RDM
+                rdm->save_density(rdm_states);
 
-                    rdm->molden(rdm_states);
+                // compute the 2RDMs if requested
+                bool compute_2rdm = options.get_bool("COMPUTE_2RDM");
+                if (compute_2rdm) {
+                    TA::get_default_world().gop.serial_invoke([]() {
+                        outfile->Printf("Computing EOM 2-RDM...");
+                    });
+                    rdm->compute_eom_2rdm(rdm_states);
+                    //rdm->save_density(rdm_states, 2); // psi4 does not need to store the 2RDM at this time
                 }
 
             }
@@ -741,8 +807,7 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         }
 
-        // Tear down the parallel runtime_ for last energy call when FINALIZE = true
-        TA::finalize();
+        // parallel runtime is torn down automatically from python side
 
         // return the wavefunction
         return (std::shared_ptr<Wavefunction>)qedcc;

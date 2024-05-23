@@ -120,7 +120,7 @@ namespace hilbert {
         return precond;
     }
 
-    void EOM_EE_CCSD::print_eom_header() const {
+    void EOM_EE_CCSD::print_eom_header() {
         // print out energies and amplitude norms
         Printf("\n%5s", "state");
         Printf(" %20s", "total energy (Eh)");
@@ -129,6 +129,9 @@ namespace hilbert {
         Printf(" %13s", "l1*r1");
         Printf(" %13s", "l2*r2");
         Printf("\n");
+
+        // set reference energy
+        ground_energy_ref_ = eigvals_->get(0);
     }
 
     double* EOM_EE_CCSD::get_state_norms(size_t i) const {
@@ -176,6 +179,8 @@ namespace hilbert {
 
         size_t oa = oa_, ob = ob_, // number of occupied orbitals
                va = va_, vb = vb_; // number of virtual beta orbitals
+        size_t aa = va*oa, bb = vb*ob; // singles offsets
+        size_t aaaa = (va*va-va)*(oa*oa-oa)/4, abab = va*vb*oa*ob, bbbb = (vb*vb-vb)*(ob*ob-ob)/4; // doubles offsets
 
         size_t offset;
         /// pack electronic trial vectors into TA::TArrayD
@@ -188,11 +193,11 @@ namespace hilbert {
         {
             evec_blks_["r1_aa"].init_elements([Q, oa, offset](auto &I) {
                 return Q[I[0]][I[1]*oa + I[2] + offset];
-            }); offset += oa*va;
+            }); offset += aa;
 
             evec_blks_["r1_bb"].init_elements([Q, ob, offset](auto &I) {
                 return Q[I[0]][I[1]*ob + I[2] + offset];
-            }); offset += vb*ob;
+            }); offset += bb;
         }
 
         // pack redundant doubles into tensors
@@ -213,11 +218,11 @@ namespace hilbert {
                 return change_sign ? -value : value;
 
 
-            }); offset += va*oa*(oa-1)*(va-1)/4;
+            }); offset += aaaa;
 
             evec_blks_["r2_abab"].init_elements([Q, oa, ob, vb, offset](auto &I) {
                 return Q[I[0]][I[1]*vb*oa*ob + I[2]*oa*ob + I[3]*ob + I[4] + offset];
-            }); offset += va*vb*oa*ob;
+            }); offset += abab;
 
             evec_blks_["r2_bbbb"].init_elements([Q, vb, ob, offset](auto &I) {
                 size_t a = I[1], b = I[2], i = I[3], j = I[4];
@@ -233,7 +238,7 @@ namespace hilbert {
                 double value = Q[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
 
-            }); offset += vb*ob*(vb-1)*(ob-1)/4;
+            }); offset += bbbb;
         }
         world_.gop.fence();
 
@@ -253,95 +258,97 @@ namespace hilbert {
 
         size_t oa = oa_, ob = ob_, // number of occupied orbitals
         va = va_, vb = vb_; // number of virtual beta orbitals
+        size_t aa = va*oa, bb = vb*ob; // singles offsets
+        size_t aaaa = (va*va-va)*(oa*oa-oa)/4, abab = va*vb*oa*ob, bbbb = (vb*vb-vb)*(ob*ob-ob)/4; // doubles offsets
 
         /// unpack electronic part of right sigma vectors
         size_t offset = 0;
         // ground state
         {
-            HelperD::forall(sigvec_blks_["sigmar_0"], [sigmar](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmar0"], [sigmar](auto &tile, auto &x) {
                 sigmar[0][x[0]] = tile[x];
             }); offset += 1;
         }
         // singles
         {
-            HelperD::forall(sigvec_blks_["sigmar_s_aa"], [sigmar, oa, offset](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmar1_aa"], [sigmar, oa, offset](auto &tile, auto &x) {
                 sigmar[x[1]*oa + x[2] + offset][x[0]] = tile[x];
-            }); offset += oa*va;
+            }); offset += aa;
             
-            HelperD::forall(sigvec_blks_["sigmar_s_bb"], [sigmar, ob, offset](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmar1_bb"], [sigmar, ob, offset](auto &tile, auto &x) {
                 sigmar[x[1]*ob + x[2] + offset][x[0]] = tile[x];
-            }); offset += ob*vb;
+            }); offset += bb;
         }
 
         // doubles
         {
 
-            HelperD::forall(sigvec_blks_["sigmar_d_aaaa"], [sigmar, oa, va, offset](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmar2_aaaa"], [sigmar, oa, va, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
                     size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], va);
                     size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], oa);
                     size_t sigmar_idx = ab_off*oa*(oa-1)/2 + ij_off + offset;
                     sigmar[sigmar_idx][x[0]] = tile[x];
                 }
-            }); offset += va*oa*(oa-1)*(va-1)/4;
+            }); offset += aaaa;
             
-            HelperD::forall(sigvec_blks_["sigmar_d_abab"], [sigmar, oa, ob, vb, offset](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmar2_abab"], [sigmar, oa, ob, vb, offset](auto &tile, auto &x) {
                 sigmar[x[1]*vb*oa*ob + x[2]*oa*ob + x[3]*ob + x[4] + offset][x[0]] = tile[x];
-            }); offset += va*vb*oa*ob;
+            }); offset += abab;
             
-            HelperD::forall(sigvec_blks_["sigmar_d_bbbb"], [sigmar, ob, vb, offset](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmar2_bbbb"], [sigmar, ob, vb, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
                     size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], vb);
                     size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], ob);
                     size_t sigmar_idx = ab_off*ob*(ob-1)/2 + ij_off + offset;
                     sigmar[sigmar_idx][x[0]] = tile[x];
                 }
-            }); offset += vb*ob*(ob-1)*(vb-1)/4;
+            }); offset += bbbb;
         }
 
         /// unpack electronic part of left sigma vectors
         offset = 0;
         // ground state
         {
-            HelperD::forall(sigvec_blks_["sigmal_0"], [sigmal](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmal0"], [sigmal](auto &tile, auto &x) {
                 sigmal[0][x[0]] = tile[x];
             }); offset += 1;
         }
         // singles
         {
-            HelperD::forall(sigvec_blks_["sigmal_s_aa"], [sigmal, oa, offset](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmal1_aa"], [sigmal, oa, offset](auto &tile, auto &x) {
                 sigmal[x[1]*oa + x[2] + offset][x[0]] = tile[x];
-            }); offset += oa*va;
+            }); offset += aa;
 
-            HelperD::forall(sigvec_blks_["sigmal_s_bb"], [sigmal, ob, offset](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmal1_bb"], [sigmal, ob, offset](auto &tile, auto &x) {
                 sigmal[x[1]*ob + x[2] + offset][x[0]] = tile[x];
-            }); offset += ob*vb;
+            }); offset += bb;
         }
 
         // doubles
         {
-            HelperD::forall(sigvec_blks_["sigmal_d_aaaa"], [sigmal, oa, va, offset](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmal2_aaaa"], [sigmal, oa, va, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
                     size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], va);
                     size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], oa);
                     size_t sigmal_idx = ab_off*oa*(oa-1)/2 + ij_off + offset;
                     sigmal[sigmal_idx][x[0]] = tile[x];
                 }
-            }); offset += va*oa*(oa-1)*(va-1)/4;
+            }); offset += aaaa;
 
-            HelperD::forall(sigvec_blks_["sigmal_d_abab"], [sigmal, oa, ob, vb, offset](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmal2_abab"], [sigmal, oa, ob, vb, offset](auto &tile, auto &x) {
                 sigmal[x[1] * vb * oa * ob + x[2] * oa * ob + x[3] * ob + x[4] +
                        offset][x[0]] = tile[x];
-            }); offset += va*vb*oa*ob;
+            }); offset += abab;
 
-            HelperD::forall(sigvec_blks_["sigmal_d_bbbb"], [sigmal, ob, vb, offset](auto &tile, auto &x) {
+            HelperD::forall(sigvec_blks_["sigmal2_bbbb"], [sigmal, ob, vb, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
                     size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], vb);
                     size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], ob);
                     size_t sigmal_idx = ab_off*ob*(ob-1)/2 + ij_off + offset;
                     sigmal[sigmal_idx][x[0]] = tile[x];
                 }
-            }); offset += vb*ob*(ob-1)*(vb-1)/4;
+            }); offset += bbbb;
         }
         world_.gop.fence();
     }
@@ -363,6 +370,8 @@ namespace hilbert {
 
         size_t oa = oa_, ob = ob_, // number of occupied orbitals
         va = va_, vb = vb_; // number of virtual beta orbitals
+        size_t aa = va*oa, bb = vb*ob; // singles offsets
+        size_t aaaa = va*oa*(oa-1)*(va-1)/4, abab = va*vb*oa*ob, bbbb = vb*ob*(ob-1)*(vb-1)/4; // doubles offsets
 
         size_t offset;
         
@@ -376,11 +385,11 @@ namespace hilbert {
         {
             evec_blks_["r1_aa"].init_elements([rerp, oa, offset](auto &I) {
                 return rerp[I[0]][I[1]*oa + I[2] + offset];
-            }); offset += oa*va;
+            }); offset += aa;
 
             evec_blks_["r1_bb"].init_elements([rerp, ob, offset](auto &I) {
                 return rerp[I[0]][I[1]*ob + I[2] + offset];
-            }); offset += vb*ob;
+            }); offset += bb;
         }
 
         // pack redundant doubles into tensors
@@ -399,11 +408,11 @@ namespace hilbert {
                 double value = rerp[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
 
-            }); offset += va*oa*(va-1)/2*(oa-1)/2;
+            }); offset += aaaa;
 
             evec_blks_["r2_abab"].init_elements([rerp, oa, ob, vb, offset](auto &I) {
                 return rerp[I[0]][I[1]*vb*oa*ob + I[2]*oa*ob + I[3]*ob + I[4] + offset];
-            }); offset += va*vb*oa*ob;
+            }); offset += abab;
             
             evec_blks_["r2_bbbb"].init_elements([rerp, vb, ob, offset](auto &I) {
                 size_t a = I[1], b = I[2], i = I[3], j = I[4];
@@ -419,7 +428,7 @@ namespace hilbert {
                 double value = rerp[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
 
-            }); offset += vb*ob*(vb-1)/2*(ob-1)/2;
+            }); offset += bbbb;
         }
 
         /// initialize left operators
@@ -440,11 +449,11 @@ namespace hilbert {
         {
             evec_blks_["l1_aa"].init_elements([relp, oa, offset](auto &I) {
                 return relp[I[0]][I[2]*oa + I[1] + offset];
-            }); offset += oa*va;
+            }); offset += aa;
 
             evec_blks_["l1_bb"].init_elements([relp, ob, offset](auto &I) {
                 return relp[I[0]][I[2]*ob + I[1] + offset];
-            }); offset += vb*ob;
+            }); offset += bb;
         }
 
         // pack redundant doubles into tensors
@@ -463,11 +472,11 @@ namespace hilbert {
                 double value = relp[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
 
-            }); offset += va*oa*(va-1)/2*(oa-1)/2;
+            }); offset += aaaa;
 
             evec_blks_["l2_abab"].init_elements([relp, oa, ob, vb, offset](auto &I) {
                 return relp[I[0]][I[3]*vb*oa*ob + I[4]*oa*ob + I[1]*ob + I[2] + offset];
-            }); offset += va*vb*oa*ob;
+            }); offset += abab;
 
             evec_blks_["l2_bbbb"].init_elements([relp, vb, ob, offset](auto &I) {
                 size_t a = I[3], b = I[4], i = I[1], j = I[2];
@@ -483,7 +492,7 @@ namespace hilbert {
                 double value = relp[I[0]][upper_tri_index + offset];
                 return change_sign ? -value : value;
 
-            }); offset += vb*ob*(vb-1)/2*(ob-1)/2;
+            }); offset += bbbb;
         }
 
         world_.gop.fence();
@@ -506,11 +515,13 @@ namespace hilbert {
         EOM_Driver::DominantTransitionsType dominant_transitions;
 
         size_t off = 0;
+        double l = relp[I][0]; // get l
+        double r = rerp[I][0]; // get r
+        double lr = l*r; // get lr
 
         // ground state
-        double value = rerp[I][0]*relp[I][0]; // get value
-        if (fabs(value) > threshold) {
-            dominant_transitions["l0*r0"].push({value, {"", {}}});
+        if (fabs(lr) > threshold) {
+            dominant_transitions["l0*r0"].push({lr, l, r, "", {}});
         }
         off++;
 
@@ -519,9 +530,11 @@ namespace hilbert {
         // singles aa
         for (size_t a = 0; a < va_; a++) {
             for (size_t i = 0; i < oa_; i++) {
-                value = rerp[I][id + off]*relp[I][id + off]; // get value
-                if (fabs(value) > threshold) {
-                    dominant_transitions["l1*r1"].push({value, {"a", {a+oa_, i}}});
+                l = relp[I][id + off]; // get l
+                r = rerp[I][id + off]; // get r
+                lr = l*r; // get lr
+                if (fabs(lr) > threshold) {
+                    dominant_transitions["l1*r1"].push({lr, l, r, "a", {a + oa_, i}});
                 }
                 id++;
             }
@@ -532,9 +545,11 @@ namespace hilbert {
         // singles bb
         for (size_t a = 0; a < vb_; a++) {
             for (size_t i = 0; i < ob_; i++) {
-                value = rerp[I][id + off]*relp[I][id + off]; // get value
-                if (fabs(value) > threshold) {
-                    dominant_transitions["l1*r1"].push({value, {"b", {a+ob_, i}}});
+                l = relp[I][id + off]; // get l
+                r = rerp[I][id + off]; // get r
+                lr = l*r; // get lr
+                if (fabs(lr) > threshold) {
+                    dominant_transitions["l1*r1"].push({lr, l, r, "b", {a + ob_, i}});
                 }
                 id++;
             }
@@ -547,9 +562,11 @@ namespace hilbert {
             for (size_t b = a + 1; b < va_; b++) {
                 for (size_t i = 0; i < oa_; i++) {
                     for (size_t j = i + 1; j < oa_; j++) {
-                        value = rerp[I][id + off] * relp[I][id + off]; // get value
-                        if (fabs(value) > threshold) {
-                            dominant_transitions["l2*r2"].push({value, {"aa", {a+oa_, b+oa_, i, j}}});
+                        l = relp[I][id + off]; // get l
+                        r = rerp[I][id + off]; // get r
+                        lr = l*r; // get lr
+                        if (fabs(lr) > threshold) {
+                            dominant_transitions["l2*r2"].push({lr, l, r, "aa", {a + oa_, b + oa_, i, j}});
                         }
                         id++;
                     }
@@ -564,9 +581,11 @@ namespace hilbert {
             for (size_t b = 0; b < vb_; b++) {
                 for (size_t i = 0; i < oa_; i++) {
                     for (size_t j = 0; j < ob_; j++) {
-                        value = rerp[I][id + off] * relp[I][id + off]; // get value
-                        if (fabs(value) > threshold) {
-                            dominant_transitions["l2*r2"].push({value, {"ab", {a+oa_, b+ob_, i, j}}});
+                        l = relp[I][id + off]; // get l
+                        r = rerp[I][id + off]; // get r
+                        lr = l*r; // get lr
+                        if (fabs(lr) > threshold) {
+                            dominant_transitions["l2*r2"].push({lr, l, r, "ab", {a + oa_, b + ob_, i, j}});
                         }
                         id++;
                     }
@@ -581,9 +600,11 @@ namespace hilbert {
             for (size_t b = a + 1; b < vb_; b++) {
                 for (size_t i = 0; i < ob_; i++) {
                     for (size_t j = i + 1; j < ob_; j++) {
-                        value = rerp[I][id + off] * relp[I][id + off]; // get value
-                        if (fabs(value) > threshold) {
-                            dominant_transitions["l2*r2"].push({value, {"bb", {a+ob_, b+ob_, i, j}}});
+                        l = relp[I][id + off]; // get l
+                        r = rerp[I][id + off]; // get r
+                        lr = l*r; // get lr
+                        if (fabs(lr) > threshold) {
+                            dominant_transitions["l2*r2"].push({lr, l, r, "bb", {a + ob_, b + ob_, i, j}});
                         }
                         id++;
                     }

@@ -113,9 +113,11 @@ void export_HilbertHelper(py::module& m) {
             throw std::runtime_error("Could not load mpi4py API.");
         }
 
-        m.def("set_ta_comm", [](py::object comm) {
+        m.def("set_comm", [](py::object comm) {
             CavityHelper::comm_ = *PyMPIComm_Get(comm.ptr());
         });
+        m.def("ta_initialize", &CavityHelper::ta_initialize);
+        m.def("ta_finalize", &CavityHelper::ta_finalize);
     #endif
 }
 

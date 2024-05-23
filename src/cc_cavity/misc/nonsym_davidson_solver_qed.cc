@@ -221,7 +221,8 @@ namespace psi {
                     Bp[i][j] = dum1;
                 }
             }
-            NonSymmetricEigenvalueEigenvector(L, Bp, lambdap, lambdaip, Clp, Crp, applyShift, shift);
+            bool ascending = true;
+            NonSymmetricEigenvalueEigenvector(L, Bp, lambdap, lambdaip, Clp, Crp, ascending, applyShift, shift);
 
             for (size_t k = 0; k < M + 1; k++) {
                 for (size_t n = 0; n < N; n++) {
@@ -657,7 +658,7 @@ namespace psi {
   */
 
     void Nonsym_DavidsonSolver_QED::NonSymmetricEigenvalueEigenvector(long int dim, double **M, double *eigval, double *wi,
-                                                                  double **el, double **er, bool applyShift,
+                                                                  double **el, double **er, bool ascending, bool applyShift,
                                                                   double shift) {
         long int info;
         char vl = 'V';
@@ -701,23 +702,31 @@ namespace psi {
 
         // sort by eigenvalue
         std::sort(eig_pair, eig_pair + n,
-                  [](std::pair<std::complex<double>, size_t> &l, std::pair<std::complex<double>, size_t> &r) {
-                      bool moveOrder = l.first.real() < r.first.real();
-                      if (!moveOrder) {
-                          if (fabs(l.first.real() - r.first.real()) <= 1e-16) {
-                              return l.first.imag() > r.first.imag();
-                          }
-                      }
-                      return moveOrder;
-                  });
+            [ascending](std::pair<std::complex<double>, size_t> &l, std::pair<std::complex<double>, size_t> &r) {
+                if (ascending) {
+                    bool moveOrder = l.first.real() < r.first.real();
+                    if (!moveOrder) {
+                        if (fabs(l.first.real() - r.first.real()) <= 1e-16) {
+                            return l.first.imag() > r.first.imag();
+                        }
+                    }
+                    return moveOrder;
+                } else {
+                    bool moveOrder = l.first.real() > r.first.real();
+                    if (!moveOrder) {
+                        if (fabs(l.first.real() - r.first.real()) <= 1e-16) {
+                            return l.first.imag() < r.first.imag();
+                        }
+                    }
+                    return moveOrder;
+                }
+            }
+        );
 
         // apply sorted indices to reorder eigensystem
-        bool doSkip = false;
-        for (size_t i = 0; i < n; i++) {
-            if (doSkip) {
-                doSkip = false;
-                continue;
-            }
+        for (size_t i = 0; i < n; ++i) {
+
+            // get ordered index
             size_t min_i = eig_pair[i].second;
 
             // reorder eigenvalue
@@ -731,15 +740,18 @@ namespace psi {
             }
 
             if (fabs(wi[i]) >= 1e-16) {
-                eigval[i + 1] = eigrp[min_i + 1];
-                wi[i + 1] = eigip[min_i + 1];
+                size_t min_i1 = eig_pair[i+1].second;
+                eigval[i+1] = eigrp[min_i1];
+                wi[i + 1] = eigip[min_i1];
 
                 // reorder eigenvector
                 for (size_t j = 0; j < n; j++) {
-                    er[i + 1][j] = ersp[min_i + 1][j];
-                    el[i + 1][j] = elsp[min_i + 1][j];
+                    er[i + 1][j] = ersp[min_i1][j];
+                    el[i + 1][j] = elsp[min_i1][j];
                 }
-                doSkip = true;
+
+                // skip the next index
+                ++i;
             }
         }
         free(work);

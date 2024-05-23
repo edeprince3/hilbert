@@ -24,9 +24,10 @@
  *  @END LICENSE
  */
 
-#include <functional>
+
 #ifndef NONSYM_DAVID_H
 #define NONSYM_DAVID_H
+#include <functional>
 
 typedef std::function<void(int,int,int,double**,double**,double**)>BuildSigma;
 namespace psi{
@@ -44,7 +45,7 @@ class Nonsym_DavidsonSolver_QED{
                          double residual_norm, bool use_residual_norm, bool read_guess = false, double shift=0.0);
       void eigenvectors_swap(double **L, double **R, int l, int n, int m);
       void schmidt_biorthogonal(double **A, double **B, size_t m, size_t n);
-      static void NonSymmetricEigenvalueEigenvector(long int dim, double **M, double * eigval, double * wi, double ** el, double ** er, bool applyShift = false, double shift = 0);
+      static void NonSymmetricEigenvalueEigenvector(long int dim, double **M, double * eigval, double * wi, double ** el, double ** er, bool ascending = true, bool applyShift = false, double shift = 0);
       void qr_orthogonalization(long int L, long int M, long int N, double **A);
   protected:
 

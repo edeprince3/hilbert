@@ -169,11 +169,9 @@ namespace hilbert {
     void CC_Cavity::init_operators() {
         /// initialize arbitrary index strings
         idx_map_ = std::vector<std::string>(25);
-        idx_map_[0] = "";
         for (int i = 1; i < 25; i++) { // hard-coded for now. Unlikely to need more than 25 indices.
 
             // build string of indices for i'th rank tensor
-            idx_map_[i] = "";
             for (int j = 0; j < i; j++) idx_map_[i] += "x" + std::to_string(i) + ",";
 
             // remove last comma
@@ -297,7 +295,6 @@ namespace hilbert {
         /// initialize 3-index integral blocks
 
         /// fill 3-index integral blocks
-        /// TODO: This is a hack; should be done in a memory efficient way (without breaking things)
         if ( options_.get_str("SCF_TYPE") == "DF" ) {
             // get primary/auxiliary basis:
             std::shared_ptr<BasisSet> primary = reference_wavefunction_->get_basisset("ORBITAL");
@@ -311,34 +308,34 @@ namespace hilbert {
 
             std::shared_ptr<Matrix> Qso = DF->Qso();
             double ** Qso_p = Qso->pointer();
-            auto * tmp_so_p = (double*)calloc(nQ_ * ns_ * ns_, sizeof(double));
-            for (size_t Q = 0; Q < nQ_; ++Q) {
-                for (size_t mu = 0; mu < nso_; ++mu) {
-                    for (size_t nu = 0; nu < nso_; ++nu) {
-                        tmp_so_p[Q*ns_*ns_ + mu * ns_ + nu] = Qso_p[Q][mu*nso_ + nu];
-                        tmp_so_p[Q*ns_*ns_ + (mu + nso_) * ns_ + (nu + nso_)] = Qso_p[Q][mu*nso_ + nu];
-                    }
-                }
-            }
+            Qso_ = HelperD::makeTensor(world_, {nQ_, ns_, ns_}, false);
+            world_.gop.fence();
+            Qso_.init_elements([Qso_p, nso](auto &I) {
+                size_t Q = I[0], mu = I[1], nu = I[2];
+                if (mu < nso && nu < nso) {
+                    return Qso_p[Q][mu*nso + nu];
+                } else if (mu >= nso && nu >= nso) {
+                    mu -= nso; nu -= nso;
+                    return Qso_p[Q][mu*nso + nu];
+                } else return 0.0;
+            });
             world_.gop.fence();
             Qso.reset();
-            Qso_ = HelperD::makeTensor(world_, {nQ_, ns_, ns_}, tmp_so_p);
-            free(tmp_so_p);
         } else if ( options_.get_str("SCF_TYPE") == "CD" ) {
             double* Qso_p = ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
-            auto * tmp_so_p = (double*)calloc(nQ_ * ns_ * ns_, sizeof(double));
-            for (size_t Q = 0; Q < nQ_; ++Q) {
-                for (size_t mu = 0; mu < nso_; ++mu) {
-                    for (size_t nu = 0; nu < nso_; ++nu) {
-                        tmp_so_p[Q*ns_*ns_ + mu * ns_ + nu] = Qso_p[Q * nso_ * nso_ + mu * nso_ + nu];
-                        tmp_so_p[Q*ns_*ns_ + (mu + nso_) * ns_ + (nu + nso_)] = Qso_p[Q * nso_ * nso_ + mu * nso_ + nu];
-                    }
-                }
-            }
+            Qso_ = HelperD::makeTensor(world_, {nQ_, ns_, ns_}, false);
+            world_.gop.fence();
+            Qso_.init_elements([Qso_p, nso](auto &I) {
+                size_t Q = I[0], mu = I[1], nu = I[2];
+                if (mu < nso && nu < nso) {
+                    return Qso_p[Q*nso*nso + mu*nso + nu];
+                } else if (mu >= nso && nu >= nso) {
+                    mu -= nso; nu -= nso;
+                    return Qso_p[Q*nso*nso + mu*nso + nu];
+                } else return 0.0;
+            });
             world_.gop.fence();
             free(Qso_p);
-            Qso_ = HelperD::makeTensor(world_, {nQ_, ns_, ns_}, tmp_so_p);
-            free(tmp_so_p);
         }
         world_.gop.fence();
     }
@@ -449,6 +446,8 @@ namespace hilbert {
         size_t maxiter          = options_.get_int("MAXITER");
 
         Printf("\n");
+        Printf("    madness threads:                %5i\n", options_.get_int("MAD_NUM_THREADS"));
+        Printf("    omp threads:                    %5i\n", Process::environment.get_n_threads());
         Printf("    No. basis functions:            %5i\n",nso_);
         Printf("    No. auxiliary basis functions:  %5i\n",nQ_);
         Printf("    No. alpha electrons:            %5i\n",nalpha_);
@@ -495,7 +494,7 @@ namespace hilbert {
 
         Printf("\n");
 
-        Process::environment.globals["UCCSD TOTAL ENERGY"] = cc_energy_;
+        Process::environment.globals["CC_CAVITY TOTAL ENERGY"] = cc_energy_;
         Process::environment.globals["CURRENT ENERGY"]     = cc_energy_;
 
         return cc_energy_;
@@ -539,10 +538,11 @@ namespace hilbert {
 
 
             r_converged = tnorm < r_convergence; // check residual convergence
-            for (auto &amp: amplitudes_){ // check amplitudes convergence
+            for (auto &resid: residuals_){ // check individual residual convergences
                 if (!r_converged) break;
-                if(!amp.second.is_initialized()) continue;
-                if (sqrt(norm2(amp.second)) > r_convergence) r_converged = true;
+                if(!resid.second.is_initialized()) continue;
+                if (sqrt(norm2(resid.second)) > r_convergence)
+                    r_converged = false;
             }
 
             if (iter++ >= maxiter) break; // limit iterations
@@ -1031,5 +1031,5 @@ namespace hilbert {
         outfile->Printf("\n    Total: %15.12lf\n\n", sqrt(total_norm));
 
     }
-
 }
+

@@ -171,6 +171,7 @@ inline void DGEEV(char &jobvl,char &jobvr,myinteger &n,doublereal*a,myinteger &l
 {
     dgeev(jobvl,jobvr,n,a,lda,wr,wi,vl,ldvl,vr,ldvr,work,lwork,info);
 }
+
 /**
  *  * name mangling dggev
  *   */

@@ -36,10 +36,9 @@
 
 #ifdef USE_QED_CC
     #include <mpi.h>
+    #include <tiledarray.h>
     #include <mpi4py/mpi4py.h>
 #endif
-
-
 
 namespace hilbert{
 
@@ -189,6 +188,33 @@ class CavityHelper {
     ~CavityHelper() = default;
 
     static MPI_Comm comm_;
+    static inline bool initialized_ = false;
+    static inline bool finalized_ = false;
+
+    static void ta_initialize(){
+        if (CavityHelper::comm_ == MPI_COMM_NULL) {
+            throw PsiException("MPI communicator not set. Use set_comm() to set it.", __FILE__, __LINE__);
+        } else if (CavityHelper::initialized_) {
+            return;
+        } else if (CavityHelper::finalized_) {
+            throw PsiException("TA already finalized; cannot re-initialize.", __FILE__, __LINE__);
+        }
+        int argc = 1; char **argv = nullptr;
+        TA::initialize(argc, argv, CavityHelper::comm_);
+        CavityHelper::initialized_ = true;
+    }
+
+    static void ta_finalize(){
+        if (CavityHelper::comm_ == MPI_COMM_NULL) {
+            throw PsiException("MPI communicator not set. Use set_comm() to set it.", __FILE__, __LINE__);
+        } else if (!CavityHelper::initialized_) {
+            throw PsiException("TA not initialized; cannot finalize.", __FILE__, __LINE__);
+        } else if (CavityHelper::finalized_) {
+            return;
+        }
+        TA::finalize();
+        CavityHelper::finalized_ = true;
+    }
 };
 
 #endif

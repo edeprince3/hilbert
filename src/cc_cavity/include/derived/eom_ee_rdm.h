@@ -40,21 +40,20 @@ namespace hilbert {
     public:
         EOM_EE_RDM(const shared_ptr<EOM_Driver>& eom_driver, Options & options);
 
+        /**
+         * Compute the 1-RDMs in MO basis
+         */
+        void compute_eom_1rdm() override;
 
         /**
-         * Initialize the 1-RDMs
+         * Compute the 2-RDMs in MO basis
          */
-        void init_rdms() override;
+        void compute_eom_2rdm(vector<int> rdm_states) override;
 
         /**
-         * Compute the 1-RDMs
+         * Save the target OPDM into the wavefunction
          */
-        void compute_eom_rdms() override;
-
-        /**
-         * Create a molden file with the 1-RDMs
-         */
-        void molden(vector<int> rdm_states) override;
+        void save_density(vector<int> rdm_states) override;
 
     };
 

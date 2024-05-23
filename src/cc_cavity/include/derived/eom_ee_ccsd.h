@@ -44,7 +44,7 @@ namespace hilbert {
 
         void set_problem_size() override;
 
-        void print_eom_header() const override;
+        void print_eom_header() override;
 
         void build_hamiltonian() override;
         double* build_preconditioner() override;

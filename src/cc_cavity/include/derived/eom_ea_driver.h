@@ -36,17 +36,17 @@ using namespace Helper;
 
 namespace hilbert {
 
-class EOM_EA_Driver : public EOM_Driver {
+class EOM_EA_CCSD : public EOM_Driver {
 public:
-    EOM_EA_Driver(const shared_ptr<CC_Cavity> &cc_wfn, Options & options);
-    ~EOM_EA_Driver() = default;
+    EOM_EA_CCSD(const shared_ptr<CC_Cavity> &cc_wfn, Options & options);
+    ~EOM_EA_CCSD() = default;
 
     double old_e_dip_z_; // store the old dipole moment for backtracking
     double old_dipole_self_energy_; // store the old dipole_self_energy_ for backtracking
 
     void set_problem_size() override;
 
-    void print_eom_header() const override;
+    void print_eom_header() override;
 
     void build_hamiltonian() override;
     double* build_preconditioner() override;

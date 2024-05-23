@@ -117,12 +117,16 @@ namespace hilbert {
         if (include_u1_) {
             HelperD::forall(residuals_["u1_aa"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
-                                tile[x] /= (eps[x[1]] - eps[x[0] + o]);
+                                double o_ep = eps[x[1]],
+                                       v_ep = eps[x[0] + o] + w0;
+                                tile[x] /= (o_ep - v_ep);
                             });
 
             HelperD::forall(residuals_["u1_bb"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
-                                tile[x] /= (eps[x[1] + oa] - eps[x[0] + o + va]);
+                                double o_ep = eps[x[1] + oa],
+                                       v_ep = eps[x[0] + o + va] + w0;
+                                tile[x] /= (o_ep - v_ep);
                             });
         }
 
@@ -132,19 +136,19 @@ namespace hilbert {
             HelperD::forall(residuals_["u2_aaaa"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[2]] + eps[x[3]],
-                                        v_ep = eps[x[0] + o] + eps[x[1] + o] + w0;
+                                       v_ep = eps[x[0] + o] + eps[x[1] + o] + w0;
                                 tile[x] /= (o_ep - v_ep);
                             });
             HelperD::forall(residuals_["u2_bbbb"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[2] + oa] + eps[x[3] + oa],
-                                        v_ep = eps[x[0] + o + va] + eps[x[1] + o + va] + w0;
+                                       v_ep = eps[x[0] + o + va] + eps[x[1] + o + va] + w0;
                                 tile[x] /= (o_ep - v_ep);
                             });
             HelperD::forall(residuals_["u2_abab"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[2]] + eps[x[3] + oa],
-                                        v_ep = eps[x[0] + o] + eps[x[1] + o] + w0;
+                                       v_ep = eps[x[0] + o] + eps[x[1] + o] + w0;
                                 tile[x] /= (o_ep - v_ep);
                             });
         }
