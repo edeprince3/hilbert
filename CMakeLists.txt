@@ -1,12 +1,14 @@
-if (POLICY CMP0025)
-  cmake_policy(SET CMP0025 NEW)
-endif ()
+# set cmake version and policy
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_policy(SET CMP0076 NEW)
+cmake_policy(SET CMP0077 NEW)
+cmake_policy(SET CMP0146 NEW)
+cmake_policy(SET CMP0148 NEW)
 
-cmake_policy(SET CMP0048 NEW)  # project_VERSION* variables populated from project(... VERSION x.x.x) string
-
-project(hilbert
-        VERSION 0.1
-        LANGUAGES CXX C Fortran)
+# project name and version
+project(hilbert 
+    VERSION 0.1
+    LANGUAGES CXX C Fortran)
 
 set(hilbert_AUTHORS      "A. Eugene DePrince III and the DePrince Group")
 set(hilbert_DESCRIPTION  "Hilbert: A space for quantum chemistry plugins to Psi4")
@@ -14,7 +16,6 @@ set(hilbert_URL          "https://github.com/edeprince3/hilbert")
 set(hilbert_LICENSE      "GPL-3.0+")
 set(CMAKE_CXX_STANDARD 17)
 
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -23,135 +24,9 @@ include(psi4OptionsTools)
 find_package(pybind11 REQUIRED)
 find_package(psi4 REQUIRED)
 
-# add files for performing EOM-CC calculations if requested
-option(USE_QED_EOM_CC "Build QED-EOM-CC functionality" OFF)
-option(USE_QED_CC "Build QED-CC functionality" OFF)
+# Include QED-CC CMake configurations if requested
+include(${PROJECT_SOURCE_DIR}/cmake/cc_cavity.cmake)
 
-# add option for MAX_CC_LEVEL (default is 2, but can be set to 3 or 4)
-set(MAX_CC_LEVEL 2 CACHE STRING "CC level for QED-CC calculations")
-
-# add files for performing QED-CC calculations
-set(qed_cc "")
-set(qed_eom_cc "")
-
-if (USE_QED_CC)
-  message(STATUS "QED-CC will be built")
-  if (USE_QED_EOM_CC)
-    message(STATUS "QED-EOM-CC will be built")
-  else()
-    message(STATUS "QED-EOM-CC will NOT be built")
-  endif()
-  message(STATUS "MAX_CC_LEVEL is set to ${MAX_CC_LEVEL}")
-else()
-  message(STATUS "QED-CC will NOT be built")
-  if (USE_QED_EOM_CC)
-    message(FATAL_ERROR "USE_QED_EOM_CC requires USE_QED_CC")
-  endif()
-endif()
-
-if (USE_QED_CC)
-
-  # find prerequisites
-  if(Fortran_COMPILER_ID MATCHES "Intel" AND NOT I_MPI_ROOT)
-    # find_package(MPI) doesn't find mpi fortran compilers from intel and hangs if it's not set
-    message(FATAL_ERROR "I_MPI_ROOT must be set to the root directory of the Intel MPI installation")
-  endif()
-
-  # get include directory for mpi4py
-  if (NOT MPI4PY_INCLUDE_DIR)
-    if (NOT Python_EXECUTABLE) # We need to find Python if it's not already found
-      find_package(Python COMPONENTS Interpreter REQUIRED)
-    endif()
-    execute_process( # Get the mpi4py include directory (this is a pip package and does not have a CMake config file)
-            COMMAND
-            ${Python_EXECUTABLE} -c "import mpi4py; import os; print(mpi4py.get_include(), end='')"
-            OUTPUT_VARIABLE MPI4PY_INCLUDE_DIR
-            )
-    if(MPI4PY_INCLUDE_DIR STREQUAL "")
-      message(FATAL_ERROR "Could not find mpi4py include directory. Install mpi4py with pip or set MPI4PY_INCLUDE_DIR.")
-    endif()
-  endif()
-
-  # add include directories
-  message(STATUS "Found mpi4py include directory: ${MPI4PY_INCLUDE_DIR}")
-  include_directories(${MPI4PY_INCLUDE_DIR})
-
-  # add tiledarray library
-  include(FetchContent)
-  FetchContent_Declare( tiledarray
-          GIT_REPOSITORY https://github.com/ValeevGroup/tiledarray.git
-          GIT_TAG b2254f352260d80e15c5f4a94b7bfcad71f118fb
-          )
-  FetchContent_MakeAvailable(tiledarray)
-
-  # change build type to release for tiledarray library
-  set_target_properties(tiledarray PROPERTIES CMAKE_BUILD_TYPE Release)
-  set_target_properties(tiledarray PROPERTIES CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-#  set(TA_PYTHON ON CACHE BOOL "Build Python bindings for TiledArray" FORCE)
-  # add files for performing QED-CC calculations
-  set(qed_cc
-          src/cc_cavity/src/cc_cavity.cc
-          src/cc_cavity/src/derived/residuals/ccsd_resid.cc
-          src/cc_cavity/src/derived/qed_ccsd.cc
-          src/cc_cavity/src/derived/residuals/qed_ccsd_resid.cc
-          src/cc_cavity/src/derived/lambda_driver.cc
-          src/cc_cavity/src/derived/residuals/qed_ccsd_lam_resid.cc
-
-          src/cc_cavity/misc/diis_qed.cc
-          src/cc_cavity/misc/nonsym_davidson_solver_qed.cc
-          src/cc_cavity/misc/threeindexintegralsta.cc
-          src/cc_cavity/misc/timer.cc
-          src/cc_cavity/misc/ta_helper.cc
-          )
-  add_definitions(-DUSE_QED_CC=1)
-
-  # set default MAX_CC_LEVEL to 2 if it is not set
-  if (NOT MAX_CC_LEVEL OR MAX_CC_LEVEL LESS 2)
-    set(MAX_CC_LEVEL 2)
-  endif()
-
-  # add files for performing QED-CC calculations at MAX_CC_LEVEL >= 3
-  if (MAX_CC_LEVEL GREATER 2)
-      set(qed_cc
-              ${qed_cc}
-#              src/cc_cavity/src/derived/qed_ccsdt.cc
-#              src/cc_cavity/src/derived/residuals/qed_ccsdt_resid.cc
-              )
-  endif()
-
-  # add files for performing QED-CC calculations at MAX_CC_LEVEL >= 4
-  if (MAX_CC_LEVEL GREATER 3)
-      set(qed_cc
-              ${qed_cc}
-#              src/cc_cavity/src/derived/qed_ccsdtq.cc
-#              src/cc_cavity/src/derived/residuals/qed_ccsdtq_resid.cc
-              )
-  endif()
-
-  # add MAX_CC_LEVEL to compiler flags
-  add_definitions(-DMAX_CC_LEVEL=${MAX_CC_LEVEL})
-endif()
-
-if (USE_QED_EOM_CC AND USE_QED_CC)
-  set(qed_eom_cc
-          src/cc_cavity/src/eom_driver.cc
-          src/cc_cavity/src/eom_rdm.cc
-
-          src/cc_cavity/src/derived/eom_ee_ccsd.cc
-          src/cc_cavity/src/derived/sigma_builds/eom_ee_ccsd_build.cc
-          src/cc_cavity/src/derived/eom_ee_qed_ccsd.cc
-          #src/cc_cavity/src/derived/eom_ee_qed_ccsdt.cc
-          src/cc_cavity/src/derived/sigma_builds/eom_ee_qed_ccsd_build.cc
-          src/cc_cavity/src/derived/sigma_builds/eom_ee_qed_ccsd_intermediates.cc
-          src/cc_cavity/src/derived/eom_ea_driver.cc
-          src/cc_cavity/src/derived/sigma_builds/eom_ea_build.cc
-          src/cc_cavity/src/derived/eom_hamiltonians/eom_ea_hamiltonian.cc
-          src/cc_cavity/src/derived/eom_ee_rdm.cc
-          src/cc_cavity/src/derived/2rdms/eom_ee_2rdm.cc
-          )
-  add_definitions(-DUSE_QED_EOM_CC=1)
-endif()
 
 #### groups for different calculation types ###
 
@@ -293,7 +168,6 @@ add_psi4_plugin(hilbert
         src/python_api/python_helpers.cc
 
         ${qed_cc}
-        ${qed_eom_cc}
         ${polaritonic_scf}
         ${jellium}
         ${doci}
@@ -321,7 +195,13 @@ target_link_libraries(hilbert PUBLIC LBFGS::lib)
 if(USE_QED_CC)
   target_include_directories(hilbert PUBLIC ${MPI4PY_INCLUDE_DIR})
   target_include_directories(hilbert PUBLIC ${tiledarray_INCLUDE_DIR})
-  target_link_libraries(hilbert PUBLIC MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran OpenMP::OpenMP_CXX tiledarray)
+  target_link_libraries(hilbert PUBLIC tiledarray)
+endif()
+
+# set install prefix to project root in hilbert folder
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/hilbert)
+    message(STATUS "Setting install prefix to ${CMAKE_INSTALL_PREFIX}")
 endif()
 
 install(DIRECTORY ${hilbert_BINARY_DIR}/
