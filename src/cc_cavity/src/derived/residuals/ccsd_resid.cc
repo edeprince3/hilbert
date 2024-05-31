@@ -24,7 +24,7 @@
  *  @END LICENSE
  */
 
-#include "../../../include/cc_cavity.h"
+#include "cc_cavity/include/cc_cavity.h"
 
 
 using namespace std;

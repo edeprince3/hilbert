@@ -31,12 +31,12 @@
 #include <tiledarray.h>
 #include <psi4/libpsio/psio.hpp>
 #include "psi4/libpsi4util/PsiOutStream.h"
-#include "../../polaritonic_scf/hf.h"
-#include "../misc/nonsym_davidson_solver_qed.h"
-#include "../misc/ta_helper.h"
-#include "../misc/diis_qed.h"
-#include "../misc/qed_blas.h"
-#include "../misc/timer.h"
+#include "polaritonic_scf/hf.h"
+#include "misc/nonsym_davidson_solver.h"
+#include "cc_cavity/misc/ta_helper.h"
+#include "cc_cavity/misc/ta_diis.h"
+#include "misc/blas.h"
+#include "cc_cavity/misc/timer.h"
 
 using namespace std;
 using namespace psi;

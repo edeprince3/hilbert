@@ -25,8 +25,8 @@
  */
 
 #include <psi4/libmints/writer.h>
-#include "../../include/derived/eom_ee_rdm.h"
-#include "../../misc/nonsym_davidson_solver_qed.h"
+#include "cc_cavity/include/derived/eom_ee_rdm.h"
+#include "misc/nonsym_davidson_solver.h"
 
 namespace hilbert {
     EOM_EE_RDM::EOM_EE_RDM(const shared_ptr<EOM_Driver>& eom_driver, Options & options) : EOM_RDM(eom_driver, options) {

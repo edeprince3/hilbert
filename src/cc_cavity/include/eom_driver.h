@@ -168,7 +168,7 @@ namespace hilbert {
         size_t load_id_ = options_.get_int("LOAD_ID"); // id of file to load
 
         // eigenvalue solver (Non-symmetric Davidson, thanks to the wise Nam Vu)
-        shared_ptr<Nonsym_DavidsonSolver_QED> eigensolver_ = make_shared<Nonsym_DavidsonSolver_QED>(Nonsym_DavidsonSolver_QED());
+        shared_ptr<Nonsym_DavidsonSolver> eigensolver_ = make_shared<Nonsym_DavidsonSolver>(Nonsym_DavidsonSolver());
 
         /// eom-cc variables
 

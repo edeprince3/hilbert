@@ -25,7 +25,7 @@
  *  @END LICENSE
  */
 
-#include "../../../include/derived/eom_ee_qed_ccsd.h"
+#include "cc_cavity/include/derived/eom_ee_qed_ccsd.h"
 
 void hilbert::EOM_EE_QED_CCSD::build_common_ops() {
     

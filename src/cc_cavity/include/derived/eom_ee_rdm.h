@@ -28,7 +28,7 @@
 #define CC_CAVITY_EOM_EE_RDM_H
 
 #include "eom_ee_ccsd.h"
-#include "../eom_rdm.h"
+#include "cc_cavity/include/eom_rdm.h"
 
 using namespace std;
 using namespace psi;

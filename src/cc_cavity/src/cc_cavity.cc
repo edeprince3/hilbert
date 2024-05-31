@@ -41,17 +41,17 @@
 #include <psi4/lib3index/dftensor.h>
 #include <psi4/libqt/qt.h>
 
-#include "../misc/ta_helper.h"
-#include "../misc/threeindexintegralsta.h"
+#include "cc_cavity/misc/ta_helper.h"
+#include "misc/threeindexintegrals.h"
 
 #include <mkl.h>
 #include <omp.h>
-#include "../misc/qed_blas.h"
-#include "../../misc/hilbert_psifiles.h"
-#include "../../polaritonic_scf/uhf.h"
+#include "misc/blas.h"
+#include "misc/hilbert_psifiles.h"
+#include "polaritonic_scf/uhf.h"
 #include <unistd.h>
 #include <psi4/psifiles.h>
-#include "../include/cc_cavity.h"
+#include "cc_cavity/include/cc_cavity.h"
 
 using namespace std;
 using namespace TA;
@@ -322,7 +322,18 @@ namespace hilbert {
             world_.gop.fence();
             Qso.reset();
         } else if ( options_.get_str("SCF_TYPE") == "CD" ) {
-            double* Qso_p = ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
+            long int nQ = static_cast<size_t>(nQ_);
+            ThreeIndexIntegrals(reference_wavefunction_,nQ,memory_);
+            nQ_ = static_cast<size_t>(nQ);
+
+            double * Qso_p = (double*)malloc(nso_*nso_*nQ_*sizeof(double));
+            memset((void*)Qso_p,'\0',nso_*nso_*nQ_*sizeof(double));
+
+            std::shared_ptr<PSIO> psio(new PSIO());
+            psio->open(PSIF_DCC_QSO,PSIO_OPEN_OLD);
+            psio->read_entry(PSIF_DCC_QSO,"(Q|mn) Integrals",(char*)Qso_p,sizeof(double)*nQ_ * nso_*nso_);
+            psio->close(PSIF_DCC_QSO,1);
+
             Qso_ = HelperD::makeTensor(world_, {nQ_, ns_, ns_}, false);
             world_.gop.fence();
             Qso_.init_elements([Qso_p, nso](auto &I) {

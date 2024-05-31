@@ -24,7 +24,7 @@
  *  @END LICENSE
  */
 
-#include "diis_qed.h"
+#include "ta_diis.h"
 
 #include <psi4/libqt/qt.h>
 #include <psi4/psi4-dec.h>

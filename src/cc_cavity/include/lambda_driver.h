@@ -28,12 +28,12 @@
 #define CC_CAVITY_LAMDA
 
 #include "tiledarray.h"
-#include "cc_cavity.h"
+#include "cc_cavity/include/cc_cavity.h"
 #include "polaritonic_scf/hf.h"
-#include "cc_cavity/misc/nonsym_davidson_solver_qed.h"
+#include "misc/nonsym_davidson_solver.h"
 #include "cc_cavity/misc/ta_helper.h"
 #include <psi4/libpsio/psio.hpp>
-#include "cc_cavity/misc/diis_qed.h"
+#include "cc_cavity/misc/ta_diis.h"
 #include "cc_cavity/misc/timer.h"
 
 using namespace std;

@@ -24,7 +24,7 @@
  *  @END LICENSE
  */
 
-#include "../../../include/derived/eom_ee_qed_ccsd.h"
+#include "cc_cavity/include/derived/eom_ee_qed_ccsd.h"
 
 double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
 

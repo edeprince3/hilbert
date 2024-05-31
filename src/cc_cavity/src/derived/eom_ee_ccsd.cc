@@ -24,7 +24,7 @@
  *  @END LICENSE
  */
 
-#include "../../include/derived/eom_ee_ccsd.h"
+#include "cc_cavity/include/derived/eom_ee_ccsd.h"
 #include <memory>
 
 namespace hilbert {

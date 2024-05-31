@@ -24,7 +24,7 @@
  *  @END LICENSE
  */
 
-#include "../../../include/derived/qed_ccsd.h"
+#include "cc_cavity/include/derived/qed_ccsd.h"
 
 
 using namespace std;

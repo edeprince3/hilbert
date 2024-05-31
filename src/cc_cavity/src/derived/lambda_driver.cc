@@ -42,14 +42,14 @@
 #include <psi4/lib3index/dftensor.h>
 #include <psi4/libqt/qt.h>
 
-#include "../../misc/ta_helper.h"
-#include "../../misc/threeindexintegralsta.h"
+#include "cc_cavity/misc/ta_helper.h"
+#include "misc/threeindexintegrals.h"
 
 #include <mkl.h>
 #include <omp.h>
-#include "../../misc/qed_blas.h"
-#include "../../../misc/hilbert_psifiles.h"
-#include "../../../polaritonic_scf/uhf.h"
+#include "misc/blas.h"
+#include "misc/hilbert_psifiles.h"
+#include "polaritonic_scf/uhf.h"
 #include <unistd.h>
 #include <psi4/psifiles.h>
 

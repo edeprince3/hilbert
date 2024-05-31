@@ -27,7 +27,7 @@
 #ifndef CC_CAVITY_EOM_EE_DRIVER_H
 #define CC_CAVITY_EOM_EE_DRIVER_H
 
-#include "../eom_driver.h"
+#include "cc_cavity/include/eom_driver.h"
 
 using namespace std;
 using namespace TA;

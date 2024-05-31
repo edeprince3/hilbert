@@ -24,7 +24,7 @@
  *  @END LICENSE
  */
 
-#include "../../include/derived/eom_ea_driver.h"
+#include "cc_cavity/include/derived/eom_ea_driver.h"
 
 
 namespace hilbert {

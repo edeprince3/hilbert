@@ -25,7 +25,7 @@
  */
 
 #include <psi4/libpsi4util/process.h>
-#include "../include/eom_driver.h"
+#include "cc_cavity/include/eom_driver.h"
 
 namespace hilbert {
 
@@ -176,6 +176,11 @@ namespace hilbert {
         common_timer_.stop();
         Printf(" Done.\n      Finished in %s\n", common_timer_.elapsed().c_str());
 
+        // set convergence criteria
+        eigensolver_->eom_maxiter = eom_maxiter_;
+        eigensolver_->eom_e_conv = eom_e_conv_;
+        eigensolver_->eom_r_conv = eom_r_conv_;
+
         eigensolver_->solve(Hdiag,
                             N_,
                             M_,
@@ -193,8 +198,7 @@ namespace hilbert {
                                 build_sigma(L, Q, sigmar, sigmal);
                                 eigsolve_timer_.start();
 
-                            }, maxdim_, initdim_, eom_maxiter_, eom_e_conv_, eom_r_conv_, use_res_norm_, read_guess_,
-                            eom_shift_);
+                            }, maxdim_, initdim_, eom_r_conv_, use_res_norm_);
 
         // free memory
 

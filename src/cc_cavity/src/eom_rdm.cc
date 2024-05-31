@@ -24,7 +24,7 @@
  *  @END LICENSE
  */
 
-#include "../include/eom_rdm.h"
+#include "cc_cavity/include/eom_rdm.h"
 
 namespace hilbert {
     EOM_RDM::EOM_RDM(const shared_ptr<EOM_Driver> &eom_driver, Options &options) :

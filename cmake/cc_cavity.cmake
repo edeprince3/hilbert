@@ -81,8 +81,8 @@ message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 include(FindMPI4PY REQUIRED)
   
 # enable python bindings for tiledarray (requires shared library)
-set(TA_PYTHON ON)
-set(BUILD_SHARED_LIBS ON)
+#set(TA_PYTHON ON)
+#set(BUILD_SHARED_LIBS ON)
 
 # add tiledarray library
 FetchContent_Declare(tiledarray
@@ -99,9 +99,8 @@ set(qed_cc
   src/cc_cavity/src/cc_cavity.cc
   src/cc_cavity/src/derived/qed_ccsd.cc
   src/cc_cavity/src/derived/lambda_driver.cc
-  src/cc_cavity/misc/diis_qed.cc
-  src/cc_cavity/misc/nonsym_davidson_solver_qed.cc
-  src/cc_cavity/misc/threeindexintegralsta.cc
+
+  src/cc_cavity/misc/ta_diis.cc
   src/cc_cavity/misc/timer.cc
   src/cc_cavity/misc/ta_helper.cc
 )
