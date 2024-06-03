@@ -34,7 +34,7 @@ using namespace std;
 namespace TA_Helper {
 
     template<typename T>
-    inline TArray<T> makeTensor(World &world, const initializer_list<size_t> &N, bool fillZero) {
+    TArray<T> makeTensor(World &world, const initializer_list<size_t> &N, bool fillZero) {
         TArray<T> array(world, makeRange(N));
 
         if (fillZero)
@@ -101,7 +101,7 @@ namespace TA_Helper {
     }
 
     template<typename T>
-    inline TArray<T> makeTensor(World &world, const initializer_list<size_t> &N, const T *data,
+    TArray<T> makeTensor(World &world, const initializer_list<size_t> &N, const T *data,
                                               initializer_list<size_t> Off) {
         // create tensor
         TArray<T> array = makeTensor(world, N, false);
@@ -159,7 +159,7 @@ namespace TA_Helper {
     }
 
     template<typename T>
-    inline TArray<T> makeTensor(World &world,
+    TArray<T> makeTensor(World &world,
                                               const initializer_list<size_t> &NL,
                                               const initializer_list<size_t> &NR,
                                               const T *const *data,
@@ -240,7 +240,7 @@ namespace TA_Helper {
     }
 
     template<typename T, typename Op>
-    inline void forall(TArray<T> &tensor, Op &&op) {
+    void forall(TArray<T> &tensor, Op &&op) {
         // assert that Op has the correct signature
         static_assert(is_invocable_v<Op, Tensor<T> &, const typename Tensor<T>::range_type::index_type &>,
                       "TA_Helper::forall: Op must have the signature void(Tensor<T> &, ElementIndex &)");

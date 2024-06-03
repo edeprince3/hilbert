@@ -33,15 +33,15 @@ using namespace std;
 using namespace TA;
 namespace TA_Helper {
 
-        static inline size_t tile_size_ = -1; // default value to use all elements in a tile
+        static size_t tile_size_ = -1; // default value to use all elements in a tile
 
         /**
          * create a new tiled range with the dimensions specified in the vector, N
          * @param N the target dimensions of the tiled range
          * @return the tiled range
          */
-        static inline TiledRange makeRange(const initializer_list<size_t> &N);
-        static inline TiledRange makeRange(const vector<size_t> &N);
+        static TiledRange makeRange(const initializer_list<size_t> &N);
+        static TiledRange makeRange(const vector<size_t> &N);
 
         /**
          * create a new tiled array with the dimensions specified in the vector, N
@@ -51,7 +51,7 @@ namespace TA_Helper {
          * @return the tiled array
          */
         template<typename T = double>
-        static inline TArray<T>
+        static TArray<T>
         makeTensor(World &world, const initializer_list<size_t> &N, bool fillZero);
 
         /**
@@ -63,7 +63,7 @@ namespace TA_Helper {
          * @return the tiled array
          */
         template<typename T = double>
-        static inline TArray<T>
+        static TArray<T>
         makeTensor(World &world, const initializer_list<size_t> &N, const T *data, initializer_list<size_t> Off = {});
 
         /**
@@ -77,7 +77,7 @@ namespace TA_Helper {
          * @return the tiled array
          */
         template<typename T = double>
-        static inline TArray<T>
+        static TArray<T>
         makeTensor(World &world,
                    const initializer_list<size_t> &NL,
                    const initializer_list<size_t> &NR,
@@ -91,7 +91,7 @@ namespace TA_Helper {
          *           the function must take a Tensor<T> (the tile) and a vector<size_t> (the index) as arguments
          */
         template<typename T = double, typename Op>
-        static inline void
+        static void
         forall(TArray<T> &tensor,  Op &&op);
         
         /**
@@ -101,7 +101,7 @@ namespace TA_Helper {
          * @result data the array to store the data in
          */
         template<typename T = double>
-        static inline T*
+        static T*
         arrayFromTensor(TArray<T> A, const initializer_list<size_t> &N, initializer_list<size_t> Off = {});
 
 }
