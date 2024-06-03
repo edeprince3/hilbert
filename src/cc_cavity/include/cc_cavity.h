@@ -41,7 +41,7 @@
 using namespace std;
 using namespace psi;
 using namespace TA;
-using namespace Helper;
+using namespace TA_Helper;
 
 namespace hilbert {
 

@@ -903,7 +903,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
     // left a block
     {
         // right a block
-        HelperD::forall(H11_a_a, [pH, lid, rid](auto &tile, auto &x){
+        forall(H11_a_a, [pH, lid, rid](auto &tile, auto &x){
             size_t a = x[0], e = x[1];
             pH[a + lid][e + rid] = tile[x];
         }); rid += va;
@@ -911,7 +911,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         rid += vb; // skip right b block
 
         // right aaa block
-        HelperD::forall(H12_a_aaa, [pH, lid, rid, va, oa](auto &tile, auto &x){
+        forall(H12_a_aaa, [pH, lid, rid, va, oa](auto &tile, auto &x){
             size_t a = x[0], e = x[1], f = x[2], m = x[3];
             if (e < f) {
                 size_t ef = EOM_Driver::sqr_2_tri_idx(e, f, va);
@@ -921,7 +921,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         }); rid += vaa*oa;
 
         // right abb block
-        HelperD::forall(H12_a_abb, [pH, lid, rid, vb, ob](auto &tile, auto &x){
+        forall(H12_a_abb, [pH, lid, rid, vb, ob](auto &tile, auto &x){
             size_t a = x[0], e = x[1], f = x[2], m = x[3];
             size_t efm = e*vb*ob + f*ob + m;
             pH[a+lid][efm+rid] = tile[x];
@@ -936,7 +936,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         rid += va; // skip right a block
 
         // right b block
-        HelperD::forall(H11_b_b, [pH, lid, rid](auto &tile, auto &x){
+        forall(H11_b_b, [pH, lid, rid](auto &tile, auto &x){
             size_t a = x[0], e = x[1];
             pH[a + lid][e + rid] = tile[x];
         }); rid += vb;
@@ -945,14 +945,14 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         rid += va*vb*ob; // skip right abb block
 
         // right aba block
-        HelperD::forall(H12_b_aba, [pH, lid, rid, va, vb, oa](auto &tile, auto &x){
+        forall(H12_b_aba, [pH, lid, rid, va, vb, oa](auto &tile, auto &x){
             size_t a = x[0], e = x[1], f = x[2], m = x[3];
             size_t efm = e*vb*oa + f*oa + m;
             pH[a+lid][efm+rid] = tile[x];
         }); rid += va*vb*oa;
 
         // right bbb block
-        HelperD::forall(H12_b_bbb, [pH, lid, rid, vb, ob](auto &tile, auto &x){
+        forall(H12_b_bbb, [pH, lid, rid, vb, ob](auto &tile, auto &x){
             size_t a = x[0], e = x[1], f = x[2], m = x[3];
             if (e < f) {
                 size_t ef = EOM_Driver::sqr_2_tri_idx(e, f, vb);
@@ -967,7 +967,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
     rid = 0;
     {
         // right a block
-        HelperD::forall(H21_aaa_a, [pH, lid, rid, va, oa](auto &tile, auto &x){
+        forall(H21_aaa_a, [pH, lid, rid, va, oa](auto &tile, auto &x){
             size_t a = x[0], b = x[1], i = x[2], e = x[3];
             if (a < b) {
                 size_t ab = EOM_Driver::sqr_2_tri_idx(a, b, va);
@@ -979,7 +979,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
          rid += vb; // skip right b block
 
         // right aaa block
-        HelperD::forall(H22_aaa_aaa, [pH, lid, rid, va, oa](auto &tile, auto &x){
+        forall(H22_aaa_aaa, [pH, lid, rid, va, oa](auto &tile, auto &x){
             size_t a = x[0], b = x[1], i = x[2], e = x[3], f = x[4], m = x[5];
             if (a < b && e < f) {
                 size_t ab = EOM_Driver::sqr_2_tri_idx(a, b, va);
@@ -991,7 +991,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         }); rid += vaa*oa;
 
         // right abb block
-        HelperD::forall(H22_aaa_abb, [pH, lid, rid, va, vb, oa, ob](auto &tile, auto &x){
+        forall(H22_aaa_abb, [pH, lid, rid, va, vb, oa, ob](auto &tile, auto &x){
             size_t a = x[0], b = x[1], i = x[2], e = x[3], f = x[4], m = x[5];
             if (a < b) {
                 size_t ab = EOM_Driver::sqr_2_tri_idx(a, b, va);
@@ -1008,7 +1008,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
     rid = 0;
     {
         // right a block
-        HelperD::forall(H21_abb_a, [pH, lid, rid, va, vb, ob](auto &tile, auto &x){
+        forall(H21_abb_a, [pH, lid, rid, va, vb, ob](auto &tile, auto &x){
             size_t a = x[0], b = x[1], i = x[2], e = x[3];
             size_t abi = a*vb*ob + b*ob + i;
             pH[abi + lid][e + rid] = tile[x];
@@ -1017,7 +1017,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         rid += vb; // skip right b block
 
         // right aaa block
-        HelperD::forall(H22_abb_aaa, [pH, lid, rid, va, vb, oa, ob](auto &tile, auto &x){
+        forall(H22_abb_aaa, [pH, lid, rid, va, vb, oa, ob](auto &tile, auto &x){
             size_t a = x[0], b = x[1], i = x[2], e = x[3], f = x[4], m = x[5];
             if (e < f) {
                 size_t abi = a*vb*ob + b*ob + i;
@@ -1028,7 +1028,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         }); rid += vaa*oa;
 
         // right abb block
-        HelperD::forall(H22_abb_abb, [pH, lid, rid, va, vb, ob](auto &tile, auto &x){
+        forall(H22_abb_abb, [pH, lid, rid, va, vb, ob](auto &tile, auto &x){
             size_t a = x[0], b = x[1], i = x[2], e = x[3], f = x[4], m = x[5];
             size_t abi = a*vb*ob + b*ob + i;
             size_t efm = e*vb*ob + f*ob + m;
@@ -1044,7 +1044,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         rid += va; // skip right a block
 
         // right b block
-        HelperD::forall(H21_aba_b, [pH, lid, rid, va, vb, oa](auto &tile, auto &x){
+        forall(H21_aba_b, [pH, lid, rid, va, vb, oa](auto &tile, auto &x){
             size_t a = x[0], b = x[1], i = x[2], e = x[3];
             size_t abi = a*vb*oa + b*oa + i;
             pH[abi + lid][e + rid] = tile[x];
@@ -1054,7 +1054,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         rid += va*vb*ob; // skip right abb block
 
         // right aba block
-        HelperD::forall(H22_aba_aba, [pH, lid, rid, va, vb, oa](auto &tile, auto &x){
+        forall(H22_aba_aba, [pH, lid, rid, va, vb, oa](auto &tile, auto &x){
             size_t a = x[0], b = x[1], i = x[2], e = x[3], f = x[4], m = x[5];
             size_t abi = a*vb*oa + b*oa + i;
             size_t efm = e*vb*oa + f*oa + m;
@@ -1062,7 +1062,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         }); rid += va*vb*oa;
 
         // right bbb block
-        HelperD::forall(H22_aba_bbb, [pH, lid, rid, va, vb, oa, ob](auto &tile, auto &x){
+        forall(H22_aba_bbb, [pH, lid, rid, va, vb, oa, ob](auto &tile, auto &x){
             size_t a = x[0], b = x[1], i = x[2], e = x[3], f = x[4], m = x[5];
             if (e < f) {
                 size_t abi = a*vb*oa + b*oa + i;
@@ -1079,7 +1079,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         rid += va; // skip right a block
 
         // right b block
-        HelperD::forall(H21_bbb_b, [pH, lid, rid, vb, ob](auto &tile, auto &x){
+        forall(H21_bbb_b, [pH, lid, rid, vb, ob](auto &tile, auto &x){
             size_t a = x[0], b = x[1], i = x[2], e = x[3];
             if (a < b) {
                 size_t ab = EOM_Driver::sqr_2_tri_idx(a, b, vb);
@@ -1092,7 +1092,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         rid += va*vb*ob; // skip right abb block
 
         // right aba block
-        HelperD::forall(H22_bbb_aba, [pH, lid, rid, va, vb, oa, ob](auto &tile, auto &x){
+        forall(H22_bbb_aba, [pH, lid, rid, va, vb, oa, ob](auto &tile, auto &x){
             size_t a = x[0], b = x[1], i = x[2], e = x[3], f = x[4], m = x[5];
             if (a < b) {
                 size_t ab = EOM_Driver::sqr_2_tri_idx(a, b, vb);
@@ -1103,7 +1103,7 @@ void hilbert::EOM_EA_CCSD::build_hamiltonian() {
         }); rid += va*vb*oa;
 
         // right bbb block
-        HelperD::forall(H22_bbb_bbb, [pH, lid, rid, vb, ob](auto &tile, auto &x){
+        forall(H22_bbb_bbb, [pH, lid, rid, vb, ob](auto &tile, auto &x){
             size_t a = x[0], b = x[1], i = x[2], e = x[3], f = x[4], m = x[5];
             if (a < b && e < f) {
                 size_t ab = EOM_Driver::sqr_2_tri_idx(a, b, vb);

@@ -222,16 +222,16 @@ namespace hilbert {
 
         /// initialize photon operators
         if (include_u0_){
-            evec_blks_["s0"] = HelperD::makeTensor(world_, {L}, false); // reference + hw
+            evec_blks_["s0"] = makeTensor(world_, {L}, false); // reference + hw
         }
         if (include_u1_){
-            evec_blks_["s1_aa"] = HelperD::makeTensor(world_, {L, va_, oa_}, false); // alpha singles excitations + hw
-            evec_blks_["s1_bb"] = HelperD::makeTensor(world_, {L, vb_, ob_}, false); // beta singles excitations + hw
+            evec_blks_["s1_aa"] = makeTensor(world_, {L, va_, oa_}, false); // alpha singles excitations + hw
+            evec_blks_["s1_bb"] = makeTensor(world_, {L, vb_, ob_}, false); // beta singles excitations + hw
         }
         if (include_u2_){
-            evec_blks_["s2_aaaa"] = HelperD::makeTensor(world_, {L, va_, va_, oa_, oa_}, false); // alpha doubles excitations + hw
-            evec_blks_["s2_abab"] = HelperD::makeTensor(world_, {L, va_, vb_, oa_, ob_}, false); // alpha-beta doubles excitations + hw
-            evec_blks_["s2_bbbb"] = HelperD::makeTensor(world_, {L, vb_, vb_, ob_, ob_}, false); // beta doubles excitations + hw
+            evec_blks_["s2_aaaa"] = makeTensor(world_, {L, va_, va_, oa_, oa_}, false); // alpha doubles excitations + hw
+            evec_blks_["s2_abab"] = makeTensor(world_, {L, va_, vb_, oa_, ob_}, false); // alpha-beta doubles excitations + hw
+            evec_blks_["s2_bbbb"] = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, false); // beta doubles excitations + hw
         }
 
         size_t oa = oa_, ob = ob_, // number of occupied orbitals
@@ -329,25 +329,25 @@ namespace hilbert {
 
         // ground state + hw
         if (include_u0_){
-            HelperD::forall(sigvec_blks_["sigmas0"], [sigmar, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmas0"], [sigmar, offset](auto &tile, auto &x) {
                 sigmar[offset][x[0]] = tile[x];
             }); offset += 1;
         }
 
         // singles + hw
         if (include_u1_){
-            HelperD::forall(sigvec_blks_["sigmas1_aa"], [sigmar, oa, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmas1_aa"], [sigmar, oa, offset](auto &tile, auto &x) {
                 sigmar[x[1] * oa + x[2] + offset][x[0]] = tile[x];
             }); offset += aa;
 
-            HelperD::forall(sigvec_blks_["sigmas1_bb"], [sigmar, ob, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmas1_bb"], [sigmar, ob, offset](auto &tile, auto &x) {
                 sigmar[x[1] * ob + x[2] + offset][x[0]] = tile[x];
             }); offset += bb;
 
         }
 
         if (include_u2_){
-            HelperD::forall(sigvec_blks_["sigmas2_aaaa"], [sigmar, oa, va, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmas2_aaaa"], [sigmar, oa, va, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
                     size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], va);
                     size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], oa);
@@ -356,11 +356,11 @@ namespace hilbert {
                 }
             }); offset += aaaa;
 
-            HelperD::forall(sigvec_blks_["sigmas2_abab"], [sigmar, oa, ob, vb, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmas2_abab"], [sigmar, oa, ob, vb, offset](auto &tile, auto &x) {
                 sigmar[x[1]*vb*oa*ob + x[2]*oa*ob + x[3]*ob + x[4] + offset][x[0]] = tile[x];
             }); offset += abab;
 
-            HelperD::forall(sigvec_blks_["sigmas2_bbbb"], [sigmar, ob, vb, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmas2_bbbb"], [sigmar, ob, vb, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
                     size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], vb);
                     size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], ob);
@@ -374,25 +374,25 @@ namespace hilbert {
         offset = dim_e_;
         // ground state + hw
         if (include_u0_){
-            HelperD::forall(sigvec_blks_["sigmam0"], [sigmal, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmam0"], [sigmal, offset](auto &tile, auto &x) {
                 sigmal[offset][x[0]] = tile[x];
             }); offset += 1;
         }
 
         // singles + hw
         if (include_u1_){
-            HelperD::forall(sigvec_blks_["sigmam1_aa"], [sigmal, oa, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmam1_aa"], [sigmal, oa, offset](auto &tile, auto &x) {
                 sigmal[x[1] * oa + x[2] + offset][x[0]] = tile[x];
             }); offset += aa;
 
-            HelperD::forall(sigvec_blks_["sigmam1_bb"], [sigmal, ob, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmam1_bb"], [sigmal, ob, offset](auto &tile, auto &x) {
                 sigmal[x[1] * ob + x[2] + offset][x[0]] = tile[x];
             }); offset += bb;
 
         }
 
         if (include_u2_){
-            HelperD::forall(sigvec_blks_["sigmam2_aaaa"], [sigmal, oa, va, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmam2_aaaa"], [sigmal, oa, va, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
                     size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], va);
                     size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], oa);
@@ -401,11 +401,11 @@ namespace hilbert {
                 }
             }); offset += aaaa;
 
-            HelperD::forall(sigvec_blks_["sigmam2_abab"], [sigmal, oa, ob, vb, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmam2_abab"], [sigmal, oa, ob, vb, offset](auto &tile, auto &x) {
                 sigmal[x[1]*vb*oa*ob + x[2]*oa*ob + x[3]*ob + x[4] + offset][x[0]] = tile[x];
             }); offset += abab;
 
-            HelperD::forall(sigvec_blks_["sigmam2_bbbb"], [sigmal, ob, vb, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmam2_bbbb"], [sigmal, ob, vb, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
                     size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], vb);
                     size_t ij_off = EOM_Driver::sqr_2_tri_idx(x[3], x[4], ob);
@@ -427,16 +427,16 @@ namespace hilbert {
 
         // initialize photonic operators
         if (include_u0_){
-            evec_blks_["s0"] = HelperD::makeTensor(world_, {L}, false); // reference + hw
+            evec_blks_["s0"] = makeTensor(world_, {L}, false); // reference + hw
         }
         if (include_u1_){
-            evec_blks_["s1_aa"] = HelperD::makeTensor(world_, {L, va_, oa_}, false); // alpha singles excitations + hw
-            evec_blks_["s1_bb"] = HelperD::makeTensor(world_, {L, vb_, ob_}, false); // beta singles excitations + hw
+            evec_blks_["s1_aa"] = makeTensor(world_, {L, va_, oa_}, false); // alpha singles excitations + hw
+            evec_blks_["s1_bb"] = makeTensor(world_, {L, vb_, ob_}, false); // beta singles excitations + hw
         }
         if (include_u2_){
-            evec_blks_["s2_aaaa"] = HelperD::makeTensor(world_, {L, va_, va_, oa_, oa_}, false); // alpha doubles excitations + hw
-            evec_blks_["s2_abab"] = HelperD::makeTensor(world_, {L, va_, vb_, oa_, ob_}, false); // alpha-beta doubles excitations + hw
-            evec_blks_["s2_bbbb"] = HelperD::makeTensor(world_, {L, vb_, vb_, ob_, ob_}, false); // beta doubles excitations + hw
+            evec_blks_["s2_aaaa"] = makeTensor(world_, {L, va_, va_, oa_, oa_}, false); // alpha doubles excitations + hw
+            evec_blks_["s2_abab"] = makeTensor(world_, {L, va_, vb_, oa_, ob_}, false); // alpha-beta doubles excitations + hw
+            evec_blks_["s2_bbbb"] = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, false); // beta doubles excitations + hw
         }
 
         size_t oa = oa_, ob = ob_, // number of occupied orbitals
@@ -504,16 +504,16 @@ namespace hilbert {
 
         /// initialize left photonic operators
         if (include_u0_){
-            evec_blks_["m0"] = HelperD::makeTensor(world_, {L}, false); // reference + hw
+            evec_blks_["m0"] = makeTensor(world_, {L}, false); // reference + hw
         }
         if (include_u1_){
-            evec_blks_["m1_aa"] = HelperD::makeTensor(world_, {L, oa_, va_}, false); // alpha singles excitations + hw
-            evec_blks_["m1_bb"] = HelperD::makeTensor(world_, {L, ob_, vb_}, false); // beta singles excitations + hw
+            evec_blks_["m1_aa"] = makeTensor(world_, {L, oa_, va_}, false); // alpha singles excitations + hw
+            evec_blks_["m1_bb"] = makeTensor(world_, {L, ob_, vb_}, false); // beta singles excitations + hw
         }
         if (include_u2_){
-            evec_blks_["m2_aaaa"] = HelperD::makeTensor(world_, {L, oa_, oa_, va_, va_}, false); // alpha doubles excitations + hw
-            evec_blks_["m2_abab"] = HelperD::makeTensor(world_, {L, oa_, ob_, va_, vb_}, false); // alpha-beta doubles excitations + hw
-            evec_blks_["m2_bbbb"] = HelperD::makeTensor(world_, {L, ob_, ob_, vb_, vb_}, false); // beta doubles excitations + hw
+            evec_blks_["m2_aaaa"] = makeTensor(world_, {L, oa_, oa_, va_, va_}, false); // alpha doubles excitations + hw
+            evec_blks_["m2_abab"] = makeTensor(world_, {L, oa_, ob_, va_, vb_}, false); // alpha-beta doubles excitations + hw
+            evec_blks_["m2_bbbb"] = makeTensor(world_, {L, ob_, ob_, vb_, vb_}, false); // beta doubles excitations + hw
         }
 
         // reset offset

@@ -36,10 +36,10 @@ namespace hilbert {
         if (eom_driver_->cc_wfn_->has_t1_integrals_) eom_driver_->cc_wfn_->transform_integrals(false);
 
         // Compute transition dipole tensors
-        properties_["OSCILLATOR STRENGTHS"] = HelperD::makeTensor(world_, {M_, M_}, true),
-        properties_["X TRANSITION DIPOLES"] = HelperD::makeTensor(world_, {M_, M_}, true),
-        properties_["Y TRANSITION DIPOLES"] = HelperD::makeTensor(world_, {M_, M_}, true),
-        properties_["Z TRANSITION DIPOLES"] = HelperD::makeTensor(world_, {M_, M_}, true);
+        properties_["OSCILLATOR STRENGTHS"] = makeTensor(world_, {M_, M_}, true),
+        properties_["X TRANSITION DIPOLES"] = makeTensor(world_, {M_, M_}, true),
+        properties_["Y TRANSITION DIPOLES"] = makeTensor(world_, {M_, M_}, true),
+        properties_["Z TRANSITION DIPOLES"] = makeTensor(world_, {M_, M_}, true);
 
         TArrayMap &Dip_blks = eom_driver_->cc_wfn_->Dip_blks_;
 
@@ -66,7 +66,7 @@ namespace hilbert {
 
         // Scale by energy difference
         double *eigval = eom_driver_->eigvals_->pointer();
-        HelperD::forall(properties_["OSCILLATOR STRENGTHS"], [eigval](auto &tile, auto &x) {
+        forall(properties_["OSCILLATOR STRENGTHS"], [eigval](auto &tile, auto &x) {
             double w = eigval[x[1]] - eigval[x[0]];
             tile[x] *= 2.0 / 3.0 * w;
         });
@@ -103,11 +103,11 @@ namespace hilbert {
             throw PsiException("ROTATE_POLARIZATION_AXIS must be XYZ, ZXY, or YZX", __FILE__, __LINE__);
         }
 
-        HelperD::forall(properties_["OSCILLATOR STRENGTHS"],
+        forall(properties_["OSCILLATOR STRENGTHS"],
                         [oscp](auto &tile, auto &x) { oscp[x[0]][x[1]] = tile[x]; });
-        HelperD::forall(properties_["X TRANSITION DIPOLES"], [xp](auto &tile, auto &x) { xp[x[0]][x[1]] = tile[x]; });
-        HelperD::forall(properties_["Y TRANSITION DIPOLES"], [yp](auto &tile, auto &x) { yp[x[0]][x[1]] = tile[x]; });
-        HelperD::forall(properties_["Z TRANSITION DIPOLES"], [zp](auto &tile, auto &x) { zp[x[0]][x[1]] = tile[x]; });
+        forall(properties_["X TRANSITION DIPOLES"], [xp](auto &tile, auto &x) { xp[x[0]][x[1]] = tile[x]; });
+        forall(properties_["Y TRANSITION DIPOLES"], [yp](auto &tile, auto &x) { yp[x[0]][x[1]] = tile[x]; });
+        forall(properties_["Z TRANSITION DIPOLES"], [zp](auto &tile, auto &x) { zp[x[0]][x[1]] = tile[x]; });
         world_.gop.fence();
 
         double cc_energy = eom_driver_->cc_wfn_->cc_energy_;

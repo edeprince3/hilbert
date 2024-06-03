@@ -52,6 +52,8 @@
 #include <unistd.h>
 #include <psi4/psifiles.h>
 
+using namespace TA_Helper;
+
 namespace hilbert {
 
     QED_CCSD::QED_CCSD(const shared_ptr<Wavefunction> &reference_wavefunction, Options &options) :
@@ -68,8 +70,8 @@ namespace hilbert {
 
         // u0
         if (include_u0_){
-            amplitudes_["u0"] = HelperD::makeTensor(world_, {1}, true);
-            residuals_["u0"] = HelperD::makeTensor(world_, {1}, true);
+            amplitudes_["u0"] = makeTensor(world_, {1}, true);
+            residuals_["u0"] = makeTensor(world_, {1}, true);
 
             // should remove this and just use amplitudes_["u0"]. I need both for now.
             scalar_amps_["u0"] = 0.0;
@@ -79,20 +81,20 @@ namespace hilbert {
 
         // u1
         if (include_u1_) {
-            amplitudes_["u1_aa"]  = HelperD::makeTensor(world_, {va_, oa_}, true);
-            amplitudes_["u1_bb"]  = HelperD::makeTensor(world_, {vb_, ob_}, true);
-            residuals_["u1_aa"]  = HelperD::makeTensor(world_, {va_, oa_}, true);
-            residuals_["u1_bb"]  = HelperD::makeTensor(world_, {vb_, ob_}, true);
+            amplitudes_["u1_aa"]  = makeTensor(world_, {va_, oa_}, true);
+            amplitudes_["u1_bb"]  = makeTensor(world_, {vb_, ob_}, true);
+            residuals_["u1_aa"]  = makeTensor(world_, {va_, oa_}, true);
+            residuals_["u1_bb"]  = makeTensor(world_, {vb_, ob_}, true);
         }
 
         // u2
         if (include_u2_) {
-            amplitudes_["u2_aaaa"]  = HelperD::makeTensor(world_, {va_,va_, oa_,oa_}, true);
-            amplitudes_["u2_abab"]  = HelperD::makeTensor(world_, {va_,vb_, oa_,ob_}, true);
-            amplitudes_["u2_bbbb"]  = HelperD::makeTensor(world_, {vb_,vb_, ob_,ob_}, true);
-            residuals_["u2_aaaa"]  = HelperD::makeTensor(world_, {va_,va_, oa_,oa_}, true);
-            residuals_["u2_abab"]  = HelperD::makeTensor(world_, {va_,vb_, oa_,ob_}, true);
-            residuals_["u2_bbbb"]  = HelperD::makeTensor(world_, {vb_,vb_, ob_,ob_}, true);
+            amplitudes_["u2_aaaa"]  = makeTensor(world_, {va_,va_, oa_,oa_}, true);
+            amplitudes_["u2_abab"]  = makeTensor(world_, {va_,vb_, oa_,ob_}, true);
+            amplitudes_["u2_bbbb"]  = makeTensor(world_, {vb_,vb_, ob_,ob_}, true);
+            residuals_["u2_aaaa"]  = makeTensor(world_, {va_,va_, oa_,oa_}, true);
+            residuals_["u2_abab"]  = makeTensor(world_, {va_,vb_, oa_,ob_}, true);
+            residuals_["u2_bbbb"]  = makeTensor(world_, {vb_,vb_, ob_,ob_}, true);
         }
 
     }
@@ -114,14 +116,14 @@ namespace hilbert {
 
         // u1
         if (include_u1_) {
-            HelperD::forall(residuals_["u1_aa"],
+            forall(residuals_["u1_aa"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[1]],
                                        v_ep = eps[x[0] + o] + w0;
                                 tile[x] /= (o_ep - v_ep);
                             });
 
-            HelperD::forall(residuals_["u1_bb"],
+            forall(residuals_["u1_bb"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[1] + oa],
                                        v_ep = eps[x[0] + o + va] + w0;
@@ -132,19 +134,19 @@ namespace hilbert {
         // u2
         if (include_u2_) {
             // u2
-            HelperD::forall(residuals_["u2_aaaa"],
+            forall(residuals_["u2_aaaa"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[2]] + eps[x[3]],
                                        v_ep = eps[x[0] + o] + eps[x[1] + o] + w0;
                                 tile[x] /= (o_ep - v_ep);
                             });
-            HelperD::forall(residuals_["u2_bbbb"],
+            forall(residuals_["u2_bbbb"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[2] + oa] + eps[x[3] + oa],
                                        v_ep = eps[x[0] + o + va] + eps[x[1] + o + va] + w0;
                                 tile[x] /= (o_ep - v_ep);
                             });
-            HelperD::forall(residuals_["u2_abab"],
+            forall(residuals_["u2_abab"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[2]] + eps[x[3] + oa],
                                        v_ep = eps[x[0] + o] + eps[x[1] + o] + w0;
@@ -160,8 +162,8 @@ namespace hilbert {
         // u0
         if ( include_u0_ ) {
             ru0_ /= -w0;
-            amplitudes_["u0"] = HelperD::makeTensor(world_, {1}, &u0_);
-             residuals_["u0"] = HelperD::makeTensor(world_, {1}, &ru0_);
+            amplitudes_["u0"] = makeTensor(world_, {1}, &u0_);
+             residuals_["u0"] = makeTensor(world_, {1}, &ru0_);
         }
 
         /// update amplitudes according to u + du = amplitude - residual / (eps + w)

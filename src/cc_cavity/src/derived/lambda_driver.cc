@@ -52,6 +52,7 @@
 #include "polaritonic_scf/uhf.h"
 #include <unistd.h>
 #include <psi4/psifiles.h>
+using namespace TA_Helper;
 
 namespace hilbert {
 
@@ -198,12 +199,12 @@ namespace hilbert {
 
         // l1
         {
-            HelperD::forall(L_residuals_["l1_aa"],
+            forall(L_residuals_["l1_aa"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 tile[x] /= (eps[x[1]] - eps[x[0] + o]);
                             });
 
-            HelperD::forall(L_residuals_["l1_bb"],
+            forall(L_residuals_["l1_bb"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 tile[x] /= (eps[x[1] + oa] - eps[x[0] + o + va]);
                             });
@@ -211,12 +212,12 @@ namespace hilbert {
 
         // m1
         if (include_u1_) {
-            HelperD::forall(L_residuals_["m1_aa"],
+            forall(L_residuals_["m1_aa"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 tile[x] /= (eps[x[1]] - eps[x[0] + o] + w0);
                             });
 
-            HelperD::forall(L_residuals_["m1_bb"],
+            forall(L_residuals_["m1_bb"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 tile[x] /= (eps[x[1] + oa] - eps[x[0] + o + va] + w0);
                             });
@@ -225,19 +226,19 @@ namespace hilbert {
         // l2
         {
             // l2
-            HelperD::forall(L_residuals_["l2_aaaa"],
+            forall(L_residuals_["l2_aaaa"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[2]] + eps[x[3]],
                                        v_ep = eps[x[0] + o] + eps[x[1] + o];
                                 tile[x] /= (o_ep - v_ep);
                             });
-            HelperD::forall(L_residuals_["l2_bbbb"],
+            forall(L_residuals_["l2_bbbb"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[2] + oa] + eps[x[3] + oa],
                                        v_ep = eps[x[0] + o + va] + eps[x[1] + o + va];
                                 tile[x] /= (o_ep - v_ep);
                             });
-            HelperD::forall(L_residuals_["l2_abab"],
+            forall(L_residuals_["l2_abab"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[2]] + eps[x[3] + oa],
                                        v_ep = eps[x[0] + o] + eps[x[1] + o] + w0;
@@ -248,19 +249,19 @@ namespace hilbert {
         // m2
         if (include_u2_) {
             // m2
-            HelperD::forall(L_residuals_["m2_aaaa"],
+            forall(L_residuals_["m2_aaaa"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[2]] + eps[x[3]],
                                        v_ep = eps[x[0] + o] + eps[x[1] + o] + w0;
                                 tile[x] /= (o_ep - v_ep);
                             });
-            HelperD::forall(L_residuals_["u2_bbbb"],
+            forall(L_residuals_["u2_bbbb"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[2] + oa] + eps[x[3] + oa],
                                        v_ep = eps[x[0] + o + va] + eps[x[1] + o + va] + w0;
                                 tile[x] /= (o_ep - v_ep);
                             });
-            HelperD::forall(L_residuals_["u2_abab"],
+            forall(L_residuals_["u2_abab"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[2]] + eps[x[3] + oa],
                                        v_ep = eps[x[0] + o] + eps[x[1] + o] + w0;
@@ -276,8 +277,8 @@ namespace hilbert {
         // m0
         if ( include_u0_ ) {
             rm0_ /= -w0;
-            L_amplitudes_["m0"] = HelperD::makeTensor(world_, {1}, &m0_);
-            L_residuals_["m0"] = HelperD::makeTensor(world_, {1}, &rm0_);
+            L_amplitudes_["m0"] = makeTensor(world_, {1}, &m0_);
+            L_residuals_["m0"] = makeTensor(world_, {1}, &rm0_);
         }
 
         /// update amplitudes according to u + du = amplitude - residual / (eps + w)

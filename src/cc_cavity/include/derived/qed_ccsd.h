@@ -39,7 +39,7 @@
 using namespace std;
 using namespace TA;
 using namespace psi;
-using namespace Helper;
+using namespace TA_Helper;
 
 namespace hilbert {
 

@@ -2794,11 +2794,11 @@ double LambdaDriver::build_residuals() {
     }
 
     // initialize coherent state amplitudes to zero
-    TA::TArrayD crl1_aa_vo     = HelperD::makeTensor(world_, {va_, oa_}, true);
-    TA::TArrayD crl1_bb_vo     = HelperD::makeTensor(world_, {vb_, ob_}, true);
-    TA::TArrayD crl2_aaaa_vvoo = HelperD::makeTensor(world_, {va_, va_, oa_, oa_}, true);
-    TA::TArrayD crl2_abab_vvoo = HelperD::makeTensor(world_, {va_, vb_, oa_, ob_}, true);
-    TA::TArrayD crl2_bbbb_vvoo = HelperD::makeTensor(world_, {vb_, vb_, ob_, ob_}, true);
+    TA::TArrayD crl1_aa_vo     = makeTensor(world_, {va_, oa_}, true);
+    TA::TArrayD crl1_bb_vo     = makeTensor(world_, {vb_, ob_}, true);
+    TA::TArrayD crl2_aaaa_vvoo = makeTensor(world_, {va_, va_, oa_, oa_}, true);
+    TA::TArrayD crl2_abab_vvoo = makeTensor(world_, {va_, vb_, oa_, ob_}, true);
+    TA::TArrayD crl2_bbbb_vvoo = makeTensor(world_, {vb_, vb_, ob_, ob_}, true);
 
     double cenergy = 0.0;
     double crm0 = 0.0;
@@ -2809,13 +2809,13 @@ double LambdaDriver::build_residuals() {
     TA::TArrayD crm2_bbbb_vvoo;
 
     if (include_u1_){
-        crm1_aa_vo = HelperD::makeTensor(world_, {va_, oa_}, true);
-        crm1_bb_vo = HelperD::makeTensor(world_, {vb_, ob_}, true);
+        crm1_aa_vo = makeTensor(world_, {va_, oa_}, true);
+        crm1_bb_vo = makeTensor(world_, {vb_, ob_}, true);
     }
     if (include_u2_){
-        crm2_aaaa_vvoo = HelperD::makeTensor(world_, {va_, va_, oa_, oa_}, true);
-        crm2_abab_vvoo = HelperD::makeTensor(world_, {va_, vb_, oa_, ob_}, true);
-        crm2_bbbb_vvoo = HelperD::makeTensor(world_, {vb_, vb_, ob_, ob_}, true);
+        crm2_aaaa_vvoo = makeTensor(world_, {va_, va_, oa_, oa_}, true);
+        crm2_abab_vvoo = makeTensor(world_, {va_, vb_, oa_, ob_}, true);
+        crm2_bbbb_vvoo = makeTensor(world_, {vb_, vb_, ob_, ob_}, true);
     }
 
     /// get reference amplitudes
@@ -2843,7 +2843,7 @@ double LambdaDriver::build_residuals() {
     double& m0 = L_scalar_amps_["m0"];
     if(include_u0_) {
         world_.gop.fence();
-        HelperD::forall(L_amplitudes_["m0"], [&m0](auto &tile, auto &x){
+        forall(L_amplitudes_["m0"], [&m0](auto &tile, auto &x){
             m0 = tile[x];
         });
         world_.gop.fence();
@@ -2877,8 +2877,8 @@ double LambdaDriver::build_residuals() {
     // compute energy and residuals
     {
 
-        TA::TArrayD tempPerm_aaaa_vvoo = HelperD::makeTensor(world_,{va_,va_,oa_,oa_}, true);
-        TA::TArrayD tempPerm_bbbb_vvoo = HelperD::makeTensor(world_,{vb_,vb_,ob_,ob_}, true);
+        TA::TArrayD tempPerm_aaaa_vvoo = makeTensor(world_,{va_,va_,oa_,oa_}, true);
+        TA::TArrayD tempPerm_bbbb_vvoo = makeTensor(world_,{vb_,vb_,ob_,ob_}, true);
 
 // %%%% Prepare Temp Scalars %%%%
         double scalar_tmp_100, scalar_tmp_101, scalar_tmp_102, scalar_tmp_103, scalar_tmp_104, scalar_tmp_105, scalar_tmp_106,

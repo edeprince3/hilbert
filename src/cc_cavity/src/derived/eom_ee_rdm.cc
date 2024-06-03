@@ -44,7 +44,7 @@ namespace hilbert {
                 string ov = dim1.substr(0, 1) + dim2.substr(0, 1);
                 string spin = dim1.substr(1, 1) + dim2.substr(1, 1);
                 string rdm_str = "D1_" + spin + "_" + ov;
-                RDM_blks_[rdm_str] = TArrayD(world_, HelperD::makeRange({M_, M_, dim_vec[i], dim_vec[j]}));
+                RDM_blks_[rdm_str] = TArrayD(world_, makeRange({M_, M_, dim_vec[i], dim_vec[j]}));
                 RDM_blks_[rdm_str].fill(0.0);
             }
         }
@@ -2435,7 +2435,7 @@ namespace hilbert {
         
         // helper function to extract density from blocks
         auto extract_density = [rdm_states](TArrayD& D1_blk, double** D1_p, pair<size_t, size_t> offs){
-            HelperD::forall(D1_blk, [D1_p, offs, rdm_states](auto &tile, auto &x){
+            forall(D1_blk, [D1_p, offs, rdm_states](auto &tile, auto &x){
                 size_t mu = x[2] + offs.first, nu = x[3] + offs.second;
                 if (x[0] == rdm_states[0] && x[1] == rdm_states[1])
                     D1_p[mu][nu] = tile[x];

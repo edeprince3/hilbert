@@ -31,9 +31,7 @@
 
 using namespace std;
 using namespace TA;
-namespace Helper {
-    template<typename T = double>
-    struct TA_Helper {
+namespace TA_Helper {
 
         static inline size_t tile_size_ = -1; // default value to use all elements in a tile
 
@@ -52,6 +50,7 @@ namespace Helper {
          * @param fillZero if true, the array will be filled with zeros
          * @return the tiled array
          */
+        template<typename T = double>
         static inline TArray<T>
         makeTensor(World &world, const initializer_list<size_t> &N, bool fillZero);
 
@@ -63,6 +62,7 @@ namespace Helper {
          * @param Off the offsets of the data in each dimension (Default: {}, i.e. no offset)
          * @return the tiled array
          */
+        template<typename T = double>
         static inline TArray<T>
         makeTensor(World &world, const initializer_list<size_t> &N, const T *data, initializer_list<size_t> Off = {});
 
@@ -76,6 +76,7 @@ namespace Helper {
          * @param Off the offsets of the data in each dimension (Default: {}, i.e. no offset)
          * @return the tiled array
          */
+        template<typename T = double>
         static inline TArray<T>
         makeTensor(World &world,
                    const initializer_list<size_t> &NL,
@@ -89,8 +90,9 @@ namespace Helper {
          * @param op the function to perform an operation using each element
          *           the function must take a Tensor<T> (the tile) and a vector<size_t> (the index) as arguments
          */
+        template<typename T = double, typename Op>
         static inline void
-        forall(TArray<T> &tensor, function<void(Tensor<T> &, vector<size_t> &)> op);
+        forall(TArray<T> &tensor,  Op &&op);
         
         /**
          * extract elements from the tiled array, tensor, and store them in the array, data
@@ -98,15 +100,10 @@ namespace Helper {
          * @param Off the offsets of the data in each dimension (Default: {}, i.e. no offset)
          * @result data the array to store the data in
          */
+        template<typename T = double>
         static inline T*
         arrayFromTensor(TArray<T> A, const initializer_list<size_t> &N, initializer_list<size_t> Off = {});
 
-    };
-// make typedefs for TA_Helper
-template <typename T>
-using HelperT = TA_Helper<T>;
-typedef HelperT<double> HelperD;
-typedef HelperT<complex<double>> HelperC;
 }
 #endif
 #include "ta_helper.cc"

@@ -100,19 +100,19 @@ void hilbert::EOM_EA_CCSD::build_Hc_cH(size_t L) {
     sigvec_blks_.clear();
 
     // reduce sigma into spins
-    sigvec_blks_["sigmar1_a"] = HelperD::makeTensor(world_, {L, va_}, true);
-    sigvec_blks_["sigmar1_b"] = HelperD::makeTensor(world_, {L, vb_}, true);
-    sigvec_blks_["sigmar2_aaa"] = HelperD::makeTensor(world_, {L, va_, va_, oa_}, true);
-    sigvec_blks_["sigmar2_abb"] = HelperD::makeTensor(world_, {L, va_, vb_, ob_}, true);
-    sigvec_blks_["sigmar2_aba"] = HelperD::makeTensor(world_, {L, va_, vb_, oa_}, true);
-    sigvec_blks_["sigmar2_bbb"] = HelperD::makeTensor(world_, {L, vb_, vb_, ob_}, true);
+    sigvec_blks_["sigmar1_a"] = makeTensor(world_, {L, va_}, true);
+    sigvec_blks_["sigmar1_b"] = makeTensor(world_, {L, vb_}, true);
+    sigvec_blks_["sigmar2_aaa"] = makeTensor(world_, {L, va_, va_, oa_}, true);
+    sigvec_blks_["sigmar2_abb"] = makeTensor(world_, {L, va_, vb_, ob_}, true);
+    sigvec_blks_["sigmar2_aba"] = makeTensor(world_, {L, va_, vb_, oa_}, true);
+    sigvec_blks_["sigmar2_bbb"] = makeTensor(world_, {L, vb_, vb_, ob_}, true);
 
-    sigvec_blks_["sigmal1_a"] = HelperD::makeTensor(world_, {L, va_}, true);
-    sigvec_blks_["sigmal1_b"] = HelperD::makeTensor(world_, {L, vb_}, true);
-    sigvec_blks_["sigmal2_aaa"] = HelperD::makeTensor(world_, {L, va_, va_, oa_}, true);
-    sigvec_blks_["sigmal2_abb"] = HelperD::makeTensor(world_, {L, va_, vb_, ob_}, true);
-    sigvec_blks_["sigmal2_aba"] = HelperD::makeTensor(world_, {L, va_, vb_, oa_}, true);
-    sigvec_blks_["sigmal2_bbb"] = HelperD::makeTensor(world_, {L, vb_, vb_, ob_}, true);
+    sigvec_blks_["sigmal1_a"] = makeTensor(world_, {L, va_}, true);
+    sigvec_blks_["sigmal1_b"] = makeTensor(world_, {L, vb_}, true);
+    sigvec_blks_["sigmal2_aaa"] = makeTensor(world_, {L, va_, va_, oa_}, true);
+    sigvec_blks_["sigmal2_abb"] = makeTensor(world_, {L, va_, vb_, ob_}, true);
+    sigvec_blks_["sigmal2_aba"] = makeTensor(world_, {L, va_, vb_, oa_}, true);
+    sigvec_blks_["sigmal2_bbb"] = makeTensor(world_, {L, vb_, vb_, ob_}, true);
 
     // get reference to electronic integrals
     TArrayMap &V_blks_ = cc_wfn_->V_blks_;

@@ -53,7 +53,7 @@ namespace hilbert {
                         if (spin[0] != spin[2] || spin[1] != spin[3])
                             continue; // if not, continue
 
-                        RDM_blks_[rdm_str] = TArrayD(world_, HelperD::makeRange({dim_vec[i], dim_vec[j], dim_vec[k], dim_vec[l]}));
+                        RDM_blks_[rdm_str] = TArrayD(world_, makeRange({dim_vec[i], dim_vec[j], dim_vec[k], dim_vec[l]}));
                         RDM_blks_[rdm_str].fill(0.0);
                     }
                 }
@@ -115,8 +115,8 @@ namespace hilbert {
                     m2_bbbb, s2_bbbb;
 
             // create delta functions to slice out the relevant states
-            TArrayD delta_lstate = HelperD::makeTensor(world_,{M_}, false);
-            TArrayD delta_rstate = HelperD::makeTensor(world_,{M_}, false);
+            TArrayD delta_lstate = makeTensor(world_,{M_}, false);
+            TArrayD delta_rstate = makeTensor(world_,{M_}, false);
             delta_lstate.init_elements([lstate](auto& I){
                 return (I[0] == lstate) ? 1.0 : 0.0;
             });

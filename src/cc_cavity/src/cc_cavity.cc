@@ -56,7 +56,7 @@
 using namespace std;
 using namespace TA;
 using namespace psi;
-using namespace Helper;
+using namespace TA_Helper;
 
 namespace hilbert {
 
@@ -64,7 +64,7 @@ namespace hilbert {
             PolaritonicHF(std::move(reference_wavefunction), options_) {
 
         // set block_size for tiledarray
-        HelperD::tile_size_ = (size_t) options_.get_int("TILE_SIZE");
+        TA_Helper::tile_size_ = (size_t) options_.get_int("TILE_SIZE");
 
         // adjustment of threaded mkl flags to work in parallel with mpi and omp
         // will default to mkl sequential if threads equal one
@@ -180,15 +180,15 @@ namespace hilbert {
 
         /// make identity tensors
 
-        Id_blks_["a_o"] = HelperD::makeTensor(world_, {oa_}, false);   Id_blks_["a_o"].fill(1.0);
-        Id_blks_["a_v"] = HelperD::makeTensor(world_, {va_}, false);   Id_blks_["a_v"].fill(1.0);
-        Id_blks_["b_o"] = HelperD::makeTensor(world_, {ob_}, false);   Id_blks_["b_o"].fill(1.0);
-        Id_blks_["b_v"] = HelperD::makeTensor(world_, {vb_}, false);   Id_blks_["b_v"].fill(1.0);
+        Id_blks_["a_o"] = makeTensor(world_, {oa_}, false);   Id_blks_["a_o"].fill(1.0);
+        Id_blks_["a_v"] = makeTensor(world_, {va_}, false);   Id_blks_["a_v"].fill(1.0);
+        Id_blks_["b_o"] = makeTensor(world_, {ob_}, false);   Id_blks_["b_o"].fill(1.0);
+        Id_blks_["b_v"] = makeTensor(world_, {vb_}, false);   Id_blks_["b_v"].fill(1.0);
 
-        Id_blks_["aa_oo"] = TiledArray::diagonal_array<TA::TArrayD>(world_, HelperD::makeRange({oa_, oa_}), 1);
-        Id_blks_["aa_vv"] = TiledArray::diagonal_array<TA::TArrayD>(world_, HelperD::makeRange({va_, va_}), 1);
-        Id_blks_["bb_oo"] = TiledArray::diagonal_array<TA::TArrayD>(world_, HelperD::makeRange({ob_, ob_}), 1);
-        Id_blks_["bb_vv"] = TiledArray::diagonal_array<TA::TArrayD>(world_, HelperD::makeRange({vb_, vb_}), 1);
+        Id_blks_["aa_oo"] = TiledArray::diagonal_array<TA::TArrayD>(world_, makeRange({oa_, oa_}), 1);
+        Id_blks_["aa_vv"] = TiledArray::diagonal_array<TA::TArrayD>(world_, makeRange({va_, va_}), 1);
+        Id_blks_["bb_oo"] = TiledArray::diagonal_array<TA::TArrayD>(world_, makeRange({ob_, ob_}), 1);
+        Id_blks_["bb_vv"] = TiledArray::diagonal_array<TA::TArrayD>(world_, makeRange({vb_, vb_}), 1);
 
         Id_blks_["aaaa_oooo"]("p,q,r,s") = Id_blks_["aa_oo"]("p,r") * Id_blks_["aa_oo"]("q,s");
         Id_blks_["abab_oooo"]("p,q,r,s") = Id_blks_["aa_oo"]("p,r") * Id_blks_["bb_oo"]("q,s");
@@ -197,18 +197,18 @@ namespace hilbert {
         /// initialize t1 and t2 amplitudes and residuals (every derived class must use these amplitudes and residuals)
 
         // t1
-        amplitudes_["t1_aa"]  = HelperD::makeTensor(world_, {va_, oa_}, true);
-        amplitudes_["t1_bb"]  = HelperD::makeTensor(world_, {vb_, ob_}, true);
-        residuals_["t1_aa"]  = HelperD::makeTensor(world_, {va_, oa_}, true);
-        residuals_["t1_bb"]  = HelperD::makeTensor(world_, {vb_, ob_}, true);
+        amplitudes_["t1_aa"]  = makeTensor(world_, {va_, oa_}, true);
+        amplitudes_["t1_bb"]  = makeTensor(world_, {vb_, ob_}, true);
+        residuals_["t1_aa"]  = makeTensor(world_, {va_, oa_}, true);
+        residuals_["t1_bb"]  = makeTensor(world_, {vb_, ob_}, true);
 
         // t2
-        amplitudes_["t2_aaaa"]  = HelperD::makeTensor(world_, {va_,va_, oa_,oa_}, true);
-        amplitudes_["t2_abab"]  = HelperD::makeTensor(world_, {va_,vb_, oa_,ob_}, true);
-        amplitudes_["t2_bbbb"]  = HelperD::makeTensor(world_, {vb_,vb_, ob_,ob_}, true);
-        residuals_["t2_aaaa"]  = HelperD::makeTensor(world_, {va_,va_, oa_,oa_}, true);
-        residuals_["t2_abab"]  = HelperD::makeTensor(world_, {va_,vb_, oa_,ob_}, true);
-        residuals_["t2_bbbb"]  = HelperD::makeTensor(world_, {vb_,vb_, ob_,ob_}, true);
+        amplitudes_["t2_aaaa"]  = makeTensor(world_, {va_,va_, oa_,oa_}, true);
+        amplitudes_["t2_abab"]  = makeTensor(world_, {va_,vb_, oa_,ob_}, true);
+        amplitudes_["t2_bbbb"]  = makeTensor(world_, {vb_,vb_, ob_,ob_}, true);
+        residuals_["t2_aaaa"]  = makeTensor(world_, {va_,va_, oa_,oa_}, true);
+        residuals_["t2_abab"]  = makeTensor(world_, {va_,vb_, oa_,ob_}, true);
+        residuals_["t2_bbbb"]  = makeTensor(world_, {vb_,vb_, ob_,ob_}, true);
 
         world_.gop.fence();
     }
@@ -222,10 +222,10 @@ namespace hilbert {
         double ** ca = Ca_->pointer();
         double ** cb = Cb_->pointer();
 
-        C_blks_["a_o"] = HelperD::makeTensor(world_, {ns_, oa_}, false);
-        C_blks_["b_o"] = HelperD::makeTensor(world_, {ns_, ob_}, false);
-        C_blks_["a_v"] = HelperD::makeTensor(world_, {ns_, va_}, false);
-        C_blks_["b_v"] = HelperD::makeTensor(world_, {ns_, vb_}, false);
+        C_blks_["a_o"] = makeTensor(world_, {ns_, oa_}, false);
+        C_blks_["b_o"] = makeTensor(world_, {ns_, ob_}, false);
+        C_blks_["a_v"] = makeTensor(world_, {ns_, va_}, false);
+        C_blks_["b_v"] = makeTensor(world_, {ns_, vb_}, false);
 
         // copy the MO coefficients into the tensor
         size_t nso = nso_;
@@ -248,7 +248,7 @@ namespace hilbert {
 
         /// core hamiltonian
         double ** h_p = reference_wavefunction_->H()->pointer();
-        core_H_ = HelperD::makeTensor(world_, {ns_,ns_}, false);
+        core_H_ = makeTensor(world_, {ns_,ns_}, false);
         core_H_.init_elements([h_p, nso](auto& I) {
             if (I[0] < nso && I[1] < nso) return h_p[I[0]][I[1]];
             else if (I[0] >= nso && I[1] >= nso) return h_p[I[0]-nso][I[1]-nso];
@@ -263,7 +263,7 @@ namespace hilbert {
             // one-electron part of electron-electron contribution to dipole self energy
             double **quadrupole_scaled_sum_p = quadrupole_scaled_sum_->pointer();
 
-            oe_cavity_terms_ = HelperD::makeTensor(world_, {ns_, ns_}, false);
+            oe_cavity_terms_ = makeTensor(world_, {ns_, ns_}, false);
             oe_cavity_terms_.init_elements([scaled_e_n_dipole_squared_p, quadrupole_scaled_sum_p, nso](auto &I) {
                 if (I[0] < nso && I[1] < nso)
                     return scaled_e_n_dipole_squared_p[I[0]][I[1]] - quadrupole_scaled_sum_p[I[0]][I[1]];
@@ -308,7 +308,7 @@ namespace hilbert {
 
             std::shared_ptr<Matrix> Qso = DF->Qso();
             double ** Qso_p = Qso->pointer();
-            Qso_ = HelperD::makeTensor(world_, {nQ_, ns_, ns_}, false);
+            Qso_ = makeTensor(world_, {nQ_, ns_, ns_}, false);
             world_.gop.fence();
             Qso_.init_elements([Qso_p, nso](auto &I) {
                 size_t Q = I[0], mu = I[1], nu = I[2];
@@ -334,7 +334,7 @@ namespace hilbert {
             psio->read_entry(PSIF_DCC_QSO,"(Q|mn) Integrals",(char*)Qso_p,sizeof(double)*nQ_ * nso_*nso_);
             psio->close(PSIF_DCC_QSO,1);
 
-            Qso_ = HelperD::makeTensor(world_, {nQ_, ns_, ns_}, false);
+            Qso_ = makeTensor(world_, {nQ_, ns_, ns_}, false);
             world_.gop.fence();
             Qso_.init_elements([Qso_p, nso](auto &I) {
                 size_t Q = I[0], mu = I[1], nu = I[2];
@@ -634,7 +634,7 @@ namespace hilbert {
                 else if (i == 2) pol = "dz_";
 
                 // build dipole matricies in AO basis
-                TArrayD dip = HelperD::makeTensor(world_, {ns_, ns_}, false);
+                TArrayD dip = makeTensor(world_, {ns_, ns_}, false);
                 dip.init_elements([dip_p, nso](auto &I) {
                     if (I[0] < nso && I[1] < nso)
                         return dip_p[I[0]][I[1]];
@@ -885,25 +885,25 @@ namespace hilbert {
         memset(eps, 0, sizeof(double)*ns_);
 
         // oo/aa block
-        HelperD::forall(F_blks_["aa_oo"], [eps,oa,o,va](auto &tile, auto &x){
+        forall(F_blks_["aa_oo"], [eps,oa,o,va](auto &tile, auto &x){
             if (x[0] != x[1]) return;
             eps[x[0]] = tile[x];
         });
 
         // oo/bb block
-        HelperD::forall(F_blks_["bb_oo"], [eps,oa,o,va](auto &tile, auto &x){
+        forall(F_blks_["bb_oo"], [eps,oa,o,va](auto &tile, auto &x){
             if (x[0] != x[1]) return;
             eps[x[0] + oa] = tile[x];
         });
 
         // vv/aa block
-        HelperD::forall(F_blks_["aa_vv"], [eps,oa,o,va](auto &tile, auto &x){
+        forall(F_blks_["aa_vv"], [eps,oa,o,va](auto &tile, auto &x){
             if (x[0] != x[1]) return;
             eps[x[0] + o] = tile[x];
         });
 
         // vv/bb block
-        HelperD::forall(F_blks_["bb_vv"], [eps,oa,o,va](auto &tile, auto &x){
+        forall(F_blks_["bb_vv"], [eps,oa,o,va](auto &tile, auto &x){
             if (x[0] != x[1]) return;
             eps[x[0] + o + va] = tile[x];
         });
@@ -924,30 +924,30 @@ namespace hilbert {
         /// dt = -residual / eps
 
         // t1
-        HelperD::forall(residuals_["t1_aa"],
+        forall(residuals_["t1_aa"],
                         [eps, o, oa, va](auto &tile, auto &x) {
                             tile[x] /= (eps[x[1]] - eps[x[0]+o]);
                         });
 
-        HelperD::forall(residuals_["t1_bb"],
+        forall(residuals_["t1_bb"],
                         [eps, o, oa, va](auto &tile, auto &x) {
                             tile[x] /= (eps[x[1]+oa] - eps[x[0]+o+va]);
                         });
 
         // t2
-        HelperD::forall(residuals_["t2_aaaa"],
+        forall(residuals_["t2_aaaa"],
                         [eps, o, oa, va](auto &tile, auto &x) {
                             double o_ep = eps[x[2]] + eps[x[3]],
                                     v_ep = eps[x[0]+o] + eps[x[1]+o];
                             tile[x] /= (o_ep - v_ep);
                         });
-        HelperD::forall(residuals_["t2_bbbb"],
+        forall(residuals_["t2_bbbb"],
                         [eps, o, oa, va](auto &tile, auto &x) {
                             double o_ep = eps[x[2]+oa] + eps[x[3]+oa],
                                     v_ep = eps[x[0]+o+va] + eps[x[1]+o+va];
                             tile[x] /= (o_ep - v_ep);
                         });
-        HelperD::forall(residuals_["t2_abab"],
+        forall(residuals_["t2_abab"],
                         [eps, o, oa, va](auto &tile, auto &x) {
                             double o_ep = eps[x[2]] + eps[x[3]+oa],
                                     v_ep = eps[x[0]+o] + eps[x[1]+o];

@@ -90,7 +90,7 @@ namespace hilbert {
         // one-electron part of electron-electron contribution to dipole self energy
         double ** quadrupole_scaled_sum_p = cc_wfn_->quadrupole_scaled_sum_->pointer();
 
-        cc_wfn_->oe_cavity_terms_ = HelperD::makeTensor(world_, {2L*nso_, 2L*nso_}, false);
+        cc_wfn_->oe_cavity_terms_ = makeTensor(world_, {2L*nso_, 2L*nso_}, false);
         cc_wfn_->oe_cavity_terms_.init_elements([scaled_e_n_dipole_squared_p, quadrupole_scaled_sum_p, nso_](auto &I) {
             if (I[0] < nso_ && I[1] < nso_)
                 return scaled_e_n_dipole_squared_p[I[0]][I[1]] - quadrupole_scaled_sum_p[I[0]][I[1]];
@@ -233,12 +233,12 @@ namespace hilbert {
         evec_blks_.clear(); // clear the map of trial vectors
 
         // initialize operators
-        evec_blks_["r1_a"] = HelperD::makeTensor(world_, {L, va_}, false); // alpha singles excitations
-        evec_blks_["r1_b"] = HelperD::makeTensor(world_, {L, vb_}, false); // beta singles excitations
-        evec_blks_["r2_aaa"] = HelperD::makeTensor(world_, {L, va_, va_, oa_}, false); // alpha doubles excitations
-        evec_blks_["r2_abb"] = HelperD::makeTensor(world_, {L, va_, vb_, ob_}, false); // alpha-beta doubles excitations
-        evec_blks_["r2_aba"] = HelperD::makeTensor(world_, {L, va_, vb_, oa_}, false); // beta-alpha doubles excitations
-        evec_blks_["r2_bbb"] = HelperD::makeTensor(world_, {L, vb_, vb_, ob_}, false); // beta doubles excitations
+        evec_blks_["r1_a"] = makeTensor(world_, {L, va_}, false); // alpha singles excitations
+        evec_blks_["r1_b"] = makeTensor(world_, {L, vb_}, false); // beta singles excitations
+        evec_blks_["r2_aaa"] = makeTensor(world_, {L, va_, va_, oa_}, false); // alpha doubles excitations
+        evec_blks_["r2_abb"] = makeTensor(world_, {L, va_, vb_, ob_}, false); // alpha-beta doubles excitations
+        evec_blks_["r2_aba"] = makeTensor(world_, {L, va_, vb_, oa_}, false); // beta-alpha doubles excitations
+        evec_blks_["r2_bbb"] = makeTensor(world_, {L, vb_, vb_, ob_}, false); // beta doubles excitations
 
         size_t oa = oa_, ob = ob_, // number of occupied orbitals
         va = va_, vb = vb_; // number of virtual beta orbitals
@@ -325,12 +325,12 @@ namespace hilbert {
 
         // singles
         {
-            HelperD::forall(sigvec_blks_["sigmar1_a"], [sigmar, oa, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmar1_a"], [sigmar, oa, offset](auto &tile, auto &x) {
                 size_t trial = x[0], e = x[1];
                 sigmar[e + offset][trial] = tile[x];
             }); offset += va;
 
-            HelperD::forall(sigvec_blks_["sigmar1_b"], [sigmar, ob, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmar1_b"], [sigmar, ob, offset](auto &tile, auto &x) {
                 size_t trial = x[0], e = x[1];
                 sigmar[e + offset][trial] = tile[x];
             }); offset += vb;
@@ -338,7 +338,7 @@ namespace hilbert {
 
         // doubles
         {
-            HelperD::forall(sigvec_blks_["sigmar2_aaa"], [sigmar, oa, va, ob, vb, offset, this](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmar2_aaa"], [sigmar, oa, va, ob, vb, offset, this](auto &tile, auto &x) {
                 size_t trial = x[0], e = x[1], f = x[2], m = x[3];
                 if (e < f) {
                     size_t ef_off = EOM_Driver::sqr_2_tri_idx(e, f, va);
@@ -347,17 +347,17 @@ namespace hilbert {
                 }
             }); offset += aaa;
 
-            HelperD::forall(sigvec_blks_["sigmar2_abb"], [sigmar, oa, ob, vb, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmar2_abb"], [sigmar, oa, ob, vb, offset](auto &tile, auto &x) {
                 size_t trial = x[0], e = x[1], f = x[2], m = x[3];
                 sigmar[e*vb*ob + f*ob + m + offset][trial] = tile[x];
             }); offset += abb;
 
-            HelperD::forall(sigvec_blks_["sigmar2_aba"], [sigmar, oa, ob, va, vb, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmar2_aba"], [sigmar, oa, ob, va, vb, offset](auto &tile, auto &x) {
                 size_t trial = x[0], e = x[1], f = x[2], m = x[3];
                 sigmar[e*vb*oa + f*oa + m + offset][trial] = tile[x];
             }); offset += aba;
 
-            HelperD::forall(sigvec_blks_["sigmar2_bbb"], [sigmar, oa, ob, va, vb, offset, this](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmar2_bbb"], [sigmar, oa, ob, va, vb, offset, this](auto &tile, auto &x) {
                 size_t trial = x[0], e = x[1], f = x[2], m = x[3];
                 if (e < f) {
                     size_t ef_off = EOM_Driver::sqr_2_tri_idx(e, f, vb);
@@ -371,12 +371,12 @@ namespace hilbert {
         offset = 0;
         // singles
         {
-            HelperD::forall(sigvec_blks_["sigmal1_a"], [sigmal, oa, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmal1_a"], [sigmal, oa, offset](auto &tile, auto &x) {
                 size_t trial = x[0], e = x[1];
                 sigmal[e + offset][trial] = tile[x];
             }); offset += va;
 
-            HelperD::forall(sigvec_blks_["sigmal1_b"], [sigmal, ob, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmal1_b"], [sigmal, ob, offset](auto &tile, auto &x) {
                 size_t trial = x[0], e = x[1];
                 sigmal[e + offset][trial] = tile[x];
             }); offset += vb;
@@ -384,7 +384,7 @@ namespace hilbert {
 
         // doubles
         {
-            HelperD::forall(sigvec_blks_["sigmal2_aaa"], [sigmal, oa, ob, va, vb, offset, this](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmal2_aaa"], [sigmal, oa, ob, va, vb, offset, this](auto &tile, auto &x) {
                 size_t trial = x[0], e = x[1], f = x[2], m = x[3];
                 if (e < f) {
                     size_t ef_off = EOM_Driver::sqr_2_tri_idx(e, f, va);
@@ -393,17 +393,17 @@ namespace hilbert {
                 }
             }); offset += aaa;
 
-            HelperD::forall(sigvec_blks_["sigmal2_abb"], [sigmal, oa, ob, vb, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmal2_abb"], [sigmal, oa, ob, vb, offset](auto &tile, auto &x) {
                 size_t trial = x[0], e = x[1], f = x[2], m = x[3];
                 sigmal[e*vb*ob + f*ob + m + offset][trial] = tile[x];
             }); offset += abb;
 
-            HelperD::forall(sigvec_blks_["sigmal2_aba"], [sigmal, oa, ob, va, vb, offset](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmal2_aba"], [sigmal, oa, ob, va, vb, offset](auto &tile, auto &x) {
                 size_t trial = x[0], e = x[1], f = x[2], m = x[3];
                 sigmal[e*vb*oa + f*oa + m + offset][trial] = tile[x];
             }); offset += aba;
 
-            HelperD::forall(sigvec_blks_["sigmal2_bbb"], [sigmal, oa, ob, va, vb, offset, this](auto &tile, auto &x) {
+            forall(sigvec_blks_["sigmal2_bbb"], [sigmal, oa, ob, va, vb, offset, this](auto &tile, auto &x) {
                 size_t trial = x[0], e = x[1], f = x[2], m = x[3];
                 if (e < f) {
                     size_t ef_off = EOM_Driver::sqr_2_tri_idx(e, f, vb);

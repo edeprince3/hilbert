@@ -91,11 +91,11 @@ double QED_CCSD::build_residuals() {
     }
 
     // initialize coherent state amplitudes to zero
-    TA::TArrayD crt1_aa = HelperD::makeTensor(world_, {va_, oa_}, true);
-    TA::TArrayD crt1_bb = HelperD::makeTensor(world_, {vb_, ob_}, true);
-    TA::TArrayD crt2_aaaa = HelperD::makeTensor(world_, {va_, va_, oa_, oa_}, true);
-    TA::TArrayD crt2_abab = HelperD::makeTensor(world_, {va_, vb_, oa_, ob_}, true);
-    TA::TArrayD crt2_bbbb = HelperD::makeTensor(world_, {vb_, vb_, ob_, ob_}, true);
+    TA::TArrayD crt1_aa = makeTensor(world_, {va_, oa_}, true);
+    TA::TArrayD crt1_bb = makeTensor(world_, {vb_, ob_}, true);
+    TA::TArrayD crt2_aaaa = makeTensor(world_, {va_, va_, oa_, oa_}, true);
+    TA::TArrayD crt2_abab = makeTensor(world_, {va_, vb_, oa_, ob_}, true);
+    TA::TArrayD crt2_bbbb = makeTensor(world_, {vb_, vb_, ob_, ob_}, true);
 
     double cenergy = 0.0;
     double cru0 = 0.0;
@@ -106,13 +106,13 @@ double QED_CCSD::build_residuals() {
     TA::TArrayD cru2_bbbb;
 
     if (include_u1_){
-        cru1_aa = HelperD::makeTensor(world_, {va_, oa_}, true);
-        cru1_bb = HelperD::makeTensor(world_, {vb_, ob_}, true);
+        cru1_aa = makeTensor(world_, {va_, oa_}, true);
+        cru1_bb = makeTensor(world_, {vb_, ob_}, true);
     }
     if (include_u2_){
-        cru2_aaaa = HelperD::makeTensor(world_, {va_, va_, oa_, oa_}, true);
-        cru2_abab = HelperD::makeTensor(world_, {va_, vb_, oa_, ob_}, true);
-        cru2_bbbb = HelperD::makeTensor(world_, {vb_, vb_, ob_, ob_}, true);
+        cru2_aaaa = makeTensor(world_, {va_, va_, oa_, oa_}, true);
+        cru2_abab = makeTensor(world_, {va_, vb_, oa_, ob_}, true);
+        cru2_bbbb = makeTensor(world_, {vb_, vb_, ob_, ob_}, true);
     }
 
     /// get reference amplitudes
@@ -121,7 +121,7 @@ double QED_CCSD::build_residuals() {
     double& u0 = scalar_amps_["u0"];
     if(include_u0_) {
         world_.gop.fence();
-        HelperD::forall(amplitudes_["u0"], [&u0](auto &tile, auto &x){
+        forall(amplitudes_["u0"], [&u0](auto &tile, auto &x){
             u0 = tile[x];
         });
         world_.gop.fence();
