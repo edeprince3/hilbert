@@ -75,15 +75,15 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
     // initialize diagonal blocks
     double  H_u0u0 = 0;
     double cH_u0u0 = 0;
-    TArrayD    H_ss_aaaa_ovov = HelperD::makeTensor(world_, {oa_, va_,oa_, va_}, true);
-    TArrayD    H_ss_bbbb_ovov = HelperD::makeTensor(world_, {ob_, vb_,ob_, vb_}, true);
-    TArrayD   cH_ss_aaaa_ovov = HelperD::makeTensor(world_, {oa_, va_,oa_, va_}, true);
-    TArrayD   cH_ss_bbbb_ovov = HelperD::makeTensor(world_, {ob_, vb_,ob_, vb_}, true);
+    TArrayD    H_ss_aaaa_ovov = makeTensor(world_, {oa_, va_,oa_, va_}, true);
+    TArrayD    H_ss_bbbb_ovov = makeTensor(world_, {ob_, vb_,ob_, vb_}, true);
+    TArrayD   cH_ss_aaaa_ovov = makeTensor(world_, {oa_, va_,oa_, va_}, true);
+    TArrayD   cH_ss_bbbb_ovov = makeTensor(world_, {ob_, vb_,ob_, vb_}, true);
 
-    TArrayD  H_u1u1_aaaa_ovov = HelperD::makeTensor(world_, {oa_, va_,oa_, va_}, true);
-    TArrayD  H_u1u1_bbbb_ovov = HelperD::makeTensor(world_, {ob_, vb_,ob_, vb_}, true);
-    TArrayD cH_u1u1_aaaa_ovov = HelperD::makeTensor(world_, {oa_, va_,oa_, va_}, true);
-    TArrayD cH_u1u1_bbbb_ovov = HelperD::makeTensor(world_, {ob_, vb_,ob_, vb_}, true);
+    TArrayD  H_u1u1_aaaa_ovov = makeTensor(world_, {oa_, va_,oa_, va_}, true);
+    TArrayD  H_u1u1_bbbb_ovov = makeTensor(world_, {ob_, vb_,ob_, vb_}, true);
+    TArrayD cH_u1u1_aaaa_ovov = makeTensor(world_, {oa_, va_,oa_, va_}, true);
+    TArrayD cH_u1u1_bbbb_ovov = makeTensor(world_, {ob_, vb_,ob_, vb_}, true);
 
     {
         double scalar0;
@@ -981,7 +981,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
 
     // extract singles
     size_t oa = oa_, ob = ob_, va = va_, vb = vb_;
-    HelperD::forall(H_ss_aaaa_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
+    forall(H_ss_aaaa_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
         size_t m = x[0], e = x[1], i = x[2], a = x[3];
         if (m==i && e==a){
             size_t index = e*oa + i + id;
@@ -989,7 +989,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
         }
     }); id += oa_*va_;
 
-    HelperD::forall(H_ss_bbbb_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
+    forall(H_ss_bbbb_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
         size_t m = x[0], e = x[1], i = x[2], a = x[3];
         if (m==i && e==a){
             size_t index = e*ob + i + id;
@@ -1000,7 +1000,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
     // extract singles w/ hw
     
     if (include_u1_){
-        HelperD::forall(H_u1u1_aaaa_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
+        forall(H_u1u1_aaaa_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
             size_t m = x[0], e = x[1], i = x[2], a = x[3];
             if (m==i && e==a){
                 size_t index = e*oa + i + id;
@@ -1008,7 +1008,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             }
         }); id += oa_*va_;
 
-        HelperD::forall(H_u1u1_bbbb_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
+        forall(H_u1u1_bbbb_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
             size_t m = x[0], e = x[1], i = x[2], a = x[3];
             if (m==i && e==a){
                 size_t index = e*ob + i + id;
@@ -1084,38 +1084,38 @@ void hilbert::EOM_EE_QED_CCSD::build_Hc_cH(size_t L) {
     sigvec_blks_.clear();
 
     // reduce sigma into spins
-    sigvec_blks_["sigmar0"] = HelperD::makeTensor(world_, {L}, true);
-    sigvec_blks_["sigmal0"] = HelperD::makeTensor(world_, {L}, true);
+    sigvec_blks_["sigmar0"] = makeTensor(world_, {L}, true);
+    sigvec_blks_["sigmal0"] = makeTensor(world_, {L}, true);
 
-    sigvec_blks_["sigmar1_aa"] = HelperD::makeTensor(world_, {L, va_, oa_}, true);
-    sigvec_blks_["sigmar1_bb"] = HelperD::makeTensor(world_, {L, vb_, ob_}, true);
-    sigvec_blks_["sigmal1_aa"] = HelperD::makeTensor(world_, {L, va_, oa_}, true);
-    sigvec_blks_["sigmal1_bb"] = HelperD::makeTensor(world_, {L, vb_, ob_}, true);
+    sigvec_blks_["sigmar1_aa"] = makeTensor(world_, {L, va_, oa_}, true);
+    sigvec_blks_["sigmar1_bb"] = makeTensor(world_, {L, vb_, ob_}, true);
+    sigvec_blks_["sigmal1_aa"] = makeTensor(world_, {L, va_, oa_}, true);
+    sigvec_blks_["sigmal1_bb"] = makeTensor(world_, {L, vb_, ob_}, true);
 
-    sigvec_blks_["sigmar2_aaaa"] = HelperD::makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
-    sigvec_blks_["sigmar2_abab"] = HelperD::makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
-    sigvec_blks_["sigmar2_bbbb"] = HelperD::makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
-    sigvec_blks_["sigmal2_aaaa"] = HelperD::makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
-    sigvec_blks_["sigmal2_abab"] = HelperD::makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
-    sigvec_blks_["sigmal2_bbbb"] = HelperD::makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
+    sigvec_blks_["sigmar2_aaaa"] = makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
+    sigvec_blks_["sigmar2_abab"] = makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
+    sigvec_blks_["sigmar2_bbbb"] = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
+    sigvec_blks_["sigmal2_aaaa"] = makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
+    sigvec_blks_["sigmal2_abab"] = makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
+    sigvec_blks_["sigmal2_bbbb"] = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
 
     if (include_u0_) {
-        sigvec_blks_["sigmas0"] = HelperD::makeTensor(world_, {L}, true);
-        sigvec_blks_["sigmam0"] = HelperD::makeTensor(world_, {L}, true);
+        sigvec_blks_["sigmas0"] = makeTensor(world_, {L}, true);
+        sigvec_blks_["sigmam0"] = makeTensor(world_, {L}, true);
     }
     if (include_u1_) {
-        sigvec_blks_["sigmas1_aa"] = HelperD::makeTensor(world_, {L, va_, oa_}, true);
-        sigvec_blks_["sigmas1_bb"] = HelperD::makeTensor(world_, {L, vb_, ob_}, true);
-        sigvec_blks_["sigmam1_aa"] = HelperD::makeTensor(world_, {L, va_, oa_}, true);
-        sigvec_blks_["sigmam1_bb"] = HelperD::makeTensor(world_, {L, vb_, ob_}, true);
+        sigvec_blks_["sigmas1_aa"] = makeTensor(world_, {L, va_, oa_}, true);
+        sigvec_blks_["sigmas1_bb"] = makeTensor(world_, {L, vb_, ob_}, true);
+        sigvec_blks_["sigmam1_aa"] = makeTensor(world_, {L, va_, oa_}, true);
+        sigvec_blks_["sigmam1_bb"] = makeTensor(world_, {L, vb_, ob_}, true);
     }
     if (include_u2_) {
-        sigvec_blks_["sigmas2_aaaa"] = HelperD::makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
-        sigvec_blks_["sigmas2_abab"] = HelperD::makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
-        sigvec_blks_["sigmas2_bbbb"] = HelperD::makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
-        sigvec_blks_["sigmam2_aaaa"] = HelperD::makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
-        sigvec_blks_["sigmam2_abab"] = HelperD::makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
-        sigvec_blks_["sigmam2_bbbb"] = HelperD::makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
+        sigvec_blks_["sigmas2_aaaa"] = makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
+        sigvec_blks_["sigmas2_abab"] = makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
+        sigvec_blks_["sigmas2_bbbb"] = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
+        sigvec_blks_["sigmam2_aaaa"] = makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
+        sigvec_blks_["sigmam2_abab"] = makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
+        sigvec_blks_["sigmam2_bbbb"] = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
     }
     
     /// unpack the sigma vectors

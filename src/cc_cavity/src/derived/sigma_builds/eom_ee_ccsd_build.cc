@@ -44,8 +44,8 @@ double* hilbert::EOM_EE_CCSD::build_ss_diagonal() {
     TA::TArrayD &u2_bbbb_vvoo = cc_wfn_->amplitudes_["u2_bbbb"];
     
     // initialize diagonal blocks
-    TArrayD    H_ss_aaaa_ovov = HelperD::makeTensor(world_, {oa_, va_,oa_, va_}, true);
-    TArrayD    H_ss_bbbb_ovov = HelperD::makeTensor(world_, {ob_, vb_,ob_, vb_}, true);
+    TArrayD    H_ss_aaaa_ovov = makeTensor(world_, {oa_, va_,oa_, va_}, true);
+    TArrayD    H_ss_bbbb_ovov = makeTensor(world_, {ob_, vb_,ob_, vb_}, true);
 
     {
         double scalar_0;
@@ -236,7 +236,7 @@ double* hilbert::EOM_EE_CCSD::build_ss_diagonal() {
     size_t id = 0;
     // extract singles
     size_t oa = oa_, ob = ob_, va = va_, vb = vb_;
-    HelperD::forall(H_ss_aaaa_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
+    forall(H_ss_aaaa_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
         size_t m = x[0], e = x[1], i = x[2], a = x[3];
         if (m==i && e==a){
             size_t index = e*oa + i + id;
@@ -244,7 +244,7 @@ double* hilbert::EOM_EE_CCSD::build_ss_diagonal() {
         }
     }); id += oa_*va_;
 
-    HelperD::forall(H_ss_bbbb_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
+    forall(H_ss_bbbb_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
         size_t m = x[0], e = x[1], i = x[2], a = x[3];
         if (m==i && e==a){
             size_t index = e*ob + i + id;
@@ -350,19 +350,19 @@ void hilbert::EOM_EE_CCSD::build_Hc_cH(size_t L) {
     sigvec_blks_.clear();
 
     // reduce sigma into spins
-    sigvec_blks_["sigmar0"]   = HelperD::makeTensor(world_, {L}, true);
-    sigvec_blks_["sigmar1_aa"]   = HelperD::makeTensor(world_, {L, va_, oa_}, true);
-    sigvec_blks_["sigmar1_bb"]   = HelperD::makeTensor(world_, {L, vb_, ob_}, true);
-    sigvec_blks_["sigmar2_aaaa"] = HelperD::makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
-    sigvec_blks_["sigmar2_abab"] = HelperD::makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
-    sigvec_blks_["sigmar2_bbbb"] = HelperD::makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
+    sigvec_blks_["sigmar0"]   = makeTensor(world_, {L}, true);
+    sigvec_blks_["sigmar1_aa"]   = makeTensor(world_, {L, va_, oa_}, true);
+    sigvec_blks_["sigmar1_bb"]   = makeTensor(world_, {L, vb_, ob_}, true);
+    sigvec_blks_["sigmar2_aaaa"] = makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
+    sigvec_blks_["sigmar2_abab"] = makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
+    sigvec_blks_["sigmar2_bbbb"] = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
 
-    sigvec_blks_["sigmal0"]      = HelperD::makeTensor(world_, {L}, true);
-    sigvec_blks_["sigmal1_aa"]   = HelperD::makeTensor(world_, {L, va_, oa_}, true);
-    sigvec_blks_["sigmal1_bb"]   = HelperD::makeTensor(world_, {L, vb_, ob_}, true);
-    sigvec_blks_["sigmal2_aaaa"] = HelperD::makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
-    sigvec_blks_["sigmal2_abab"] = HelperD::makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
-    sigvec_blks_["sigmal2_bbbb"] = HelperD::makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
+    sigvec_blks_["sigmal0"]      = makeTensor(world_, {L}, true);
+    sigvec_blks_["sigmal1_aa"]   = makeTensor(world_, {L, va_, oa_}, true);
+    sigvec_blks_["sigmal1_bb"]   = makeTensor(world_, {L, vb_, ob_}, true);
+    sigvec_blks_["sigmal2_aaaa"] = makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
+    sigvec_blks_["sigmal2_abab"] = makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
+    sigvec_blks_["sigmal2_bbbb"] = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
 
     // get reference to electronic integrals
     TArrayMap &V_blks_ = cc_wfn_->V_blks_;
