@@ -76,13 +76,16 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -Wall" CACHE STRING "Initial C++ rele
 
 # print build type
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
-
-# get include directory for mpi4py
-include(FindMPI4PY REQUIRED)
   
 # enable python bindings for tiledarray (requires shared library)
 #set(TA_PYTHON ON)
 #set(BUILD_SHARED_LIBS ON)
+
+# get mpi components
+find_package(MPI REQUIRED)
+
+# get include directory for mpi4py
+find_package(MPI4PY REQUIRED)
 
 # add tiledarray library
 FetchContent_Declare(tiledarray
