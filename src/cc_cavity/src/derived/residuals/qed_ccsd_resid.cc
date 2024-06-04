@@ -36,7 +36,7 @@ double QED_CCSD::build_residuals() {
 
 
     if ( options_.get_bool("ZERO_U0") ) {
-        include_u0_ = false;
+        includes_["u0"] = false;
         scalar_amps_["u0"] = 0.0;
     }
 
@@ -80,11 +80,11 @@ double QED_CCSD::build_residuals() {
     zero_tiles(rt2_abab);
     zero_tiles(rt2_bbbb);
 
-    if ( include_u1_){
+    if ( includes_["u1"]){
         zero_tiles(ru1_aa);
         zero_tiles(ru1_bb);
     }
-    if ( include_u2_){
+    if ( includes_["u2"]){
         zero_tiles(ru2_aaaa);
         zero_tiles(ru2_abab);
         zero_tiles(ru2_bbbb);
@@ -105,11 +105,11 @@ double QED_CCSD::build_residuals() {
     TA::TArrayD cru2_abab;
     TA::TArrayD cru2_bbbb;
 
-    if (include_u1_){
+    if (includes_["u1"]){
         cru1_aa = makeTensor(world_, {va_, oa_}, true);
         cru1_bb = makeTensor(world_, {vb_, ob_}, true);
     }
-    if (include_u2_){
+    if (includes_["u2"]){
         cru2_aaaa = makeTensor(world_, {va_, va_, oa_, oa_}, true);
         cru2_abab = makeTensor(world_, {va_, vb_, oa_, ob_}, true);
         cru2_bbbb = makeTensor(world_, {vb_, vb_, ob_, ob_}, true);
@@ -119,7 +119,7 @@ double QED_CCSD::build_residuals() {
 
     // extract scalar amplitude
     double& u0 = scalar_amps_["u0"];
-    if(include_u0_) {
+    if(includes_["u0"]) {
         world_.gop.fence();
         forall(amplitudes_["u0"], [&u0](auto &tile, auto &x){
             u0 = tile[x];
@@ -2710,12 +2710,12 @@ double QED_CCSD::build_residuals() {
         rt2_aaaa(idx_map_[4]) += coherent_scalar * crt2_aaaa(idx_map_[4]);
         rt2_abab(idx_map_[4]) += coherent_scalar * crt2_abab(idx_map_[4]);
         rt2_bbbb(idx_map_[4]) += coherent_scalar * crt2_bbbb(idx_map_[4]);
-        if (include_u0_) ru0 = ru0 + coherent_scalar * cru0;
-        if (include_u1_) {
+        if (includes_["u0"]) ru0 = ru0 + coherent_scalar * cru0;
+        if (includes_["u1"]) {
             ru1_aa(idx_map_[2]) += coherent_scalar * cru1_aa(idx_map_[2]);
             ru1_bb(idx_map_[2]) += coherent_scalar * cru1_bb(idx_map_[2]);
         }
-        if (include_u2_) {
+        if (includes_["u2"]) {
             ru2_aaaa(idx_map_[4]) += coherent_scalar * cru2_aaaa(idx_map_[4]);
             ru2_abab(idx_map_[4]) += coherent_scalar * cru2_abab(idx_map_[4]);
             ru2_bbbb(idx_map_[4]) += coherent_scalar * cru2_bbbb(idx_map_[4]);
@@ -2724,7 +2724,7 @@ double QED_CCSD::build_residuals() {
         if ( options_.get_bool("ZERO_U0") ){
             ru0 = 0.0;
             u0 = 0.0;
-            include_u0_ = true;
+            includes_["u0"] = true;
         }
 
         scalar_resids_["u0"] = ru0;

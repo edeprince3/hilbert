@@ -45,27 +45,27 @@ using namespace TA_Helper;
 
 namespace hilbert {
 
+    TA::World& world_ = TA::get_default_world(); // TA world object
+
+    // thread safe print function in scope of hilbert namespace
+    inline void Printf(const char *format, ...) {
+        va_list argptr;
+        va_start(argptr, format);
+        char input[1024];
+        vsprintf(input, format, argptr);
+        va_end(argptr);
+        world_.gop.serial_invoke(
+                [=]() {
+                    outfile->Printf("%s", input);
+                }
+        );
+    }
+
     typedef unordered_map<std::string, TA::TArrayD> TArrayMap;
 
     class CC_Cavity : public PolaritonicHF {
 
     public:
-
-        TA::World& world_ = TA::get_default_world(); // TA world object
-        // thread safe print function
-        inline void Printf(const char *format, ...) const {
-            va_list argptr;
-            va_start(argptr, format);
-            char input[1024];
-            vsprintf(input, format, argptr);
-            va_end(argptr);
-            world_.gop.serial_invoke(
-                [=]() {
-                    outfile->Printf("%s", input);
-                }
-            );
-        }
-
 
         /**
          *  @brief CC_Cavity constructor
@@ -112,16 +112,18 @@ namespace hilbert {
 
         map<string, double> resid_norms_; // residual norms
         TArrayMap Id_blks_; // identity matrix blocks
-
+        
         // initialize included operator bools
-        bool include_t3_ = options_.get_bool("QED_CC_INCLUDE_T3");
-        bool include_t4_ = options_.get_bool("QED_CC_INCLUDE_T4");
-        bool include_u0_ = options_.get_bool("QED_CC_INCLUDE_U0");
-        bool include_u1_ = options_.get_bool("QED_CC_INCLUDE_U1");
-        bool include_u2_ = options_.get_bool("QED_CC_INCLUDE_U2");
-        bool include_u3_ = options_.get_bool("QED_CC_INCLUDE_U3");
-        bool include_u4_ = options_.get_bool("QED_CC_INCLUDE_U4");
-        bool has_photon_ = include_u0_ || include_u1_ || include_u2_ || include_u3_ || include_u4_
+        map<string, bool> includes_{
+                {"t3", options_.get_bool("QED_CC_INCLUDE_T3")},
+                {"t4", options_.get_bool("QED_CC_INCLUDE_T4")},
+                {"u0", options_.get_bool("QED_CC_INCLUDE_U0")},
+                {"u1", options_.get_bool("QED_CC_INCLUDE_U1")},
+                {"u2", options_.get_bool("QED_CC_INCLUDE_U2")},
+                {"u3", options_.get_bool("QED_CC_INCLUDE_U3")},
+                {"u4", options_.get_bool("QED_CC_INCLUDE_U4")},
+        };
+        bool has_photon_ = includes_["u0"] || includes_["u1"] || includes_["u2"] || includes_["u3"] || includes_["u4"]
                            || options_.get_int("N_PHOTON_STATES") > 1;
 
         double lambda_[3] = {0,0,0}; // coupling strengths
@@ -206,16 +208,6 @@ namespace hilbert {
         virtual double cc_iterations();
 
         /**
-         * print header for CC iterations
-         */
-        virtual void print_iter_header() const;
-
-         /**
-         * @brief print the CC energy and residual norm for current iteration
-         */
-        virtual void print_iteration(size_t iter, double energy, double dele, double tnorm) const;
-
-        /**
          * @brief use the modified MO Coefficients to build the the Fock, ERI, and Dipole integrals
          * @param C the MO Coefficients
          */
@@ -245,31 +237,43 @@ namespace hilbert {
         virtual void build_eps();
 
         /**
+         * @brief update and extrapolate amplitudes using DIIS
+         */
+        virtual void extrapolate_amplitudes();
+
+        // *** virtual functions to be implemented by derived classes ***
+
+        /**
+        * print header for CC iterations
+         */
+        virtual void print_iter_header() const = 0;
+
+        /**
+        * @brief print the CC energy and residual norm for current iteration
+        */
+        virtual void print_iteration(size_t iter, double energy, double dele, double tnorm) const = 0;
+
+        /**
          * @brief compute the residual equations
          */
-        virtual double build_residuals();
+        virtual double build_residuals() = 0;
 
         /**
          * @brief update cluster amplitudes from residual equations
          */
-        virtual void update_amplitudes();
-
-        /**
-         * @brief update and extrapolate amplitudes using DIIS
-         */
-        virtual void extrapolate_amplitudes();
+        virtual void update_amplitudes() = 0;
 
 
         /**
          * @brief compute the norm of the residuals
          * @return the norm of the residuals
          */
-        virtual double compute_residual_norms(bool return_tot = true);
+        virtual double compute_residual_norms(bool return_tot = true) = 0;
 
         /**
         * @brief compute and print norms of the amplitudes
         */
-        virtual void print_properties();
+        virtual void print_properties() = 0;
 
     };
 }

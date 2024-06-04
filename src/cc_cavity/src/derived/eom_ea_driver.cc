@@ -115,11 +115,11 @@ namespace hilbert {
         nops_ = 2;
 
         dim_p_ = 0;
-//        if (include_u1_) {
+//        if (includes_.at("u1")) {
 //            dim_p_ += singleDim_;
 //            nops_++;
 //        }
-//        if (include_u2_) {
+//        if (includes_.at("u2")) {
 //            dim_p_ += doubleDim_;
 //            nops_++;
 //        }
@@ -134,8 +134,8 @@ namespace hilbert {
         Printf(" %17s", "ex. energy (Eh)");
         Printf(" %13s", "|l1*r1|");
         Printf(" %13s", "|l2*r2|");
-//        if (include_u1_) Printf(" %13s", "|m1*s1|");
-//        if (include_u2_) Printf(" %13s", "|m2*s2|");
+//        if (includes_.at("u1")) Printf(" %13s", "|m1*s1|");
+//        if (includes_.at("u2")) Printf(" %13s", "|m2*s2|");
         Printf("\n");
 
         // set reference energy
@@ -418,8 +418,8 @@ namespace hilbert {
     double *hilbert::EOM_EA_CCSD::get_state_norms(size_t i) const {
         // get number of amplitudes
         int numNorms = 2;
-        if (include_u1_) numNorms++;
-        if (include_u2_) numNorms++;
+        if (includes_.at("u1")) numNorms++;
+        if (includes_.at("u2")) numNorms++;
 
         double** rerp_ = revec_->pointer();
         double** relp_ = levec_->pointer();
@@ -434,12 +434,12 @@ namespace hilbert {
         norms[nid] = C_DDOT(doubleDim_, rerp_[i] + singleDim_, 1, relp_[i] + singleDim_, 1) / totalNorm;
         norms[nid] = fabs(norms[nid]) > 1e-12 ? norms[nid] : 0.0; nid++;
 
-//        if (include_u1_) {
+//        if (includes_.at("u1")) {
 //            norms[nid] = C_DDOT(singleDim_, rerp_[i] + dim_e_, 1, relp_[i] + dim_e_, 1) / totalNorm;
 //            norms[nid] = fabs(norms[nid]) > 1e-12 ? norms[nid] : 0.0; nid++;
 //        }
 //
-//        if (include_u2_) {
+//        if (includes_.at("u2")) {
 //            norms[nid] = C_DDOT(doubleDim_, rerp_[i] + dim_e_ + singleDim_, 1, relp_[i] + dim_e_ + singleDim_, 1) / totalNorm;
 //            norms[nid] = fabs(norms[nid]) > 1e-12 ? norms[nid] : 0.0; nid++;
 //        }

@@ -3,6 +3,7 @@ message("")
 
 option(USE_QED_CC "Build QED-CC functionality" OFF)
 option(USE_QED_EOM_CC "Build QED-EOM-CC functionality" OFF)
+option(KEEP_NO_QED "Build separate equations for CC calculations without QED" OFF)
 
 # if USE_QED_EOM_CC is set, USE_QED_CC must also be set
 if (USE_QED_EOM_CC)
@@ -18,6 +19,13 @@ if (NOT USE_QED_CC)
 else()
   message(STATUS "QED-CC will be built")
   add_definitions(-DUSE_QED_CC=1)
+endif()
+
+if (KEEP_NO_QED)
+  message(STATUS "Separate equations for CC calculations without QED will be built")
+  add_definitions(-DKEEP_NO_QED=1)
+else()
+  message(STATUS "Separate equations for CC calculations without QED will NOT be built")
 endif()
 
 if (USE_QED_EOM_CC)
@@ -100,8 +108,8 @@ set_target_properties(tiledarray PROPERTIES CMAKE_POSITION_INDEPENDENT_CODE ON)
 # files for QED-CC
 set(qed_cc
   src/cc_cavity/src/cc_cavity.cc
+  src/cc_cavity/src/derived/ccsd.cc
   src/cc_cavity/src/derived/qed_ccsd.cc
-  src/cc_cavity/src/derived/lambda_driver.cc
 
   src/cc_cavity/misc/ta_diis.cc
   src/cc_cavity/misc/timer.cc
@@ -110,10 +118,14 @@ set(qed_cc
 
 # files to build the QED-CC equations (residuals)
 set(qed_cc_builds
-  src/cc_cavity/src/derived/residuals/ccsd_resid.cc
-  src/cc_cavity/src/derived/residuals/qed_ccsd_resid.cc
-  src/cc_cavity/src/derived/residuals/qed_ccsd_lam_resid.cc
+    src/cc_cavity/src/derived/residuals/qed_ccsd_resid.cc
 )
+if (KEEP_NO_QED)
+    set(qed_cc_builds
+        ${qed_cc_builds}
+        src/cc_cavity/src/derived/residuals/ccsd_resid.cc
+    )
+endif ()
 
 # the files in residuals take a long time to compile with -fvar-tracking-assignments 
 # so we disable it for these files
@@ -157,13 +169,18 @@ if (USE_QED_EOM_CC)
   set(qed_eom_builds
     src/cc_cavity/src/derived/sigma_builds/eom_ee_qed_ccsd_build.cc
     src/cc_cavity/src/derived/sigma_builds/eom_ee_qed_ccsd_intermediates.cc
-    src/cc_cavity/src/derived/sigma_builds/eom_ee_ccsd_build.cc
+#    src/cc_cavity/src/derived/sigma_builds/eom_ee_ccsd_build.cc
     src/cc_cavity/src/derived/sigma_builds/eom_ea_build.cc
-
     src/cc_cavity/src/derived/eom_hamiltonians/eom_ea_hamiltonian.cc
 
     src/cc_cavity/src/derived/2rdms/eom_ee_2rdm.cc
   )
+  if (KEEP_NO_QED)
+    set(qed_eom_builds
+      ${qed_eom_builds}
+      src/cc_cavity/src/derived/sigma_builds/eom_ee_ccsd_build.cc
+    )
+  endif ()
 
   # the files in sigma_builds, eom_hamiltonians, and rdms take a long time to compile with -fvar-tracking-assignments 
   # so we disable it for these files

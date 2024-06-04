@@ -56,13 +56,7 @@ namespace hilbert {
                 M_ = eom_driver_->M_,
                 N_ = eom_driver_->N_; // dimensions of the problem
 
-        bool include_t3_ = eom_driver_->include_t3_,
-                include_t4_ = eom_driver_->include_t4_,
-                include_u0_ = eom_driver_->include_u0_,
-                include_u1_ = eom_driver_->include_u1_,
-                include_u2_ = eom_driver_->include_u2_,
-                include_u3_ = eom_driver_->include_u3_,
-                include_u4_ = eom_driver_->include_u4_;
+        map<string, bool> includes_ = eom_driver_->includes_;
 
         // initialize the rdm tensors
         TArrayMap RDM_blks_;

@@ -38,15 +38,15 @@ namespace hilbert {
         EOM_EE_CCSD::set_problem_size();
 
         // count number of operators
-        if (include_u0_) nops_++; // s0
-        if (include_u1_) nops_++; // s1
-        if (include_u2_) nops_++; // s2
+        if (includes_.at("u0")) nops_++; // s0
+        if (includes_.at("u1")) nops_++; // s1
+        if (includes_.at("u2")) nops_++; // s2
 
         // compute the number of photon amplitudes
         dim_p_ = 0;
-        if (include_u0_) dim_p_ += 1;
-        if (include_u1_) dim_p_ += singleDim_;
-        if (include_u2_) dim_p_ += doubleDim_;
+        if (includes_.at("u0")) dim_p_ += 1;
+        if (includes_.at("u1")) dim_p_ += singleDim_;
+        if (includes_.at("u2")) dim_p_ += doubleDim_;
 
         N_ += dim_p_;
 
@@ -80,7 +80,7 @@ namespace hilbert {
 
         // reference + hw
         int id_s = 0;
-        if ( include_u0_ ){
+        if ( includes_.at("u0") ){
             precond[dim_e_] = cc_energy_ + cavity_frequency_[2];
             if (eom_ss_guess_)
                 precond[dim_e_] = ss_diag[id_s++] + average_electric_dipole_self_energy_ + enuc_;
@@ -93,11 +93,11 @@ namespace hilbert {
             for (int i = 0; i < oa; ++i) {
                 if (eom_ss_guess_) {
                     precond[id] = ss_diag[id_s] + average_electric_dipole_self_energy_ + enuc_;
-                    if (include_u1_)
+                    if (includes_.at("u1"))
                         precond[id + dim_e_] = ss_diag[id_s + singleDim_] + average_electric_dipole_self_energy_ + enuc_;
                 } else {
                     precond[id] = cc_energy_ + epsilon_[a + o_] - epsilon_[i];
-                    if (include_u1_)
+                    if (includes_.at("u1"))
                         precond[id + dim_e_] = cc_energy_ + epsilon_[a + o_] - epsilon_[i] + cavity_frequency_[2];
                 } id++; id_s++;
             }
@@ -107,11 +107,11 @@ namespace hilbert {
             for (int i = oa; i < oa + ob; ++i) {
                 if (eom_ss_guess_) {
                     precond[id] = ss_diag[id_s] + average_electric_dipole_self_energy_ + enuc_;
-                    if (include_u1_)
+                    if (includes_.at("u1"))
                         precond[id + dim_e_] = ss_diag[id_s + singleDim_] + average_electric_dipole_self_energy_ + enuc_;
                 } else {
                     precond[id] = cc_energy_ + epsilon_[a + o_] - epsilon_[i];
-                    if (include_u1_)
+                    if (includes_.at("u1"))
                         precond[id + dim_e_] = cc_energy_ + epsilon_[a + o_] - epsilon_[i] + cavity_frequency_[2];
                 } id++; id_s++;
             }
@@ -123,7 +123,7 @@ namespace hilbert {
                 for (int i = 0; i < oa; i++)
                     for (int j = i + 1; j < oa; ++j) {
                         precond[id] = cc_energy_ + epsilon_[a + o_] + epsilon_[b + o_] - epsilon_[i] - epsilon_[j];
-                        if (include_u2_)
+                        if (includes_.at("u2"))
                             precond[id + dim_e_] = cc_energy_
                                                    + epsilon_[a + o_] + epsilon_[b + o_] - epsilon_[i] - epsilon_[j]
                                                    + cavity_frequency_[2];
@@ -136,7 +136,7 @@ namespace hilbert {
                 for (int i = 0; i < oa; i++)
                     for (int j = oa; j < oa + ob; ++j) {
                         precond[id] = cc_energy_ + epsilon_[a + o_] + epsilon_[b + o_] - epsilon_[i] - epsilon_[j];
-                        if (include_u2_)
+                        if (includes_.at("u2"))
                             precond[id + dim_e_] = cc_energy_
                                                    + epsilon_[a + o_] + epsilon_[b + o_] - epsilon_[i] - epsilon_[j]
                                                    + cavity_frequency_[2];
@@ -149,7 +149,7 @@ namespace hilbert {
                 for (int i = oa; i < oa + ob; i++)
                     for (int j = i + 1; j < oa + ob; ++j) {
                         precond[id] = cc_energy_ + epsilon_[a + o_] + epsilon_[b + o_] - epsilon_[i] - epsilon_[j];
-                        if (include_u2_)
+                        if (includes_.at("u2"))
                             precond[id + dim_e_] = cc_energy_
                                                    + epsilon_[a + o_] + epsilon_[b + o_] - epsilon_[i] - epsilon_[j]
                                                    + cavity_frequency_[2];
@@ -171,9 +171,9 @@ namespace hilbert {
         Printf(" %13s", "l0*r0");
         Printf(" %13s", "l1*r1");
         Printf(" %13s", "l2*r2");
-        if (include_u0_) Printf(" %13s", "m0*s0");
-        if (include_u1_) Printf(" %13s", "m1*s1");
-        if (include_u2_) Printf(" %13s", "m2*s2");
+        if (includes_.at("u0")) Printf(" %13s", "m0*s0");
+        if (includes_.at("u1")) Printf(" %13s", "m1*s1");
+        if (includes_.at("u2")) Printf(" %13s", "m2*s2");
         Printf("\n");
 
         // set reference energy
@@ -192,19 +192,19 @@ namespace hilbert {
         size_t nid = 3; // norm id
 
         size_t off = dim_e_;
-        if (include_u0_) {
+        if (includes_.at("u0")) {
             norms[nid] = (rerp_[i][off]*relp_[i][off]);
             norms[nid] = fabs(norms[nid]) > 1e-12 ? norms[nid] : 0.0;
             off++;
             nid++;
         }
-        if (include_u1_) {
+        if (includes_.at("u1")) {
             norms[nid] = C_DDOT(singleDim_, rerp_[i] + off, 1, relp_[i] + off, 1);
             norms[nid] = fabs(norms[nid]) > 1e-12 ? norms[nid] : 0.0;
             off += singleDim_;
             nid++;
         }
-        if (include_u2_) {
+        if (includes_.at("u2")) {
             norms[nid] =
                     C_DDOT(doubleDim_, rerp_[i] + off, 1, relp_[i] + off, 1);
             norms[nid] = fabs(norms[nid]) > 1e-12 ? norms[nid] : 0.0;
@@ -221,14 +221,14 @@ namespace hilbert {
         EOM_EE_CCSD::unpack_trial_vectors(L, Q);
 
         /// initialize photon operators
-        if (include_u0_){
+        if (includes_.at("u0")){
             evec_blks_["s0"] = makeTensor(world_, {L}, false); // reference + hw
         }
-        if (include_u1_){
+        if (includes_.at("u1")){
             evec_blks_["s1_aa"] = makeTensor(world_, {L, va_, oa_}, false); // alpha singles excitations + hw
             evec_blks_["s1_bb"] = makeTensor(world_, {L, vb_, ob_}, false); // beta singles excitations + hw
         }
-        if (include_u2_){
+        if (includes_.at("u2")){
             evec_blks_["s2_aaaa"] = makeTensor(world_, {L, va_, va_, oa_, oa_}, false); // alpha doubles excitations + hw
             evec_blks_["s2_abab"] = makeTensor(world_, {L, va_, vb_, oa_, ob_}, false); // alpha-beta doubles excitations + hw
             evec_blks_["s2_bbbb"] = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, false); // beta doubles excitations + hw
@@ -242,13 +242,13 @@ namespace hilbert {
         size_t offset = dim_e_;
 
         /// pack photonic trial vectors into TA::TArrayD
-        if (include_u0_){
+        if (includes_.at("u0")){
             // pack ground state + hw operator
             evec_blks_["s0"].init_elements([Q, offset](auto &I) {
                 return Q[I[0]][offset];
             }); offset++;
         }
-        if (include_u1_){
+        if (includes_.at("u1")){
             // pack singles + hw operator
             evec_blks_["s1_aa"].init_elements([Q, oa, offset](auto &I) {
                 return Q[I[0]][I[1]*oa + I[2] + offset];
@@ -258,7 +258,7 @@ namespace hilbert {
                 return Q[I[0]][I[1]*ob + I[2] + offset];
             }); offset += bb;
         }
-        if (include_u2_){
+        if (includes_.at("u2")){
             // pack redundant doubles + hw operator
             evec_blks_["s2_aaaa"].init_elements([Q, va, oa, offset](auto &I) {
                 size_t a = I[1], b = I[2], i = I[3], j = I[4];
@@ -299,12 +299,12 @@ namespace hilbert {
         world_.gop.fence();
 
         /// initialize left operators from right
-        if ( include_u0_ ) evec_blks_["m0"]("I") = evec_blks_["s0"]("I");
-        if ( include_u1_ ){
+        if ( includes_.at("u0") ) evec_blks_["m0"]("I") = evec_blks_["s0"]("I");
+        if ( includes_.at("u1") ){
             evec_blks_["m1_aa"]("I, m, e") = evec_blks_["s1_aa"]("I, e, m");
             evec_blks_["m1_bb"]("I, m, e") = evec_blks_["s1_bb"]("I, e, m");
         }
-        if ( include_u2_ ){
+        if ( includes_.at("u2") ){
             evec_blks_["m2_aaaa"]("I, m, n, e, f") = evec_blks_["s2_aaaa"]("I, e, f, m, n");
             evec_blks_["m2_abab"]("I, m, n, e, f") = evec_blks_["s2_abab"]("I, e, f, m, n");
             evec_blks_["m2_bbbb"]("I, m, n, e, f") = evec_blks_["s2_bbbb"]("I, e, f, m, n");
@@ -328,14 +328,14 @@ namespace hilbert {
         size_t offset = dim_e_;
 
         // ground state + hw
-        if (include_u0_){
+        if (includes_.at("u0")){
             forall(sigvec_blks_["sigmas0"], [sigmar, offset](auto &tile, auto &x) {
                 sigmar[offset][x[0]] = tile[x];
             }); offset += 1;
         }
 
         // singles + hw
-        if (include_u1_){
+        if (includes_.at("u1")){
             forall(sigvec_blks_["sigmas1_aa"], [sigmar, oa, offset](auto &tile, auto &x) {
                 sigmar[x[1] * oa + x[2] + offset][x[0]] = tile[x];
             }); offset += aa;
@@ -346,7 +346,7 @@ namespace hilbert {
 
         }
 
-        if (include_u2_){
+        if (includes_.at("u2")){
             forall(sigvec_blks_["sigmas2_aaaa"], [sigmar, oa, va, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
                     size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], va);
@@ -373,14 +373,14 @@ namespace hilbert {
         /// unpack photonic part of left sigma vectors
         offset = dim_e_;
         // ground state + hw
-        if (include_u0_){
+        if (includes_.at("u0")){
             forall(sigvec_blks_["sigmam0"], [sigmal, offset](auto &tile, auto &x) {
                 sigmal[offset][x[0]] = tile[x];
             }); offset += 1;
         }
 
         // singles + hw
-        if (include_u1_){
+        if (includes_.at("u1")){
             forall(sigvec_blks_["sigmam1_aa"], [sigmal, oa, offset](auto &tile, auto &x) {
                 sigmal[x[1] * oa + x[2] + offset][x[0]] = tile[x];
             }); offset += aa;
@@ -391,7 +391,7 @@ namespace hilbert {
 
         }
 
-        if (include_u2_){
+        if (includes_.at("u2")){
             forall(sigvec_blks_["sigmam2_aaaa"], [sigmal, oa, va, offset](auto &tile, auto &x) {
                 if (x[1] < x[2] && x[3] < x[4]) {
                     size_t ab_off = EOM_Driver::sqr_2_tri_idx(x[1], x[2], va);
@@ -426,14 +426,14 @@ namespace hilbert {
         double **rerp = revec_->pointer(), **relp = levec_->pointer();
 
         // initialize photonic operators
-        if (include_u0_){
+        if (includes_.at("u0")){
             evec_blks_["s0"] = makeTensor(world_, {L}, false); // reference + hw
         }
-        if (include_u1_){
+        if (includes_.at("u1")){
             evec_blks_["s1_aa"] = makeTensor(world_, {L, va_, oa_}, false); // alpha singles excitations + hw
             evec_blks_["s1_bb"] = makeTensor(world_, {L, vb_, ob_}, false); // beta singles excitations + hw
         }
-        if (include_u2_){
+        if (includes_.at("u2")){
             evec_blks_["s2_aaaa"] = makeTensor(world_, {L, va_, va_, oa_, oa_}, false); // alpha doubles excitations + hw
             evec_blks_["s2_abab"] = makeTensor(world_, {L, va_, vb_, oa_, ob_}, false); // alpha-beta doubles excitations + hw
             evec_blks_["s2_bbbb"] = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, false); // beta doubles excitations + hw
@@ -447,13 +447,13 @@ namespace hilbert {
         size_t offset = dim_e_;
 
         /// pack photonic eigenvectors into TA::TArrayD
-        if (include_u0_){
+        if (includes_.at("u0")){
             // pack ground state + hw operator
             evec_blks_["s0"].init_elements([rerp, offset](auto &I) {
                 return rerp[I[0]][offset];
             }); offset++;
         }
-        if (include_u1_){
+        if (includes_.at("u1")){
             // pack singles + hw operator
             evec_blks_["s1_aa"].init_elements([rerp, oa, offset](auto &I) {
                 return rerp[I[0]][I[1]*oa + I[2] + offset];
@@ -463,7 +463,7 @@ namespace hilbert {
                 return rerp[I[0]][I[1]*ob + I[2] + offset];
             }); offset += bb;
         }
-        if (include_u2_){
+        if (includes_.at("u2")){
             // pack redundant doubles + hw operator
             evec_blks_["s2_aaaa"].init_elements([rerp, va, oa, offset](auto &I) {
                 size_t a = I[1], b = I[2], i = I[3], j = I[4];
@@ -503,14 +503,14 @@ namespace hilbert {
         }
 
         /// initialize left photonic operators
-        if (include_u0_){
+        if (includes_.at("u0")){
             evec_blks_["m0"] = makeTensor(world_, {L}, false); // reference + hw
         }
-        if (include_u1_){
+        if (includes_.at("u1")){
             evec_blks_["m1_aa"] = makeTensor(world_, {L, oa_, va_}, false); // alpha singles excitations + hw
             evec_blks_["m1_bb"] = makeTensor(world_, {L, ob_, vb_}, false); // beta singles excitations + hw
         }
-        if (include_u2_){
+        if (includes_.at("u2")){
             evec_blks_["m2_aaaa"] = makeTensor(world_, {L, oa_, oa_, va_, va_}, false); // alpha doubles excitations + hw
             evec_blks_["m2_abab"] = makeTensor(world_, {L, oa_, ob_, va_, vb_}, false); // alpha-beta doubles excitations + hw
             evec_blks_["m2_bbbb"] = makeTensor(world_, {L, ob_, ob_, vb_, vb_}, false); // beta doubles excitations + hw
@@ -520,13 +520,13 @@ namespace hilbert {
         offset = dim_e_;
 
         /// pack photonic trial vectors into TA::TArrayD
-        if (include_u0_){
+        if (includes_.at("u0")){
             // pack ground state + hw operator
             evec_blks_["m0"].init_elements([relp, offset](auto &I) {
                 return relp[I[0]][offset];
             }); offset++;
         }
-        if (include_u1_){
+        if (includes_.at("u1")){
             // pack singles + hw operator
             evec_blks_["m1_aa"].init_elements([relp, oa, offset](auto &I) {
                 return relp[I[0]][I[2]*oa + I[1] + offset];
@@ -536,7 +536,7 @@ namespace hilbert {
                 return relp[I[0]][I[2]*ob + I[1] + offset];
             }); offset += bb;
         }
-        if (include_u2_){
+        if (includes_.at("u2")){
             // pack redundant doubles + hw operator
             evec_blks_["m2_aaaa"].init_elements([relp, va, oa, offset](auto &I) {
                 size_t a = I[3], b = I[4], i = I[1], j = I[2];
@@ -596,7 +596,7 @@ namespace hilbert {
 
         // ground state + hw
         double  l, r, lr;
-        if (include_u0_) {
+        if (includes_.at("u0")) {
             l = relp[I][id + off]; // get l
             r = rerp[I][id + off]; // get r
             lr = l*r; // get lr
@@ -606,7 +606,7 @@ namespace hilbert {
             off++;
         }
 
-        if (include_u1_) {
+        if (includes_.at("u1")) {
             // singles aa + hw
             for (size_t a = 0; a < va_; a++) {
                 for (size_t i = 0; i < oa_; i++) {
@@ -639,7 +639,7 @@ namespace hilbert {
         }
 
 
-        if (include_u2_) {
+        if (includes_.at("u2")) {
 
             // doubles aaaa + hw
             for (size_t a = 0; a < va_; a++) {

@@ -134,15 +134,14 @@ namespace hilbert {
         /// cavity options
 
         // update cavity terms once more
-        if ( n_photon_states_ > 1) {
+        if ( has_photon_ )
             update_cavity_terms();
-        }
         same_a_b_orbs_ = same_a_b_dens_ = false;
 
         cc_type_ = has_photon_ ? "QED-CC" : "CC";
         cc_type_ += "SD";
-        if (include_t3_ || include_u3_) cc_type_ += "T";
-        if (include_t4_ || include_u4_) cc_type_ += "Q";
+        if (includes_["t3"] || includes_["u3"]) cc_type_ += "T";
+        if (includes_["t4"] || includes_["u4"]) cc_type_ += "Q";
         if (has_photon_) cc_type_ += "-1";
 
         // set coupling factors
@@ -193,22 +192,6 @@ namespace hilbert {
         Id_blks_["aaaa_oooo"]("p,q,r,s") = Id_blks_["aa_oo"]("p,r") * Id_blks_["aa_oo"]("q,s");
         Id_blks_["abab_oooo"]("p,q,r,s") = Id_blks_["aa_oo"]("p,r") * Id_blks_["bb_oo"]("q,s");
         Id_blks_["bbbb_oooo"]("p,q,r,s") = Id_blks_["bb_oo"]("p,r") * Id_blks_["bb_oo"]("q,s");
-
-        /// initialize t1 and t2 amplitudes and residuals (every derived class must use these amplitudes and residuals)
-
-        // t1
-        amplitudes_["t1_aa"]  = makeTensor(world_, {va_, oa_}, true);
-        amplitudes_["t1_bb"]  = makeTensor(world_, {vb_, ob_}, true);
-        residuals_["t1_aa"]  = makeTensor(world_, {va_, oa_}, true);
-        residuals_["t1_bb"]  = makeTensor(world_, {vb_, ob_}, true);
-
-        // t2
-        amplitudes_["t2_aaaa"]  = makeTensor(world_, {va_,va_, oa_,oa_}, true);
-        amplitudes_["t2_abab"]  = makeTensor(world_, {va_,vb_, oa_,ob_}, true);
-        amplitudes_["t2_bbbb"]  = makeTensor(world_, {vb_,vb_, ob_,ob_}, true);
-        residuals_["t2_aaaa"]  = makeTensor(world_, {va_,va_, oa_,oa_}, true);
-        residuals_["t2_abab"]  = makeTensor(world_, {va_,vb_, oa_,ob_}, true);
-        residuals_["t2_bbbb"]  = makeTensor(world_, {vb_,vb_, ob_,ob_}, true);
 
         world_.gop.fence();
     }
@@ -359,9 +342,9 @@ namespace hilbert {
 
         // copy C_blks_ to CL and CR
         TArrayMap CL, CR;
-        for (auto& block : C_blks_) {
-            CL[block.first] = C_blks_[block.first].clone();
-            CR[block.first] = C_blks_[block.first].clone();
+        for (auto& [block, C] : C_blks_) {
+            CL[block] = C.clone();
+            CR[block] = C.clone();
         }
 
         // grab references to t1 blocks
@@ -386,12 +369,12 @@ namespace hilbert {
         doubleDim_ = oa_ * oa_ * va_ * va_
                      + ob_ * ob_ * vb_ * vb_
                      + oa_ * ob_ * va_ * vb_;
-        if (include_t3_ || include_u3_)
+        if (includes_["t3"] || includes_["u3"])
             tripleDim_ = oa_ * oa_ * oa_ * va_ * va_ * va_
                          + ob_ * ob_ * ob_ * vb_ * vb_ * vb_
                          + oa_ * oa_ * ob_ * va_ * va_ * vb_
                          + oa_ * ob_ * ob_ * va_ * vb_ * vb_;
-        if (include_t4_ || include_u4_)
+        if (includes_["t4"] || includes_["u4"])
             quadDim_ = oa_ * oa_ * oa_ * oa_ * va_ * va_ * va_ * va_
                        + ob_ * ob_ * ob_ * ob_ * vb_ * vb_ * vb_ * vb_
                        + oa_ * oa_ * oa_ * ob_ * va_ * va_ * va_ * vb_
@@ -400,28 +383,28 @@ namespace hilbert {
 
         /// evaluate the total number of amplitudes
         size_t ccamps_dim_ = singleDim_ + doubleDim_; // t1, t2
-        if (include_t3_) ccamps_dim_ += tripleDim_; // t3
-        if (include_t4_) ccamps_dim_ += quadDim_; // t4
-        if (include_u0_) ccamps_dim_++; // u0
-        if (include_u1_) ccamps_dim_ += singleDim_; // u1
-        if (include_u2_) ccamps_dim_ += doubleDim_; // u2
-        if (include_u3_) ccamps_dim_ += tripleDim_; // u3
-        if (include_u4_) ccamps_dim_ += quadDim_; // u4
+        if (includes_["t3"]) ccamps_dim_ += tripleDim_; // t3
+        if (includes_["t4"]) ccamps_dim_ += quadDim_; // t4
+        if (includes_["u0"]) ccamps_dim_++; // u0
+        if (includes_["u1"]) ccamps_dim_ += singleDim_; // u1
+        if (includes_["u2"]) ccamps_dim_ += doubleDim_; // u2
+        if (includes_["u3"]) ccamps_dim_ += tripleDim_; // u3
+        if (includes_["u4"]) ccamps_dim_ += quadDim_; // u4
 
         /// print included amplitudes
         Printf("  Included amplitudes:\n");
-        Printf(include_u1_ ? "    U0\n" : "");
+        Printf(includes_["u1"] ? "    U0\n" : "");
         Printf("    %2s", "T1");
-        Printf("    %2s\n", include_u1_ ? "U1" : "  ");
+        Printf("    %2s\n", includes_["u1"] ? "U1" : "  ");
         Printf("    %2s", "T2");
-        Printf("    %2s\n", include_u2_ ? "U2" : "  ");
-        if (include_t3_ || include_u3_) {
-            Printf("    %2s", include_t3_ ? "T3" : "  ");
-            Printf("    %2s\n", include_u3_ ? "U3" : "  ");
+        Printf("    %2s\n", includes_["u2"] ? "U2" : "  ");
+        if (includes_["t3"] || includes_["u3"]) {
+            Printf("    %2s", includes_["t3"] ? "T3" : "  ");
+            Printf("    %2s\n", includes_["u3"] ? "U3" : "  ");
         }
-        if (include_t4_ || include_u4_) {
-            Printf("    %2s", include_t4_ ? "T4" : "  ");
-            Printf("    %2s\n", include_u4_ ? "U4" : "  ");
+        if (includes_["t4"] || includes_["u4"]) {
+            Printf("    %2s", includes_["t4"] ? "T4" : "  ");
+            Printf("    %2s\n", includes_["u4"] ? "U4" : "  ");
         }
         Printf("\n  Dimension of CC amplitudes: %d\n\n", ccamps_dim_);
         if (has_photon_){
@@ -570,16 +553,10 @@ namespace hilbert {
     }
 
     void CC_Cavity::print_iter_header() const {
-        Printf("\n");
-        Printf("    ==>  Begin %s iterations <==    \n", cc_type_.c_str());
-        Printf("\n");
-        Printf("%5s %16s %15s %15s  | %8s %8s",  "Iter","energy","dE","|dT|","|dT1|","|dT2|");
-        Printf("\n");
     }
 
     void CC_Cavity::print_iteration(size_t iter, double energy, double dele, double tnorm) const {
-        Printf("%5i %17.12lf %15.12lf %15.12lf | %-8.1e %-8.1e",iter,energy,dele,tnorm,resid_norms_.at("t1"),resid_norms_.at("t2"));
-        Printf("\n");
+
     }
 
     void CC_Cavity::apply_transform(TArrayMap &CL, TArrayMap &CR) {
@@ -611,11 +588,11 @@ namespace hilbert {
 
         // build fock matrix blocks in MO basis
         F_blks_.clear();
-        for (auto& l_blk : CL) {
-            for (auto& r_blk : CR) {
-                string blk = l_blk.first.substr(0, 1) + r_blk.first.substr(0, 1); // aa, ab, ba, bb
-                blk += "_" + l_blk.first.substr(2, 1) + r_blk.first.substr(2, 1); // oo, ov, vo, vv
-                F_blks_[blk]("p,q") = l_blk.second("mu,p") * F("mu,nu") * r_blk.second("nu,q");
+        for (auto& [cl_blk, cl] : CL) {
+            for (auto& [cr_blk, cr] : CR) {
+                string blk = cl_blk.substr(0, 1) + cr_blk.substr(0, 1); // aa, ab, ba, bb
+                blk += "_" + cl_blk.substr(2, 1) + cr_blk.substr(2, 1); // oo, ov, vo, vv
+                F_blks_[blk]("p,q") = cl("mu,p") * F("mu,nu") * cr("nu,q");
             }
         }
 
@@ -645,11 +622,11 @@ namespace hilbert {
                 world_.gop.fence();
 
                 // build blocks of dipole matricies in MO basis
-                for (auto &l_blk: CL) {
-                    for (auto &r_blk: CR) {
-                        string blk = l_blk.first.substr(0, 1) + r_blk.first.substr(0, 1); // aa, ab, ba, bb
-                        blk += "_" + l_blk.first.substr(2, 1) + r_blk.first.substr(2, 1); // oo, ov, vo, vv
-                        Dip_blks_[pol + blk]("p,q") = l_blk.second("mu,p") * dip("mu,nu") * r_blk.second("nu,q");
+                for (auto &[cl_blk, cl]: CL) {
+                    for (auto &[cr_blk, cr]: CR) {
+                        string blk = cl_blk.substr(0, 1) + cr_blk.substr(0, 1); // aa, ab, ba, bb
+                        blk += "_" + cl_blk.substr(2, 1) + cr_blk.substr(2, 1); // oo, ov, vo, vv
+                        Dip_blks_[pol + blk]("p,q") = cl("mu,p") * dip("mu,nu") * cr("nu,q");
                     }
                 }
             }
@@ -661,11 +638,11 @@ namespace hilbert {
         /// transform Qso to MO basis
 
         TArrayMap Qmo_blks;
-        for (auto& l_blk : CL) {
-            for (auto& r_blk : CR) {
-                string blk = l_blk.first.substr(0, 1) + r_blk.first.substr(0, 1); // aa, ab, ba, bb
-                blk += "_" + l_blk.first.substr(2, 1) + r_blk.first.substr(2, 1); // oo, ov, vo, vv
-                Qmo_blks[blk]("Q,p,q") = l_blk.second("mu,p") * Qso_("Q,mu,nu") * r_blk.second("nu,q");
+        for (auto& [cl_blk, cl] : CL) {
+            for (auto& [cr_blk, cr] : CR) {
+                string blk = cl_blk.substr(0, 1) + cr_blk.substr(0, 1); // aa, ab, ba, bb
+                blk += "_" + cl_blk.substr(2, 1) + cr_blk.substr(2, 1); // oo, ov, vo, vv
+                Qmo_blks[blk]("Q,p,q") = cl("mu,p") * Qso_("Q,mu,nu") * cr("nu,q");
             }
         }
 
@@ -835,13 +812,13 @@ namespace hilbert {
         V_blks_.clear();
 
         // loop over all Qmo blocks and build electron repulsion integrals
-        for (auto& Ql : Qmo_blks) {
-            string colm_l = Ql.first;
+        for (auto& [Ql_blk, Ql] : Qmo_blks) {
+            string colm_l = Ql_blk;
             string colm_lspin = colm_l.substr(0, 2);
             string colm_lov = colm_l.substr(3, 2);
 
-            for (auto& Qr : Qmo_blks) {
-                string colm_r = Qr.first;
+            for (auto& [Qr_blk, Qr] : Qmo_blks) {
+                string colm_r = Qr_blk;
                 string colm_rspin = colm_r.substr(0, 2);
                 string colm_rov = colm_r.substr(3, 2);
 
@@ -856,7 +833,7 @@ namespace hilbert {
                 string exc_r = build_exchange_name(colm_rspin, colm_lspin, colm_rov, colm_lov);
 
                 TArrayD ijab, ibaj;
-                ijab("i,j,a,b") = Ql.second("Q,i,j") * Qr.second("Q,a,b");
+                ijab("i,j,a,b") = Ql("Q,i,j") * Qr("Q,a,b");
                 ibaj("i,b,a,j") = Qmo_blks[exc_l]("Q,i,b") * Qmo_blks[exc_r]("Q,a,j");
 
                 /// add dipole terms
@@ -915,56 +892,7 @@ namespace hilbert {
 
 
     void CC_Cavity::update_amplitudes(){
-        double *eps = epsilon_;
-        size_t o = o_;
-        size_t v = v_;
-        size_t oa = oa_;
-        size_t va = va_;
 
-        /// dt = -residual / eps
-
-        // t1
-        forall(residuals_["t1_aa"],
-                        [eps, o, oa, va](auto &tile, auto &x) {
-                            tile[x] /= (eps[x[1]] - eps[x[0]+o]);
-                        });
-
-        forall(residuals_["t1_bb"],
-                        [eps, o, oa, va](auto &tile, auto &x) {
-                            tile[x] /= (eps[x[1]+oa] - eps[x[0]+o+va]);
-                        });
-
-        // t2
-        forall(residuals_["t2_aaaa"],
-                        [eps, o, oa, va](auto &tile, auto &x) {
-                            double o_ep = eps[x[2]] + eps[x[3]],
-                                    v_ep = eps[x[0]+o] + eps[x[1]+o];
-                            tile[x] /= (o_ep - v_ep);
-                        });
-        forall(residuals_["t2_bbbb"],
-                        [eps, o, oa, va](auto &tile, auto &x) {
-                            double o_ep = eps[x[2]+oa] + eps[x[3]+oa],
-                                    v_ep = eps[x[0]+o+va] + eps[x[1]+o+va];
-                            tile[x] /= (o_ep - v_ep);
-                        });
-        forall(residuals_["t2_abab"],
-                        [eps, o, oa, va](auto &tile, auto &x) {
-                            double o_ep = eps[x[2]] + eps[x[3]+oa],
-                                    v_ep = eps[x[0]+o] + eps[x[1]+o];
-                            tile[x] /= (o_ep - v_ep);
-                        });
-
-        world_.gop.fence();
-
-        /// update amplitudes according to t + dt = amplitude - residual / eps
-
-        amplitudes_["t1_aa"](idx_map_[2]) += residuals_["t1_aa"](idx_map_[2]);
-        amplitudes_["t1_bb"](idx_map_[2]) += residuals_["t1_bb"](idx_map_[2]);
-        amplitudes_["t2_aaaa"](idx_map_[4]) += residuals_["t2_aaaa"](idx_map_[4]);
-        amplitudes_["t2_abab"](idx_map_[4]) += residuals_["t2_abab"](idx_map_[4]);
-        amplitudes_["t2_bbbb"](idx_map_[4]) += residuals_["t2_bbbb"](idx_map_[4]);
-
-        world_.gop.fence();
     }
 
     void CC_Cavity::extrapolate_amplitudes() {
@@ -991,7 +919,7 @@ namespace hilbert {
         world_.gop.fence();
         diis_ta->WriteVector(amp_vec);
         diis_ta->WriteErrorVector(resid_vec);
-        diis_ta->Extrapolate(amp_vec);
+        diis_ta->Extrapolate(amp_vec); // extrapolate amplitudes in place
         world_.gop.fence();
 
         amp_vec.clear(); resid_vec.clear(); // clear vectors
@@ -999,47 +927,9 @@ namespace hilbert {
 
     double CC_Cavity::compute_residual_norms(bool return_tot) {
 
-        resid_norms_["t1"] = sqrt(squared_norm(residuals_["t1_aa"])
-                                  + squared_norm(residuals_["t1_bb"]));
-        resid_norms_["t2"] = sqrt(squared_norm(residuals_["t2_aaaa"])
-                                  + squared_norm(residuals_["t2_abab"])
-                                  + squared_norm(residuals_["t2_bbbb"]));
-
-        // total residual norm for all amplitudes (if requested)
-        if (return_tot) {
-            double norm = 0.0;
-            for (auto & amp : residuals_) {
-                if (!amp.second.is_initialized()) continue;
-                norm += squared_norm(amp.second);
-            }
-            return sqrt(norm);
-        }
-        else return 0.0;
     }
 
     void CC_Cavity::print_properties() {
-        // calculate norms of amplitudes
-        map<string, double> amp_norms;
-        double total_norm = 0.0;
-        for (auto& amp : amplitudes_) {
-            if(!amp.second.is_initialized()) continue;
-            // name of amplitude is first two characters of key
-            double amp_norm = squared_norm(amp.second);
-            string amp_name = amp.first.substr(0,2);
-            amp_norms[amp_name] += amp_norm;
-            total_norm += amp_norm;
-        }
-
-        double nT1 = amp_norms["t1"];
-        double nT2 = amp_norms["t2"];
-
-        // print norms of cluster amplitudes
-        outfile->Printf("\n\n   Norms of cluster amplitudes:");
-        outfile->Printf("\n   ------------------------------");
-        outfile->Printf("\n    T1: %15.12lf | %5.2f %%", sqrt(nT1), 100*nT1/total_norm);
-        outfile->Printf("\n    T2: %15.12lf | %5.2f %%", sqrt(nT2), 100*nT2/total_norm);
-        outfile->Printf("\n   ------------------------------");
-        outfile->Printf("\n    Total: %15.12lf\n\n", sqrt(total_norm));
 
     }
 }

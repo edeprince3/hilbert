@@ -69,7 +69,7 @@ namespace hilbert {
         /// initialize amplitude and residual blocks
 
         // u0
-        if (include_u0_){
+        if (includes_.at("u0")){
             amplitudes_["u0"] = makeTensor(world_, {1}, true);
             residuals_["u0"] = makeTensor(world_, {1}, true);
 
@@ -80,7 +80,7 @@ namespace hilbert {
 
 
         // u1
-        if (include_u1_) {
+        if (includes_.at("u1")) {
             amplitudes_["u1_aa"]  = makeTensor(world_, {va_, oa_}, true);
             amplitudes_["u1_bb"]  = makeTensor(world_, {vb_, ob_}, true);
             residuals_["u1_aa"]  = makeTensor(world_, {va_, oa_}, true);
@@ -88,7 +88,7 @@ namespace hilbert {
         }
 
         // u2
-        if (include_u2_) {
+        if (includes_.at("u2")) {
             amplitudes_["u2_aaaa"]  = makeTensor(world_, {va_,va_, oa_,oa_}, true);
             amplitudes_["u2_abab"]  = makeTensor(world_, {va_,vb_, oa_,ob_}, true);
             amplitudes_["u2_bbbb"]  = makeTensor(world_, {vb_,vb_, ob_,ob_}, true);
@@ -115,7 +115,7 @@ namespace hilbert {
         double w0 = cavity_frequency_[2];
 
         // u1
-        if (include_u1_) {
+        if (includes_.at("u1")) {
             forall(residuals_["u1_aa"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
                                 double o_ep = eps[x[1]],
@@ -132,7 +132,7 @@ namespace hilbert {
         }
 
         // u2
-        if (include_u2_) {
+        if (includes_.at("u2")) {
             // u2
             forall(residuals_["u2_aaaa"],
                             [eps, o, oa, va, w0](auto &tile, auto &x) {
@@ -160,19 +160,19 @@ namespace hilbert {
         double u0_ = scalar_amps_["u0"];
 
         // u0
-        if ( include_u0_ ) {
+        if ( includes_.at("u0") ) {
             ru0_ /= -w0;
             amplitudes_["u0"] = makeTensor(world_, {1}, &u0_);
              residuals_["u0"] = makeTensor(world_, {1}, &ru0_);
         }
 
         /// update amplitudes according to u + du = amplitude - residual / (eps + w)
-        if (include_u0_) amplitudes_["u0"](idx_map_[1]) += residuals_["u0"](idx_map_[1]);
-        if (include_u1_) {
+        if (includes_.at("u0")) amplitudes_["u0"](idx_map_[1]) += residuals_["u0"](idx_map_[1]);
+        if (includes_.at("u1")) {
             amplitudes_["u1_aa"](idx_map_[2]) += residuals_["u1_aa"](idx_map_[2]);
             amplitudes_["u1_bb"](idx_map_[2]) += residuals_["u1_bb"](idx_map_[2]);
         }
-        if (include_u2_) {
+        if (includes_.at("u2")) {
             amplitudes_["u2_aaaa"](idx_map_[4]) += residuals_["u2_aaaa"](idx_map_[4]);
             amplitudes_["u2_abab"](idx_map_[4]) += residuals_["u2_abab"](idx_map_[4]);
             amplitudes_["u2_bbbb"](idx_map_[4]) += residuals_["u2_bbbb"](idx_map_[4]);
@@ -190,15 +190,15 @@ namespace hilbert {
         CC_Cavity::compute_residual_norms(false);
 
         // u residual norms
-        if (include_u0_) {
+        if (includes_.at("u0")) {
             double ru0 = scalar_resids_["u0"];
             resid_norms_["u0"] = sqrt(ru0 * ru0);
         }
-        if (include_u1_) {
+        if (includes_.at("u1")) {
             resid_norms_["u1"] = sqrt(squared_norm(residuals_["u1_aa"])
                                       + squared_norm(residuals_["u1_bb"]));
         }
-        if (include_u2_) {
+        if (includes_.at("u2")) {
             resid_norms_["u2"] = sqrt(squared_norm(residuals_["u2_aaaa"])
                                       + squared_norm(residuals_["u2_abab"])
                                       + squared_norm(residuals_["u2_bbbb"]));
@@ -241,9 +241,9 @@ namespace hilbert {
         outfile->Printf("\n   ------------------------------");
         outfile->Printf("\n    T1: %15.12lf | %5.2f %%", sqrt(nT1), 100*nT1/total_norm);
         outfile->Printf("\n    T2: %15.12lf | %5.2f %%", sqrt(nT2), 100*nT2/total_norm);
-        if ( include_u0_ ) outfile->Printf("\n    U0: %15.12lf | %5.2f %%", u0_, 100.0*fabs(u0_*u0_)/total_norm);
-        if ( include_u1_ ) outfile->Printf("\n    U1: %15.12lf | %5.2f %%", sqrt(nU1), 100.0*nU1/total_norm);
-        if ( include_u2_ ) outfile->Printf("\n    U2: %15.12lf | %5.2f %%", sqrt(nU2), 100.0*nU2/total_norm);
+        if ( includes_.at("u0") ) outfile->Printf("\n    U0: %15.12lf | %5.2f %%", u0_, 100.0*fabs(u0_*u0_)/total_norm);
+        if ( includes_.at("u1") ) outfile->Printf("\n    U1: %15.12lf | %5.2f %%", sqrt(nU1), 100.0*nU1/total_norm);
+        if ( includes_.at("u2") ) outfile->Printf("\n    U2: %15.12lf | %5.2f %%", sqrt(nU2), 100.0*nU2/total_norm);
         outfile->Printf("\n   ------------------------------");
         outfile->Printf("\n    Total: %15.12lf\n\n", sqrt(total_norm));
 
@@ -254,17 +254,17 @@ namespace hilbert {
         Printf("    ==>  Begin %s iterations <==    \n", cc_type_.c_str());
         Printf("\n");
         Printf("%5s %16s %15s %15s  | %8s %8s",  "Iter","energy","dE","|dT|","|dT1|","|dT2|");
-        if (include_u0_) Printf(" %8s","|dU0|");
-        if (include_u1_) Printf(" %8s","|dU1|");
-        if (include_u2_) Printf(" %8s","|dU2|");
+        if (includes_.at("u0")) Printf(" %8s","|dU0|");
+        if (includes_.at("u1")) Printf(" %8s","|dU1|");
+        if (includes_.at("u2")) Printf(" %8s","|dU2|");
         Printf("\n");
     }
 
     void QED_CCSD::print_iteration(size_t iter, double energy, double dele, double tnorm) const {
         Printf("%5i %17.12lf %15.12lf %15.12lf | %-8.1e %-8.1e",iter,energy,dele,tnorm,resid_norms_.at("t1"),resid_norms_.at("t2"));
-        if (include_u0_) Printf(" %-8.1e", resid_norms_.at("u0"));
-        if (include_u1_) Printf(" %-8.1e", resid_norms_.at("u1"));
-        if (include_u2_) Printf(" %-8.1e", resid_norms_.at("u2"));
+        if (includes_.at("u0")) Printf(" %-8.1e", resid_norms_.at("u0"));
+        if (includes_.at("u1")) Printf(" %-8.1e", resid_norms_.at("u1"));
+        if (includes_.at("u2")) Printf(" %-8.1e", resid_norms_.at("u2"));
         Printf("\n");
     }
 

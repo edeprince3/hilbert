@@ -24,14 +24,14 @@
  *  @END LICENSE
  */
 
-#include "cc_cavity/include/cc_cavity.h"
+#include "cc_cavity/include/derived//ccsd.h"
 
 
 using namespace std;
 using namespace TA;
 using namespace hilbert;
 
-double CC_Cavity::build_residuals() {
+double CCSD::build_residuals() {
     if ( !has_t1_integrals_ ) transform_integrals(true);
 
         // get residual tensors

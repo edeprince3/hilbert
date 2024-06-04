@@ -78,14 +78,14 @@ namespace hilbert {
         TArrayMap & Id_blks = eom_driver_->cc_wfn_->Id_blks_;
         double u0 = eom_driver_->cc_wfn_->scalar_amps_["u0"];
 
-        bool include_s0_ = include_u0_;
-        bool include_m0_ = include_u0_;
+        includes_["s0"] = includes_.at("u0");
+        includes_["m0"] = includes_.at("u0");
 
-        bool include_s1_ = include_u1_;
-        bool include_m1_ = include_u1_;
+        includes_["s1"] = includes_.at("u1");
+        includes_["m1"] = includes_.at("u1");
 
-        bool include_s2_ = include_u2_;
-        bool include_m2_ = include_u2_;
+        includes_["s2"] = includes_.at("u2");
+        includes_["m2"] = includes_.at("u2");
 
         // compute 1RDM
         {
@@ -142,18 +142,18 @@ namespace hilbert {
             r2_bbbb("a,b,i,j") = evecs["r2_bbbb"]("I,a,b,i,j") * delta_rstate("I");
 
             // photonic
-            if (include_u0_){
+            if (includes_.at("u0")){
                 m0 = 1.0 * dot(evecs["m0"]("I"), delta_lstate("I"));
                 s0 = 1.0 * dot(evecs["s0"]("I"), delta_rstate("I"));
             }
-            if (include_u1_){
+            if (includes_.at("u1")){
                 m1_aa("a,i") = evecs["m1_aa"]("I,a,i") * delta_lstate("I");
                 m1_bb("a,i") = evecs["m1_bb"]("I,a,i") * delta_lstate("I");
 
                 s1_aa("a,i") = evecs["s1_aa"]("I,a,i") * delta_rstate("I");
                 s1_bb("a,i") = evecs["s1_bb"]("I,a,i") * delta_rstate("I");
             }
-            if (include_u2_){
+            if (includes_.at("u2")){
                 m2_aaaa("a,b,i,j") = evecs["m2_aaaa"]("I,a,b,i,j") * delta_lstate("I");
                 m2_abab("a,b,i,j") = evecs["m2_abab"]("I,a,b,i,j") * delta_lstate("I");
                 m2_bbbb("a,b,i,j") = evecs["m2_bbbb"]("I,a,b,i,j") * delta_lstate("I");
@@ -180,13 +180,13 @@ namespace hilbert {
                 scalar_2 = dot(l2_aaaa("n,m,a,b"), r2_aaaa("a,b,n,m"));
                 scalar_3 = dot(l2_abab("n,m,a,b"), r2_abab("a,b,n,m"));
                 scalar_4 = dot(l2_bbbb("n,m,a,b"), r2_bbbb("a,b,n,m"));
-                if (include_u1_){
+                if (includes_.at("u1")){
                     scalar_5 = dot(m1_aa("m,a"), s1_aa("a,m"));
                     scalar_6 = dot(m1_bb("m,a"), s1_bb("a,m"));
                                     scalar_10 = dot(r1_aa("b,l"), m1_aa("l,b"));
                 scalar_11 = dot(r1_bb("b,l"), m1_bb("l,b"));
                 }
-                if (include_u2_){
+                if (includes_.at("u2")){
                     scalar_7 = dot(m2_aaaa("n,m,a,b"), s2_aaaa("a,b,n,m"));
                     scalar_8 = dot(m2_abab("n,m,a,b"), s2_abab("a,b,n,m"));
                     scalar_9 = dot(m2_bbbb("n,m,a,b"), s2_bbbb("a,b,n,m"));
@@ -201,21 +201,21 @@ namespace hilbert {
                 /// ****** p†q ****** ///
 
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[0] += 1.000000 m2_abab("k,j,b,a") t2_abab("c,a,i,j") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
                     tempArray[0]("b,c,k,i") = m2_abab("k,j,b,a") * t2_abab("c,a,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ovvv += -1.000000 P(c,d) t1_aa(c,k) t2_abab(d,a,i,j) m2_abab(k,j,b,a) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_aaaa_ovvv("i,b,c,d") = -1.0 * tempArray[0]("b,d,k,i") * t1_aa("c,k") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ovvv += -1.000000 P(c,d) r0 t2_abab(d,a,i,j) u1_aa(c,k) m2_abab(k,j,b,a) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -230,21 +230,21 @@ namespace hilbert {
                     tempPerm_aaaa_vovv("a,i,c,d") = -1.0 * tempArray[0]("a,c,k,i") * s1_aa("d,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_vovv += 1.000000 P(c,d) t1_aa(c,k) t2_abab(d,b,i,j) m2_abab(k,j,a,b) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_aaaa_vovv("a,i,c,d") += tempArray[0]("a,d,k,i") * t1_aa("c,k") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_vovv += 1.000000 P(c,d) r0 t2_abab(d,b,i,j) u1_aa(c,k) m2_abab(k,j,a,b) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_aaaa_vovv("a,i,c,d") += r0 * tempArray[0]("a,d,k,i") * u1_aa("c,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) t2_aaaa(a,d,l,j) t2_abab(b,c,i,k) m2_abab(l,k,d,c) s0 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -269,7 +269,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) t2_abab(a,c,j,k) m2_abab(l,k,d,c) s2_aaaa(b,d,l,i) 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -288,7 +288,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * u2_abab("d,b,l,j") * tempArray[0]("d,a,l,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t2_abab(a,d,i,l) t2_abab(c,b,k,j) m2_abab(k,l,c,d) s0 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -312,21 +312,21 @@ namespace hilbert {
                 }
                 tempArray[0].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[1] += 1.000000 t2_abab("a,c,j,i") m2_abab("j,k,a,b") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
                     tempArray[1]("c,b,i,k") = t2_abab("a,c,j,i") * m2_abab("j,k,a,b");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ovvv += -1.000000 P(c,d) t1_bb(c,k) t2_abab(a,d,j,i) m2_abab(j,k,a,b) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_bbbb_ovvv("i,b,c,d") = -1.0 * tempArray[1]("d,b,i,k") * t1_bb("c,k") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ovvv += -1.000000 P(c,d) r0 t2_abab(a,d,j,i) u1_bb(c,k) m2_abab(j,k,a,b) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -341,21 +341,21 @@ namespace hilbert {
                     tempPerm_bbbb_vovv("a,i,c,d") = -1.0 * tempArray[1]("c,a,i,k") * s1_bb("d,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_vovv += 1.000000 P(c,d) t1_bb(c,k) t2_abab(b,d,j,i) m2_abab(j,k,b,a) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_bbbb_vovv("a,i,c,d") += tempArray[1]("d,a,i,k") * t1_bb("c,k") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_vovv += 1.000000 P(c,d) r0 t2_abab(b,d,j,i) u1_bb(c,k) m2_abab(j,k,b,a) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_bbbb_vovv("a,i,c,d") += r0 * tempArray[1]("d,a,i,k") * u1_bb("c,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t2_abab(c,b,k,j) m2_abab(k,l,c,d) s2_abab(a,d,i,l) 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -366,7 +366,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * u2_abab("a,d,i,l") * tempArray[1]("b,d,j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) t2_bbbb(a,d,l,j) t2_abab(c,b,k,i) m2_abab(k,l,c,d) s0 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -391,7 +391,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r0 t2_abab(c,b,k,i) u2_bbbb(a,d,l,j) m2_abab(k,l,c,d) 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -402,7 +402,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[1]("a,d,j,l") * s2_bbbb("b,d,l,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ovov += -1.000000 t2_abab(c,b,k,i) m2_abab(k,j,c,a) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -506,21 +506,21 @@ namespace hilbert {
                 }
                 tempArray[2].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[3] += 1.000000 t2_bbbb("d,a,j,i") m2_bbbb("j,k,b,a") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
                     tempArray[3]("d,b,i,k") = t2_bbbb("d,a,j,i") * m2_bbbb("j,k,b,a");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ovvv += -1.000000 P(c,d) t1_bb(c,k) t2_bbbb(d,a,j,i) m2_bbbb(j,k,b,a) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_bbbb_ovvv("i,b,c,d") -= tempArray[3]("d,b,i,k") * t1_bb("c,k") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ovvv += -1.000000 P(c,d) r0 t2_bbbb(d,a,j,i) u1_bb(c,k) m2_bbbb(j,k,b,a) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -531,7 +531,7 @@ namespace hilbert {
                     tempPerm_bbbb_vovv("a,i,c,d") += r0 * tempArray[3]("d,a,i,k") * u1_bb("c,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_vovv += 1.000000 P(c,d) t1_bb(c,k) t2_bbbb(d,b,j,i) m2_bbbb(j,k,a,b) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -542,7 +542,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += t2_abab("a,d,i,l") * s0 * tempArray[3]("b,d,j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r0 t2_bbbb(b,c,k,j) u2_abab(a,d,i,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -565,7 +565,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) t2_bbbb(a,d,l,j) t2_bbbb(b,c,k,i) m2_bbbb(k,l,d,c) s0 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -586,14 +586,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r0 t2_bbbb(b,c,k,i) u2_bbbb(a,d,l,j) m2_bbbb(k,l,d,c) 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") = r0 * tempArray[3]("b,d,i,l") * u2_bbbb("a,d,l,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ovov += -1.000000 t2_bbbb(b,c,k,i) m2_bbbb(k,j,a,c) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -693,7 +693,7 @@ namespace hilbert {
                 }
                 tempArray[4].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[5] += 1.000000 u2_abab("a,c,k,i") m2_abab("k,j,a,b") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -749,28 +749,28 @@ namespace hilbert {
                 }
                 tempArray[5].~TArrayD();
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ovvv += -1.000000 P(c,d) t1_aa(c,k) t2_aaaa(d,a,j,i) m2_aaaa(j,k,b,a) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_aaaa_ovvv("i,b,c,d") -= tempArray[6]("b,d,k,i") * t1_aa("c,k") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ovvv += -1.000000 P(c,d) r0 t2_aaaa(d,a,j,i) u1_aa(c,k) m2_aaaa(j,k,b,a) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_aaaa_ovvv("i,b,c,d") -= r0 * tempArray[6]("b,d,k,i") * u1_aa("c,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_vovv += 1.000000 P(c,d) t1_aa(c,k) t2_aaaa(d,b,j,i) m2_aaaa(j,k,a,b) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_aaaa_vovv("a,i,c,d") += tempArray[6]("a,d,k,i") * t1_aa("c,k") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_vovv += 1.000000 P(c,d) r0 t2_aaaa(d,b,j,i) u1_aa(c,k) m2_aaaa(j,k,a,b) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -793,7 +793,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) t2_aaaa(a,d,l,j) t2_aaaa(b,c,k,i) m2_aaaa(k,l,d,c) s0 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -814,7 +814,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r0 t2_aaaa(b,c,k,i) u2_aaaa(a,d,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -825,7 +825,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * u2_abab("d,b,l,j") * tempArray[6]("d,a,l,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ovov += -1.000000 t2_aaaa(b,c,k,i) m2_aaaa(k,j,a,c) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -845,7 +845,7 @@ namespace hilbert {
                 }
                 tempArray[6].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[7] += 1.000000 u2_abab("c,a,i,k") m2_abab("j,k,b,a") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -937,35 +937,35 @@ namespace hilbert {
                 }
                 tempArray[8].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[9] += 1.000000 t2_aaaa("c,a,j,i") m2_abab("j,k,a,b") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
                     tempArray[9]("c,b,i,k") = t2_aaaa("c,a,j,i") * m2_abab("j,k,a,b");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 t2_aaaa(c,a,j,i) m2_abab(j,k,a,b) s1_bb(d,k) 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= tempArray[9]("c,b,i,k") * s1_bb("d,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 t1_bb(d,k) t2_aaaa(c,a,j,i) m2_abab(j,k,a,b) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= tempArray[9]("c,b,i,k") * s0 * t1_bb("d,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 r0 t2_aaaa(c,a,j,i) u1_bb(d,k) m2_abab(j,k,a,b) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= r0 * u1_bb("d,k") * tempArray[9]("c,b,i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) t2_aaaa(a,c,k,j) m2_abab(k,l,c,d) s2_abab(b,d,i,l) 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -980,7 +980,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * u2_bbbb("b,d,l,j") * tempArray[9]("a,d,i,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t2_aaaa(a,d,l,i) t2_bbbb(b,c,k,j) m2_abab(l,k,d,c) s0 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -1082,7 +1082,7 @@ namespace hilbert {
                 tempArray[10].~TArrayD();
                 tempArray[11].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[12] += 1.000000 s2_aaaa("d,a,k,i") m2_aaaa("k,j,b,a") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -1152,7 +1152,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) t2_bbbb(a,c,k,j) m2_bbbb(l,k,c,d) s2_bbbb(b,d,l,i) 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -1212,14 +1212,14 @@ namespace hilbert {
                 }
                 tempArray[14].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[15] += 1.000000 m2_abab("j,k,a,b") t2_abab("c,b,j,i") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
                     tempArray[15]("a,c,k,i") = m2_abab("j,k,a,b") * t2_abab("c,b,j,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 r0 t2_abab(c,b,j,i) u1_bb(d,k) m2_abab(j,k,a,b) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -1230,35 +1230,35 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[15]("a,c,k,i") * s1_bb("d,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 t1_bb(d,k) t2_abab(c,b,j,i) m2_abab(j,k,a,b) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[15]("a,c,k,i") * s0 * t1_bb("d,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t2_abab(a,c,k,j) m2_abab(k,l,d,c) s2_abab(d,b,i,l) 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[15]("d,a,l,j") * s2_abab("d,b,i,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t2_abab(a,d,l,j) t2_abab(c,b,i,k) m2_abab(l,k,c,d) s0 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[15]("c,a,k,j") * s0 * t2_abab("c,b,i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r0 t2_abab(a,c,k,j) u2_abab(d,b,i,l) m2_abab(k,l,d,c) 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * u2_abab("d,b,i,l") * tempArray[15]("d,a,l,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vovo += -1.000000 t2_abab(b,c,k,i) m2_abab(k,j,a,c) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -1266,7 +1266,7 @@ namespace hilbert {
                 }
                 tempArray[15].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[16] += 1.000000 s2_abab("a,d,k,i") m2_abab("k,j,a,b") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -1384,35 +1384,35 @@ namespace hilbert {
                 tempArray[17].~TArrayD();
                 tempArray[18].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[19] += 1.000000 m2_aaaa("j,k,a,b") t2_abab("b,d,j,i") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
                     tempArray[19]("a,d,k,i") = m2_aaaa("j,k,a,b") * t2_abab("b,d,j,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 t1_aa(c,k) t2_abab(b,d,j,i) m2_aaaa(j,k,a,b) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[19]("a,d,k,i") * s0 * t1_aa("c,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 r0 t2_abab(b,d,j,i) u1_aa(c,k) m2_aaaa(j,k,a,b) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= r0 * u1_aa("c,k") * tempArray[19]("a,d,k,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r0 t2_abab(c,b,k,j) u2_aaaa(a,d,l,i) m2_aaaa(k,l,d,c) 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * u2_aaaa("a,d,l,i") * tempArray[19]("d,b,l,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t2_aaaa(a,d,l,i) t2_abab(c,b,k,j) m2_aaaa(k,l,d,c) s0 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -1435,7 +1435,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) t2_abab(d,a,l,j) t2_abab(c,b,k,i) m2_aaaa(k,l,d,c) s0 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -1456,14 +1456,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r0 t2_abab(c,b,k,i) u2_abab(d,a,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") = r0 * tempArray[19]("d,b,l,i") * u2_abab("d,a,l,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_voov += -1.000000 t2_abab(c,b,k,i) m2_aaaa(k,j,a,c) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -1471,7 +1471,7 @@ namespace hilbert {
                 }
                 tempArray[19].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[20] += 1.000000 s2_abab("d,a,i,k") m2_abab("j,k,b,a") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -1507,28 +1507,28 @@ namespace hilbert {
                 }
                 tempArray[20].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 t2_bbbb(d,b,j,i) m2_abab(k,j,a,b) s1_aa(c,k) 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[21]("a,d,k,i") * s1_aa("c,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 t1_aa(c,k) t2_bbbb(d,b,j,i) m2_abab(k,j,a,b) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[21]("a,d,k,i") * s0 * t1_aa("c,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 r0 t2_bbbb(d,b,j,i) u1_aa(c,k) m2_abab(k,j,a,b) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= r0 * u1_aa("c,k") * tempArray[21]("a,d,k,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r0 t2_bbbb(b,c,k,j) u2_aaaa(a,d,l,i) m2_abab(l,k,d,c) 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -1539,7 +1539,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[21]("d,b,l,j") * s2_aaaa("a,d,l,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_voov += -1.000000 t2_bbbb(b,c,k,i) m2_abab(j,k,a,c) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -1547,14 +1547,14 @@ namespace hilbert {
                 }
                 tempArray[21].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[22] += 1.000000 t2_abab("a,d,i,j") m2_abab("k,j,a,b") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
                     tempArray[22]("d,b,i,k") = t2_abab("a,d,i,j") * m2_abab("k,j,a,b");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 r0 t2_abab(a,d,i,j) u1_aa(c,k) m2_abab(k,j,a,b) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -1565,14 +1565,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= tempArray[22]("d,b,i,k") * s1_aa("c,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 t1_aa(c,k) t2_abab(a,d,i,j) m2_abab(k,j,a,b) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= tempArray[22]("d,b,i,k") * s0 * t1_aa("c,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r0 t2_abab(c,b,i,k) u2_abab(a,d,l,j) m2_abab(l,k,c,d) 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -1583,7 +1583,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[22]("b,d,i,l") * s2_abab("a,d,l,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovov += -1.000000 t2_abab(c,b,i,k) m2_abab(j,k,c,a) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -1591,28 +1591,28 @@ namespace hilbert {
                 }
                 tempArray[22].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[23] += 1.000000 m2_bbbb("j,k,b,a") t2_abab("c,a,i,j") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
                     tempArray[23]("c,b,i,k") = m2_bbbb("j,k,b,a") * t2_abab("c,a,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 t1_bb(d,k) t2_abab(c,a,i,j) m2_bbbb(j,k,b,a) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= tempArray[23]("c,b,i,k") * s0 * t1_bb("d,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 r0 t2_abab(c,a,i,j) u1_bb(d,k) m2_bbbb(j,k,b,a) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= r0 * u1_bb("d,k") * tempArray[23]("c,b,i,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) t2_abab(a,d,j,l) t2_abab(b,c,i,k) m2_bbbb(k,l,d,c) s0 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -1633,7 +1633,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r0 t2_abab(b,c,i,k) u2_abab(a,d,j,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -1644,7 +1644,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * u2_bbbb("b,d,l,j") * tempArray[23]("a,d,i,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovvo += -1.000000 t2_abab(b,c,i,k) m2_bbbb(k,j,a,c) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -1652,7 +1652,7 @@ namespace hilbert {
                 }
                 tempArray[23].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[24] += 1.000000 u2_bbbb("d,b,k,i") m2_abab("j,k,a,b") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -1733,7 +1733,7 @@ namespace hilbert {
                 tempArray[25].~TArrayD();
                 tempArray[26].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[27] += 1.000000 m2_abab("k,j,a,b") u2_aaaa("c,a,k,i") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -1869,7 +1869,7 @@ namespace hilbert {
                 }
                 tempArray[32].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[33] += 1.000000 m2_aaaa("k,j,a,c") u2_aaaa("b,c,k,i") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -1897,7 +1897,7 @@ namespace hilbert {
                 }
                 tempArray[33].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ovvv += -1.000000 P(c,d) r2_aaaa(d,a,j,i) u1_aa(c,k) m2_aaaa(j,k,b,a) 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
@@ -1908,7 +1908,7 @@ namespace hilbert {
                     tempPerm_aaaa_vovv("a,i,c,d") += tempArray[34]("d,a,i,k") * u1_aa("c,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r2_aaaa(b,c,k,i) u2_aaaa(a,d,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -1924,7 +1924,7 @@ namespace hilbert {
                 }
                 tempArray[34].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ovvv += -1.000000 P(c,d) r2_bbbb(d,a,j,i) u1_bb(c,k) m2_bbbb(j,k,b,a) 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
@@ -1935,7 +1935,7 @@ namespace hilbert {
                     tempPerm_bbbb_vovv("a,i,c,d") += tempArray[35]("a,d,k,i") * u1_bb("c,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r2_bbbb(b,c,k,j) u2_abab(a,d,i,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -2055,7 +2055,7 @@ namespace hilbert {
                 tempArray[39].~TArrayD();
                 tempArray[40].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[41] += 1.000000 m2_bbbb("j,k,b,a") u2_bbbb("c,a,k,i") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -2116,21 +2116,21 @@ namespace hilbert {
                 }
                 tempArray[42].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[43] += 1.000000 m2_bbbb("j,k,b,a") r2_abab("c,a,i,j") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
                     tempArray[43]("c,b,i,k") = m2_bbbb("j,k,b,a") * r2_abab("c,a,i,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 r2_abab(c,a,i,j) u1_bb(d,k) m2_bbbb(j,k,b,a) 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= tempArray[43]("c,b,i,k") * u1_bb("d,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r2_abab(b,c,i,k) u2_abab(a,d,j,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -2175,21 +2175,21 @@ namespace hilbert {
                 }
                 tempArray[44].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[45] += 1.000000 m2_aaaa("j,k,a,b") r2_abab("b,d,j,i") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
                     tempArray[45]("a,d,k,i") = m2_aaaa("j,k,a,b") * r2_abab("b,d,j,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 r2_abab(b,d,j,i) u1_aa(c,k) m2_aaaa(j,k,a,b) 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[45]("a,d,k,i") * u1_aa("c,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r2_abab(c,b,k,j) u2_aaaa(a,d,l,i) m2_aaaa(k,l,d,c) 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -2210,7 +2210,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r2_abab(c,b,k,i) u2_abab(d,a,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -2266,7 +2266,7 @@ namespace hilbert {
                 tempArray[46].~TArrayD();
                 tempArray[47].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[48] += 1.000000 r2_abab("d,a,i,j") m2_abab("k,j,b,a") u1_aa("c,k") 
                     // flops: o3v3: 1, o2v3: 1, o1v3: 1 | mem: o1v3: 2, o2v2: 1, 
@@ -2337,7 +2337,7 @@ namespace hilbert {
                 }
                 tempArray[52].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[53] += 0.500000 m2_bbbb("j,k,b,a") s1_bb("a,i") t2_bbbb("c,d,j,k") 
                     // flops: o3v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o3v1: 1, 
@@ -2353,7 +2353,7 @@ namespace hilbert {
                 }
                 tempArray[53].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[54] += 0.500000 t1_bb("a,i") m2_bbbb("k,j,b,a") s2_bbbb("c,d,k,j") 
                     // flops: o3v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o3v1: 1, 
@@ -2369,7 +2369,7 @@ namespace hilbert {
                 }
                 tempArray[54].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[55] += 0.500000 m2_aaaa("j,k,b,a") s1_aa("a,i") t2_aaaa("c,d,j,k") 
                     // flops: o3v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o3v1: 1, 
@@ -2401,14 +2401,14 @@ namespace hilbert {
                 }
                 tempArray[56].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[57] += 0.500000 t1_bb("a,i") m2_bbbb("j,k,b,a") t2_bbbb("c,d,j,k") 
                     // flops: o3v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o3v1: 1, 
                     tempArray[57]("b,c,d,i") = 0.500000 * t1_bb("a,i") * m2_bbbb("j,k,b,a") * t2_bbbb("c,d,j,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ovvv += 0.500000 t1_bb(a,i) t2_bbbb(c,d,j,k) m2_bbbb(j,k,b,a) s0 
                     // flops: o1v3: 1, o0v0: 1 | mem: o1v3: 1, o0v0: 1, 
@@ -2420,7 +2420,7 @@ namespace hilbert {
                 }
                 tempArray[57].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[58] += 0.500000 u1_bb("a,i") m2_bbbb("j,k,b,a") r2_bbbb("c,d,j,k") 
                     // flops: o3v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o3v1: 1, 
@@ -2449,14 +2449,14 @@ namespace hilbert {
                 tempArray[58].~TArrayD();
                 tempArray[59].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[60] += 0.500000 t1_aa("a,i") m2_aaaa("j,k,b,a") t2_aaaa("c,d,j,k") 
                     // flops: o3v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o3v1: 1, 
                     tempArray[60]("b,c,d,i") = 0.500000 * t1_aa("a,i") * m2_aaaa("j,k,b,a") * t2_aaaa("c,d,j,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ovvv += 0.500000 t1_aa(a,i) t2_aaaa(c,d,j,k) m2_aaaa(j,k,b,a) s0 
                     // flops: o1v3: 1, o0v0: 1 | mem: o1v3: 1, o0v0: 1, 
@@ -2468,7 +2468,7 @@ namespace hilbert {
                 }
                 tempArray[60].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[61] += 0.500000 t1_aa("a,i") m2_aaaa("k,j,b,a") s2_aaaa("c,d,k,j") 
                     // flops: o3v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o3v1: 1, 
@@ -2484,7 +2484,7 @@ namespace hilbert {
                 }
                 tempArray[61].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[62] += 0.500000 u1_aa("a,i") m2_aaaa("j,k,b,a") r2_aaaa("c,d,j,k") 
                     // flops: o3v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o3v1: 1, 
@@ -2500,7 +2500,7 @@ namespace hilbert {
                 }
                 tempArray[62].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[63] += 0.500000 r1_aa("a,i") m2_aaaa("j,k,b,a") u2_aaaa("c,d,j,k") 
                     // flops: o3v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o3v1: 1, 
@@ -2571,7 +2571,7 @@ namespace hilbert {
                 tempArray[66].~TArrayD();
                 tempArray[67].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[68] += 0.500000 r1_bb("a,i") m2_bbbb("j,k,b,a") u2_bbbb("c,d,j,k") 
                     // flops: o3v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o3v1: 1, 
@@ -2603,7 +2603,7 @@ namespace hilbert {
                 }
                 tempArray[69].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[70] += 0.500000 u1_bb("a,i") m2_bbbb("j,k,b,a") t2_bbbb("c,d,j,k") 
                     // flops: o3v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o3v1: 1, 
@@ -2619,7 +2619,7 @@ namespace hilbert {
                 }
                 tempArray[70].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[71] += 0.500000 t1_bb("a,i") m2_bbbb("j,k,b,a") u2_bbbb("c,d,j,k") 
                     // flops: o3v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o3v1: 1, 
@@ -2651,7 +2651,7 @@ namespace hilbert {
                 }
                 tempArray[72].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[73] += 1.000000 m2_abab("j,k,a,b") s2_abab("a,d,i,k") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -2696,7 +2696,7 @@ namespace hilbert {
                 }
                 tempArray[75].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[76] += 1.000000 s2_aaaa("c,a,k,i") m2_abab("k,j,a,b") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -2741,7 +2741,7 @@ namespace hilbert {
                 tempArray[77].~TArrayD();
                 tempArray[78].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[79] += 1.000000 m2_bbbb("j,k,b,a") u2_abab("c,a,i,k") 
                     // flops: o3v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -2787,7 +2787,7 @@ namespace hilbert {
                 tempArray[80].~TArrayD();
                 tempArray[81].~TArrayD();
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oooo += 0.500000 t2_abab(b,a,i,j) m2_abab(k,l,b,a) s0 
                     // +               0.500000 t2_abab(a,b,i,j) m2_abab(k,l,a,b) s0 
@@ -2795,7 +2795,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oooo"]("i,j,k,l") += tempArray[82]("i,k,j,l") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 0.500000 r0 t2_abab(c,b,i,j) u1_bb(a,l) m2_abab(k,l,c,b) 
                     // +               0.500000 r0 t2_abab(b,c,i,j) u1_bb(a,l) m2_abab(k,l,b,c) 
@@ -2808,7 +2808,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += tempArray[82]("i,k,j,l") * s1_bb("a,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 0.500000 t1_bb(a,l) t2_abab(c,b,i,j) m2_abab(k,l,c,b) s0 
                     // +               0.500000 t1_bb(a,l) t2_abab(b,c,i,j) m2_abab(k,l,b,c) s0 
@@ -2821,7 +2821,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += tempArray[82]("i,k,j,l") * s0 * t1_aa("a,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovo += 0.500000 t2_abab(c,b,i,j) m2_abab(k,l,c,b) s1_aa(a,k) 
                     // +               0.500000 t2_abab(b,c,i,j) m2_abab(k,l,b,c) s1_aa(a,k) 
@@ -2834,7 +2834,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += r0 * u1_aa("a,k") * tempArray[82]("i,k,j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 t2_abab(a,b,k,l) t2_abab(d,c,i,j) m2_abab(k,l,d,c) s0 
                     // +               0.250000 t2_abab(a,b,k,l) t2_abab(c,d,i,j) m2_abab(k,l,c,d) s0 
@@ -2849,7 +2849,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[82]("i,l,j,k") * t1_aa("a,l") * s0 * t1_bb("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 t1_bb(b,k) t2_abab(d,c,i,j) m2_abab(l,k,d,c) s1_aa(a,l) 
                     // +               0.500000 t1_bb(b,k) t2_abab(c,d,i,j) m2_abab(l,k,c,d) s1_aa(a,l) 
@@ -2862,7 +2862,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * tempArray[82]("i,k,j,l") * u1_bb("b,l") * t1_aa("a,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 r0 t2_abab(d,c,i,j) u2_abab(a,b,k,l) m2_abab(k,l,d,c) 
                     // +               0.250000 r0 t2_abab(d,c,i,j) u2_abab(a,b,l,k) m2_abab(l,k,d,c) 
@@ -2872,7 +2872,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * u2_abab("a,b,k,l") * tempArray[82]("i,k,j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 r0 t1_bb(b,k) t2_abab(d,c,i,j) u1_aa(a,l) m2_abab(l,k,d,c) 
                     // +               0.500000 r0 t1_bb(b,k) t2_abab(c,d,i,j) u1_aa(a,l) m2_abab(l,k,c,d) 
@@ -2885,7 +2885,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[82]("i,l,j,k") * u1_aa("a,l") * r1_bb("b,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 t2_abab(d,c,i,j) m2_abab(l,k,d,c) s2_abab(a,b,l,k) 
                     // +               0.250000 t2_abab(d,c,i,j) m2_abab(k,l,d,c) s2_abab(a,b,k,l) 
@@ -2895,7 +2895,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[82]("i,l,j,k") * s2_abab("a,b,l,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 r1_aa(a,k) t2_abab(d,c,i,j) u1_bb(b,l) m2_abab(k,l,d,c) 
                     // +               0.500000 r1_aa(a,k) t2_abab(c,d,i,j) u1_bb(b,l) m2_abab(k,l,c,d) 
@@ -2909,35 +2909,35 @@ namespace hilbert {
                 }
                 tempArray[82].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[83] += 0.500000 m2_bbbb("k,l,b,a") t2_bbbb("b,a,i,j") 
                     // flops: o4v2: 1, o4v0: 1 | mem: o4v0: 2, 
                     tempArray[83]("k,l,i,j") = 0.500000 * m2_bbbb("k,l,b,a") * t2_bbbb("b,a,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oooo += 0.500000 t2_bbbb(b,a,i,j) m2_bbbb(k,l,b,a) s0 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oooo"]("i,j,k,l") += tempArray[83]("k,l,i,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.500000 r0 t2_bbbb(c,b,i,j) u1_bb(a,l) m2_bbbb(l,k,c,b) 
                     // flops: o4v1: 1, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= r0 * u1_bb("a,l") * tempArray[83]("l,k,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.500000 t1_bb(a,l) t2_bbbb(c,b,i,j) m2_bbbb(l,k,c,b) s0 
                     // flops: o4v1: 1, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= tempArray[83]("l,k,i,j") * s0 * t1_bb("a,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.500000 t2_bbbb(c,b,i,j) m2_bbbb(l,k,c,b) s1_bb(a,l) 
                     // flops: o4v1: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -2952,21 +2952,21 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += tempArray[83]("k,l,i,j") * s1_bb("a,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 0.500000 t1_bb(a,k) t2_bbbb(c,b,i,j) m2_bbbb(k,l,c,b) s0 
                     // flops: o4v1: 1, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += tempArray[83]("k,l,i,j") * s0 * t1_bb("a,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovv += 0.250000 r0 t2_bbbb(d,c,i,j) u2_bbbb(a,b,k,l) m2_bbbb(k,l,d,c) 
                     // flops: o4v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += 0.500000 * r0 * u2_bbbb("a,b,k,l") * tempArray[83]("k,l,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovv += -0.500000 t1_bb(a,l) t1_bb(b,k) t2_bbbb(d,c,i,j) m2_bbbb(k,l,d,c) s0 
                     // flops: o3v2: 1, o4v1: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o3v1: 1, o0v0: 1, 
@@ -2977,7 +2977,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += 0.500000 * tempArray[83]("k,l,i,j") * s0 * t2_bbbb("a,b,k,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovv += 0.250000 t2_bbbb(d,c,i,j) m2_bbbb(l,k,d,c) s2_bbbb(a,b,l,k) 
                     // flops: o4v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -3000,7 +3000,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(a,b) t1_bb(a,k) t2_bbbb(d,c,i,j) m2_bbbb(l,k,d,c) s1_bb(b,l) 
                     // flops: o3v2: 1, o4v1: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -3016,35 +3016,35 @@ namespace hilbert {
                 }
                 tempArray[83].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[84] += 0.500000 t2_aaaa("b,a,i,j") m2_aaaa("k,l,b,a") 
                     // flops: o4v2: 1, o4v0: 1 | mem: o4v0: 2, 
                     tempArray[84]("i,j,k,l") = 0.500000 * t2_aaaa("b,a,i,j") * m2_aaaa("k,l,b,a");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oooo += 0.500000 t2_aaaa(b,a,i,j) m2_aaaa(k,l,b,a) s0 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
                     RDM_blks_["D2_aaaa_oooo"]("i,j,k,l") += tempArray[84]("i,j,k,l") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -0.500000 r0 t2_aaaa(c,b,i,j) u1_aa(a,l) m2_aaaa(l,k,c,b) 
                     // flops: o4v1: 1, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= r0 * u1_aa("a,l") * tempArray[84]("i,j,l,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -0.500000 t1_aa(a,l) t2_aaaa(c,b,i,j) m2_aaaa(l,k,c,b) s0 
                     // flops: o4v1: 1, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= tempArray[84]("i,j,l,k") * s0 * t1_aa("a,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -0.500000 t2_aaaa(c,b,i,j) m2_aaaa(l,k,c,b) s1_aa(a,l) 
                     // flops: o4v1: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -3059,7 +3059,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += tempArray[84]("i,j,k,l") * s1_aa("a,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += 0.500000 t1_aa(a,k) t2_aaaa(c,b,i,j) m2_aaaa(k,l,c,b) s0 
                     // flops: o4v1: 1, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -3070,7 +3070,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") += 0.500000 * tempArray[84]("i,j,k,l") * s0 * t2_aaaa("a,b,k,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovv += 0.250000 r0 t2_aaaa(d,c,i,j) u2_aaaa(a,b,k,l) m2_aaaa(k,l,d,c) 
                     // flops: o4v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -3081,7 +3081,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") += 0.500000 * tempArray[84]("i,j,l,k") * s2_aaaa("a,b,l,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovv += -0.500000 t1_aa(a,l) t1_aa(b,k) t2_aaaa(d,c,i,j) m2_aaaa(k,l,d,c) s0 
                     // flops: o3v2: 1, o4v1: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o3v1: 1, o0v0: 1, 
@@ -3104,7 +3104,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(a,b) r0 t1_aa(b,k) t2_aaaa(d,c,i,j) u1_aa(a,l) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o4v1: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o3v1: 1, o0v0: 1, 
@@ -3182,7 +3182,7 @@ namespace hilbert {
                 }
                 tempArray[85].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[86] += 1.000000 u2_abab("b,a,i,j") m2_abab("k,l,b,a") 
                     // flops: o4v2: 1, o4v0: 1 | mem: o4v0: 2, 
@@ -3329,7 +3329,7 @@ namespace hilbert {
                 tempArray[87].~TArrayD();
                 tempArray[88].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[89] += 0.500000 m2_aaaa("k,l,b,a") u2_aaaa("b,a,i,j") 
                     // flops: o4v2: 1, o4v0: 1 | mem: o4v0: 2, 
@@ -3418,7 +3418,7 @@ namespace hilbert {
                 tempArray[89].~TArrayD();
                 tempArray[90].~TArrayD();
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ooov += 1.000000 P(i,j) t1_bb(c,j) t2_abab(b,a,l,i) m2_abab(l,k,b,c) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -3443,14 +3443,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) t1_bb(a,l) t1_bb(d,j) t2_abab(c,b,k,i) m2_abab(k,l,c,d) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") = tempArray[91]("b,j,l,i") * t1_bb("a,l") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) P(a,b) t1_bb(d,j) t2_abab(c,a,k,i) m2_abab(k,l,c,d) s1_bb(b,l) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -3462,14 +3462,14 @@ namespace hilbert {
                 }
                 tempArray[91].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[92] += 1.000000 t1_aa("c,j") m2_abab("k,l,c,b") t2_abab("a,b,i,l") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
                     tempArray[92]("a,j,k,i") = t1_aa("c,j") * m2_abab("k,l,c,b") * t2_abab("a,b,i,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ooov += 1.000000 P(i,j) t1_aa(c,j) t2_abab(a,b,i,l) m2_abab(k,l,c,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -3494,21 +3494,21 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r0 t1_aa(d,j) t2_abab(b,c,i,k) u1_aa(a,l) m2_abab(l,k,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") = r0 * tempArray[92]("b,j,l,i") * u1_aa("a,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) t1_aa(a,l) t1_aa(d,j) t2_abab(b,c,i,k) m2_abab(l,k,d,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[92]("b,j,l,i") * t1_aa("a,l") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) P(a,b) t1_aa(d,j) t2_abab(a,c,i,k) m2_abab(l,k,d,c) s1_aa(b,l) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -3516,7 +3516,7 @@ namespace hilbert {
                 }
                 tempArray[92].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[93] += 0.500000 s2_bbbb("a,b,i,j") m2_bbbb("k,l,a,b") 
                     // flops: o4v2: 1, o4v0: 1 | mem: o4v0: 2, 
@@ -3548,7 +3548,7 @@ namespace hilbert {
                 }
                 tempArray[93].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 0.500000 r2_abab(c,b,i,j) u1_bb(a,l) m2_abab(k,l,c,b) 
                     // +               0.500000 r2_abab(b,c,i,j) u1_bb(a,l) m2_abab(k,l,b,c) 
@@ -3561,7 +3561,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += tempArray[94]("i,k,j,l") * u1_aa("a,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 r2_abab(d,c,i,j) u2_abab(a,b,k,l) m2_abab(k,l,d,c) 
                     // +               0.250000 r2_abab(d,c,i,j) u2_abab(a,b,l,k) m2_abab(l,k,d,c) 
@@ -3571,7 +3571,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[94]("i,k,j,l") * u2_abab("a,b,k,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 r2_abab(d,c,i,j) t1_bb(b,k) u1_aa(a,l) m2_abab(l,k,d,c) 
                     // +               0.500000 r2_abab(c,d,i,j) t1_bb(b,k) u1_aa(a,l) m2_abab(l,k,c,d) 
@@ -3585,7 +3585,7 @@ namespace hilbert {
                 }
                 tempArray[94].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[95] += 1.000000 s2_abab("b,a,i,j") m2_abab("k,l,b,a") 
                     // flops: o4v2: 1, o4v0: 1 | mem: o4v0: 2, 
@@ -3705,7 +3705,7 @@ namespace hilbert {
                 tempArray[97].~TArrayD();
                 tempArray[98].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[99] += 0.500000 m2_aaaa("k,l,a,b") s2_aaaa("a,b,i,j") 
                     // flops: o4v2: 1, o4v0: 1 | mem: o4v0: 2, 
@@ -3737,14 +3737,14 @@ namespace hilbert {
                 }
                 tempArray[99].~TArrayD();
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 1.000000 t1_aa(c,i) t2_bbbb(a,b,l,j) m2_abab(k,l,c,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += tempArray[100]("a,i,k,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r0 t1_aa(d,i) t2_bbbb(b,c,k,j) u1_aa(a,l) m2_abab(l,k,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -3755,7 +3755,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[100]("b,i,l,j") * s1_aa("a,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t1_aa(a,l) t1_aa(d,i) t2_bbbb(b,c,k,j) m2_abab(l,k,d,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -3763,35 +3763,35 @@ namespace hilbert {
                 }
                 tempArray[100].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[101] += 1.000000 t1_bb("c,j") m2_abab("k,l,b,c") t2_abab("b,a,i,l") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
                     tempArray[101]("a,k,i,j") = t1_bb("c,j") * m2_abab("k,l,b,c") * t2_abab("b,a,i,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 1.000000 t1_bb(c,j) t2_abab(b,a,i,l) m2_abab(k,l,b,c) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += tempArray[101]("a,k,i,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t1_bb(d,j) t2_abab(c,b,i,k) m2_abab(l,k,c,d) s1_aa(a,l) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[101]("b,l,i,j") * s1_aa("a,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t1_aa(a,l) t1_bb(d,j) t2_abab(c,b,i,k) m2_abab(l,k,c,d) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[101]("b,l,i,j") * s0 * t1_aa("a,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r0 t1_bb(d,j) t2_abab(c,b,i,k) u1_aa(a,l) m2_abab(l,k,c,d) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -3799,14 +3799,14 @@ namespace hilbert {
                 }
                 tempArray[101].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[102] += 1.000000 t1_bb("c,j") m2_bbbb("l,k,c,b") t2_bbbb("a,b,l,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
                     tempArray[102]("a,j,k,i") = t1_bb("c,j") * m2_bbbb("l,k,c,b") * t2_bbbb("a,b,l,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ooov += 1.000000 P(i,j) t1_bb(c,j) t2_bbbb(a,b,l,i) m2_bbbb(l,k,c,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -3821,7 +3821,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[102]("b,j,l,i") * t1_bb("a,l") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r0 t1_bb(d,j) t2_bbbb(b,c,k,i) u1_bb(a,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -3829,14 +3829,14 @@ namespace hilbert {
                 }
                 tempArray[102].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[103] += 1.000000 t1_bb("c,j") m2_abab("k,l,b,c") t2_aaaa("a,b,k,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
                     tempArray[103]("a,i,j,l") = t1_bb("c,j") * m2_abab("k,l,b,c") * t2_aaaa("a,b,k,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovo += 1.000000 t1_bb(c,j) t2_aaaa(a,b,k,i) m2_abab(k,l,b,c) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -3847,7 +3847,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[103]("a,i,j,l") * s0 * t1_bb("b,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r0 t1_bb(d,j) t2_aaaa(a,c,k,i) u1_bb(b,l) m2_abab(k,l,c,d) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -3859,7 +3859,7 @@ namespace hilbert {
                 }
                 tempArray[103].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[104] += 1.000000 t1_bb("b,i") m2_abab("l,k,c,b") u2_abab("c,a,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -3883,7 +3883,7 @@ namespace hilbert {
                 }
                 tempArray[104].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[105] += 1.000000 u1_bb("c,j") m2_abab("l,k,b,c") t2_abab("b,a,l,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -3952,14 +3952,14 @@ namespace hilbert {
                 }
                 tempArray[107].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[108] += 1.000000 t1_aa("c,j") m2_aaaa("l,k,c,b") t2_aaaa("a,b,l,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
                     tempArray[108]("a,j,k,i") = t1_aa("c,j") * m2_aaaa("l,k,c,b") * t2_aaaa("a,b,l,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ooov += 1.000000 P(i,j) t1_aa(c,j) t2_aaaa(a,b,l,i) m2_aaaa(l,k,c,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -3974,7 +3974,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[108]("b,j,l,i") * t1_aa("a,l") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r0 t1_aa(d,j) t2_aaaa(b,c,k,i) u1_aa(a,l) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -3982,14 +3982,14 @@ namespace hilbert {
                 }
                 tempArray[108].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[109] += 1.000000 t1_aa("c,i") m2_abab("k,l,c,b") t2_abab("a,b,k,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
                     tempArray[109]("a,i,l,j") = t1_aa("c,i") * m2_abab("k,l,c,b") * t2_abab("a,b,k,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovo += 1.000000 t1_aa(c,i) t2_abab(a,b,k,j) m2_abab(k,l,c,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -4000,7 +4000,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[109]("a,i,l,j") * s0 * t1_bb("b,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t1_aa(d,i) t2_abab(a,c,k,j) m2_abab(k,l,d,c) s1_bb(b,l) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -4036,7 +4036,7 @@ namespace hilbert {
                 }
                 tempArray[110].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[111] += 1.000000 t1_aa("b,i") m2_abab("k,l,b,c") u2_abab("a,c,j,l") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4064,7 +4064,7 @@ namespace hilbert {
                 }
                 tempArray[111].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.500000 r2_bbbb(c,b,i,j) u1_bb(a,l) m2_bbbb(l,k,c,b) 
                     // flops: o4v1: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -4075,7 +4075,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += tempArray[112]("k,l,i,j") * u1_bb("a,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovv += 0.250000 r2_bbbb(d,c,i,j) u2_bbbb(a,b,k,l) m2_bbbb(k,l,d,c) 
                     // flops: o4v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -4098,7 +4098,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(a,b) r2_bbbb(d,c,i,j) t1_bb(b,k) u1_bb(a,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o4v1: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -4106,14 +4106,14 @@ namespace hilbert {
                 }
                 tempArray[112].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[113] += 0.500000 m2_aaaa("l,k,c,b") r2_aaaa("c,b,i,j") 
                     // flops: o4v2: 1, o4v0: 1 | mem: o4v0: 2, 
                     tempArray[113]("l,k,i,j") = 0.500000 * m2_aaaa("l,k,c,b") * r2_aaaa("c,b,i,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -0.500000 r2_aaaa(c,b,i,j) u1_aa(a,l) m2_aaaa(l,k,c,b) 
                     // flops: o4v1: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -4124,7 +4124,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += tempArray[113]("k,l,i,j") * u1_aa("a,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovv += 0.250000 r2_aaaa(d,c,i,j) u2_aaaa(a,b,k,l) m2_aaaa(k,l,d,c) 
                     // flops: o4v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -4147,7 +4147,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(a,b) r2_aaaa(d,c,i,j) t1_aa(b,k) u1_aa(a,l) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o4v1: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -4186,7 +4186,7 @@ namespace hilbert {
                 }
                 tempArray[114].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[115] += 1.000000 m2_bbbb("l,k,b,c") s1_bb("c,i") t2_bbbb("a,b,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4226,7 +4226,7 @@ namespace hilbert {
                 }
                 tempArray[116].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[117] += 1.000000 u1_bb("c,j") m2_bbbb("l,k,c,b") r2_bbbb("a,b,l,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4283,7 +4283,7 @@ namespace hilbert {
                 tempArray[118].~TArrayD();
                 tempArray[119].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[120] += 1.000000 t1_aa("b,j") m2_abab("k,l,b,c") s2_abab("a,c,i,l") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4312,7 +4312,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) t1_aa(a,k) t1_aa(c,j) m2_abab(k,l,c,d) s2_abab(b,d,i,l) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -4340,7 +4340,7 @@ namespace hilbert {
                 }
                 tempArray[121].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[122] += 1.000000 u1_aa("c,j") m2_aaaa("l,k,c,b") r2_aaaa("a,b,l,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4397,7 +4397,7 @@ namespace hilbert {
                 }
                 tempArray[124].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[125] += 1.000000 r1_bb("b,i") m2_abab("l,k,c,b") u2_abab("c,a,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4437,7 +4437,7 @@ namespace hilbert {
                 }
                 tempArray[126].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[127] += 1.000000 m2_abab("l,k,b,c") s1_bb("c,i") t2_abab("b,a,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4457,7 +4457,7 @@ namespace hilbert {
                 }
                 tempArray[127].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[128] += 1.000000 r1_aa("b,i") m2_abab("k,l,b,c") u2_abab("a,c,j,l") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4477,7 +4477,7 @@ namespace hilbert {
                 }
                 tempArray[128].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[129] += 1.000000 u1_bb("c,j") m2_abab("l,k,b,c") r2_abab("b,a,l,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4497,7 +4497,7 @@ namespace hilbert {
                 }
                 tempArray[129].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[130] += 1.000000 t1_aa("b,j") m2_aaaa("l,k,b,c") s2_aaaa("a,c,l,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4517,7 +4517,7 @@ namespace hilbert {
                 }
                 tempArray[130].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[131] += 1.000000 m2_aaaa("l,k,b,c") s1_aa("c,i") t2_aaaa("a,b,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4537,7 +4537,7 @@ namespace hilbert {
                 }
                 tempArray[131].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[132] += 1.000000 t1_bb("b,j") m2_bbbb("l,k,b,c") s2_bbbb("a,c,l,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4557,7 +4557,7 @@ namespace hilbert {
                 }
                 tempArray[132].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[133] += 1.000000 u1_aa("c,j") m2_abab("k,l,c,b") r2_abab("a,b,i,l") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4597,7 +4597,7 @@ namespace hilbert {
                 }
                 tempArray[134].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[135] += 1.000000 t1_bb("b,j") m2_abab("l,k,c,b") s2_abab("c,a,l,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4617,7 +4617,7 @@ namespace hilbert {
                 }
                 tempArray[135].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[136] += 1.000000 u1_aa("c,i") m2_abab("k,l,c,b") t2_abab("a,b,k,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4657,7 +4657,7 @@ namespace hilbert {
                 }
                 tempArray[137].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[138] += 1.000000 t1_aa("b,i") m2_abab("k,l,b,c") u2_bbbb("a,c,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4694,7 +4694,7 @@ namespace hilbert {
                 tempArray[138].~TArrayD();
                 tempArray[139].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[140] += 1.000000 u1_aa("c,j") m2_aaaa("l,k,c,b") t2_aaaa("a,b,l,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4734,7 +4734,7 @@ namespace hilbert {
                 }
                 tempArray[141].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[142] += 1.000000 u1_bb("c,j") m2_abab("k,l,b,c") t2_aaaa("a,b,k,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4754,7 +4754,7 @@ namespace hilbert {
                 }
                 tempArray[142].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[143] += 1.000000 t1_aa("b,i") m2_abab("k,l,b,c") u2_abab("a,c,k,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4774,7 +4774,7 @@ namespace hilbert {
                 }
                 tempArray[143].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[144] += 1.000000 u1_bb("c,j") m2_bbbb("l,k,c,b") t2_bbbb("a,b,l,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4848,28 +4848,28 @@ namespace hilbert {
                 }
                 tempArray[147].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[148] += 1.000000 t1_bb("c,j") m2_bbbb("k,l,c,b") t2_abab("a,b,i,k") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
                     tempArray[148]("a,i,j,l") = t1_bb("c,j") * m2_bbbb("k,l,c,b") * t2_abab("a,b,i,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovo += 1.000000 t1_bb(c,j) t2_abab(a,b,i,k) m2_bbbb(k,l,c,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += tempArray[148]("a,i,j,l") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r0 t1_bb(d,j) t2_abab(a,c,i,k) u1_bb(b,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * u1_bb("b,l") * tempArray[148]("a,i,j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t1_bb(b,l) t1_bb(d,j) t2_abab(a,c,i,k) m2_bbbb(k,l,d,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -4877,7 +4877,7 @@ namespace hilbert {
                 }
                 tempArray[148].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[149] += 1.000000 t1_bb("b,j") m2_abab("k,l,c,b") u2_abab("c,a,i,l") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -4951,14 +4951,14 @@ namespace hilbert {
                 tempArray[151].~TArrayD();
                 tempArray[152].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[153] += 1.000000 t1_aa("c,i") m2_aaaa("l,k,c,b") t2_abab("b,a,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
                     tempArray[153]("a,i,k,j") = t1_aa("c,i") * m2_aaaa("l,k,c,b") * t2_abab("b,a,l,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 1.000000 t1_aa(c,i) t2_abab(b,a,l,j) m2_aaaa(l,k,c,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -4969,7 +4969,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[153]("b,i,l,j") * s0 * t1_aa("a,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r0 t1_aa(d,i) t2_abab(c,b,k,j) u1_aa(a,l) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -4977,7 +4977,7 @@ namespace hilbert {
                 }
                 tempArray[153].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[154] += 1.000000 r1_bb("b,i") m2_bbbb("l,k,c,b") u2_bbbb("a,c,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5058,7 +5058,7 @@ namespace hilbert {
                 tempArray[158].~TArrayD();
                 tempArray[159].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[160] += 1.000000 u1_aa("c,i") m2_abab("k,l,c,b") r2_abab("a,b,k,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5116,7 +5116,7 @@ namespace hilbert {
                 tempArray[162].~TArrayD();
                 tempArray[163].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[164] += 1.000000 r1_aa("b,i") m2_abab("k,l,b,c") u2_abab("a,c,k,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5161,7 +5161,7 @@ namespace hilbert {
                 tempArray[165].~TArrayD();
                 tempArray[166].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[167] += 1.000000 u1_bb("c,j") m2_bbbb("k,l,c,b") r2_abab("a,b,i,k") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5177,7 +5177,7 @@ namespace hilbert {
                 }
                 tempArray[167].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[168] += 1.000000 t1_bb("b,i") m2_bbbb("l,k,c,b") u2_bbbb("a,c,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5235,7 +5235,7 @@ namespace hilbert {
                 }
                 tempArray[171].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[172] += 1.000000 t1_bb("b,j") m2_bbbb("k,l,b,c") s2_abab("a,c,i,k") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5251,7 +5251,7 @@ namespace hilbert {
                 }
                 tempArray[172].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[173] += 1.000000 m2_aaaa("l,k,b,c") s1_aa("c,i") t2_abab("b,a,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5283,7 +5283,7 @@ namespace hilbert {
                 }
                 tempArray[174].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[175] += 1.000000 m2_abab("k,l,b,c") s1_bb("c,j") t2_aaaa("a,b,k,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5328,7 +5328,7 @@ namespace hilbert {
                 tempArray[176].~TArrayD();
                 tempArray[177].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[178] += 1.000000 m2_abab("k,l,c,b") s1_aa("c,i") t2_abab("a,b,k,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5370,7 +5370,7 @@ namespace hilbert {
                 tempArray[179].~TArrayD();
                 tempArray[180].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[181] += 1.000000 t1_aa("b,i") m2_aaaa("l,k,b,c") s2_abab("c,a,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5428,7 +5428,7 @@ namespace hilbert {
                 tempArray[183].~TArrayD();
                 tempArray[184].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[185] += 1.000000 m2_abab("k,l,b,c") s1_bb("c,j") t2_abab("b,a,i,l") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5460,7 +5460,7 @@ namespace hilbert {
                 }
                 tempArray[186].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[187] += 1.000000 m2_bbbb("k,l,b,c") s1_bb("c,j") t2_abab("a,b,i,k") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5492,7 +5492,7 @@ namespace hilbert {
                 }
                 tempArray[188].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[189] += 1.000000 u1_aa("c,i") m2_aaaa("l,k,c,b") r2_abab("b,a,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5508,7 +5508,7 @@ namespace hilbert {
                 }
                 tempArray[189].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[190] += 1.000000 t1_aa("b,i") m2_aaaa("l,k,c,b") u2_aaaa("a,c,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5524,7 +5524,7 @@ namespace hilbert {
                 }
                 tempArray[190].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[191] += 1.000000 u1_bb("c,j") m2_bbbb("k,l,c,b") t2_abab("a,b,i,k") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5540,7 +5540,7 @@ namespace hilbert {
                 }
                 tempArray[191].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[192] += 1.000000 t1_bb("b,j") m2_abab("k,l,c,b") s2_abab("c,a,i,l") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5556,7 +5556,7 @@ namespace hilbert {
                 }
                 tempArray[192].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[193] += 1.000000 u1_bb("c,j") m2_abab("k,l,b,c") r2_aaaa("a,b,k,i") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5572,7 +5572,7 @@ namespace hilbert {
                 }
                 tempArray[193].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[194] += 1.000000 t1_aa("b,i") m2_abab("k,l,b,c") s2_bbbb("a,c,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5601,7 +5601,7 @@ namespace hilbert {
                 tempArray[194].~TArrayD();
                 tempArray[195].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[196] += 1.000000 u1_aa("c,i") m2_aaaa("l,k,c,b") t2_abab("b,a,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5630,7 +5630,7 @@ namespace hilbert {
                 tempArray[196].~TArrayD();
                 tempArray[197].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[198] += 1.000000 r1_aa("b,i") m2_abab("k,l,b,c") u2_bbbb("a,c,l,j") 
                     // flops: o4v2: 1, o3v2: 1, o3v1: 1 | mem: o3v1: 3, 
@@ -5688,14 +5688,14 @@ namespace hilbert {
                 tempArray[200].~TArrayD();
                 tempArray[201].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[202] += 1.000000 t2_abab("a,d,k,j") m2_abab("k,j,a,b") 
                     // flops: o2v3: 1, o0v2: 1 | mem: o0v2: 2, 
                     tempArray[202]("d,b") = t2_abab("a,d,k,j") * m2_abab("k,j,a,b");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += 0.500000 t2_abab(a,d,j,k) m2_abab(j,k,a,b) s1_aa(c,i) 
                     // +               0.500000 t2_abab(a,d,k,j) m2_abab(k,j,a,b) s1_aa(c,i) 
@@ -5708,7 +5708,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") += r0 * u1_aa("c,i") * tempArray[202]("d,b");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += 0.500000 t1_aa(c,i) t2_abab(a,d,j,k) m2_abab(j,k,a,b) s0 
                     // +               0.500000 t1_aa(c,i) t2_abab(a,d,k,j) m2_abab(k,j,a,b) s0 
@@ -5716,7 +5716,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") += tempArray[202]("d,b") * s0 * t1_aa("c,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ovvv += 0.500000 P(c,d) r0 t2_abab(a,d,j,k) u1_bb(c,i) m2_abab(j,k,a,b) 
                     // +               0.500000 P(c,d) r0 t2_abab(a,d,k,j) u1_bb(c,i) m2_abab(k,j,a,b) 
@@ -5724,7 +5724,7 @@ namespace hilbert {
                     tempPerm_bbbb_ovvv("i,b,c,d") += r0 * tempArray[202]("d,b") * u1_bb("c,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ovvv += 0.500000 P(c,d) t1_bb(c,i) t2_abab(a,d,j,k) m2_abab(j,k,a,b) s0 
                     // +               0.500000 P(c,d) t1_bb(c,i) t2_abab(a,d,k,j) m2_abab(k,j,a,b) s0 
@@ -5732,7 +5732,7 @@ namespace hilbert {
                     tempPerm_bbbb_ovvv("i,b,c,d") += tempArray[202]("d,b") * t1_bb("c,i") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ovvv += -0.500000 P(c,d) t2_abab(a,c,j,k) m2_abab(j,k,a,b) s1_bb(d,i) 
                     // +               -0.500000 P(c,d) t2_abab(a,c,k,j) m2_abab(k,j,a,b) s1_bb(d,i) 
@@ -5750,7 +5750,7 @@ namespace hilbert {
                     tempPerm_bbbb_vovv("a,i,c,d") += tempArray[202]("c,a") * s1_bb("d,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_vovv += -0.500000 P(c,d) t1_bb(c,i) t2_abab(b,d,j,k) m2_abab(j,k,b,a) s0 
                     // +               -0.500000 P(c,d) t1_bb(c,i) t2_abab(b,d,k,j) m2_abab(k,j,b,a) s0 
@@ -5758,7 +5758,7 @@ namespace hilbert {
                     tempPerm_bbbb_vovv("a,i,c,d") -= tempArray[202]("d,a") * t1_bb("c,i") * s0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t2_abab(c,b,k,l) m2_abab(k,l,c,d) s2_abab(a,d,i,j) 
                     // +               -0.500000 t2_abab(c,b,l,k) m2_abab(l,k,c,d) s2_abab(a,d,i,j) 
@@ -5766,7 +5766,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[202]("b,d") * s2_abab("a,d,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t2_abab(a,d,i,j) t2_abab(c,b,k,l) m2_abab(k,l,c,d) s0 
                     // +               -0.500000 t2_abab(a,d,i,j) t2_abab(c,b,l,k) m2_abab(l,k,c,d) s0 
@@ -5774,7 +5774,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[202]("b,d") * s0 * t2_abab("a,d,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t2_abab(c,b,k,l) u2_abab(a,d,i,j) m2_abab(k,l,c,d) 
                     // +               -0.500000 r0 t2_abab(c,b,l,k) u2_abab(a,d,i,j) m2_abab(l,k,c,d) 
@@ -5782,7 +5782,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * u2_abab("a,d,i,j") * tempArray[202]("b,d");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovv += -0.500000 t2_bbbb(a,d,i,j) t2_abab(c,b,k,l) m2_abab(k,l,c,d) s0 
                     // +               -0.500000 t2_bbbb(a,d,i,j) t2_abab(c,b,l,k) m2_abab(l,k,c,d) s0 
@@ -5811,7 +5811,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(a,b) r0 t2_abab(c,b,k,l) u2_bbbb(a,d,i,j) m2_abab(k,l,c,d) 
                     // +               -0.500000 P(a,b) r0 t2_abab(c,b,l,k) u2_bbbb(a,d,i,j) m2_abab(l,k,c,d) 
@@ -5824,7 +5824,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[202]("a,d") * s2_bbbb("b,d,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovov += 0.500000 d_aa(i,j) t2_abab(c,b,k,l) m2_abab(k,l,c,a) s0 
                     // +               0.500000 d_aa(i,j) t2_abab(c,b,l,k) m2_abab(l,k,c,a) s0 
@@ -5853,14 +5853,14 @@ namespace hilbert {
                 }
                 tempArray[202].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[203] += 1.000000 t2_abab("c,a,j,k") m2_abab("j,k,b,a") 
                     // flops: o2v3: 1, o0v2: 1 | mem: o0v2: 2, 
                     tempArray[203]("c,b") = t2_abab("c,a,j,k") * m2_abab("j,k,b,a");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ovvv += 0.500000 P(c,d) t1_aa(c,i) t2_abab(d,a,j,k) m2_abab(j,k,b,a) s0 
                     // +               0.500000 P(c,d) t1_aa(c,i) t2_abab(d,a,k,j) m2_abab(k,j,b,a) s0 
@@ -5868,7 +5868,7 @@ namespace hilbert {
                     tempPerm_aaaa_ovvv("i,b,c,d") += tempArray[203]("d,b") * t1_aa("c,i") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ovvv += 0.500000 P(c,d) r0 t2_abab(d,a,j,k) u1_aa(c,i) m2_abab(j,k,b,a) 
                     // +               0.500000 P(c,d) r0 t2_abab(d,a,k,j) u1_aa(c,i) m2_abab(k,j,b,a) 
@@ -5886,7 +5886,7 @@ namespace hilbert {
                     tempPerm_aaaa_vovv("a,i,c,d") += tempArray[203]("c,a") * s1_aa("d,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_vovv += -0.500000 P(c,d) t1_aa(c,i) t2_abab(d,b,j,k) m2_abab(j,k,a,b) s0 
                     // +               -0.500000 P(c,d) t1_aa(c,i) t2_abab(d,b,k,j) m2_abab(k,j,a,b) s0 
@@ -5894,7 +5894,7 @@ namespace hilbert {
                     tempPerm_aaaa_vovv("a,i,c,d") -= tempArray[203]("d,a") * t1_aa("c,i") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_vovv += -0.500000 P(c,d) r0 t2_abab(d,b,j,k) u1_aa(c,i) m2_abab(j,k,a,b) 
                     // +               -0.500000 P(c,d) r0 t2_abab(d,b,k,j) u1_aa(c,i) m2_abab(k,j,a,b) 
@@ -5912,7 +5912,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += tempArray[203]("c,a") * s1_bb("d,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vovv += 0.500000 t1_bb(d,i) t2_abab(c,b,j,k) m2_abab(j,k,a,b) s0 
                     // +               0.500000 t1_bb(d,i) t2_abab(c,b,k,j) m2_abab(k,j,a,b) s0 
@@ -5946,7 +5946,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(a,b) t2_abab(a,c,k,l) m2_abab(k,l,d,c) s2_aaaa(b,d,i,j) 
                     // +               0.500000 P(a,b) t2_abab(a,c,l,k) m2_abab(l,k,d,c) s2_aaaa(b,d,i,j) 
@@ -5959,7 +5959,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= r0 * tempArray[203]("b,d") * u2_aaaa("a,d,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t2_abab(a,d,k,l) t2_abab(c,b,i,j) m2_abab(k,l,c,d) s0 
                     // +               -0.500000 t2_abab(a,d,l,k) t2_abab(c,b,i,j) m2_abab(l,k,c,d) s0 
@@ -5967,7 +5967,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[203]("a,c") * s0 * t2_abab("c,b,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t2_abab(a,c,k,l) u2_abab(d,b,i,j) m2_abab(k,l,d,c) 
                     // +               -0.500000 r0 t2_abab(a,c,l,k) u2_abab(d,b,i,j) m2_abab(l,k,d,c) 
@@ -5980,7 +5980,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[203]("a,d") * s2_abab("d,b,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ovov += 0.500000 d_aa(i,j) t2_abab(b,c,k,l) m2_abab(k,l,a,c) s0 
                     // +               0.500000 d_aa(i,j) t2_abab(b,c,l,k) m2_abab(l,k,a,c) s0 
@@ -6009,14 +6009,14 @@ namespace hilbert {
                 }
                 tempArray[203].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[204] += 0.500000 t2_bbbb("d,a,j,k") m2_bbbb("j,k,b,a") 
                     // flops: o2v3: 1, o0v2: 1 | mem: o0v2: 2, 
                     tempArray[204]("d,b") = 0.500000 * t2_bbbb("d,a,j,k") * m2_bbbb("j,k,b,a");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += 0.500000 r0 t2_bbbb(d,a,j,k) u1_aa(c,i) m2_bbbb(j,k,b,a) 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -6027,7 +6027,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") += tempArray[204]("d,b") * s1_aa("c,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += 0.500000 t1_aa(c,i) t2_bbbb(d,a,j,k) m2_bbbb(j,k,b,a) s0 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -6038,7 +6038,7 @@ namespace hilbert {
                     tempPerm_bbbb_ovvv("i,b,c,d") += tempArray[204]("d,b") * t1_bb("c,i") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ovvv += 0.500000 P(c,d) r0 t2_bbbb(d,a,j,k) u1_bb(c,i) m2_bbbb(j,k,b,a) 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -6049,14 +6049,14 @@ namespace hilbert {
                     tempPerm_bbbb_ovvv("i,b,c,d") -= tempArray[204]("c,b") * s1_bb("d,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_vovv += -0.500000 P(c,d) t1_bb(c,i) t2_bbbb(d,b,j,k) m2_bbbb(j,k,a,b) s0 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_bbbb_vovv("a,i,c,d") -= tempArray[204]("d,a") * t1_bb("c,i") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_vovv += -0.500000 P(c,d) r0 t2_bbbb(d,b,j,k) u1_bb(c,i) m2_bbbb(j,k,a,b) 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -6067,14 +6067,14 @@ namespace hilbert {
                     tempPerm_bbbb_vovv("a,i,c,d") += tempArray[204]("c,a") * s1_bb("d,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t2_bbbb(b,c,k,l) u2_abab(a,d,i,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * u2_abab("a,d,i,j") * tempArray[204]("b,d");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t2_abab(a,d,i,j) t2_bbbb(b,c,k,l) m2_bbbb(k,l,d,c) s0 
                     // flops: o2v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -6085,14 +6085,14 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") -= tempArray[204]("b,d") * s0 * t2_bbbb("a,d,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(a,b) r0 t2_bbbb(b,c,k,l) u2_bbbb(a,d,i,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") -= r0 * tempArray[204]("b,d") * u2_bbbb("a,d,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovov += 0.500000 d_aa(i,j) t2_bbbb(b,c,k,l) m2_bbbb(k,l,a,c) s0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -6116,21 +6116,21 @@ namespace hilbert {
                 }
                 tempArray[204].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[205] += 0.500000 t2_aaaa("c,a,j,k") m2_aaaa("j,k,b,a") 
                     // flops: o2v3: 1, o0v2: 1 | mem: o0v2: 2, 
                     tempArray[205]("c,b") = 0.500000 * t2_aaaa("c,a,j,k") * m2_aaaa("j,k,b,a");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ovvv += 0.500000 P(c,d) t1_aa(c,i) t2_aaaa(d,a,j,k) m2_aaaa(j,k,b,a) s0 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_aaaa_ovvv("i,b,c,d") += tempArray[205]("d,b") * t1_aa("c,i") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ovvv += 0.500000 P(c,d) r0 t2_aaaa(d,a,j,k) u1_aa(c,i) m2_aaaa(j,k,b,a) 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -6141,14 +6141,14 @@ namespace hilbert {
                     tempPerm_aaaa_ovvv("i,b,c,d") -= tempArray[205]("c,b") * s1_aa("d,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_vovv += -0.500000 P(c,d) t1_aa(c,i) t2_aaaa(d,b,j,k) m2_aaaa(j,k,a,b) s0 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_aaaa_vovv("a,i,c,d") -= tempArray[205]("d,a") * t1_aa("c,i") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_vovv += -0.500000 P(c,d) r0 t2_aaaa(d,b,j,k) u1_aa(c,i) m2_aaaa(j,k,a,b) 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -6159,14 +6159,14 @@ namespace hilbert {
                     tempPerm_aaaa_vovv("a,i,c,d") += tempArray[205]("c,a") * s1_aa("d,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vovv += 0.500000 t1_bb(d,i) t2_aaaa(c,b,j,k) m2_aaaa(j,k,a,b) s0 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += tempArray[205]("c,a") * s0 * t1_bb("d,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += 0.500000 t2_aaaa(c,b,j,k) m2_aaaa(j,k,a,b) s1_bb(d,i) 
                     // flops: o1v3: 2 | mem: o1v3: 2, 
@@ -6177,14 +6177,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += r0 * u1_bb("d,i") * tempArray[205]("c,a");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovv += -0.500000 t2_aaaa(a,d,i,j) t2_aaaa(b,c,k,l) m2_aaaa(k,l,d,c) s0 
                     // flops: o2v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") -= tempArray[205]("b,d") * s0 * t2_aaaa("a,d,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(a,b) r0 t2_aaaa(b,c,k,l) u2_aaaa(a,d,i,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -6195,7 +6195,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * u2_abab("d,b,i,j") * tempArray[205]("a,d");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ovov += 0.500000 d_aa(i,j) t2_aaaa(b,c,k,l) m2_aaaa(k,l,a,c) s0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -6392,7 +6392,7 @@ namespace hilbert {
                 tempArray[206].~TArrayD();
                 tempArray[207].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[208] += 1.000000 u2_abab("a,d,j,k") m2_abab("j,k,a,b") 
                     // flops: o2v3: 1, o0v2: 1 | mem: o0v2: 2, 
@@ -6668,7 +6668,7 @@ namespace hilbert {
                 tempArray[210].~TArrayD();
                 tempArray[211].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[212] += 0.500000 u2_bbbb("d,a,j,k") m2_bbbb("j,k,b,a") 
                     // flops: o2v3: 1, o0v2: 1 | mem: o0v2: 2, 
@@ -6872,7 +6872,7 @@ namespace hilbert {
                 }
                 tempArray[215].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[216] += 1.000000 m2_abab("j,k,b,a") s2_abab("d,a,j,k") 
                     // flops: o2v3: 1, o0v2: 1 | mem: o0v2: 2, 
@@ -7078,7 +7078,7 @@ namespace hilbert {
                 tempArray[218].~TArrayD();
                 tempArray[219].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[220] += 1.000000 m2_abab("k,j,a,b") s2_abab("a,d,k,j") 
                     // flops: o2v3: 1, o0v2: 1 | mem: o0v2: 2, 
@@ -7185,7 +7185,7 @@ namespace hilbert {
                 tempArray[220].~TArrayD();
                 tempArray[221].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += 0.500000 r2_abab(a,d,j,k) u1_aa(c,i) m2_abab(j,k,a,b) 
                     // +               0.500000 r2_abab(a,d,k,j) u1_aa(c,i) m2_abab(k,j,a,b) 
@@ -7203,7 +7203,7 @@ namespace hilbert {
                     tempPerm_bbbb_vovv("a,i,c,d") -= tempArray[222]("d,a") * u1_bb("c,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r2_abab(c,b,k,l) u2_abab(a,d,i,j) m2_abab(k,l,c,d) 
                     // +               -0.500000 r2_abab(c,b,l,k) u2_abab(a,d,i,j) m2_abab(l,k,c,d) 
@@ -7221,7 +7221,7 @@ namespace hilbert {
                 }
                 tempArray[222].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ovvv += 0.500000 P(c,d) r2_aaaa(d,a,j,k) u1_aa(c,i) m2_aaaa(j,k,b,a) 
                     // flops: o1v3: 2 | mem: o1v3: 2, 
@@ -7236,7 +7236,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += tempArray[223]("c,a") * u1_bb("d,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(a,b) r2_aaaa(b,c,k,l) u2_aaaa(a,d,i,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -7252,7 +7252,7 @@ namespace hilbert {
                 }
                 tempArray[223].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ovvv += 0.500000 P(c,d) r2_abab(d,a,j,k) u1_aa(c,i) m2_abab(j,k,b,a) 
                     // +               0.500000 P(c,d) r2_abab(d,a,k,j) u1_aa(c,i) m2_abab(k,j,b,a) 
@@ -7270,7 +7270,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += tempArray[224]("c,a") * u1_bb("d,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(a,b) r2_abab(b,c,k,l) u2_aaaa(a,d,i,j) m2_abab(k,l,d,c) 
                     // +               -0.500000 P(a,b) r2_abab(b,c,l,k) u2_aaaa(a,d,i,j) m2_abab(l,k,d,c) 
@@ -7288,7 +7288,7 @@ namespace hilbert {
                 }
                 tempArray[224].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += 0.500000 r2_bbbb(d,a,j,k) u1_aa(c,i) m2_bbbb(j,k,b,a) 
                     // flops: o1v3: 2 | mem: o1v3: 2, 
@@ -7303,7 +7303,7 @@ namespace hilbert {
                     tempPerm_bbbb_vovv("a,i,c,d") -= tempArray[225]("d,a") * u1_bb("c,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r2_bbbb(b,c,k,l) u2_abab(a,d,i,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -7361,28 +7361,28 @@ namespace hilbert {
                 tempArray[226].~TArrayD();
                 tempArray[227].~TArrayD();
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovv += -0.500000 t2_aaaa(a,d,k,l) t2_aaaa(b,c,i,j) m2_aaaa(k,l,d,c) s0 
                     // flops: o2v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") -= tempArray[228]("a,c") * s0 * t2_aaaa("b,c,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(a,b) t2_aaaa(a,c,k,l) m2_aaaa(k,l,c,d) s2_aaaa(b,d,i,j) 
                     // flops: o2v3: 1, o2v2: 1 | mem: o2v2: 2, 
                     tempPerm_aaaa_oovv("i,j,a,b") -= tempArray[228]("a,d") * s2_aaaa("b,d,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 t2_aaaa(a,d,k,l) t2_abab(c,b,i,j) m2_aaaa(k,l,d,c) s0 
                     // flops: o2v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[228]("a,c") * s0 * t2_abab("c,b,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 t2_aaaa(a,c,k,l) m2_aaaa(k,l,c,d) s2_abab(d,b,i,j) 
                     // flops: o2v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -7414,14 +7414,14 @@ namespace hilbert {
                 }
                 tempArray[229].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[230] += 1.000000 t1_aa("a,k") m2_abab("k,l,b,c") 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
                     tempArray[230]("a,b,c,l") = t1_aa("a,k") * m2_abab("k,l,b,c");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vvvv += 1.000000 r0 t1_aa(c,i) u1_bb(d,j) m2_abab(i,j,a,b) 
                     // flops: o1v4: 1, o0v4: 1, o0v0: 1 | mem: o0v4: 2, o0v0: 1, 
@@ -7432,7 +7432,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vvvv"]("a,b,c,d") += tempArray[230]("c,a,b,j") * s1_bb("d,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vvvv += 1.000000 t1_aa(c,j) t1_bb(d,i) m2_abab(j,i,a,b) s0 
                     // flops: o1v4: 1, o0v4: 1, o0v0: 1 | mem: o0v4: 2, o0v0: 1, 
@@ -7444,28 +7444,28 @@ namespace hilbert {
                 }
                 tempArray[230].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[231] += 1.000000 t1_bb("a,l") m2_bbbb("l,k,b,c") 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
                     tempArray[231]("a,b,c,k") = t1_bb("a,l") * m2_bbbb("l,k,b,c");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_vvvv += -1.000000 t1_bb(c,j) t1_bb(d,i) m2_bbbb(i,j,a,b) s0 
                     // flops: o1v4: 1, o0v4: 1, o0v0: 1 | mem: o0v4: 2, o0v0: 1, 
                     RDM_blks_["D2_bbbb_vvvv"]("a,b,c,d") -= t1_bb("c,j") * s0 * tempArray[231]("d,a,b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_vvvv += -1.000000 P(c,d) r0 t1_bb(d,i) u1_bb(c,j) m2_bbbb(i,j,a,b) 
                     // flops: o1v4: 1, o0v4: 1, o0v0: 1 | mem: o0v4: 2, o0v0: 1, 
                     tempPerm_bbbb_vvvv("a,b,c,d") = -1.0 * r0 * tempArray[231]("d,a,b,j") * u1_bb("c,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_vvvo += 1.000000 t1_bb(c,j) m2_bbbb(j,i,a,b) s0 
                     // flops: o1v3: 1, o0v0: 1 | mem: o1v3: 1, o0v0: 1, 
@@ -7477,28 +7477,28 @@ namespace hilbert {
                 }
                 tempArray[231].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[232] += 1.000000 t1_aa("a,l") m2_aaaa("l,k,b,c") 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
                     tempArray[232]("a,b,c,k") = t1_aa("a,l") * m2_aaaa("l,k,b,c");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_vvvv += -1.000000 t1_aa(c,j) t1_aa(d,i) m2_aaaa(i,j,a,b) s0 
                     // flops: o1v4: 1, o0v4: 1, o0v0: 1 | mem: o0v4: 2, o0v0: 1, 
                     RDM_blks_["D2_aaaa_vvvv"]("a,b,c,d") -= t1_aa("c,j") * s0 * tempArray[232]("d,a,b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_vvvv += -1.000000 P(c,d) r0 t1_aa(d,i) u1_aa(c,j) m2_aaaa(i,j,a,b) 
                     // flops: o1v4: 1, o0v4: 1, o0v0: 1 | mem: o0v4: 2, o0v0: 1, 
                     tempPerm_aaaa_vvvv("a,b,c,d") = -1.0 * r0 * tempArray[232]("d,a,b,j") * u1_aa("c,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_vvvo += 1.000000 t1_aa(c,j) m2_aaaa(j,i,a,b) s0 
                     // flops: o1v3: 1, o0v0: 1 | mem: o1v3: 1, o0v0: 1, 
@@ -7510,7 +7510,7 @@ namespace hilbert {
                 }
                 tempArray[232].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[233] += 0.500000 m2_bbbb("k,l,c,d") t2_bbbb("b,c,k,l") 
                     // flops: o2v3: 1, o0v2: 1 | mem: o0v2: 2, 
@@ -7521,14 +7521,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[233]("d,b") * s2_abab("a,d,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovv += -0.500000 t2_bbbb(a,d,k,l) t2_bbbb(b,c,i,j) m2_bbbb(k,l,d,c) s0 
                     // flops: o2v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") -= tempArray[233]("c,a") * s0 * t2_bbbb("b,c,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(a,b) t2_bbbb(a,c,k,l) m2_bbbb(k,l,c,d) s2_bbbb(b,d,i,j) 
                     // flops: o2v3: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -7556,7 +7556,7 @@ namespace hilbert {
                 }
                 tempArray[234].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[235] += 1.000000 u1_aa("a,k") m2_abab("k,l,c,b") 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
@@ -7664,7 +7664,7 @@ namespace hilbert {
                 tempArray[239].~TArrayD();
                 tempArray[240].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[241] += 1.000000 s1_aa("a,l") m2_aaaa("l,k,c,b") 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
@@ -7717,7 +7717,7 @@ namespace hilbert {
                 tempArray[242].~TArrayD();
                 tempArray[243].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[244] += 1.000000 r1_bb("a,i") m2_bbbb("j,k,b,a") t1_bb("d,j") u1_bb("c,k") 
                     // flops: o2v3: 1, o3v2: 2, o1v3: 1 | mem: o1v3: 2, o2v2: 1, o3v1: 1, 
@@ -7827,7 +7827,7 @@ namespace hilbert {
                 }
                 tempArray[251].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[252] += 1.000000 t1_bb("a,i") m2_bbbb("j,k,b,a") r1_bb("d,j") u1_bb("c,k") 
                     // flops: o2v3: 1, o3v2: 2, o1v3: 1 | mem: o1v3: 2, o2v2: 1, o3v1: 1, 
@@ -7898,7 +7898,7 @@ namespace hilbert {
                 }
                 tempArray[256].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[257] += 1.000000 u1_aa("a,i") m2_aaaa("j,k,b,a") t1_aa("c,k") t1_aa("d,j") 
                     // flops: o2v3: 1, o3v2: 2, o1v3: 1 | mem: o1v3: 2, o2v2: 1, o3v1: 1, 
@@ -7930,14 +7930,14 @@ namespace hilbert {
                 }
                 tempArray[258].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[259] += 1.000000 t1_aa("a,i") m2_aaaa("j,k,b,a") t1_aa("c,k") t1_aa("d,j") 
                     // flops: o2v3: 1, o3v2: 2, o1v3: 1 | mem: o1v3: 2, o2v2: 1, o3v1: 1, 
                     tempArray[259]("b,c,d,i") = t1_aa("a,i") * m2_aaaa("j,k,b,a") * t1_aa("c,k") * t1_aa("d,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ovvv += -1.000000 t1_aa(c,k) t1_aa(d,j) t1_aa(a,i) m2_aaaa(j,k,b,a) s0 
                     // flops: o1v3: 1, o0v0: 1 | mem: o1v3: 1, o0v0: 1, 
@@ -7965,7 +7965,7 @@ namespace hilbert {
                 }
                 tempArray[260].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[261] += 1.000000 m2_bbbb("j,k,b,a") s1_bb("a,i") t1_bb("c,k") t1_bb("d,j") 
                     // flops: o2v3: 1, o3v2: 2, o1v3: 1 | mem: o1v3: 2, o2v2: 1, o3v1: 1, 
@@ -7997,14 +7997,14 @@ namespace hilbert {
                 }
                 tempArray[262].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[263] += 1.000000 t1_bb("a,i") m2_bbbb("j,k,b,a") t1_bb("c,k") t1_bb("d,j") 
                     // flops: o2v3: 1, o3v2: 2, o1v3: 1 | mem: o1v3: 2, o2v2: 1, o3v1: 1, 
                     tempArray[263]("b,c,d,i") = t1_bb("a,i") * m2_bbbb("j,k,b,a") * t1_bb("c,k") * t1_bb("d,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ovvv += -1.000000 t1_bb(c,k) t1_bb(d,j) t1_bb(a,i) m2_bbbb(j,k,b,a) s0 
                     // flops: o1v3: 1, o0v0: 1 | mem: o1v3: 1, o0v0: 1, 
@@ -8016,7 +8016,7 @@ namespace hilbert {
                 }
                 tempArray[263].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[264] += 1.000000 u1_bb("a,i") m2_bbbb("j,k,b,a") t1_bb("c,k") t1_bb("d,j") 
                     // flops: o2v3: 1, o3v2: 2, o1v3: 1 | mem: o1v3: 2, o2v2: 1, o3v1: 1, 
@@ -8048,7 +8048,7 @@ namespace hilbert {
                 }
                 tempArray[265].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[266] += 1.000000 m2_bbbb("k,j,b,a") s1_bb("a,k") t2_bbbb("c,d,j,i") 
                     // flops: o2v3: 1, o1v3: 1, o2v2: 1 | mem: o1v3: 2, o1v1: 1, 
@@ -8080,7 +8080,7 @@ namespace hilbert {
                 }
                 tempArray[267].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[268] += 1.000000 m2_aaaa("k,j,b,a") s1_aa("a,k") t2_aaaa("c,d,j,i") 
                     // flops: o2v3: 1, o1v3: 1, o2v2: 1 | mem: o1v3: 2, o1v1: 1, 
@@ -8096,7 +8096,7 @@ namespace hilbert {
                 }
                 tempArray[268].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[269] += 1.000000 r1_aa("a,j") m2_abab("j,k,a,b") u2_bbbb("c,d,k,i") 
                     // flops: o2v3: 1, o1v3: 1, o2v2: 1 | mem: o1v3: 2, o1v1: 1, 
@@ -8125,7 +8125,7 @@ namespace hilbert {
                 tempArray[269].~TArrayD();
                 tempArray[270].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[271] += 1.000000 m2_abab("j,k,b,a") s1_bb("a,k") t2_aaaa("c,d,j,i") 
                     // flops: o2v3: 1, o1v3: 1, o2v2: 1 | mem: o1v3: 2, o1v1: 1, 
@@ -8157,7 +8157,7 @@ namespace hilbert {
                 }
                 tempArray[272].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[273] += 1.000000 m2_abab("k,j,a,b") s1_aa("a,k") t2_bbbb("c,d,j,i") 
                     // flops: o2v3: 1, o1v3: 1, o2v2: 1 | mem: o1v3: 2, o1v1: 1, 
@@ -8173,7 +8173,7 @@ namespace hilbert {
                 }
                 tempArray[273].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[274] += 1.000000 r1_bb("a,j") m2_bbbb("j,k,b,a") u2_bbbb("c,d,k,i") 
                     // flops: o2v3: 1, o1v3: 1, o2v2: 1 | mem: o1v3: 2, o1v1: 1, 
@@ -8205,7 +8205,7 @@ namespace hilbert {
                 }
                 tempArray[275].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[276] += 1.000000 r1_aa("a,j") m2_aaaa("j,k,b,a") u2_aaaa("c,d,k,i") 
                     // flops: o2v3: 1, o1v3: 1, o2v2: 1 | mem: o1v3: 2, o1v1: 1, 
@@ -8221,7 +8221,7 @@ namespace hilbert {
                 }
                 tempArray[276].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[277] += 1.000000 m2_abab("k,l,c,b") s1_aa("a,k") 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
@@ -8263,14 +8263,14 @@ namespace hilbert {
                 tempArray[278].~TArrayD();
                 tempArray[279].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[280] += 1.000000 t2_aaaa("c,d,j,i") m1_aa("j,b") 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
                     tempArray[280]("c,d,b,i") = t2_aaaa("c,d,j,i") * m1_aa("j,b");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_aaaa_ovvv += -1.000000 t2_aaaa(c,d,j,i) m1_aa(j,b) s0 
                     // flops: o1v3: 1, o0v0: 1 | mem: o1v3: 1, o0v0: 1, 
@@ -8282,7 +8282,7 @@ namespace hilbert {
                 }
                 tempArray[280].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[281] += 1.000000 m2_bbbb("l,k,c,b") u1_bb("a,l") 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
@@ -8327,7 +8327,7 @@ namespace hilbert {
                 }
                 tempArray[283].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[284] += 1.000000 u2_aaaa("c,d,j,i") m1_aa("j,b") 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
@@ -8372,14 +8372,14 @@ namespace hilbert {
                 }
                 tempArray[286].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[287] += 1.000000 t2_bbbb("c,d,j,i") m1_bb("j,b") 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
                     tempArray[287]("c,d,b,i") = t2_bbbb("c,d,j,i") * m1_bb("j,b");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_bbbb_ovvv += -1.000000 t2_bbbb(c,d,j,i) m1_bb(j,b) s0 
                     // flops: o1v3: 1, o0v0: 1 | mem: o1v3: 1, o0v0: 1, 
@@ -8391,7 +8391,7 @@ namespace hilbert {
                 }
                 tempArray[287].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[288] += 1.000000 s2_aaaa("c,d,j,i") m1_aa("j,b") 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
@@ -8449,14 +8449,14 @@ namespace hilbert {
                 tempArray[290].~TArrayD();
                 tempArray[291].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[292] += 1.000000 t1_bb("a,j") m2_abab("k,l,b,a") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
                     tempArray[292]("b,k,j,l") = t1_bb("a,j") * m2_abab("k,l,b,a");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oooo += 1.000000 t1_bb(a,j) m2_abab(k,l,b,a) s1_aa(b,i) 
                     // flops: o4v1: 1, o4v0: 1 | mem: o4v0: 2, 
@@ -8467,21 +8467,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oooo"]("i,j,k,l") += r0 * u1_aa("b,i") * tempArray[292]("b,k,j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oooo += 1.000000 t1_bb(b,j) t1_aa(a,i) m2_abab(k,l,a,b) s0 
                     // flops: o4v1: 1, o4v0: 1, o0v0: 1 | mem: o4v0: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oooo"]("i,j,k,l") += tempArray[292]("a,k,j,l") * s0 * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 1.000000 t1_bb(a,l) t1_bb(b,j) m2_abab(k,l,c,b) s1_aa(c,i) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += s1_aa("c,i") * tempArray[292]("c,k,j,l") * t1_bb("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ooov += -0.500000 d_aa(i,k) t1_bb(b,j) m2_abab(m,l,c,b) s2_abab(c,a,m,l) 
                     // +               -0.500000 d_aa(i,k) t1_bb(b,j) m2_abab(l,m,c,b) s2_abab(c,a,l,m) 
@@ -8494,7 +8494,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= r0 * u2_abab("c,a,l,m") * tempArray[292]("c,l,j,m") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 1.000000 r1_bb(a,l) t1_bb(b,j) u1_aa(c,i) m2_abab(k,l,c,b) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
@@ -8509,7 +8509,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += tempArray[292]("b,k,j,l") * r1_aa("b,i") * u1_bb("a,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 1.000000 t1_bb(a,l) t1_bb(c,j) t1_aa(b,i) m2_abab(k,l,b,c) s0 
                     // flops: o4v1: 2, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o4v0: 1, o0v0: 1, 
@@ -8521,7 +8521,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= tempArray[292]("b,l,j,m") * t2_abab("b,a,l,m") * s0 * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 1.000000 r0 t1_bb(c,j) t1_aa(b,i) u1_bb(a,l) m2_abab(k,l,b,c) 
                     // flops: o4v1: 2, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o4v0: 1, o0v0: 1, 
@@ -8532,7 +8532,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += r0 * u1_aa("c,i") * tempArray[292]("c,k,j,l") * t1_bb("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.500000 d_bb(i,k) t1_bb(b,j) m2_abab(m,l,c,b) s2_abab(c,a,m,l) 
                     // +               -0.500000 d_bb(i,k) t1_bb(b,j) m2_abab(l,m,c,b) s2_abab(c,a,l,m) 
@@ -8540,7 +8540,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= s2_abab("c,a,m,l") * tempArray[292]("c,m,j,l") * Id_blks["bb_oo"]("i,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.500000 d_bb(i,k) t1_bb(c,j) t2_abab(b,a,l,m) m2_abab(l,m,b,c) s0 
                     // +               -0.500000 d_bb(i,k) t1_bb(c,j) t2_abab(b,a,m,l) m2_abab(m,l,b,c) s0 
@@ -8548,7 +8548,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= tempArray[292]("b,l,j,m") * t2_abab("b,a,l,m") * s0 * Id_blks["bb_oo"]("i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.500000 d_bb(i,k) r0 t1_bb(b,j) u2_abab(c,a,l,m) m2_abab(l,m,c,b) 
                     // +               -0.500000 d_bb(i,k) r0 t1_bb(b,j) u2_abab(c,a,m,l) m2_abab(m,l,c,b) 
@@ -8566,7 +8566,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += s2_abab("c,a,m,l") * tempArray[292]("c,m,i,l") * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 0.500000 d_bb(j,k) t1_bb(c,i) t2_abab(b,a,l,m) m2_abab(l,m,b,c) s0 
                     // +               0.500000 d_bb(j,k) t1_bb(c,i) t2_abab(b,a,m,l) m2_abab(m,l,b,c) s0 
@@ -8574,21 +8574,21 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += tempArray[292]("b,l,i,m") * t2_abab("b,a,l,m") * s0 * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovo += 1.000000 t1_aa(a,k) t1_bb(b,j) m2_abab(k,l,c,b) s1_aa(c,i) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += s1_aa("c,i") * tempArray[292]("c,k,j,l") * t1_aa("a,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovo += 1.000000 t1_aa(a,k) t1_bb(c,j) t1_aa(b,i) m2_abab(k,l,b,c) s0 
                     // flops: o4v1: 2, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o4v0: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += tempArray[292]("b,k,j,l") * t1_aa("b,i") * s0 * t1_aa("a,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovo += 1.000000 r0 t1_aa(a,k) t1_bb(b,j) u1_aa(c,i) m2_abab(k,l,c,b) 
                     // flops: o4v1: 2, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o4v0: 1, o0v0: 1, 
@@ -8611,7 +8611,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += u1_aa("c,i") * tempArray[292]("c,k,j,l") * r1_aa("a,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 0.500000 d_bb(i,l) t1_bb(c,j) t2_abab(b,a,k,m) m2_abab(k,m,b,c) s0 
                     // +               0.500000 d_bb(i,l) t1_bb(c,j) t2_abab(b,a,m,k) m2_abab(m,k,b,c) s0 
@@ -8624,7 +8624,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= tempArray[292]("b,k,i,m") * t2_abab("b,a,k,m") * s0 * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovo += -0.500000 d_bb(j,l) t1_bb(b,i) m2_abab(m,k,c,b) s2_abab(c,a,m,k) 
                     // +               -0.500000 d_bb(j,l) t1_bb(b,i) m2_abab(k,m,c,b) s2_abab(c,a,k,m) 
@@ -8647,14 +8647,14 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= r0 * u2_abab("c,a,k,m") * tempArray[292]("c,k,i,m") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vooo += -1.000000 t1_bb(b,j) m2_abab(k,l,a,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_vooo"]("a,j,k,l") -= tempArray[292]("a,k,j,l") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 r0 t1_aa(c,j) t1_bb(b,i) u1_bb(d,k) m2_abab(j,k,a,b) 
                     // flops: o2v3: 1, o3v2: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o2v2: 1, o0v0: 1, 
@@ -8673,7 +8673,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[292]("a,j,i,k") * u1_bb("d,k") * r1_aa("c,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_vovv += -0.500000 r0 t1_bb(b,i) u2_abab(c,d,j,k) m2_abab(j,k,a,b) 
                     // +               -0.500000 r0 t1_bb(b,i) u2_abab(c,d,k,j) m2_abab(k,j,a,b) 
@@ -8681,28 +8681,28 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= r0 * u2_abab("c,d,j,k") * tempArray[292]("a,j,i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 t1_bb(d,j) t1_bb(b,i) m2_abab(k,j,a,b) s1_aa(c,k) 
                     // flops: o2v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o2v2: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[292]("a,k,i,j") * s1_aa("c,k") * t1_bb("d,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 t1_aa(c,k) t1_bb(d,j) t1_bb(b,i) m2_abab(k,j,a,b) s0 
                     // flops: o2v3: 1, o3v2: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[292]("a,k,i,j") * t1_aa("c,k") * s0 * t1_bb("d,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 r0 t1_bb(d,j) t1_bb(b,i) u1_aa(c,k) m2_abab(k,j,a,b) 
                     // flops: o2v3: 1, o3v2: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= r0 * tempArray[292]("a,k,i,j") * u1_aa("c,k") * t1_bb("d,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_vovv += -0.500000 t1_bb(b,i) m2_abab(k,j,a,b) s2_abab(c,d,k,j) 
                     // +               -0.500000 t1_bb(b,i) m2_abab(j,k,a,b) s2_abab(c,d,j,k) 
@@ -8710,7 +8710,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[292]("a,k,i,j") * s2_abab("c,d,k,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -0.500000 t1_bb(b,i) t2_abab(c,d,j,k) m2_abab(j,k,a,b) s0 
                     // +               -0.500000 t1_bb(b,i) t2_abab(c,d,k,j) m2_abab(k,j,a,b) s0 
@@ -8718,7 +8718,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[292]("a,j,i,k") * s0 * t2_abab("c,d,j,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r1_aa(a,i) t1_bb(c,j) u2_abab(d,b,k,l) m2_abab(k,l,d,c) 
                     // +               -0.500000 r1_aa(a,i) t1_bb(c,j) u2_abab(d,b,l,k) m2_abab(l,k,d,c) 
@@ -8726,7 +8726,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u2_abab("d,b,k,l") * tempArray[292]("d,k,j,l") * r1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 t1_bb(c,j) t2_abab(a,b,k,l) m2_abab(k,l,d,c) s1_aa(d,i) 
                     // +               0.500000 t1_bb(c,j) t2_abab(a,b,l,k) m2_abab(l,k,d,c) s1_aa(d,i) 
@@ -8734,7 +8734,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += s1_aa("d,i") * tempArray[292]("d,k,j,l") * t2_abab("a,b,k,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t1_aa(a,i) t1_bb(c,j) u2_abab(d,b,k,l) m2_abab(k,l,d,c) 
                     // +               -0.500000 r0 t1_aa(a,i) t1_bb(c,j) u2_abab(d,b,l,k) m2_abab(l,k,d,c) 
@@ -8742,14 +8742,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * u2_abab("d,b,k,l") * tempArray[292]("d,k,j,l") * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(c,i) t1_bb(b,k) t1_bb(d,j) u1_aa(a,l) m2_abab(l,k,c,d) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r1_aa("c,i") * tempArray[292]("c,l,j,k") * u1_aa("a,l") * t1_bb("b,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 t1_bb(d,j) t1_aa(c,i) m2_abab(l,k,c,d) s2_abab(a,b,l,k) 
                     // +               0.500000 t1_bb(d,j) t1_aa(c,i) m2_abab(k,l,c,d) s2_abab(a,b,k,l) 
@@ -8757,21 +8757,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += t1_aa("c,i") * tempArray[292]("c,l,j,k") * s2_abab("a,b,l,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r2_aaaa(a,c,k,i) t1_bb(d,j) u1_bb(b,l) m2_abab(k,l,c,d) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r2_aaaa("a,c,k,i") * tempArray[292]("c,k,j,l") * u1_bb("b,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_aa(c,k) t1_bb(d,j) u2_abab(a,b,i,l) m2_abab(k,l,c,d) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[292]("c,k,j,l") * r1_aa("c,k") * u2_abab("a,b,i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t1_bb(d,j) t2_abab(c,b,k,l) u1_aa(a,i) m2_abab(k,l,c,d) 
                     // +               -0.500000 r0 t1_bb(d,j) t2_abab(c,b,l,k) u1_aa(a,i) m2_abab(l,k,c,d) 
@@ -8779,7 +8779,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * t2_abab("c,b,k,l") * tempArray[292]("c,k,j,l") * u1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_aa(a,i) t1_bb(c,j) m2_abab(l,k,d,c) s2_abab(d,b,l,k) 
                     // +               -0.500000 t1_aa(a,i) t1_bb(c,j) m2_abab(k,l,d,c) s2_abab(d,b,k,l) 
@@ -8787,14 +8787,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= s2_abab("d,b,l,k") * tempArray[292]("d,l,j,k") * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t1_aa(a,k) t1_bb(d,j) t1_aa(c,i) m2_abab(k,l,c,d) s1_bb(b,l) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[292]("c,k,j,l") * t1_aa("c,i") * s1_bb("b,l") * t1_aa("a,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_aa(a,i) t1_bb(d,j) t2_abab(c,b,k,l) m2_abab(k,l,c,d) s0 
                     // +               -0.500000 t1_aa(a,i) t1_bb(d,j) t2_abab(c,b,l,k) m2_abab(l,k,c,d) s0 
@@ -8802,7 +8802,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[292]("c,k,j,l") * t2_abab("c,b,k,l") * s0 * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_bb(d,j) t2_abab(c,b,k,l) m2_abab(k,l,c,d) s1_aa(a,i) 
                     // +               -0.500000 t1_bb(d,j) t2_abab(c,b,l,k) m2_abab(l,k,c,d) s1_aa(a,i) 
@@ -8815,7 +8815,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += u1_aa("d,i") * tempArray[292]("d,k,j,l") * r2_abab("a,b,k,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 r0 t1_bb(d,j) t1_aa(c,i) u2_abab(a,b,k,l) m2_abab(k,l,c,d) 
                     // +               0.500000 r0 t1_bb(d,j) t1_aa(c,i) u2_abab(a,b,l,k) m2_abab(l,k,c,d) 
@@ -8823,14 +8823,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * t1_aa("c,i") * tempArray[292]("c,k,j,l") * u2_abab("a,b,k,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t1_aa(a,l) t1_bb(b,k) t1_bb(d,j) t1_aa(c,i) m2_abab(l,k,c,d) s0 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[292]("c,l,j,k") * t1_aa("c,i") * t1_aa("a,l") * s0 * t1_bb("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(a,k) t1_bb(d,j) t1_aa(c,i) u1_bb(b,l) m2_abab(k,l,c,d) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
@@ -8853,7 +8853,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * tempArray[292]("d,l,j,k") * u1_aa("d,i") * t1_bb("b,k") * t1_aa("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 r1_aa(c,i) t1_bb(d,j) u2_abab(a,b,k,l) m2_abab(k,l,c,d) 
                     // +               0.500000 r1_aa(c,i) t1_bb(d,j) u2_abab(a,b,l,k) m2_abab(l,k,c,d) 
@@ -8861,7 +8861,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[292]("c,k,j,l") * r1_aa("c,i") * u2_abab("a,b,k,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_bb(b,k) t1_bb(d,j) t1_aa(c,i) u1_aa(a,l) m2_abab(l,k,c,d) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
@@ -8894,7 +8894,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[292]("d,l,j,k") * s1_aa("d,i") * t1_bb("b,k") * t1_aa("a,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 t1_bb(d,j) t1_aa(c,i) t2_abab(a,b,k,l) m2_abab(k,l,c,d) s0 
                     // +               0.500000 t1_bb(d,j) t1_aa(c,i) t2_abab(a,b,l,k) m2_abab(l,k,c,d) s0 
@@ -8902,7 +8902,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[292]("c,k,j,l") * t1_aa("c,i") * s0 * t2_abab("a,b,k,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(a,k) t1_bb(b,l) t1_bb(c,j) u1_aa(d,i) m2_abab(k,l,d,c) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
@@ -8927,14 +8927,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) t1_bb(c,j) t2_bbbb(a,b,k,i) m2_abab(l,k,d,c) s1_aa(d,l) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") = tempArray[292]("d,l,j,k") * s1_aa("d,l") * t2_bbbb("a,b,k,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) r1_aa(c,k) t1_bb(d,i) u2_bbbb(a,b,l,j) m2_abab(k,l,c,d) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
@@ -8955,7 +8955,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(d,i) t2_abab(c,b,k,l) m2_abab(k,l,c,d) s0 
                     // +               0.500000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(d,i) t2_abab(c,b,l,k) m2_abab(l,k,c,d) s0 
@@ -8963,7 +8963,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") = tempArray[292]("c,k,i,l") * t2_abab("c,b,k,l") * t1_bb("a,j") * s0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(c,i) m2_abab(l,k,d,c) s2_abab(d,b,l,k) 
                     // +               0.500000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(c,i) m2_abab(k,l,d,c) s2_abab(d,b,k,l) 
@@ -8971,7 +8971,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[292]("d,l,i,k") * s2_abab("d,b,l,k") * t1_bb("a,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) r0 t1_bb(d,i) t2_abab(c,b,k,l) u1_bb(a,j) m2_abab(k,l,c,d) 
                     // +               0.500000 P(i,j) P(a,b) r0 t1_bb(d,i) t2_abab(c,b,l,k) u1_bb(a,j) m2_abab(l,k,c,d) 
@@ -8979,7 +8979,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") += r0 * tempArray[292]("c,k,i,l") * t2_abab("c,b,k,l") * u1_bb("a,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) P(a,b) r0 t1_bb(b,j) t1_bb(c,i) u2_abab(d,a,k,l) m2_abab(k,l,d,c) 
                     // +               -0.500000 P(i,j) P(a,b) r0 t1_bb(b,j) t1_bb(c,i) u2_abab(d,a,l,k) m2_abab(l,k,d,c) 
@@ -8987,7 +8987,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") -= r0 * tempArray[292]("d,k,i,l") * u2_abab("d,a,k,l") * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) r2_abab(c,b,k,l) t1_bb(d,i) u1_bb(a,j) m2_abab(k,l,c,d) 
                     // +               0.500000 P(i,j) P(a,b) r2_abab(c,b,l,k) t1_bb(d,i) u1_bb(a,j) m2_abab(l,k,c,d) 
@@ -8995,7 +8995,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[292]("c,k,i,l") * r2_abab("c,b,k,l") * u1_bb("a,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) r1_bb(b,i) t1_bb(c,j) u2_abab(d,a,k,l) m2_abab(k,l,d,c) 
                     // +               0.500000 P(i,j) P(a,b) r1_bb(b,i) t1_bb(c,j) u2_abab(d,a,l,k) m2_abab(l,k,d,c) 
@@ -9003,7 +9003,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[292]("d,k,j,l") * u2_abab("d,a,k,l") * r1_bb("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r2_abab(c,b,k,i) t1_bb(d,j) u1_bb(a,l) m2_abab(k,l,c,d) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -9019,14 +9019,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_voov"]("a,i,j,b") -= tempArray[292]("a,j,i,k") * s1_bb("b,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_voov += -1.000000 t1_bb(b,k) t1_bb(c,i) m2_abab(j,k,a,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_voov"]("a,i,j,b") -= tempArray[292]("a,j,i,k") * s0 * t1_bb("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_voov += -1.000000 r0 t1_bb(c,i) u1_bb(b,k) m2_abab(j,k,a,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -9041,7 +9041,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovo"]("a,i,b,j") -= tempArray[292]("a,k,i,j") * s1_aa("b,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vovo += -1.000000 t1_aa(b,k) t1_bb(c,i) m2_abab(k,j,a,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -9049,14 +9049,14 @@ namespace hilbert {
                 }
                 tempArray[292].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[293] += 1.000000 t1_aa("a,i") m2_abab("k,l,a,b") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
                     tempArray[293]("b,i,k,l") = t1_aa("a,i") * m2_abab("k,l,a,b");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oooo += 1.000000 r0 t1_aa(a,i) u1_bb(b,j) m2_abab(k,l,a,b) 
                     // flops: o4v1: 1, o4v0: 1, o0v0: 1 | mem: o4v0: 2, o0v0: 1, 
@@ -9067,7 +9067,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oooo"]("i,j,k,l") += tempArray[293]("b,i,k,l") * s1_bb("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -0.500000 d_aa(i,k) t1_aa(b,j) m2_abab(m,l,b,c) s2_abab(a,c,m,l) 
                     // +               -0.500000 d_aa(i,k) t1_aa(b,j) m2_abab(l,m,b,c) s2_abab(a,c,l,m) 
@@ -9090,7 +9090,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= r0 * u2_abab("a,c,l,m") * tempArray[293]("c,j,l,m") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -0.500000 d_aa(i,k) t1_aa(c,j) t2_abab(a,b,l,m) m2_abab(l,m,c,b) s0 
                     // +               -0.500000 d_aa(i,k) t1_aa(c,j) t2_abab(a,b,m,l) m2_abab(m,l,c,b) s0 
@@ -9103,7 +9103,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += tempArray[293]("b,i,l,m") * t2_abab("a,b,l,m") * s0 * Id_blks["aa_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 1.000000 r1_bb(b,j) t1_aa(c,i) u1_bb(a,l) m2_abab(k,l,c,b) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
@@ -9122,7 +9122,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += r0 * u1_bb("c,j") * tempArray[293]("c,i,k,l") * t1_bb("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovo += 0.500000 d_aa(i,l) r0 t1_aa(b,j) u2_abab(a,c,k,m) m2_abab(k,m,b,c) 
                     // +               0.500000 d_aa(i,l) r0 t1_aa(b,j) u2_abab(a,c,m,k) m2_abab(m,k,b,c) 
@@ -9140,7 +9140,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= r0 * u2_abab("a,c,k,m") * tempArray[293]("c,i,k,m") * Id_blks["aa_oo"]("j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += 0.500000 d_aa(i,l) t1_aa(c,j) t2_abab(a,b,k,m) m2_abab(k,m,c,b) s0 
                     // +               0.500000 d_aa(i,l) t1_aa(c,j) t2_abab(a,b,m,k) m2_abab(m,k,c,b) s0 
@@ -9148,7 +9148,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += tempArray[293]("b,j,k,m") * t2_abab("a,b,k,m") * s0 * Id_blks["aa_oo"]("i,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovo += 0.500000 d_aa(i,l) t1_aa(b,j) m2_abab(m,k,b,c) s2_abab(a,c,m,k) 
                     // +               0.500000 d_aa(i,l) t1_aa(b,j) m2_abab(k,m,b,c) s2_abab(a,c,k,m) 
@@ -9156,7 +9156,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += s2_abab("a,c,m,k") * tempArray[293]("c,j,m,k") * Id_blks["aa_oo"]("i,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -0.500000 d_aa(j,l) t1_aa(c,i) t2_abab(a,b,k,m) m2_abab(k,m,c,b) s0 
                     // +               -0.500000 d_aa(j,l) t1_aa(c,i) t2_abab(a,b,m,k) m2_abab(m,k,c,b) s0 
@@ -9169,7 +9169,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= tempArray[293]("b,i,k,m") * t2_abab("a,b,k,m") * s0 * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovo += -0.500000 d_bb(j,l) t1_aa(b,i) m2_abab(m,k,b,c) s2_abab(a,c,m,k) 
                     // +               -0.500000 d_bb(j,l) t1_aa(b,i) m2_abab(k,m,b,c) s2_abab(a,c,k,m) 
@@ -9177,7 +9177,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= s2_abab("a,c,m,k") * tempArray[293]("c,i,m,k") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovo += 1.000000 r1_aa(a,k) t1_aa(b,i) u1_bb(c,j) m2_abab(k,l,b,c) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
@@ -9188,7 +9188,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += tempArray[293]("b,i,k,l") * r1_bb("b,j") * u1_aa("a,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovo += -0.500000 d_bb(j,l) r0 t1_aa(b,i) u2_abab(a,c,k,m) m2_abab(k,m,b,c) 
                     // +               -0.500000 d_bb(j,l) r0 t1_aa(b,i) u2_abab(a,c,m,k) m2_abab(m,k,b,c) 
@@ -9196,7 +9196,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= r0 * u2_abab("a,c,k,m") * tempArray[293]("c,i,k,m") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovo += 1.000000 t1_aa(a,k) t1_aa(b,i) m2_abab(k,l,b,c) s1_bb(c,j) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
@@ -9207,14 +9207,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += r0 * u1_bb("c,j") * tempArray[293]("c,i,k,l") * t1_aa("a,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovoo += -1.000000 t1_aa(b,i) m2_abab(k,l,b,a) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_ovoo"]("i,a,k,l") -= tempArray[293]("a,i,k,l") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 r1_aa(c,j) t1_aa(a,i) u1_bb(d,k) m2_abab(j,k,a,b) 
                     // flops: o2v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o2v2: 1, 
@@ -9233,14 +9233,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= tempArray[293]("b,i,j,k") * s1_bb("d,k") * t1_aa("c,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 t1_aa(c,k) t1_bb(d,j) t1_aa(a,i) m2_abab(k,j,a,b) s0 
                     // flops: o2v3: 1, o3v2: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= tempArray[293]("b,i,k,j") * t1_aa("c,k") * s0 * t1_bb("d,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ovvv += -0.500000 t1_aa(a,i) m2_abab(k,j,a,b) s2_abab(c,d,k,j) 
                     // +               -0.500000 t1_aa(a,i) m2_abab(j,k,a,b) s2_abab(c,d,j,k) 
@@ -9248,14 +9248,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= tempArray[293]("b,i,k,j") * s2_abab("c,d,k,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 r0 t1_bb(d,j) t1_aa(a,i) u1_aa(c,k) m2_abab(k,j,a,b) 
                     // flops: o2v3: 1, o3v2: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= r0 * tempArray[293]("b,i,k,j") * u1_aa("c,k") * t1_bb("d,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ovvv += -0.500000 r0 t1_aa(a,i) u2_abab(c,d,j,k) m2_abab(j,k,a,b) 
                     // +               -0.500000 r0 t1_aa(a,i) u2_abab(c,d,k,j) m2_abab(k,j,a,b) 
@@ -9263,14 +9263,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= r0 * u2_abab("c,d,j,k") * tempArray[293]("b,i,j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 r1_bb(d,j) t1_aa(a,i) u1_aa(c,k) m2_abab(k,j,a,b) 
                     // flops: o2v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o2v2: 1, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= tempArray[293]("b,i,k,j") * u1_aa("c,k") * r1_bb("d,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -0.500000 t1_aa(a,i) t2_abab(c,d,j,k) m2_abab(j,k,a,b) s0 
                     // +               -0.500000 t1_aa(a,i) t2_abab(c,d,k,j) m2_abab(k,j,a,b) s0 
@@ -9292,14 +9292,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) r1_bb(c,k) t1_aa(d,i) u2_aaaa(a,b,l,j) m2_abab(l,k,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") = -1.0 * r1_bb("c,k") * tempArray[293]("c,i,l,k") * u2_aaaa("a,b,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) t1_aa(c,j) t2_aaaa(a,b,k,i) m2_abab(k,l,c,d) s1_bb(d,l) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
@@ -9320,7 +9320,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) r1_aa(b,i) t1_aa(c,j) u2_abab(a,d,k,l) m2_abab(k,l,c,d) 
                     // +               0.500000 P(i,j) P(a,b) r1_aa(b,i) t1_aa(c,j) u2_abab(a,d,l,k) m2_abab(l,k,c,d) 
@@ -9328,14 +9328,14 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") = tempArray[293]("d,j,k,l") * u2_abab("a,d,k,l") * r1_aa("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r2_abab(b,c,i,k) t1_aa(d,j) u1_aa(a,l) m2_abab(l,k,d,c) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[293]("c,j,l,k") * r2_abab("b,c,i,k") * u1_aa("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(c,i) m2_abab(l,k,c,d) s2_abab(b,d,l,k) 
                     // +               0.500000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(c,i) m2_abab(k,l,c,d) s2_abab(b,d,k,l) 
@@ -9343,7 +9343,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[293]("d,i,l,k") * s2_abab("b,d,l,k") * t1_aa("a,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) r0 t1_aa(d,i) t2_abab(b,c,k,l) u1_aa(a,j) m2_abab(k,l,d,c) 
                     // +               0.500000 P(i,j) P(a,b) r0 t1_aa(d,i) t2_abab(b,c,l,k) u1_aa(a,j) m2_abab(l,k,d,c) 
@@ -9351,7 +9351,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += r0 * tempArray[293]("c,i,k,l") * t2_abab("b,c,k,l") * u1_aa("a,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(d,i) t2_abab(b,c,k,l) m2_abab(k,l,d,c) s0 
                     // +               0.500000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(d,i) t2_abab(b,c,l,k) m2_abab(l,k,d,c) s0 
@@ -9359,7 +9359,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[293]("c,i,k,l") * t2_abab("b,c,k,l") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) r2_abab(b,c,k,l) t1_aa(d,i) u1_aa(a,j) m2_abab(k,l,d,c) 
                     // +               0.500000 P(i,j) P(a,b) r2_abab(b,c,l,k) t1_aa(d,i) u1_aa(a,j) m2_abab(l,k,d,c) 
@@ -9372,7 +9372,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[293]("c,j,k,l") * t2_abab("a,c,k,l") * s1_aa("b,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) P(a,b) r0 t1_aa(b,j) t1_aa(c,i) u2_abab(a,d,k,l) m2_abab(k,l,c,d) 
                     // +               -0.500000 P(i,j) P(a,b) r0 t1_aa(b,j) t1_aa(c,i) u2_abab(a,d,l,k) m2_abab(l,k,c,d) 
@@ -9380,7 +9380,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= r0 * tempArray[293]("d,i,k,l") * u2_abab("a,d,k,l") * t1_aa("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(a,k) t1_bb(b,l) t1_aa(c,i) u1_bb(d,j) m2_abab(k,l,c,d) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
@@ -9392,7 +9392,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * u1_bb("d,j") * tempArray[293]("d,i,k,l") * t2_abab("a,b,k,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 r1_bb(c,j) t1_aa(d,i) u2_abab(a,b,k,l) m2_abab(k,l,d,c) 
                     // +               0.500000 r1_bb(c,j) t1_aa(d,i) u2_abab(a,b,l,k) m2_abab(l,k,d,c) 
@@ -9400,7 +9400,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[293]("c,i,k,l") * r1_bb("c,j") * u2_abab("a,b,k,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r2_abab(a,c,k,j) t1_aa(d,i) u1_bb(b,l) m2_abab(k,l,d,c) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -9424,7 +9424,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r1_bb("c,j") * tempArray[293]("c,i,k,l") * u1_bb("b,l") * t1_aa("a,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_bb(b,j) t1_aa(d,i) t2_abab(a,c,k,l) m2_abab(k,l,d,c) s0 
                     // +               -0.500000 t1_bb(b,j) t1_aa(d,i) t2_abab(a,c,l,k) m2_abab(l,k,d,c) s0 
@@ -9432,7 +9432,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[293]("c,i,k,l") * t2_abab("a,c,k,l") * s0 * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 r2_abab(a,b,k,l) t1_aa(c,i) u1_bb(d,j) m2_abab(k,l,c,d) 
                     // +               0.500000 r2_abab(a,b,l,k) t1_aa(c,i) u1_bb(d,j) m2_abab(l,k,c,d) 
@@ -9449,14 +9449,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * tempArray[293]("d,i,l,k") * u1_bb("d,j") * t1_bb("b,k") * t1_aa("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_bb(c,k) t1_aa(d,i) u2_abab(a,b,l,j) m2_abab(l,k,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[293]("c,i,l,k") * r1_bb("c,k") * u2_abab("a,b,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 t1_aa(a,l) t1_bb(b,k) t1_aa(c,i) m2_abab(l,k,c,d) s1_bb(d,j) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
@@ -9467,7 +9467,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[293]("d,i,l,k") * u1_bb("d,j") * t1_aa("a,l") * r1_bb("b,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t1_bb(b,j) t1_aa(c,i) u2_abab(a,d,k,l) m2_abab(k,l,c,d) 
                     // +               -0.500000 r0 t1_bb(b,j) t1_aa(c,i) u2_abab(a,d,l,k) m2_abab(l,k,c,d) 
@@ -9475,7 +9475,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * u2_abab("a,d,k,l") * tempArray[293]("d,i,k,l") * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r2_bbbb(b,c,k,j) t1_aa(d,i) u1_aa(a,l) m2_abab(l,k,d,c) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -9487,7 +9487,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t2_abab("a,c,k,l") * tempArray[293]("c,i,k,l") * s1_bb("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r1_bb(b,j) t1_aa(c,i) u2_abab(a,d,k,l) m2_abab(k,l,c,d) 
                     // +               -0.500000 r1_bb(b,j) t1_aa(c,i) u2_abab(a,d,l,k) m2_abab(l,k,c,d) 
@@ -9500,7 +9500,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= s2_abab("a,d,l,k") * tempArray[293]("d,i,l,k") * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 t1_aa(c,i) t2_abab(a,b,k,l) m2_abab(k,l,c,d) s1_bb(d,j) 
                     // +               0.500000 t1_aa(c,i) t2_abab(a,b,l,k) m2_abab(l,k,c,d) s1_bb(d,j) 
@@ -9508,14 +9508,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += s1_bb("d,j") * tempArray[293]("d,i,k,l") * t2_abab("a,b,k,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovov += -1.000000 t1_bb(b,k) t1_aa(c,i) m2_abab(j,k,c,a) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_ovov"]("i,a,j,b") -= tempArray[293]("a,i,j,k") * s0 * t1_bb("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovov += -1.000000 t1_aa(c,i) m2_abab(j,k,c,a) s1_bb(b,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -9534,7 +9534,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvo"]("i,a,b,j") -= tempArray[293]("a,i,k,j") * s1_aa("b,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ovvo += -1.000000 t1_aa(b,k) t1_aa(c,i) m2_abab(k,j,c,a) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -9542,14 +9542,14 @@ namespace hilbert {
                 }
                 tempArray[293].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[294] += 1.000000 m2_abab("m,l,b,a") t2_abab("b,a,m,j") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
                     tempArray[294]("l,j") = m2_abab("m,l,b,a") * t2_abab("b,a,m,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oooo += -0.500000 d_aa(i,k) t2_abab(b,a,m,j) m2_abab(m,l,b,a) s0 
                     // +               -0.500000 d_aa(i,k) t2_abab(a,b,m,j) m2_abab(m,l,a,b) s0 
@@ -9582,7 +9582,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= tempArray[294]("m,j") * t1_bb("a,m") * s0 * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += -0.500000 d_aa(i,k) r0 t2_abab(c,b,l,j) u1_bb(a,m) m2_abab(l,m,c,b) 
                     // +               -0.500000 d_aa(i,k) r0 t2_abab(b,c,l,j) u1_bb(a,m) m2_abab(l,m,b,c) 
@@ -9605,7 +9605,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += s1_bb("a,m") * tempArray[294]("m,i") * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.500000 d_bb(i,k) t1_bb(a,m) t2_abab(c,b,l,j) m2_abab(l,m,c,b) s0 
                     // +               -0.500000 d_bb(i,k) t1_bb(a,m) t2_abab(b,c,l,j) m2_abab(l,m,b,c) s0 
@@ -9613,7 +9613,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= tempArray[294]("m,j") * t1_bb("a,m") * s0 * Id_blks["bb_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.500000 d_bb(i,k) r0 t2_abab(c,b,l,j) u1_bb(a,m) m2_abab(l,m,c,b) 
                     // +               -0.500000 d_bb(i,k) r0 t2_abab(b,c,l,j) u1_bb(a,m) m2_abab(l,m,b,c) 
@@ -9626,7 +9626,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += r0 * u1_bb("a,m") * tempArray[294]("m,i") * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 0.500000 d_bb(j,k) t1_bb(a,m) t2_abab(c,b,l,i) m2_abab(l,m,c,b) s0 
                     // +               0.500000 d_bb(j,k) t1_bb(a,m) t2_abab(b,c,l,i) m2_abab(l,m,b,c) s0 
@@ -9634,7 +9634,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += tempArray[294]("m,i") * t1_bb("a,m") * s0 * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ooov += -0.500000 P(i,j) r0 t2_abab(c,b,l,i) u1_bb(a,j) m2_abab(l,k,c,b) 
                     // +               -0.500000 P(i,j) r0 t2_abab(b,c,l,i) u1_bb(a,j) m2_abab(l,k,b,c) 
@@ -9647,7 +9647,7 @@ namespace hilbert {
                     tempPerm_bbbb_ooov("i,j,k,a") += tempArray[294]("k,j") * s1_bb("a,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ooov += -0.500000 P(i,j) t1_bb(a,j) t2_abab(c,b,l,i) m2_abab(l,k,c,b) s0 
                     // +               -0.500000 P(i,j) t1_bb(a,j) t2_abab(b,c,l,i) m2_abab(l,k,b,c) s0 
@@ -9660,7 +9660,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= tempArray[294]("l,j") * s0 * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovo += -0.500000 t2_abab(c,b,k,j) m2_abab(k,l,c,b) s1_aa(a,i) 
                     // +               -0.500000 t2_abab(b,c,k,j) m2_abab(k,l,b,c) s1_aa(a,i) 
@@ -9678,7 +9678,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= s1_bb("a,m") * tempArray[294]("m,i") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += -0.500000 d_bb(j,l) t1_bb(a,m) t2_abab(c,b,k,i) m2_abab(k,m,c,b) s0 
                     // +               -0.500000 d_bb(j,l) t1_bb(a,m) t2_abab(b,c,k,i) m2_abab(k,m,b,c) s0 
@@ -9686,7 +9686,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= tempArray[294]("m,i") * t1_bb("a,m") * s0 * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 0.500000 d_bb(i,l) r0 t2_abab(c,b,k,j) u1_bb(a,m) m2_abab(k,m,c,b) 
                     // +               0.500000 d_bb(i,l) r0 t2_abab(b,c,k,j) u1_bb(a,m) m2_abab(k,m,b,c) 
@@ -9694,7 +9694,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += r0 * u1_bb("a,m") * tempArray[294]("m,j") * Id_blks["bb_oo"]("i,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 0.500000 d_bb(i,l) t1_bb(a,m) t2_abab(c,b,k,j) m2_abab(k,m,c,b) s0 
                     // +               0.500000 d_bb(i,l) t1_bb(a,m) t2_abab(b,c,k,j) m2_abab(k,m,b,c) s0 
@@ -9702,7 +9702,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += tempArray[294]("m,j") * t1_bb("a,m") * s0 * Id_blks["bb_oo"]("i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 0.500000 d_bb(i,l) t2_abab(c,b,k,j) m2_abab(k,m,c,b) s1_bb(a,m) 
                     // +               0.500000 d_bb(i,l) t2_abab(b,c,k,j) m2_abab(k,m,b,c) s1_bb(a,m) 
@@ -9715,7 +9715,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= r0 * u1_bb("a,m") * tempArray[294]("m,i") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovo += 0.500000 P(i,j) t1_bb(a,j) t2_abab(c,b,k,i) m2_abab(k,l,c,b) s0 
                     // +               0.500000 P(i,j) t1_bb(a,j) t2_abab(b,c,k,i) m2_abab(k,l,b,c) s0 
@@ -9723,7 +9723,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovo("i,j,a,l") += tempArray[294]("l,i") * t1_bb("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovo += -0.500000 P(i,j) t2_abab(c,b,k,j) m2_abab(k,l,c,b) s1_bb(a,i) 
                     // +               -0.500000 P(i,j) t2_abab(b,c,k,j) m2_abab(k,l,b,c) s1_bb(a,i) 
@@ -9736,7 +9736,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovo("i,j,a,l") += r0 * tempArray[294]("l,i") * u1_bb("a,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_aa(a,i) t1_bb(b,l) t2_abab(d,c,k,j) m2_abab(k,l,d,c) s0 
                     // +               -0.500000 t1_aa(a,i) t1_bb(b,l) t2_abab(c,d,k,j) m2_abab(k,l,c,d) s0 
@@ -9744,7 +9744,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[294]("l,j") * t1_bb("b,l") * s0 * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_bb(b,l) t2_abab(d,c,k,j) m2_abab(k,l,d,c) s1_aa(a,i) 
                     // +               -0.500000 t1_bb(b,l) t2_abab(c,d,k,j) m2_abab(k,l,c,d) s1_aa(a,i) 
@@ -9752,7 +9752,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t1_bb("b,l") * tempArray[294]("l,j") * s1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t2_abab(d,c,k,j) u2_abab(a,b,i,l) m2_abab(k,l,d,c) 
                     // +               -0.500000 r0 t2_abab(c,d,k,j) u2_abab(a,b,i,l) m2_abab(k,l,c,d) 
@@ -9760,7 +9760,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * u2_abab("a,b,i,l") * tempArray[294]("l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r1_aa(a,i) t2_abab(d,c,k,j) u1_bb(b,l) m2_abab(k,l,d,c) 
                     // +               -0.500000 r1_aa(a,i) t2_abab(c,d,k,j) u1_bb(b,l) m2_abab(k,l,c,d) 
@@ -9773,7 +9773,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r1_bb("b,k") * tempArray[294]("k,j") * u1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t2_abab(d,c,k,j) m2_abab(k,l,d,c) s2_abab(a,b,i,l) 
                     // +               -0.500000 t2_abab(c,d,k,j) m2_abab(k,l,c,d) s2_abab(a,b,i,l) 
@@ -9781,7 +9781,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[294]("l,j") * s2_abab("a,b,i,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t2_abab(a,b,i,l) t2_abab(d,c,k,j) m2_abab(k,l,d,c) s0 
                     // +               -0.500000 t2_abab(a,b,i,l) t2_abab(c,d,k,j) m2_abab(k,l,c,d) s0 
@@ -9789,7 +9789,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[294]("l,j") * s0 * t2_abab("a,b,i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t1_aa(a,i) t2_abab(d,c,k,j) u1_bb(b,l) m2_abab(k,l,d,c) 
                     // +               -0.500000 r0 t1_aa(a,i) t2_abab(c,d,k,j) u1_bb(b,l) m2_abab(k,l,c,d) 
@@ -9823,7 +9823,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) t2_bbbb(a,b,l,j) t2_abab(d,c,k,i) m2_abab(k,l,d,c) s0 
                     // +               -0.500000 P(i,j) t2_bbbb(a,b,l,j) t2_abab(c,d,k,i) m2_abab(k,l,c,d) s0 
@@ -9831,7 +9831,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") = -1.0 * tempArray[294]("l,i") * t2_bbbb("a,b,l,j") * s0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) r0 t2_abab(d,c,k,i) u2_bbbb(a,b,l,j) m2_abab(k,l,d,c) 
                     // +               -0.500000 P(i,j) r0 t2_abab(c,d,k,i) u2_bbbb(a,b,l,j) m2_abab(k,l,c,d) 
@@ -9858,7 +9858,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) r0 t1_bb(b,l) t2_abab(d,c,k,i) u1_bb(a,j) m2_abab(k,l,d,c) 
                     // +               0.500000 P(i,j) P(a,b) r0 t1_bb(b,l) t2_abab(c,d,k,i) u1_bb(a,j) m2_abab(k,l,c,d) 
@@ -9866,7 +9866,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") = r0 * tempArray[294]("l,i") * t1_bb("b,l") * u1_bb("a,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(b,l) t2_abab(d,c,k,i) m2_abab(k,l,d,c) s0 
                     // +               0.500000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(b,l) t2_abab(c,d,k,i) m2_abab(k,l,c,d) s0 
@@ -9874,7 +9874,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[294]("l,i") * t1_bb("b,l") * t1_bb("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) t1_bb(a,l) t2_abab(d,c,k,j) m2_abab(k,l,d,c) s1_bb(b,i) 
                     // +               0.500000 P(i,j) P(a,b) t1_bb(a,l) t2_abab(c,d,k,j) m2_abab(k,l,c,d) s1_bb(b,i) 
@@ -9903,14 +9903,14 @@ namespace hilbert {
                 }
                 tempArray[294].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[295] += 1.000000 m2_abab("k,m,b,a") t2_abab("b,a,i,m") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
                     tempArray[295]("k,i") = m2_abab("k,m,b,a") * t2_abab("b,a,i,m");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oooo += -0.500000 d_aa(j,l) t2_abab(b,a,i,m) m2_abab(k,m,b,a) s0 
                     // +               -0.500000 d_aa(j,l) t2_abab(a,b,i,m) m2_abab(k,m,a,b) s0 
@@ -9938,7 +9938,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oooo"]("i,j,k,l") -= tempArray[295]("k,i") * s0 * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 0.500000 d_aa(j,k) r0 t2_abab(c,b,i,l) u1_aa(a,m) m2_abab(m,l,c,b) 
                     // +               0.500000 d_aa(j,k) r0 t2_abab(b,c,i,l) u1_aa(a,m) m2_abab(m,l,b,c) 
@@ -9946,7 +9946,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += r0 * u1_aa("a,m") * tempArray[295]("m,i") * Id_blks["aa_oo"]("j,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -0.500000 d_aa(i,k) t1_aa(a,m) t2_abab(c,b,j,l) m2_abab(m,l,c,b) s0 
                     // +               -0.500000 d_aa(i,k) t1_aa(a,m) t2_abab(b,c,j,l) m2_abab(m,l,b,c) s0 
@@ -9954,7 +9954,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= tempArray[295]("m,j") * t1_aa("a,m") * s0 * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 0.500000 d_aa(j,k) t2_abab(c,b,i,l) m2_abab(m,l,c,b) s1_aa(a,m) 
                     // +               0.500000 d_aa(j,k) t2_abab(b,c,i,l) m2_abab(m,l,b,c) s1_aa(a,m) 
@@ -9972,7 +9972,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= r0 * u1_aa("a,m") * tempArray[295]("m,j") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 0.500000 d_aa(j,k) t1_aa(a,m) t2_abab(c,b,i,l) m2_abab(m,l,c,b) s0 
                     // +               0.500000 d_aa(j,k) t1_aa(a,m) t2_abab(b,c,i,l) m2_abab(m,l,b,c) s0 
@@ -9985,7 +9985,7 @@ namespace hilbert {
                     tempPerm_aaaa_ooov("i,j,k,a") -= tempArray[295]("k,i") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ooov += -0.500000 P(i,j) r0 t2_abab(c,b,i,l) u1_aa(a,j) m2_abab(k,l,c,b) 
                     // +               -0.500000 P(i,j) r0 t2_abab(b,c,i,l) u1_aa(a,j) m2_abab(k,l,b,c) 
@@ -10008,7 +10008,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= tempArray[295]("k,i") * s1_bb("a,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ooov += -0.500000 t1_bb(a,j) t2_abab(c,b,i,l) m2_abab(k,l,c,b) s0 
                     // +               -0.500000 t1_bb(a,j) t2_abab(b,c,i,l) m2_abab(k,l,b,c) s0 
@@ -10016,7 +10016,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= tempArray[295]("k,i") * s0 * t1_bb("a,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -0.500000 d_aa(j,l) r0 t2_abab(c,b,i,k) u1_aa(a,m) m2_abab(m,k,c,b) 
                     // +               -0.500000 d_aa(j,l) r0 t2_abab(b,c,i,k) u1_aa(a,m) m2_abab(m,k,b,c) 
@@ -10024,7 +10024,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= r0 * u1_aa("a,m") * tempArray[295]("m,i") * Id_blks["aa_oo"]("j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += 0.500000 d_aa(i,l) t1_aa(a,m) t2_abab(c,b,j,k) m2_abab(m,k,c,b) s0 
                     // +               0.500000 d_aa(i,l) t1_aa(a,m) t2_abab(b,c,j,k) m2_abab(m,k,b,c) s0 
@@ -10037,7 +10037,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= tempArray[295]("m,i") * t1_aa("a,m") * s0 * Id_blks["aa_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -0.500000 d_aa(j,l) t2_abab(c,b,i,k) m2_abab(m,k,c,b) s1_aa(a,m) 
                     // +               -0.500000 d_aa(j,l) t2_abab(b,c,i,k) m2_abab(m,k,b,c) s1_aa(a,m) 
@@ -10055,7 +10055,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += r0 * u1_aa("a,m") * tempArray[295]("m,j") * Id_blks["aa_oo"]("i,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovo += 0.500000 P(i,j) t1_aa(a,j) t2_abab(c,b,i,k) m2_abab(l,k,c,b) s0 
                     // +               0.500000 P(i,j) t1_aa(a,j) t2_abab(b,c,i,k) m2_abab(l,k,b,c) s0 
@@ -10063,7 +10063,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovo("i,j,a,l") += tempArray[295]("l,i") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovo += 0.500000 P(i,j) r0 t2_abab(c,b,i,k) u1_aa(a,j) m2_abab(l,k,c,b) 
                     // +               0.500000 P(i,j) r0 t2_abab(b,c,i,k) u1_aa(a,j) m2_abab(l,k,b,c) 
@@ -10081,7 +10081,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= r0 * u1_aa("a,m") * tempArray[295]("m,i") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovo += -0.500000 d_bb(j,l) t1_aa(a,m) t2_abab(c,b,i,k) m2_abab(m,k,c,b) s0 
                     // +               -0.500000 d_bb(j,l) t1_aa(a,m) t2_abab(b,c,i,k) m2_abab(m,k,b,c) s0 
@@ -10089,7 +10089,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= tempArray[295]("m,i") * t1_aa("a,m") * s0 * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovo += -0.500000 d_bb(j,l) t2_abab(c,b,i,k) m2_abab(m,k,c,b) s1_aa(a,m) 
                     // +               -0.500000 d_bb(j,l) t2_abab(b,c,i,k) m2_abab(m,k,b,c) s1_aa(a,m) 
@@ -10113,7 +10113,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) t2_abab(d,c,j,k) m2_abab(l,k,d,c) s2_aaaa(a,b,l,i) 
                     // +               0.500000 P(i,j) t2_abab(c,d,j,k) m2_abab(l,k,c,d) s2_aaaa(a,b,l,i) 
@@ -10121,7 +10121,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") = tempArray[295]("l,j") * s2_aaaa("a,b,l,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) t2_aaaa(a,b,l,j) t2_abab(d,c,i,k) m2_abab(l,k,d,c) s0 
                     // +               -0.500000 P(i,j) t2_aaaa(a,b,l,j) t2_abab(c,d,i,k) m2_abab(l,k,c,d) s0 
@@ -10129,7 +10129,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= tempArray[295]("l,i") * t2_aaaa("a,b,l,j") * s0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) r0 t2_abab(d,c,i,k) u2_aaaa(a,b,l,j) m2_abab(l,k,d,c) 
                     // +               -0.500000 P(i,j) r0 t2_abab(c,d,i,k) u2_aaaa(a,b,l,j) m2_abab(l,k,c,d) 
@@ -10151,7 +10151,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(b,l) t2_abab(d,c,i,k) m2_abab(l,k,d,c) s0 
                     // +               0.500000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(b,l) t2_abab(c,d,i,k) m2_abab(l,k,c,d) s0 
@@ -10159,7 +10159,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") = tempArray[295]("l,i") * t1_aa("b,l") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) r0 t1_aa(b,l) t2_abab(d,c,i,k) u1_aa(a,j) m2_abab(l,k,d,c) 
                     // +               0.500000 P(i,j) P(a,b) r0 t1_aa(b,l) t2_abab(c,d,i,k) u1_aa(a,j) m2_abab(l,k,c,d) 
@@ -10197,7 +10197,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t1_aa("a,l") * tempArray[295]("l,i") * s1_bb("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t2_abab(d,c,i,k) m2_abab(l,k,d,c) s2_abab(a,b,l,j) 
                     // +               -0.500000 t2_abab(c,d,i,k) m2_abab(l,k,c,d) s2_abab(a,b,l,j) 
@@ -10210,7 +10210,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * u2_abab("a,b,l,j") * tempArray[295]("l,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_bb(b,j) t2_abab(d,c,i,k) m2_abab(l,k,d,c) s1_aa(a,l) 
                     // +               -0.500000 t1_bb(b,j) t2_abab(c,d,i,k) m2_abab(l,k,c,d) s1_aa(a,l) 
@@ -10228,7 +10228,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u1_aa("a,l") * tempArray[295]("l,i") * r1_bb("b,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t2_abab(a,b,l,j) t2_abab(d,c,i,k) m2_abab(l,k,d,c) s0 
                     // +               -0.500000 t2_abab(a,b,l,j) t2_abab(c,d,i,k) m2_abab(l,k,c,d) s0 
@@ -10236,7 +10236,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[295]("l,i") * s0 * t2_abab("a,b,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r1_aa(a,k) t2_abab(d,c,i,l) u1_bb(b,j) m2_abab(k,l,d,c) 
                     // +               -0.500000 r1_aa(a,k) t2_abab(c,d,i,l) u1_bb(b,j) m2_abab(k,l,c,d) 
@@ -10249,7 +10249,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * t1_aa("a,l") * tempArray[295]("l,i") * u1_bb("b,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_bb(b,j) t1_aa(a,l) t2_abab(d,c,i,k) m2_abab(l,k,d,c) s0 
                     // +               -0.500000 t1_bb(b,j) t1_aa(a,l) t2_abab(c,d,i,k) m2_abab(l,k,c,d) s0 
@@ -10258,42 +10258,42 @@ namespace hilbert {
                 }
                 tempArray[295].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[296] += 1.000000 m2_aaaa("k,l,a,b") t1_aa("a,j") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
                     tempArray[296]("b,k,l,j") = m2_aaaa("k,l,a,b") * t1_aa("a,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oooo += -1.000000 t1_aa(b,j) t1_aa(a,i) m2_aaaa(k,l,b,a) s0 
                     // flops: o4v1: 1, o4v0: 1, o0v0: 1 | mem: o4v0: 2, o0v0: 1, 
                     RDM_blks_["D2_aaaa_oooo"]("i,j,k,l") -= tempArray[296]("a,k,l,j") * s0 * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oooo += -1.000000 P(i,j) t1_aa(a,j) m2_aaaa(k,l,a,b) s1_aa(b,i) 
                     // flops: o4v1: 1, o4v0: 1 | mem: o4v0: 2, 
                     tempPerm_aaaa_oooo("i,j,k,l") = -1.0 * tempArray[296]("b,k,l,j") * s1_aa("b,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -0.500000 d_aa(i,k) t1_aa(b,j) m2_aaaa(m,l,b,c) s2_aaaa(a,c,m,l) 
                     // flops: o3v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= 0.500000 * s2_aaaa("a,c,m,l") * tempArray[296]("c,m,l,j") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 1.000000 t1_aa(a,l) t1_aa(c,j) t1_aa(b,i) m2_aaaa(l,k,c,b) s0 
                     // flops: o4v1: 2, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o4v0: 1, o0v0: 1, 
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += tempArray[296]("b,l,k,j") * t1_aa("b,i") * s0 * t1_aa("a,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 1.000000 r0 t1_aa(c,j) t1_aa(b,i) u1_aa(a,l) m2_aaaa(l,k,c,b) 
                     // flops: o4v1: 2, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o4v0: 1, o0v0: 1, 
@@ -10304,28 +10304,28 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += t1_aa("b,i") * tempArray[296]("b,l,k,j") * s1_aa("a,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -0.500000 d_aa(i,k) t1_aa(c,j) t2_aaaa(a,b,l,m) m2_aaaa(l,m,c,b) s0 
                     // flops: o3v2: 1, o3v1: 2, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= 0.500000 * tempArray[296]("b,l,m,j") * t2_aaaa("a,b,l,m") * s0 * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 0.500000 d_aa(j,k) t1_aa(b,i) m2_aaaa(m,l,b,c) s2_aaaa(a,c,m,l) 
                     // flops: o3v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += 0.500000 * s2_aaaa("a,c,m,l") * tempArray[296]("c,m,l,i") * Id_blks["aa_oo"]("j,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 0.500000 d_aa(j,k) t1_aa(c,i) t2_aaaa(a,b,l,m) m2_aaaa(l,m,c,b) s0 
                     // flops: o3v2: 1, o3v1: 2, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += 0.500000 * tempArray[296]("b,l,m,i") * t2_aaaa("a,b,l,m") * s0 * Id_blks["aa_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ooov += 1.000000 P(i,j) r1_aa(b,i) t1_aa(c,j) u1_aa(a,l) m2_aaaa(l,k,c,b) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
@@ -10336,7 +10336,7 @@ namespace hilbert {
                     tempPerm_aaaa_ooov("i,j,k,a") += tempArray[296]("c,l,k,j") * s1_aa("c,i") * t1_aa("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovo += 0.500000 d_aa(i,l) t1_aa(b,j) m2_aaaa(m,k,b,c) s2_aaaa(a,c,m,k) 
                     // flops: o3v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -10347,28 +10347,28 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= 0.500000 * s2_aaaa("a,c,m,k") * tempArray[296]("c,m,k,i") * Id_blks["aa_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -1.000000 t1_aa(c,j) t1_aa(b,i) m2_aaaa(k,l,c,b) s1_aa(a,k) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= t1_aa("b,i") * tempArray[296]("b,k,l,j") * s1_aa("a,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += 0.500000 d_aa(i,l) t1_aa(c,j) t2_aaaa(a,b,k,m) m2_aaaa(k,m,c,b) s0 
                     // flops: o3v2: 1, o3v1: 2, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += 0.500000 * tempArray[296]("b,k,m,j") * t2_aaaa("a,b,k,m") * s0 * Id_blks["aa_oo"]("i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -1.000000 r0 t1_aa(c,j) t1_aa(b,i) u1_aa(a,k) m2_aaaa(k,l,c,b) 
                     // flops: o4v1: 2, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o4v0: 1, o0v0: 1, 
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= r0 * t1_aa("b,i") * tempArray[296]("b,k,l,j") * u1_aa("a,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -1.000000 t1_aa(a,k) t1_aa(c,j) t1_aa(b,i) m2_aaaa(k,l,c,b) s0 
                     // flops: o4v1: 2, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o4v0: 1, o0v0: 1, 
@@ -10379,7 +10379,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= 0.500000 * tempArray[296]("b,k,m,i") * t2_aaaa("a,b,k,m") * s0 * Id_blks["aa_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovo += -1.000000 P(i,j) t1_aa(a,k) t1_aa(b,j) m2_aaaa(k,l,b,c) s1_aa(c,i) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
@@ -10390,21 +10390,21 @@ namespace hilbert {
                     tempPerm_aaaa_oovo("i,j,a,l") -= r1_aa("b,i") * tempArray[296]("b,k,l,j") * u1_aa("a,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovo += -0.500000 d_bb(j,l) t1_aa(b,i) m2_aaaa(m,k,b,c) s2_aaaa(a,c,m,k) 
                     // flops: o3v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= 0.500000 * s2_aaaa("a,c,m,k") * tempArray[296]("c,m,k,i") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovo += -0.500000 d_bb(j,l) t1_aa(c,i) t2_aaaa(a,b,k,m) m2_aaaa(k,m,c,b) s0 
                     // flops: o3v2: 1, o3v1: 2, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= 0.500000 * tempArray[296]("b,k,m,i") * t2_aaaa("a,b,k,m") * s0 * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovv += -0.500000 t1_aa(d,j) t1_aa(c,i) m2_aaaa(l,k,d,c) s2_aaaa(a,b,l,k) 
                     // flops: o4v2: 1, o4v1: 1, o2v2: 1 | mem: o2v2: 2, o4v0: 1, 
@@ -10415,7 +10415,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") -= 0.500000 * r0 * t1_aa("c,i") * tempArray[296]("c,k,l,j") * u2_aaaa("a,b,k,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovv += -0.500000 t1_aa(d,j) t1_aa(c,i) t2_aaaa(a,b,k,l) m2_aaaa(k,l,d,c) s0 
                     // flops: o4v2: 1, o4v1: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o4v0: 1, o0v0: 1, 
@@ -10442,7 +10442,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(a,b) r1_aa(b,k) t1_aa(d,j) t1_aa(c,i) u1_aa(a,l) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
@@ -10471,14 +10471,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) t1_aa(c,j) t2_aaaa(a,b,k,l) m2_aaaa(k,l,c,d) s1_aa(d,i) 
                     // flops: o4v2: 1, o4v1: 1, o2v2: 1 | mem: o2v2: 2, o4v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") = -0.500000 * tempArray[296]("d,k,l,j") * s1_aa("d,i") * t2_aaaa("a,b,k,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) r1_aa(c,i) t1_aa(d,j) u2_aaaa(a,b,k,l) m2_aaaa(k,l,d,c) 
                     // flops: o4v2: 1, o4v1: 1, o2v2: 1 | mem: o2v2: 2, o4v0: 1, 
@@ -10489,7 +10489,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += r1_aa("c,k") * tempArray[296]("c,k,l,i") * u2_aaaa("a,b,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) t1_aa(c,j) t2_aaaa(a,b,k,i) m2_aaaa(l,k,c,d) s1_aa(d,l) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
@@ -10514,7 +10514,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r1_aa(c,i) t1_aa(b,k) t1_aa(d,j) u1_aa(a,l) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
@@ -10537,70 +10537,70 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[296]("c,k,l,j") * r2_aaaa("b,c,k,i") * u1_aa("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(c,i) m2_aaaa(l,k,c,d) s2_aaaa(b,d,l,k) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") += 0.500000 * tempArray[296]("d,l,k,i") * s2_aaaa("b,d,l,k") * t1_aa("a,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) r0 t1_aa(d,i) t2_aaaa(b,c,k,l) u1_aa(a,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") += 0.500000 * r0 * tempArray[296]("c,k,l,i") * t2_aaaa("b,c,k,l") * u1_aa("a,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(d,i) t2_aaaa(b,c,k,l) m2_aaaa(k,l,d,c) s0 
                     // flops: o3v2: 1, o2v2: 2, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") += 0.500000 * tempArray[296]("c,k,l,i") * t2_aaaa("b,c,k,l") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t1_aa(d,i) t2_aaaa(a,c,k,l) u1_bb(b,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= 0.500000 * r0 * t2_aaaa("a,c,k,l") * tempArray[296]("c,k,l,i") * u1_bb("b,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_bb(b,j) t1_aa(d,i) t2_aaaa(a,c,k,l) m2_aaaa(k,l,d,c) s0 
                     // flops: o3v2: 1, o2v2: 2, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= 0.500000 * tempArray[296]("c,k,l,i") * t2_aaaa("a,c,k,l") * s0 * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r2_aaaa(a,c,k,l) t1_aa(d,i) u1_bb(b,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= 0.500000 * r2_aaaa("a,c,k,l") * tempArray[296]("c,k,l,i") * u1_bb("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(c,k) t1_aa(d,i) u2_abab(a,b,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[296]("c,k,l,i") * r1_aa("c,k") * u2_abab("a,b,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r2_abab(c,b,k,j) t1_aa(d,i) u1_aa(a,l) m2_aaaa(k,l,d,c) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r2_abab("c,b,k,j") * tempArray[296]("c,k,l,i") * u1_aa("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_bb(b,j) t1_aa(c,i) m2_aaaa(l,k,c,d) s2_aaaa(a,d,l,k) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= 0.500000 * s2_aaaa("a,d,l,k") * tempArray[296]("d,l,k,i") * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 t1_aa(d,i) t2_abab(c,b,k,j) m2_aaaa(l,k,d,c) s1_aa(a,l) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -10616,63 +10616,63 @@ namespace hilbert {
                 }
                 tempArray[296].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[297] += 1.000000 t1_bb("a,j") m2_bbbb("k,l,a,b") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
                     tempArray[297]("b,j,k,l") = t1_bb("a,j") * m2_bbbb("k,l,a,b");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oooo += -1.000000 t1_bb(b,j) t1_bb(a,i) m2_bbbb(k,l,b,a) s0 
                     // flops: o4v1: 1, o4v0: 1, o0v0: 1 | mem: o4v0: 2, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oooo"]("i,j,k,l") -= tempArray[297]("a,j,k,l") * s0 * t1_bb("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oooo += -1.000000 P(i,j) t1_bb(a,j) m2_bbbb(k,l,a,b) s1_bb(b,i) 
                     // flops: o4v1: 1, o4v0: 1 | mem: o4v0: 2, 
                     tempPerm_bbbb_oooo("i,j,k,l") = -1.0 * tempArray[297]("b,j,k,l") * s1_bb("b,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ooov += -0.500000 d_aa(i,k) t1_bb(c,j) t2_bbbb(a,b,l,m) m2_bbbb(l,m,c,b) s0 
                     // flops: o3v2: 1, o3v1: 2, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= 0.500000 * tempArray[297]("b,j,l,m") * t2_bbbb("a,b,l,m") * s0 * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ooov += -0.500000 d_aa(i,k) t1_bb(b,j) m2_bbbb(m,l,b,c) s2_bbbb(a,c,m,l) 
                     // flops: o3v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= 0.500000 * s2_bbbb("a,c,m,l") * tempArray[297]("c,j,m,l") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 0.500000 d_bb(j,k) t1_bb(c,i) t2_bbbb(a,b,l,m) m2_bbbb(l,m,c,b) s0 
                     // flops: o3v2: 1, o3v1: 2, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += 0.500000 * tempArray[297]("b,i,l,m") * t2_bbbb("a,b,l,m") * s0 * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.500000 d_bb(i,k) t1_bb(b,j) m2_bbbb(m,l,b,c) s2_bbbb(a,c,m,l) 
                     // flops: o3v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= 0.500000 * s2_bbbb("a,c,m,l") * tempArray[297]("c,j,m,l") * Id_blks["bb_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 1.000000 r0 t1_bb(c,j) t1_bb(b,i) u1_bb(a,l) m2_bbbb(l,k,c,b) 
                     // flops: o4v1: 2, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o4v0: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += r0 * t1_bb("b,i") * tempArray[297]("b,j,l,k") * u1_bb("a,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 1.000000 t1_bb(a,l) t1_bb(c,j) t1_bb(b,i) m2_bbbb(l,k,c,b) s0 
                     // flops: o4v1: 2, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o4v0: 1, o0v0: 1, 
@@ -10683,21 +10683,21 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= 0.500000 * tempArray[297]("b,j,l,m") * t2_bbbb("a,b,l,m") * s0 * Id_blks["bb_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 1.000000 t1_bb(c,j) t1_bb(b,i) m2_bbbb(l,k,c,b) s1_bb(a,l) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += t1_bb("b,i") * tempArray[297]("b,j,l,k") * s1_bb("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 0.500000 d_bb(j,k) t1_bb(b,i) m2_bbbb(m,l,b,c) s2_bbbb(a,c,m,l) 
                     // flops: o3v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += 0.500000 * s2_bbbb("a,c,m,l") * tempArray[297]("c,i,m,l") * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ooov += 1.000000 P(i,j) t1_bb(a,l) t1_bb(b,j) m2_bbbb(l,k,b,c) s1_bb(c,i) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
@@ -10708,21 +10708,21 @@ namespace hilbert {
                     tempPerm_bbbb_ooov("i,j,k,a") += r1_bb("b,i") * tempArray[297]("b,j,l,k") * u1_bb("a,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 0.500000 d_bb(i,l) t1_bb(c,j) t2_bbbb(a,b,k,m) m2_bbbb(k,m,c,b) s0 
                     // flops: o3v2: 1, o3v1: 2, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += 0.500000 * tempArray[297]("b,j,k,m") * t2_bbbb("a,b,k,m") * s0 * Id_blks["bb_oo"]("i,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 0.500000 d_bb(i,l) t1_bb(b,j) m2_bbbb(m,k,b,c) s2_bbbb(a,c,m,k) 
                     // flops: o3v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += 0.500000 * s2_bbbb("a,c,m,k") * tempArray[297]("c,j,m,k") * Id_blks["bb_oo"]("i,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += -0.500000 d_bb(j,l) t1_bb(c,i) t2_bbbb(a,b,k,m) m2_bbbb(k,m,c,b) s0 
                     // flops: o3v2: 1, o3v1: 2, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
@@ -10733,21 +10733,21 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= tempArray[297]("b,j,k,l") * t1_bb("b,i") * s0 * t1_bb("a,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += -1.000000 r0 t1_bb(c,j) t1_bb(b,i) u1_bb(a,k) m2_bbbb(k,l,c,b) 
                     // flops: o4v1: 2, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o4v0: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= r0 * t1_bb("b,i") * tempArray[297]("b,j,k,l") * u1_bb("a,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovo += -0.500000 d_bb(j,l) t1_bb(b,i) m2_bbbb(m,k,b,c) s2_bbbb(a,c,m,k) 
                     // flops: o3v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= 0.500000 * s2_bbbb("a,c,m,k") * tempArray[297]("c,i,m,k") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += -1.000000 t1_bb(c,j) t1_bb(b,i) m2_bbbb(k,l,c,b) s1_bb(a,k) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
@@ -10766,14 +10766,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += s1_bb("d,l") * tempArray[297]("d,j,l,k") * t2_abab("a,b,i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_bb(c,k) t1_bb(d,j) u2_abab(a,b,i,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[297]("c,j,k,l") * r1_bb("c,k") * u2_abab("a,b,i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t1_bb(d,j) t2_bbbb(b,c,k,l) u1_aa(a,i) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -10788,42 +10788,42 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= 0.500000 * r2_bbbb("b,c,k,l") * tempArray[297]("c,j,k,l") * u1_aa("a,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_aa(a,i) t1_bb(d,j) t2_bbbb(b,c,k,l) m2_bbbb(k,l,d,c) s0 
                     // flops: o3v2: 1, o2v2: 2, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= 0.500000 * tempArray[297]("c,j,k,l") * t2_bbbb("b,c,k,l") * s0 * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 t1_bb(d,j) t2_abab(a,c,i,k) m2_bbbb(l,k,d,c) s1_bb(b,l) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t2_abab("a,c,i,k") * tempArray[297]("c,j,l,k") * s1_bb("b,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_aa(a,i) t1_bb(c,j) m2_bbbb(l,k,c,d) s2_bbbb(b,d,l,k) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= 0.500000 * s2_bbbb("b,d,l,k") * tempArray[297]("d,j,l,k") * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_bb(d,j) t2_bbbb(b,c,k,l) m2_bbbb(k,l,d,c) s1_aa(a,i) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= 0.500000 * t2_bbbb("b,c,k,l") * tempArray[297]("c,j,k,l") * s1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovv += -0.500000 t1_bb(d,j) t1_bb(c,i) m2_bbbb(l,k,d,c) s2_bbbb(a,b,l,k) 
                     // flops: o4v2: 1, o4v1: 1, o2v2: 1 | mem: o2v2: 2, o4v0: 1, 
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") -= 0.500000 * t1_bb("c,i") * tempArray[297]("c,j,l,k") * s2_bbbb("a,b,l,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovv += -0.500000 t1_bb(d,j) t1_bb(c,i) t2_bbbb(a,b,k,l) m2_bbbb(k,l,d,c) s0 
                     // flops: o4v2: 1, o4v1: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o4v0: 1, o0v0: 1, 
@@ -10834,7 +10834,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += tempArray[297]("c,j,k,l") * t1_bb("c,i") * t1_bb("a,l") * s0 * t1_bb("b,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovv += -0.500000 r0 t1_bb(d,j) t1_bb(c,i) u2_bbbb(a,b,k,l) m2_bbbb(k,l,d,c) 
                     // flops: o4v2: 1, o4v1: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o4v0: 1, o0v0: 1, 
@@ -10857,7 +10857,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(a,b) r1_bb(b,k) t1_bb(d,j) t1_bb(c,i) u1_bb(a,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
@@ -10886,7 +10886,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) t1_bb(c,j) t2_bbbb(a,b,k,i) m2_bbbb(l,k,c,d) s1_bb(d,l) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
@@ -10897,21 +10897,21 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") -= 0.500000 * tempArray[297]("d,j,k,l") * s1_bb("d,i") * t2_bbbb("a,b,k,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) r1_bb(c,k) t1_bb(d,i) u2_bbbb(a,b,l,j) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") += r1_bb("c,k") * tempArray[297]("c,i,k,l") * u2_bbbb("a,b,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) t1_bb(a,l) t1_bb(b,k) t1_bb(c,j) m2_bbbb(k,l,c,d) s1_bb(d,i) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[297]("d,j,k,l") * s1_bb("d,i") * t1_bb("a,l") * t1_bb("b,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) r1_bb(c,i) t1_bb(d,j) u2_bbbb(a,b,k,l) m2_bbbb(k,l,d,c) 
                     // flops: o4v2: 1, o4v1: 1, o2v2: 1 | mem: o2v2: 2, o4v0: 1, 
@@ -10932,7 +10932,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) r2_bbbb(b,c,k,l) t1_bb(d,i) u1_bb(a,j) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
@@ -10947,21 +10947,21 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") += 0.500000 * r0 * tempArray[297]("c,i,k,l") * t2_bbbb("b,c,k,l") * u1_bb("a,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(c,i) m2_bbbb(l,k,c,d) s2_bbbb(b,d,l,k) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") += 0.500000 * tempArray[297]("d,i,l,k") * s2_bbbb("b,d,l,k") * t1_bb("a,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(d,i) t2_bbbb(b,c,k,l) m2_bbbb(k,l,d,c) s0 
                     // flops: o3v2: 1, o2v2: 2, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") += 0.500000 * tempArray[297]("c,i,k,l") * t2_bbbb("b,c,k,l") * t1_bb("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) t1_bb(d,j) t2_bbbb(a,c,k,l) m2_bbbb(k,l,d,c) s1_bb(b,i) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
@@ -11202,14 +11202,14 @@ namespace hilbert {
                 }
                 tempArray[298].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[299] += 0.500000 m2_aaaa("m,k,b,a") t2_aaaa("b,a,m,i") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
                     tempArray[299]("k,i") = 0.500000 * m2_aaaa("m,k,b,a") * t2_aaaa("b,a,m,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oooo += -0.500000 d_aa(j,l) t2_aaaa(b,a,m,i) m2_aaaa(m,k,b,a) s0 
                     // flops: o4v0: 2, o0v0: 1 | mem: o4v0: 2, o0v0: 1, 
@@ -11240,7 +11240,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += tempArray[299]("m,i") * t1_aa("a,m") * s0 * Id_blks["aa_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 0.500000 d_aa(j,k) r0 t2_aaaa(c,b,l,i) u1_aa(a,m) m2_aaaa(l,m,c,b) 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
@@ -11255,28 +11255,28 @@ namespace hilbert {
                     tempPerm_aaaa_ooov("i,j,k,a") -= r0 * tempArray[299]("k,i") * u1_aa("a,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ooov += -0.500000 P(i,j) t1_aa(a,j) t2_aaaa(c,b,l,i) m2_aaaa(l,k,c,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     tempPerm_aaaa_ooov("i,j,k,a") -= tempArray[299]("k,i") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ooov += 0.500000 P(i,j) t2_aaaa(c,b,l,j) m2_aaaa(l,k,c,b) s1_aa(a,i) 
                     // flops: o3v1: 2 | mem: o3v1: 2, 
                     tempPerm_aaaa_ooov("i,j,k,a") += tempArray[299]("k,j") * s1_aa("a,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ooov += -0.500000 t1_bb(a,j) t2_aaaa(c,b,l,i) m2_aaaa(l,k,c,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= tempArray[299]("k,i") * s0 * t1_bb("a,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += -0.500000 r0 t2_aaaa(c,b,l,i) u1_bb(a,j) m2_aaaa(l,k,c,b) 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -11287,7 +11287,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= tempArray[299]("k,i") * s1_bb("a,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -0.500000 d_aa(j,l) t1_aa(a,m) t2_aaaa(c,b,k,i) m2_aaaa(k,m,c,b) s0 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
@@ -11298,7 +11298,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += tempArray[299]("m,j") * t1_aa("a,m") * s0 * Id_blks["aa_oo"]("i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -0.500000 d_aa(j,l) r0 t2_aaaa(c,b,k,i) u1_aa(a,m) m2_aaaa(k,m,c,b) 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
@@ -11309,14 +11309,14 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += r0 * u1_aa("a,m") * tempArray[299]("m,j") * Id_blks["aa_oo"]("i,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovo += 0.500000 P(i,j) t1_aa(a,j) t2_aaaa(c,b,k,i) m2_aaaa(k,l,c,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     tempPerm_aaaa_oovo("i,j,a,l") += tempArray[299]("l,i") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovo += -0.500000 P(i,j) t2_aaaa(c,b,k,j) m2_aaaa(k,l,c,b) s1_aa(a,i) 
                     // flops: o3v1: 2 | mem: o3v1: 2, 
@@ -11331,7 +11331,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= r0 * u1_aa("a,m") * tempArray[299]("m,i") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovo += -0.500000 d_bb(j,l) t1_aa(a,m) t2_aaaa(c,b,k,i) m2_aaaa(k,m,c,b) s0 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
@@ -11354,14 +11354,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) r0 t2_aaaa(d,c,k,i) u2_aaaa(a,b,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") = -1.0 * r0 * tempArray[299]("l,i") * u2_aaaa("a,b,l,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) t2_aaaa(a,b,l,j) t2_aaaa(d,c,k,i) m2_aaaa(k,l,d,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -11382,7 +11382,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) P(a,b) r0 t1_aa(b,j) t2_aaaa(d,c,k,i) u1_aa(a,l) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -11397,14 +11397,14 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[299]("l,j") * u1_aa("a,l") * r1_aa("b,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(b,l) t2_aaaa(d,c,k,i) m2_aaaa(k,l,d,c) s0 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[299]("l,i") * t1_aa("b,l") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) r0 t1_aa(b,l) t2_aaaa(d,c,k,i) u1_aa(a,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -11423,28 +11423,28 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * t1_aa("a,l") * tempArray[299]("l,i") * u1_bb("b,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t2_abab(a,b,l,j) t2_aaaa(d,c,k,i) m2_aaaa(k,l,d,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[299]("l,i") * s0 * t2_abab("a,b,l,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t2_aaaa(d,c,k,i) u2_abab(a,b,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * u2_abab("a,b,l,j") * tempArray[299]("l,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_aa(a,l) t2_aaaa(d,c,k,i) m2_aaaa(k,l,d,c) s1_bb(b,j) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t1_aa("a,l") * tempArray[299]("l,i") * s1_bb("b,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_bb(b,j) t1_aa(a,l) t2_aaaa(d,c,k,i) m2_aaaa(k,l,d,c) s0 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -11452,14 +11452,14 @@ namespace hilbert {
                 }
                 tempArray[299].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[300] += 0.500000 m2_bbbb("m,l,b,a") t2_bbbb("b,a,m,j") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
                     tempArray[300]("l,j") = 0.500000 * m2_bbbb("m,l,b,a") * t2_bbbb("b,a,m,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oooo += -0.500000 d_aa(i,k) t2_bbbb(b,a,m,j) m2_bbbb(m,l,b,a) s0 
                     // flops: o4v0: 2, o0v0: 1 | mem: o4v0: 2, o0v0: 1, 
@@ -11482,28 +11482,28 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oooo"]("i,j,k,l") -= tempArray[300]("l,j") * s0 * Id_blks["bb_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += -0.500000 d_aa(i,k) r0 t2_bbbb(c,b,l,j) u1_bb(a,m) m2_bbbb(l,m,c,b) 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= r0 * u1_bb("a,m") * tempArray[300]("m,j") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_ooov += -0.500000 d_aa(i,k) t1_bb(a,m) t2_bbbb(c,b,l,j) m2_bbbb(l,m,c,b) s0 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= tempArray[300]("m,j") * t1_bb("a,m") * s0 * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 0.500000 d_bb(j,k) r0 t2_bbbb(c,b,l,i) u1_bb(a,m) m2_bbbb(l,m,c,b) 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += r0 * u1_bb("a,m") * tempArray[300]("m,i") * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.500000 d_bb(i,k) t1_bb(a,m) t2_bbbb(c,b,l,j) m2_bbbb(l,m,c,b) s0 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
@@ -11514,21 +11514,21 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += tempArray[300]("m,i") * t1_bb("a,m") * s0 * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.500000 d_bb(i,k) r0 t2_bbbb(c,b,l,j) u1_bb(a,m) m2_bbbb(l,m,c,b) 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= r0 * u1_bb("a,m") * tempArray[300]("m,j") * Id_blks["bb_oo"]("i,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ooov += -0.500000 P(i,j) t1_bb(a,j) t2_bbbb(c,b,l,i) m2_bbbb(l,k,c,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     tempPerm_bbbb_ooov("i,j,k,a") -= tempArray[300]("k,i") * t1_bb("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ooov += -0.500000 P(i,j) r0 t2_bbbb(c,b,l,i) u1_bb(a,j) m2_bbbb(l,k,c,b) 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -11547,7 +11547,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= tempArray[300]("l,j") * s1_aa("a,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovo += -0.500000 t1_aa(a,i) t2_bbbb(c,b,k,j) m2_bbbb(k,l,c,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -11558,7 +11558,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= tempArray[300]("m,i") * t1_bb("a,m") * s0 * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 0.500000 d_bb(i,l) r0 t2_bbbb(c,b,k,j) u1_bb(a,m) m2_bbbb(k,m,c,b) 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
@@ -11569,14 +11569,14 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= r0 * u1_bb("a,m") * tempArray[300]("m,i") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 0.500000 d_bb(i,l) t1_bb(a,m) t2_bbbb(c,b,k,j) m2_bbbb(k,m,c,b) s0 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += tempArray[300]("m,j") * t1_bb("a,m") * s0 * Id_blks["bb_oo"]("i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovo += 0.500000 P(i,j) r0 t2_bbbb(c,b,k,i) u1_bb(a,j) m2_bbbb(k,l,c,b) 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -11587,42 +11587,42 @@ namespace hilbert {
                     tempPerm_bbbb_oovo("i,j,a,l") -= tempArray[300]("l,j") * s1_bb("a,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovo += 0.500000 P(i,j) t1_bb(a,j) t2_bbbb(c,b,k,i) m2_bbbb(k,l,c,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     tempPerm_bbbb_oovo("i,j,a,l") += tempArray[300]("l,i") * t1_bb("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_bb(b,l) t2_bbbb(d,c,k,j) m2_bbbb(k,l,d,c) s1_aa(a,i) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t1_bb("b,l") * tempArray[300]("l,j") * s1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t2_bbbb(d,c,k,j) u2_abab(a,b,i,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * u2_abab("a,b,i,l") * tempArray[300]("l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r1_aa(a,i) t2_bbbb(d,c,k,j) u1_bb(b,l) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u1_bb("b,l") * tempArray[300]("l,j") * r1_aa("a,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t2_abab(a,b,i,l) t2_bbbb(d,c,k,j) m2_bbbb(k,l,d,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[300]("l,j") * s0 * t2_abab("a,b,i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r0 t1_bb(b,l) t2_bbbb(d,c,k,j) u1_aa(a,i) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -11633,7 +11633,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * u1_bb("b,l") * tempArray[300]("l,j") * t1_aa("a,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 t1_aa(a,i) t1_bb(b,l) t2_bbbb(d,c,k,j) m2_bbbb(k,l,d,c) s0 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -11656,14 +11656,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) r0 t2_bbbb(d,c,k,i) u2_bbbb(a,b,l,j) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") = -1.0 * r0 * tempArray[300]("l,i") * u2_bbbb("a,b,l,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) t2_bbbb(a,b,l,j) t2_bbbb(d,c,k,i) m2_bbbb(k,l,d,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -11684,14 +11684,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(b,l) t2_bbbb(d,c,k,i) m2_bbbb(k,l,d,c) s0 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") = tempArray[300]("l,i") * t1_bb("b,l") * t1_bb("a,j") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) r1_bb(b,i) t2_bbbb(d,c,k,j) u1_bb(a,l) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -11711,21 +11711,21 @@ namespace hilbert {
                 }
                 tempArray[300].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[301] += 1.000000 t1_bb("a,i") m2_bbbb("k,l,b,a") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
                     tempArray[301]("b,i,k,l") = t1_bb("a,i") * m2_bbbb("k,l,b,a");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oooo += -1.000000 P(i,j) r0 t1_bb(a,i) u1_bb(b,j) m2_bbbb(k,l,b,a) 
                     // flops: o4v1: 1, o4v0: 1, o0v0: 1 | mem: o4v0: 2, o0v0: 1, 
                     tempPerm_bbbb_oooo("i,j,k,l") -= r0 * tempArray[301]("b,i,k,l") * u1_bb("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ooov += 0.500000 d_aa(i,k) r0 t1_bb(b,j) u2_bbbb(a,c,l,m) m2_bbbb(l,m,c,b) 
                     // flops: o3v2: 1, o3v1: 2, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
@@ -11740,7 +11740,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= 0.500000 * r0 * u2_bbbb("a,c,l,m") * tempArray[301]("c,i,l,m") * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ooov += 1.000000 P(i,j) r0 t1_bb(a,l) t1_bb(b,i) u1_bb(c,j) m2_bbbb(l,k,c,b) 
                     // flops: o4v1: 2, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o4v0: 1, o0v0: 1, 
@@ -11751,7 +11751,7 @@ namespace hilbert {
                     tempPerm_bbbb_ooov("i,j,k,a") += tempArray[301]("c,i,l,k") * u1_bb("c,j") * r1_bb("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovo += -1.000000 r0 t1_bb(b,j) u2_abab(a,c,i,k) m2_bbbb(k,l,c,b) 
                     // flops: o4v2: 1, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -11766,7 +11766,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= 0.500000 * r0 * u2_bbbb("a,c,k,m") * tempArray[301]("c,j,k,m") * Id_blks["bb_oo"]("i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovo += -1.000000 P(i,j) r1_bb(a,k) t1_bb(b,i) u1_bb(c,j) m2_bbbb(k,l,c,b) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
@@ -11777,7 +11777,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovo("i,j,a,l") -= r0 * tempArray[301]("c,i,k,l") * u1_bb("c,j") * t1_bb("a,k");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ovoo += 1.000000 t1_bb(b,i) m2_bbbb(k,l,a,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -11788,7 +11788,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_vooo"]("a,j,k,l") -= tempArray[301]("a,j,k,l") * s0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 r0 t1_aa(a,i) t1_bb(c,j) u2_bbbb(b,d,k,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -11815,7 +11815,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) r0 t1_bb(a,l) t1_bb(b,k) t1_bb(c,i) u1_bb(d,j) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, o0v0: 1, 
@@ -11844,14 +11844,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r1_bb(b,k) t1_bb(a,l) t1_bb(c,i) u1_bb(d,j) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") = tempArray[301]("d,i,k,l") * u1_bb("d,j") * r1_bb("b,k") * t1_bb("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) r0 t1_bb(b,j) t1_bb(c,i) u2_bbbb(a,d,k,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -11862,21 +11862,21 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") -= 0.500000 * tempArray[301]("d,j,k,l") * u2_bbbb("a,d,k,l") * r1_bb("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ovov += -1.000000 r0 t1_bb(c,i) u1_bb(b,k) m2_bbbb(k,j,a,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_bbbb_ovov"]("i,a,j,b") -= r0 * u1_bb("b,k") * tempArray[301]("a,i,k,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ovov += -1.000000 t1_bb(b,k) t1_bb(c,i) m2_bbbb(k,j,a,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_bbbb_ovov"]("i,a,j,b") -= tempArray[301]("a,i,k,j") * s0 * t1_bb("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ovov += -1.000000 t1_bb(c,i) m2_bbbb(k,j,a,c) s1_bb(b,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -11887,14 +11887,14 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_voov"]("a,i,j,b") += r0 * u1_bb("b,k") * tempArray[301]("a,i,k,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_voov += 1.000000 t1_bb(b,k) t1_bb(c,i) m2_bbbb(k,j,a,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_bbbb_voov"]("a,i,j,b") += tempArray[301]("a,i,k,j") * s0 * t1_bb("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_voov += 1.000000 t1_bb(c,i) m2_bbbb(k,j,a,c) s1_bb(b,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -11905,14 +11905,14 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ovvo"]("i,a,b,j") += r0 * u1_bb("b,k") * tempArray[301]("a,i,k,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_ovvo += 1.000000 t1_bb(b,k) t1_bb(c,i) m2_bbbb(k,j,a,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_bbbb_ovvo"]("i,a,b,j") += tempArray[301]("a,i,k,j") * s0 * t1_bb("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ovvo += 1.000000 t1_bb(c,i) m2_bbbb(k,j,a,c) s1_bb(b,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -11923,14 +11923,14 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_vovo"]("a,i,b,j") -= r0 * u1_bb("b,k") * tempArray[301]("a,i,k,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_vovo += -1.000000 t1_bb(b,k) t1_bb(c,i) m2_bbbb(k,j,a,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_bbbb_vovo"]("a,i,b,j") -= tempArray[301]("a,i,k,j") * s0 * t1_bb("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_vovo += -1.000000 t1_bb(c,i) m2_bbbb(k,j,a,c) s1_bb(b,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -11938,21 +11938,21 @@ namespace hilbert {
                 }
                 tempArray[301].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[302] += 1.000000 m2_aaaa("k,l,b,a") t1_aa("a,i") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
                     tempArray[302]("b,k,l,i") = m2_aaaa("k,l,b,a") * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oooo += -1.000000 P(i,j) r0 t1_aa(a,i) u1_aa(b,j) m2_aaaa(k,l,b,a) 
                     // flops: o4v1: 1, o4v0: 1, o0v0: 1 | mem: o4v0: 2, o0v0: 1, 
                     tempPerm_aaaa_oooo("i,j,k,l") -= r0 * tempArray[302]("b,k,l,i") * u1_aa("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 0.500000 d_aa(i,k) r0 t1_aa(b,j) u2_aaaa(a,c,l,m) m2_aaaa(l,m,c,b) 
                     // flops: o3v2: 1, o3v1: 2, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
@@ -11963,7 +11963,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= 0.500000 * r0 * u2_aaaa("a,c,l,m") * tempArray[302]("c,l,m,i") * Id_blks["aa_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_ooov += 1.000000 P(i,j) r1_aa(a,l) t1_aa(b,i) u1_aa(c,j) m2_aaaa(l,k,c,b) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
@@ -11974,7 +11974,7 @@ namespace hilbert {
                     tempPerm_aaaa_ooov("i,j,k,a") += r0 * tempArray[302]("c,l,k,i") * u1_aa("c,j") * t1_aa("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ooov += -1.000000 r0 t1_aa(b,i) u2_abab(c,a,l,j) m2_aaaa(l,k,c,b) 
                     // flops: o4v2: 1, o3v1: 1, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -11989,7 +11989,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += 0.500000 * r0 * u2_aaaa("a,c,k,m") * tempArray[302]("c,k,m,i") * Id_blks["aa_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovo += -1.000000 P(i,j) r1_aa(a,k) t1_aa(b,i) u1_aa(c,j) m2_aaaa(k,l,c,b) 
                     // flops: o4v1: 2, o3v1: 1 | mem: o3v1: 2, o4v0: 1, 
@@ -12000,14 +12000,14 @@ namespace hilbert {
                     tempPerm_aaaa_oovo("i,j,a,l") -= r0 * tempArray[302]("c,k,l,i") * u1_aa("c,j") * t1_aa("a,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovo += 0.500000 d_bb(j,l) r0 t1_aa(b,i) u2_aaaa(a,c,k,m) m2_aaaa(k,m,c,b) 
                     // flops: o3v2: 1, o3v1: 2, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += 0.500000 * r0 * u2_aaaa("a,c,k,m") * tempArray[302]("c,k,m,i") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ovoo += 1.000000 t1_aa(b,i) m2_aaaa(k,l,a,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -12034,7 +12034,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) r0 t1_aa(c,i) t2_aaaa(a,b,k,l) u1_aa(d,j) m2_aaaa(k,l,d,c) 
                     // flops: o4v2: 1, o4v1: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o4v0: 1, o0v0: 1, 
@@ -12063,21 +12063,21 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) P(a,b) r1_aa(b,i) t1_aa(c,j) u2_aaaa(a,d,k,l) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") = -0.500000 * tempArray[302]("d,k,l,j") * u2_aaaa("a,d,k,l") * r1_aa("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r1_aa(b,k) t1_aa(a,l) t1_aa(c,i) u1_aa(d,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o4v1: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, o4v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[302]("d,k,l,i") * u1_aa("d,j") * r1_aa("b,k") * t1_aa("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) r0 t1_aa(b,j) t1_aa(c,i) u2_aaaa(a,d,k,l) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -12092,14 +12092,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += 0.500000 * r0 * u2_aaaa("a,d,k,l") * tempArray[302]("d,k,l,i") * t1_bb("b,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ovov += -1.000000 t1_aa(b,k) t1_aa(c,i) m2_aaaa(k,j,a,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_aaaa_ovov"]("i,a,j,b") -= tempArray[302]("a,k,j,i") * s0 * t1_aa("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ovov += -1.000000 t1_aa(c,i) m2_aaaa(k,j,a,c) s1_aa(b,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -12110,14 +12110,14 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ovov"]("i,a,j,b") -= r0 * u1_aa("b,k") * tempArray[302]("a,k,j,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_voov += 1.000000 t1_aa(b,k) t1_aa(c,i) m2_aaaa(k,j,a,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_aaaa_voov"]("a,i,j,b") += tempArray[302]("a,k,j,i") * s0 * t1_aa("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_voov += 1.000000 t1_aa(c,i) m2_aaaa(k,j,a,c) s1_aa(b,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -12128,14 +12128,14 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_voov"]("a,i,j,b") += r0 * u1_aa("b,k") * tempArray[302]("a,k,j,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_ovvo += 1.000000 t1_aa(b,k) t1_aa(c,i) m2_aaaa(k,j,a,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_aaaa_ovvo"]("i,a,b,j") += tempArray[302]("a,k,j,i") * s0 * t1_aa("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ovvo += 1.000000 t1_aa(c,i) m2_aaaa(k,j,a,c) s1_aa(b,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -12146,14 +12146,14 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ovvo"]("i,a,b,j") += r0 * u1_aa("b,k") * tempArray[302]("a,k,j,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_vovo += -1.000000 t1_aa(b,k) t1_aa(c,i) m2_aaaa(k,j,a,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_aaaa_vovo"]("a,i,b,j") -= tempArray[302]("a,k,j,i") * s0 * t1_aa("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_vovo += -1.000000 t1_aa(c,i) m2_aaaa(k,j,a,c) s1_aa(b,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -12301,7 +12301,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) r1_aa(c,k) t2_bbbb(a,b,l,i) u1_bb(d,j) m2_abab(k,l,c,d) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
@@ -12322,7 +12322,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) r1_bb(b,i) t2_abab(c,a,k,l) u1_bb(d,j) m2_abab(k,l,c,d) 
                     // +               0.500000 P(i,j) P(a,b) r1_bb(b,i) t2_abab(c,a,l,k) u1_bb(d,j) m2_abab(l,k,c,d) 
@@ -12465,7 +12465,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) r1_bb(c,k) t2_aaaa(a,b,l,i) u1_aa(d,j) m2_abab(l,k,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o2v2: 2, o2v0: 1, 
@@ -12486,7 +12486,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) P(a,b) r2_abab(b,c,k,l) t1_aa(a,i) u1_aa(d,j) m2_abab(k,l,d,c) 
                     // +               -0.500000 P(i,j) P(a,b) r2_abab(b,c,l,k) t1_aa(a,i) u1_aa(d,j) m2_abab(l,k,d,c) 
@@ -12916,7 +12916,7 @@ namespace hilbert {
                 tempArray[305].~TArrayD();
                 tempArray[306].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[307] += 1.000000 m2_abab("k,m,b,a") u2_abab("b,a,i,m") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
@@ -13044,7 +13044,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) r0 t2_aaaa(a,b,k,i) u2_abab(d,c,j,l) m2_abab(k,l,d,c) 
                     // +               0.500000 P(i,j) r0 t2_aaaa(a,b,k,i) u2_abab(c,d,j,l) m2_abab(k,l,c,d) 
@@ -13071,7 +13071,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) P(a,b) r1_aa(b,k) t1_aa(a,i) u2_abab(d,c,j,l) m2_abab(k,l,d,c) 
                     // +               -0.500000 P(i,j) P(a,b) r1_aa(b,k) t1_aa(a,i) u2_abab(c,d,j,l) m2_abab(k,l,c,d) 
@@ -13265,7 +13265,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) r0 t2_bbbb(a,b,k,i) u2_abab(d,c,l,j) m2_abab(l,k,d,c) 
                     // +               0.500000 P(i,j) r0 t2_bbbb(a,b,k,i) u2_abab(c,d,l,j) m2_abab(l,k,c,d) 
@@ -13292,7 +13292,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) r1_bb(b,i) t1_bb(a,k) u2_abab(d,c,l,j) m2_abab(l,k,d,c) 
                     // +               0.500000 P(i,j) P(a,b) r1_bb(b,i) t1_bb(a,k) u2_abab(c,d,l,j) m2_abab(l,k,c,d) 
@@ -13834,7 +13834,7 @@ namespace hilbert {
                 tempArray[310].~TArrayD();
                 tempArray[311].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[312] += 0.500000 u1_aa("b,j") m2_aaaa("k,l,b,a") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -13909,7 +13909,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) r1_aa(c,i) t2_aaaa(a,b,k,l) u1_aa(d,j) m2_aaaa(k,l,d,c) 
                     // flops: o4v2: 1, o4v1: 1, o2v2: 1 | mem: o2v2: 2, o4v0: 1, 
@@ -13938,7 +13938,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) P(a,b) r2_aaaa(b,c,k,l) t1_aa(a,i) u1_aa(d,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
@@ -14070,7 +14070,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) r1_bb(c,i) t2_bbbb(a,b,k,l) u1_bb(d,j) m2_bbbb(k,l,d,c) 
                     // flops: o4v2: 1, o4v1: 1, o2v2: 1 | mem: o2v2: 2, o4v0: 1, 
@@ -14099,7 +14099,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r1_bb(b,k) t2_bbbb(a,c,l,i) u1_bb(d,j) m2_bbbb(k,l,d,c) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -14356,7 +14356,7 @@ namespace hilbert {
                 tempArray[314].~TArrayD();
                 tempArray[315].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[316] += 0.500000 u2_bbbb("c,b,m,j") m2_bbbb("l,m,c,b") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
@@ -14439,7 +14439,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) r0 t2_bbbb(a,b,k,i) u2_bbbb(d,c,l,j) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -14464,7 +14464,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) r0 t1_bb(a,i) t1_bb(b,k) u2_bbbb(d,c,l,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -14540,7 +14540,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) r2_aaaa(a,b,k,i) u2_aaaa(d,c,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -14565,7 +14565,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) P(a,b) r1_aa(b,i) t1_aa(a,k) u2_aaaa(d,c,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -14633,49 +14633,49 @@ namespace hilbert {
                 }
                 tempArray[317].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_bb(c,j) t2_abab(a,d,i,k) u1_bb(b,l) m2_bbbb(k,l,d,c) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t2_abab("a,d,i,k") * tempArray[318]("d,k,l,j") * u1_bb("b,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_bb(c,j) t1_bb(b,k) u2_abab(a,d,i,l) m2_bbbb(k,l,d,c) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += u2_abab("a,d,i,l") * tempArray[318]("d,k,l,j") * t1_bb("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 r1_bb(c,j) t2_bbbb(b,d,k,l) u1_aa(a,i) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += 0.500000 * t2_bbbb("b,d,k,l") * tempArray[318]("d,k,l,j") * u1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) r1_bb(c,i) t1_bb(b,j) u2_bbbb(a,d,k,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") += 0.500000 * tempArray[318]("d,k,l,i") * u2_bbbb("a,d,k,l") * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) P(a,b) r1_bb(c,i) t2_bbbb(b,d,k,l) u1_bb(a,j) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") -= 0.500000 * tempArray[318]("d,k,l,i") * t2_bbbb("b,d,k,l") * u1_bb("a,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r1_bb(c,i) t1_bb(b,k) u2_bbbb(a,d,l,j) m2_bbbb(k,l,d,c) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[318]("d,k,l,i") * u2_bbbb("a,d,l,j") * t1_bb("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r1_bb(c,i) t2_bbbb(b,d,k,j) u1_bb(a,l) m2_bbbb(k,l,d,c) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -14699,7 +14699,7 @@ namespace hilbert {
                 }
                 tempArray[318].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[319] += 1.000000 r1_aa("a,i") m2_aaaa("k,l,b,a") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -14730,14 +14730,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += 0.500000 * u2_aaaa("a,c,k,m") * tempArray[319]("c,i,k,m") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r1_aa(c,i) t2_aaaa(b,d,k,j) u1_aa(a,l) m2_aaaa(k,l,d,c) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[319]("d,i,k,l") * t2_aaaa("b,d,k,j") * u1_aa("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) r1_aa(c,i) t1_aa(b,j) u2_aaaa(a,d,k,l) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
@@ -14748,7 +14748,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[319]("d,i,k,l") * u2_aaaa("a,d,l,j") * t1_aa("b,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) P(a,b) r1_aa(c,i) t2_aaaa(b,d,k,l) u1_aa(a,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
@@ -14759,7 +14759,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t2_abab("d,b,k,j") * tempArray[319]("d,i,k,l") * u1_aa("a,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(c,i) t1_aa(a,k) u2_abab(d,b,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -14770,7 +14770,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += 0.500000 * u2_aaaa("a,d,k,l") * tempArray[319]("d,i,k,l") * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 r1_aa(c,i) t2_aaaa(a,d,k,l) u1_bb(b,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 2 | mem: o2v2: 2, o1v1: 1, 
@@ -14991,7 +14991,7 @@ namespace hilbert {
                 tempArray[320].~TArrayD();
                 tempArray[321].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[322] += 1.000000 s2_abab("a,b,m,j") m2_abab("m,l,a,b") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
@@ -15089,7 +15089,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) t2_bbbb(a,b,k,j) m2_abab(l,k,c,d) s2_abab(c,d,l,i) 
                     // +               -0.500000 P(i,j) t2_bbbb(a,b,k,j) m2_abab(l,k,d,c) s2_abab(d,c,l,i) 
@@ -15111,7 +15111,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(b,k) m2_abab(l,k,c,d) s2_abab(c,d,l,i) 
                     // +               0.500000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(b,k) m2_abab(l,k,d,c) s2_abab(d,c,l,i) 
@@ -15200,7 +15200,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) t2_bbbb(a,b,k,j) m2_bbbb(l,k,c,d) s2_bbbb(c,d,l,i) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -15221,7 +15221,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 0.500000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(b,k) m2_bbbb(l,k,c,d) s2_bbbb(c,d,l,i) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -15460,7 +15460,7 @@ namespace hilbert {
                 tempArray[324].~TArrayD();
                 tempArray[325].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[326] += 0.500000 m2_aaaa("m,k,a,b") s2_aaaa("a,b,m,i") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
@@ -15535,7 +15535,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) t2_aaaa(a,b,k,j) m2_aaaa(l,k,c,d) s2_aaaa(c,d,l,i) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -15556,7 +15556,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(b,k) m2_aaaa(l,k,c,d) s2_aaaa(c,d,l,i) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -15657,7 +15657,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) t2_aaaa(a,b,k,j) m2_abab(k,l,c,d) s2_abab(c,d,i,l) 
                     // +               -0.500000 P(i,j) t2_aaaa(a,b,k,j) m2_abab(k,l,d,c) s2_abab(d,c,i,l) 
@@ -15679,7 +15679,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(b,k) m2_abab(k,l,c,d) s2_abab(c,d,i,l) 
                     // +               0.500000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(b,k) m2_abab(k,l,d,c) s2_abab(d,c,i,l) 
@@ -15727,7 +15727,7 @@ namespace hilbert {
                 }
                 tempArray[327].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 r1_bb(b,i) t1_bb(d,j) u1_aa(c,k) m2_abab(k,j,a,b) 
                     // flops: o2v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o2v2: 1, 
@@ -15738,7 +15738,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[328]("a,j,k,i") * u1_bb("d,k") * t1_aa("c,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_vovv += -0.500000 r1_bb(b,i) u2_abab(c,d,j,k) m2_abab(j,k,a,b) 
                     // +               -0.500000 r1_bb(b,i) u2_abab(c,d,k,j) m2_abab(k,j,a,b) 
@@ -15746,7 +15746,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= tempArray[328]("a,j,k,i") * u2_abab("c,d,j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r1_bb(c,j) t2_abab(d,b,k,l) u1_aa(a,i) m2_abab(k,l,d,c) 
                     // +               -0.500000 r1_bb(c,j) t2_abab(d,b,l,k) u1_aa(a,i) m2_abab(l,k,d,c) 
@@ -15754,7 +15754,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t2_abab("d,b,k,l") * tempArray[328]("d,k,l,j") * u1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r1_bb(c,j) t1_aa(a,i) u2_abab(d,b,k,l) m2_abab(k,l,d,c) 
                     // +               -0.500000 r1_bb(c,j) t1_aa(a,i) u2_abab(d,b,l,k) m2_abab(l,k,d,c) 
@@ -15762,7 +15762,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u2_abab("d,b,k,l") * tempArray[328]("d,k,l,j") * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_bb(c,j) t2_aaaa(a,d,k,i) u1_bb(b,l) m2_abab(k,l,d,c) 
                     // flops: o4v2: 1, o3v2: 1, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -15782,7 +15782,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[328]("d,k,l,i") * t2_abab("d,b,k,l") * u1_bb("a,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) P(a,b) r1_bb(c,i) t1_bb(b,j) u2_abab(d,a,k,l) m2_abab(k,l,d,c) 
                     // +               -0.500000 P(i,j) P(a,b) r1_bb(c,i) t1_bb(b,j) u2_abab(d,a,l,k) m2_abab(l,k,d,c) 
@@ -15790,7 +15790,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") -= tempArray[328]("d,k,l,i") * u2_abab("d,a,k,l") * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_voov += -1.000000 r1_bb(c,i) u1_bb(b,k) m2_abab(j,k,a,c) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -15802,7 +15802,7 @@ namespace hilbert {
                 }
                 tempArray[328].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[329] += 1.000000 r1_aa("a,i") m2_abab("k,l,a,b") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -15839,7 +15839,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= tempArray[329]("b,i,j,k") * u2_abab("c,d,j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 r1_aa(a,i) t1_aa(c,j) u1_bb(d,k) m2_abab(j,k,a,b) 
                     // flops: o2v3: 1, o3v2: 1, o1v3: 1 | mem: o1v3: 2, o2v2: 1, 
@@ -15850,7 +15850,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= tempArray[329]("b,i,k,j") * u1_aa("c,k") * t1_bb("d,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) P(a,b) r1_aa(c,i) t1_aa(b,j) u2_abab(a,d,k,l) m2_abab(k,l,c,d) 
                     // +               -0.500000 P(i,j) P(a,b) r1_aa(c,i) t1_aa(b,j) u2_abab(a,d,l,k) m2_abab(l,k,c,d) 
@@ -15858,7 +15858,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= tempArray[329]("d,i,k,l") * u2_abab("a,d,k,l") * t1_aa("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) r1_aa(c,i) t2_abab(b,d,k,l) u1_aa(a,j) m2_abab(k,l,c,d) 
                     // +               0.500000 P(i,j) P(a,b) r1_aa(c,i) t2_abab(b,d,l,k) u1_aa(a,j) m2_abab(l,k,c,d) 
@@ -15883,7 +15883,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t2_abab("a,d,k,l") * tempArray[329]("d,i,k,l") * u1_bb("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r1_aa(c,i) t1_bb(b,j) u2_abab(a,d,k,l) m2_abab(k,l,c,d) 
                     // +               -0.500000 r1_aa(c,i) t1_bb(b,j) u2_abab(a,d,l,k) m2_abab(l,k,c,d) 
@@ -15891,7 +15891,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u2_abab("a,d,k,l") * tempArray[329]("d,i,k,l") * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovov += -1.000000 r1_aa(c,i) u1_bb(b,k) m2_abab(j,k,c,a) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -15903,14 +15903,14 @@ namespace hilbert {
                 }
                 tempArray[329].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[330] += 0.500000 m2_bbbb("l,m,c,b") r2_bbbb("c,b,l,j") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
                     tempArray[330]("m,j") = 0.500000 * m2_bbbb("l,m,c,b") * r2_bbbb("c,b,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += -0.500000 d_aa(i,k) r2_bbbb(c,b,l,j) u1_bb(a,m) m2_bbbb(l,m,c,b) 
                     // flops: o3v1: 2, o2v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -15949,14 +15949,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u1_bb("b,l") * tempArray[330]("l,j") * t1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r2_bbbb(d,c,k,j) u2_abab(a,b,i,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[330]("l,j") * u2_abab("a,b,i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r2_bbbb(d,c,k,j) t1_bb(b,l) u1_aa(a,i) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -15979,7 +15979,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) r2_bbbb(d,c,k,i) u2_bbbb(a,b,l,j) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -16000,7 +16000,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) P(a,b) r2_bbbb(d,c,k,i) t1_bb(b,j) u1_bb(a,l) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -16012,14 +16012,14 @@ namespace hilbert {
                 }
                 tempArray[330].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[331] += 0.500000 r2_aaaa("c,b,l,j") m2_aaaa("l,m,c,b") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
                     tempArray[331]("j,m") = 0.500000 * r2_aaaa("c,b,l,j") * m2_aaaa("l,m,c,b");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 0.500000 d_aa(j,k) r2_aaaa(c,b,l,i) u1_aa(a,m) m2_aaaa(l,m,c,b) 
                     // flops: o3v1: 2, o2v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -16070,7 +16070,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) r2_aaaa(d,c,k,i) u2_aaaa(a,b,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -16091,7 +16091,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) P(a,b) r2_aaaa(d,c,k,i) t1_aa(b,j) u1_aa(a,l) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -16106,14 +16106,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u1_aa("a,l") * tempArray[331]("i,l") * t1_bb("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r2_aaaa(d,c,k,i) u2_abab(a,b,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[331]("i,l") * u2_abab("a,b,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r2_aaaa(d,c,k,i) t1_aa(a,l) u1_bb(b,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -16121,14 +16121,14 @@ namespace hilbert {
                 }
                 tempArray[331].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[332] += 1.000000 m2_abab("l,m,c,b") r2_abab("c,b,l,j") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
                     tempArray[332]("m,j") = m2_abab("l,m,c,b") * r2_abab("c,b,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += -0.500000 d_aa(i,k) r2_abab(c,b,l,j) u1_bb(a,m) m2_abab(l,m,c,b) 
                     // +               -0.500000 d_aa(i,k) r2_abab(b,c,l,j) u1_bb(a,m) m2_abab(l,m,b,c) 
@@ -16171,7 +16171,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovo("i,j,a,l") += tempArray[332]("l,i") * u1_bb("a,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r2_abab(d,c,k,j) u2_abab(a,b,i,l) m2_abab(k,l,d,c) 
                     // +               -0.500000 r2_abab(c,d,k,j) u2_abab(a,b,i,l) m2_abab(k,l,c,d) 
@@ -16179,7 +16179,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[332]("l,j") * u2_abab("a,b,i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r2_abab(d,c,k,j) t1_aa(a,i) u1_bb(b,l) m2_abab(k,l,d,c) 
                     // +               -0.500000 r2_abab(c,d,k,j) t1_aa(a,i) u1_bb(b,l) m2_abab(k,l,c,d) 
@@ -16208,7 +16208,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) r2_abab(d,c,k,i) u2_bbbb(a,b,l,j) m2_abab(k,l,d,c) 
                     // +               -0.500000 P(i,j) r2_abab(c,d,k,i) u2_bbbb(a,b,l,j) m2_abab(k,l,c,d) 
@@ -16230,7 +16230,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) P(a,b) r2_abab(d,c,k,i) t1_bb(b,j) u1_bb(a,l) m2_abab(k,l,d,c) 
                     // +               -0.500000 P(i,j) P(a,b) r2_abab(c,d,k,i) t1_bb(b,j) u1_bb(a,l) m2_abab(k,l,c,d) 
@@ -16244,14 +16244,14 @@ namespace hilbert {
                 }
                 tempArray[332].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[333] += 1.000000 m2_abab("m,l,c,b") r2_abab("c,b,j,l") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
                     tempArray[333]("m,j") = m2_abab("m,l,c,b") * r2_abab("c,b,j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 0.500000 d_aa(j,k) r2_abab(c,b,i,l) u1_aa(a,m) m2_abab(m,l,c,b) 
                     // +               0.500000 d_aa(j,k) r2_abab(b,c,i,l) u1_aa(a,m) m2_abab(m,l,b,c) 
@@ -16310,7 +16310,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) r2_abab(d,c,i,k) u2_aaaa(a,b,l,j) m2_abab(l,k,d,c) 
                     // +               -0.500000 P(i,j) r2_abab(c,d,i,k) u2_aaaa(a,b,l,j) m2_abab(l,k,c,d) 
@@ -16332,7 +16332,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 0.500000 P(i,j) P(a,b) r2_abab(d,c,i,k) t1_aa(b,l) u1_aa(a,j) m2_abab(l,k,d,c) 
                     // +               0.500000 P(i,j) P(a,b) r2_abab(c,d,i,k) t1_aa(b,l) u1_aa(a,j) m2_abab(l,k,c,d) 
@@ -16355,7 +16355,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u1_aa("a,l") * tempArray[333]("l,i") * t1_bb("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -0.500000 r2_abab(d,c,i,k) u2_abab(a,b,l,j) m2_abab(l,k,d,c) 
                     // +               -0.500000 r2_abab(c,d,i,k) u2_abab(a,b,l,j) m2_abab(l,k,c,d) 
@@ -16364,7 +16364,7 @@ namespace hilbert {
                 }
                 tempArray[333].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[334] += 1.000000 m2_abab("l,m,c,b") s1_aa("c,i") t2_abab("a,b,l,m") 
                     // flops: o3v2: 2, o1v1: 1 | mem: o3v1: 1, o1v1: 2, 
@@ -16483,7 +16483,7 @@ namespace hilbert {
                 }
                 tempArray[336].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[337] += 0.500000 m2_bbbb("l,m,b,c") s1_bb("c,j") t2_bbbb("a,b,l,m") 
                     // flops: o3v2: 2, o1v1: 1 | mem: o3v1: 1, o1v1: 2, 
@@ -16555,7 +16555,7 @@ namespace hilbert {
                 }
                 tempArray[338].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[339] += 0.500000 m2_aaaa("l,m,b,c") s1_aa("c,i") t2_aaaa("a,b,l,m") 
                     // flops: o3v2: 2, o1v1: 1 | mem: o3v1: 1, o1v1: 2, 
@@ -16674,14 +16674,14 @@ namespace hilbert {
                 tempArray[340].~TArrayD();
                 tempArray[341].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[342] += 0.500000 m2_bbbb("m,l,c,b") t2_bbbb("c,b,l,j") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
                     tempArray[342]("m,j") = 0.500000 * m2_bbbb("m,l,c,b") * t2_bbbb("c,b,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 0.500000 d_aa(i,k) t2_bbbb(c,b,l,j) m2_bbbb(m,l,c,b) s1_bb(a,m) 
                     // flops: o3v1: 2, o2v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -16712,7 +16712,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r1_bb("b,k") * tempArray[342]("k,j") * u1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 t2_bbbb(d,c,k,j) m2_bbbb(l,k,d,c) s2_abab(a,b,i,l) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -16735,7 +16735,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) t2_bbbb(d,c,k,j) m2_bbbb(l,k,d,c) s2_bbbb(a,b,l,i) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -16756,7 +16756,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.500000 P(i,j) P(a,b) r1_bb(b,k) t2_bbbb(d,c,l,i) u1_bb(a,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -16768,7 +16768,7 @@ namespace hilbert {
                 }
                 tempArray[342].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[343] += 0.500000 m2_aaaa("m,k,b,a") u2_aaaa("b,a,m,j") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
@@ -16824,7 +16824,7 @@ namespace hilbert {
                 }
                 tempArray[343].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -0.500000 d_aa(j,k) t2_aaaa(c,b,l,i) m2_aaaa(m,l,c,b) s1_aa(a,m) 
                     // flops: o3v1: 2, o2v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -16863,7 +16863,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) t2_aaaa(d,c,k,j) m2_aaaa(l,k,d,c) s2_aaaa(a,b,l,i) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -16884,7 +16884,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.500000 P(i,j) P(a,b) r1_aa(b,k) t2_aaaa(d,c,l,i) u1_aa(a,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -16895,14 +16895,14 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= tempArray[344]("l,i") * s1_aa("b,l") * t1_aa("a,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 t2_aaaa(d,c,k,i) m2_aaaa(l,k,d,c) s2_abab(a,b,l,j) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[344]("l,i") * s2_abab("a,b,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.500000 r1_aa(a,k) t2_aaaa(d,c,l,i) u1_bb(b,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -16914,7 +16914,7 @@ namespace hilbert {
                 }
                 tempArray[344].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[345] += 0.500000 u2_bbbb("b,a,m,j") m2_bbbb("m,l,b,a") 
                     // flops: o3v2: 1, o2v0: 1 | mem: o2v0: 2, 
@@ -17014,7 +17014,7 @@ namespace hilbert {
                 }
                 tempArray[346].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[347] += 1.000000 u1_aa("b,i") m2_aaaa("k,l,a,b") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -17110,7 +17110,7 @@ namespace hilbert {
                 }
                 tempArray[348].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[349] += 1.000000 u1_bb("b,i") m2_bbbb("k,l,a,b") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -17291,7 +17291,7 @@ namespace hilbert {
                 tempArray[350].~TArrayD();
                 tempArray[351].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[352] += 1.000000 m2_bbbb("l,k,b,c") s1_bb("c,i") t1_bb("a,l") 
                     // flops: o3v2: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -17339,7 +17339,7 @@ namespace hilbert {
                 }
                 tempArray[353].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[354] += 1.000000 m2_aaaa("l,k,b,c") s1_aa("c,i") t1_aa("a,l") 
                     // flops: o3v2: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -17387,14 +17387,14 @@ namespace hilbert {
                 }
                 tempArray[355].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[356] += 1.000000 t2_bbbb("a,b,i,j") m1_bb("k,b") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
                     tempArray[356]("a,i,j,k") = t2_bbbb("a,b,i,j") * m1_bb("k,b");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_bbbb_ooov += 1.000000 t2_bbbb(a,b,i,j) m1_bb(k,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -17421,7 +17421,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(a,b) t2_bbbb(a,c,i,j) m1_bb(k,c) s1_bb(b,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -17432,7 +17432,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") += r0 * tempArray[356]("b,i,j,k") * u1_bb("a,k");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(a,b) t1_bb(a,k) t2_bbbb(b,c,i,j) m1_bb(k,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -17440,7 +17440,7 @@ namespace hilbert {
                 }
                 tempArray[356].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[357] += 1.000000 m2_abab("k,l,b,a") s1_aa("b,i") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -17495,14 +17495,14 @@ namespace hilbert {
                 tempArray[357].~TArrayD();
                 tempArray[358].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[359] += 1.000000 m1_aa("k,b") t2_aaaa("a,b,i,j") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
                     tempArray[359]("a,k,i,j") = m1_aa("k,b") * t2_aaaa("a,b,i,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_aaaa_ooov += 1.000000 t2_aaaa(a,b,i,j) m1_aa(k,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -17529,7 +17529,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(a,b) r0 t2_aaaa(b,c,i,j) u1_aa(a,k) m1_aa(k,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -17540,7 +17540,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= tempArray[359]("a,k,i,j") * s1_aa("b,k");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(a,b) t1_aa(a,k) t2_aaaa(b,c,i,j) m1_aa(k,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -17603,14 +17603,14 @@ namespace hilbert {
                 tempArray[360].~TArrayD();
                 tempArray[361].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[362] += 1.000000 m1_bb("l,b") t2_abab("a,b,i,j") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
                     tempArray[362]("a,i,l,j") = m1_bb("l,b") * t2_abab("a,b,i,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovo += -1.000000 t2_abab(a,b,i,j) m1_bb(l,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -17621,7 +17621,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[362]("a,i,k,j") * s0 * t1_bb("b,k");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 t2_abab(a,c,i,j) m1_bb(k,c) s1_bb(b,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -17657,7 +17657,7 @@ namespace hilbert {
                 }
                 tempArray[363].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[364] += 1.000000 u2_aaaa("a,b,i,j") m1_aa("k,b") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -17681,21 +17681,21 @@ namespace hilbert {
                 }
                 tempArray[364].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[365] += 1.000000 t2_abab("b,a,i,j") m1_aa("k,b") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
                     tempArray[365]("a,i,k,j") = t2_abab("b,a,i,j") * m1_aa("k,b");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_ooov += -1.000000 t2_abab(b,a,i,j) m1_aa(k,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= tempArray[365]("a,i,k,j") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 t2_abab(c,b,i,j) m1_aa(k,c) s1_aa(a,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -17706,7 +17706,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * u1_aa("a,k") * tempArray[365]("b,i,k,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 t1_aa(a,k) t2_abab(c,b,i,j) m1_aa(k,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -17714,7 +17714,7 @@ namespace hilbert {
                 }
                 tempArray[365].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[366] += 1.000000 m1_bb("k,b") u2_bbbb("a,b,i,j") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -17762,7 +17762,7 @@ namespace hilbert {
                 }
                 tempArray[367].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[368] += 1.000000 r1_aa("b,l") m2_abab("l,k,b,c") u2_bbbb("a,c,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -17802,7 +17802,7 @@ namespace hilbert {
                 }
                 tempArray[369].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[370] += 1.000000 r1_aa("b,l") m2_aaaa("l,k,c,b") u2_aaaa("a,c,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -17822,7 +17822,7 @@ namespace hilbert {
                 }
                 tempArray[370].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[371] += 1.000000 m2_abab("l,k,c,b") s1_aa("c,l") t2_bbbb("a,b,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -17842,7 +17842,7 @@ namespace hilbert {
                 }
                 tempArray[371].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[372] += 1.000000 r1_bb("b,l") m2_bbbb("l,k,c,b") u2_bbbb("a,c,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -17882,7 +17882,7 @@ namespace hilbert {
                 }
                 tempArray[373].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[374] += 1.000000 r1_bb("b,l") m2_abab("k,l,c,b") u2_aaaa("a,c,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -17902,7 +17902,7 @@ namespace hilbert {
                 }
                 tempArray[374].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[375] += 1.000000 m2_abab("k,l,b,c") s1_bb("c,l") t2_aaaa("a,b,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -17959,7 +17959,7 @@ namespace hilbert {
                 tempArray[376].~TArrayD();
                 tempArray[377].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[378] += 1.000000 m2_bbbb("l,k,b,c") s1_bb("c,l") t2_bbbb("a,b,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -18033,7 +18033,7 @@ namespace hilbert {
                 tempArray[380].~TArrayD();
                 tempArray[381].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[382] += 1.000000 s2_aaaa("a,b,i,j") m1_aa("k,b") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -18090,7 +18090,7 @@ namespace hilbert {
                 }
                 tempArray[384].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[385] += 1.000000 u2_abab("a,b,i,j") m1_bb("l,b") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -18130,7 +18130,7 @@ namespace hilbert {
                 }
                 tempArray[386].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[387] += 1.000000 m1_bb("k,b") s2_bbbb("a,b,i,j") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -18150,7 +18150,7 @@ namespace hilbert {
                 }
                 tempArray[387].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[388] += 1.000000 r1_aa("b,k") m2_abab("k,l,b,c") u2_abab("a,c,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -18182,7 +18182,7 @@ namespace hilbert {
                 }
                 tempArray[389].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[390] += 1.000000 r1_bb("b,k") m2_bbbb("k,l,c,b") u2_abab("a,c,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -18198,7 +18198,7 @@ namespace hilbert {
                 }
                 tempArray[390].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[391] += 1.000000 m2_aaaa("l,k,b,c") s1_aa("c,l") t2_abab("b,a,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -18243,7 +18243,7 @@ namespace hilbert {
                 tempArray[392].~TArrayD();
                 tempArray[393].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[394] += 1.000000 m2_abab("k,l,c,b") s1_aa("c,k") t2_abab("a,b,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -18288,7 +18288,7 @@ namespace hilbert {
                 }
                 tempArray[396].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[397] += 1.000000 r1_bb("b,l") m2_abab("k,l,c,b") u2_abab("c,a,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -18317,7 +18317,7 @@ namespace hilbert {
                 tempArray[397].~TArrayD();
                 tempArray[398].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[399] += 1.000000 m2_bbbb("k,l,b,c") s1_bb("c,k") t2_abab("a,b,i,j") 
                     // flops: o3v2: 1, o2v2: 1, o3v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -18362,7 +18362,7 @@ namespace hilbert {
                 }
                 tempArray[401].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[402] += 1.000000 m1_aa("k,b") s2_abab("b,a,i,j") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -18394,7 +18394,7 @@ namespace hilbert {
                 }
                 tempArray[403].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[404] += 1.000000 m2_aaaa("k,l,a,b") s1_aa("b,i") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -18426,7 +18426,7 @@ namespace hilbert {
                 }
                 tempArray[405].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[406] += 1.000000 s1_bb("b,i") m2_bbbb("k,l,a,b") 
                     // flops: o3v2: 1, o3v1: 1 | mem: o3v1: 2, 
@@ -18458,7 +18458,7 @@ namespace hilbert {
                 }
                 tempArray[407].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[408] += 1.000000 m2_aaaa("k,j,b,a") s1_aa("a,k") t1_aa("d,j") t1_aa("c,i") 
                     // flops: o1v3: 2, o2v2: 1, o1v2: 1 | mem: o1v3: 2, o0v2: 1, o1v1: 1, 
@@ -18516,7 +18516,7 @@ namespace hilbert {
                 }
                 tempArray[411].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[412] += 1.000000 m2_abab("j,k,b,a") s1_bb("a,k") t1_aa("d,j") t1_aa("c,i") 
                     // flops: o1v3: 2, o2v2: 1, o1v2: 1 | mem: o1v3: 2, o0v2: 1, o1v1: 1, 
@@ -18600,7 +18600,7 @@ namespace hilbert {
                 tempArray[416].~TArrayD();
                 tempArray[417].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[418] += 1.000000 r1_aa("a,j") m2_aaaa("j,k,b,a") u1_aa("c,k") t1_aa("d,i") 
                     // flops: o1v3: 2, o2v2: 1, o1v2: 1 | mem: o1v3: 2, o0v2: 1, o1v1: 1, 
@@ -18671,7 +18671,7 @@ namespace hilbert {
                 }
                 tempArray[422].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[423] += 1.000000 r1_aa("a,j") m2_abab("j,k,a,b") u1_bb("c,k") t1_bb("d,i") 
                     // flops: o1v3: 2, o2v2: 1, o1v2: 1 | mem: o1v3: 2, o0v2: 1, o1v1: 1, 
@@ -18687,7 +18687,7 @@ namespace hilbert {
                 }
                 tempArray[423].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[424] += 1.000000 r1_bb("d,j") m1_bb("j,b") u1_bb("c,i") 
                     // flops: o1v3: 2, o1v2: 1 | mem: o1v3: 2, o0v2: 1, 
@@ -18719,7 +18719,7 @@ namespace hilbert {
                 }
                 tempArray[425].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[426] += 1.000000 u1_bb("c,j") m1_bb("j,b") r1_bb("d,i") 
                     // flops: o1v3: 2, o1v2: 1 | mem: o1v3: 2, o0v2: 1, 
@@ -18751,7 +18751,7 @@ namespace hilbert {
                 }
                 tempArray[427].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[428] += 1.000000 m1_aa("j,b") s1_aa("d,j") t1_aa("c,i") 
                     // flops: o1v3: 2, o1v2: 1 | mem: o1v3: 2, o0v2: 1, 
@@ -18796,7 +18796,7 @@ namespace hilbert {
                 }
                 tempArray[430].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[431] += 1.000000 u1_aa("c,j") m1_aa("j,b") r1_aa("d,i") 
                     // flops: o1v3: 2, o1v2: 1 | mem: o1v3: 2, o0v2: 1, 
@@ -18854,7 +18854,7 @@ namespace hilbert {
                 }
                 tempArray[434].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[435] += 1.000000 t1_bb("c,j") m1_bb("j,b") s1_bb("d,i") 
                     // flops: o1v3: 2, o1v2: 1 | mem: o1v3: 2, o0v2: 1, 
@@ -18870,14 +18870,14 @@ namespace hilbert {
                 }
                 tempArray[435].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[436] += 1.000000 m2_abab("m,l,a,b") r1_aa("a,m") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
                     tempArray[436]("b,l") = m2_abab("m,l,a,b") * r1_aa("a,m");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oooo += -1.000000 d_aa(i,k) r1_aa(a,m) u1_bb(b,j) m2_abab(m,l,a,b) 
                     // flops: o4v0: 2, o2v1: 1 | mem: o4v0: 2, o2v0: 1, 
@@ -18900,7 +18900,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oooo"]("i,j,k,l") += u1_bb("b,j") * tempArray[436]("b,k") * Id_blks["bb_oo"]("i,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -1.000000 d_aa(j,k) r1_aa(b,l) u2_abab(a,c,i,m) m2_abab(l,m,b,c) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -18911,7 +18911,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += u2_abab("a,c,j,m") * tempArray[436]("c,m") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += -1.000000 d_aa(i,k) r1_aa(b,l) t1_bb(a,m) u1_bb(c,j) m2_abab(l,m,b,c) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -18922,7 +18922,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= t1_bb("c,j") * tempArray[436]("c,m") * u1_bb("a,m") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ooov += -1.000000 d_aa(i,k) r1_aa(b,l) u2_bbbb(a,c,m,j) m2_abab(l,m,b,c) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -18933,7 +18933,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= u2_bbbb("a,c,m,j") * tempArray[436]("c,m") * Id_blks["bb_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -1.000000 d_bb(i,k) r1_aa(b,l) t1_bb(a,m) u1_bb(c,j) m2_abab(l,m,b,c) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -18952,14 +18952,14 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += t1_bb("c,i") * tempArray[436]("c,m") * u1_bb("a,m") * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 1.000000 d_bb(j,k) r1_aa(b,l) u2_bbbb(a,c,m,i) m2_abab(l,m,b,c) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += u2_bbbb("a,c,m,i") * tempArray[436]("c,m") * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_ooov += -1.000000 P(i,j) r1_aa(b,l) t1_bb(c,i) u1_bb(a,j) m2_abab(l,k,b,c) 
                     // flops: o3v1: 2, o2v1: 1 | mem: o3v1: 2, o2v0: 1, 
@@ -18970,7 +18970,7 @@ namespace hilbert {
                     tempPerm_bbbb_ooov("i,j,k,a") += tempArray[436]("c,k") * u1_bb("c,j") * t1_bb("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -1.000000 d_aa(i,l) r1_aa(b,k) u2_abab(a,c,j,m) m2_abab(k,m,b,c) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -18981,7 +18981,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += u2_abab("a,c,i,m") * tempArray[436]("c,m") * Id_blks["aa_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovo += -1.000000 r1_aa(b,k) t1_bb(c,j) u1_aa(a,i) m2_abab(k,l,b,c) 
                     // flops: o3v1: 2, o2v1: 1 | mem: o3v1: 2, o2v0: 1, 
@@ -18992,7 +18992,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= u1_bb("c,j") * tempArray[436]("c,l") * t1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovo += 1.000000 d_bb(j,l) r1_aa(b,k) u2_abab(a,c,i,m) m2_abab(k,m,b,c) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -19003,7 +19003,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= u2_bbbb("a,c,m,i") * tempArray[436]("c,m") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += -1.000000 d_bb(j,l) r1_aa(b,k) t1_bb(c,i) u1_bb(a,m) m2_abab(k,m,b,c) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -19022,14 +19022,14 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += u1_bb("c,j") * tempArray[436]("c,m") * t1_bb("a,m") * Id_blks["bb_oo"]("i,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 1.000000 d_bb(i,l) r1_aa(b,k) u2_bbbb(a,c,m,j) m2_abab(k,m,b,c) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += u2_bbbb("a,c,m,j") * tempArray[436]("c,m") * Id_blks["bb_oo"]("i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovo += -1.000000 P(i,j) r1_aa(b,k) t1_bb(a,i) u1_bb(c,j) m2_abab(k,l,b,c) 
                     // flops: o3v1: 2, o2v1: 1 | mem: o3v1: 2, o2v0: 1, 
@@ -19048,7 +19048,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") += t1_bb("d,k") * tempArray[436]("b,k") * u1_aa("c,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ovvv += 1.000000 r1_aa(a,j) u2_abab(c,d,i,k) m2_abab(j,k,a,b) 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
@@ -19069,35 +19069,35 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) P(a,b) r1_aa(c,k) t2_abab(b,d,i,l) u1_aa(a,j) m2_abab(k,l,c,d) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") = -1.0 * tempArray[436]("d,l") * t2_abab("b,d,i,l") * u1_aa("a,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) P(a,b) r1_aa(c,k) t1_aa(b,i) u2_abab(a,d,j,l) m2_abab(k,l,c,d) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") -= tempArray[436]("d,l") * u2_abab("a,d,j,l") * t1_aa("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_aa(c,k) t2_bbbb(b,d,l,j) u1_aa(a,i) m2_abab(k,l,c,d) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t2_bbbb("b,d,l,j") * tempArray[436]("d,l") * u1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(c,k) t1_bb(b,j) u2_abab(a,d,i,l) m2_abab(k,l,c,d) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += u2_abab("a,d,i,l") * tempArray[436]("d,l") * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_aa(c,k) t1_bb(b,l) t1_bb(d,j) u1_aa(a,i) m2_abab(k,l,c,d) 
                     // flops: o2v2: 2, o2v1: 2 | mem: o2v2: 2, o1v1: 1, o2v0: 1, 
@@ -19116,14 +19116,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u1_bb("d,j") * tempArray[436]("d,l") * t1_bb("b,l") * t1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_aa(c,k) t1_aa(a,i) u2_bbbb(b,d,l,j) m2_abab(k,l,c,d) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u2_bbbb("b,d,l,j") * tempArray[436]("d,l") * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_aa(c,k) t1_aa(a,i) t1_bb(d,j) u1_bb(b,l) m2_abab(k,l,c,d) 
                     // flops: o2v2: 2, o2v1: 2 | mem: o2v2: 2, o1v1: 1, o2v0: 1, 
@@ -19148,14 +19148,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r1_aa(c,k) t1_bb(b,i) u2_bbbb(a,d,l,j) m2_abab(k,l,c,d) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") = tempArray[436]("d,l") * u2_bbbb("a,d,l,j") * t1_bb("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) P(a,b) r1_aa(c,k) t1_bb(a,i) t1_bb(b,l) u1_bb(d,j) m2_abab(k,l,c,d) 
                     // flops: o2v2: 2, o2v1: 2 | mem: o2v2: 2, o1v1: 1, o2v0: 1, 
@@ -19215,14 +19215,14 @@ namespace hilbert {
                 }
                 tempArray[436].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[437] += 1.000000 m2_abab("k,m,b,a") r1_bb("a,m") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
                     tempArray[437]("b,k") = m2_abab("k,m,b,a") * r1_bb("a,m");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oooo += -1.000000 d_aa(i,k) r1_bb(a,m) u1_aa(b,j) m2_abab(l,m,b,a) 
                     // flops: o4v0: 2, o2v1: 1 | mem: o4v0: 2, o2v0: 1, 
@@ -19245,28 +19245,28 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oooo"]("i,j,k,l") -= u1_aa("b,i") * tempArray[437]("b,k") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 1.000000 d_aa(j,k) r1_bb(b,l) u2_aaaa(a,c,m,i) m2_abab(m,l,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += u2_aaaa("a,c,m,i") * tempArray[437]("c,m") * Id_blks["aa_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -1.000000 d_aa(i,k) r1_bb(b,l) t1_aa(a,m) u1_aa(c,j) m2_abab(m,l,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= u1_aa("c,j") * tempArray[437]("c,m") * t1_aa("a,m") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -1.000000 d_aa(i,k) r1_bb(b,l) u2_aaaa(a,c,m,j) m2_abab(m,l,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= u2_aaaa("a,c,m,j") * tempArray[437]("c,m") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 1.000000 d_aa(j,k) r1_bb(b,l) t1_aa(a,m) u1_aa(c,i) m2_abab(m,l,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -19297,7 +19297,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= t1_aa("c,i") * tempArray[437]("c,k") * u1_bb("a,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ooov += 1.000000 d_aa(i,k) r1_bb(b,l) u2_abab(c,a,m,j) m2_abab(m,l,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -19316,7 +19316,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += u2_aaaa("a,c,m,j") * tempArray[437]("c,m") * Id_blks["aa_oo"]("i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += 1.000000 d_aa(i,l) r1_bb(b,k) t1_aa(a,m) u1_aa(c,j) m2_abab(m,k,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -19327,14 +19327,14 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= u1_aa("c,i") * tempArray[437]("c,m") * t1_aa("a,m") * Id_blks["aa_oo"]("j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -1.000000 d_aa(j,l) r1_bb(b,k) u2_aaaa(a,c,m,i) m2_abab(m,k,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= u2_aaaa("a,c,m,i") * tempArray[437]("c,m") * Id_blks["aa_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += 1.000000 d_aa(i,l) r1_bb(b,k) t1_aa(c,j) u1_aa(a,m) m2_abab(m,k,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -19353,14 +19353,14 @@ namespace hilbert {
                     tempPerm_aaaa_oovo("i,j,a,l") -= tempArray[437]("c,l") * u1_aa("c,j") * t1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovo += -1.000000 d_bb(j,l) r1_bb(b,k) u2_aaaa(a,c,m,i) m2_abab(m,k,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= u2_aaaa("a,c,m,i") * tempArray[437]("c,m") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovo += -1.000000 d_bb(j,l) r1_bb(b,k) t1_aa(a,m) u1_aa(c,i) m2_abab(m,k,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -19371,7 +19371,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= t1_aa("c,i") * tempArray[437]("c,m") * u1_aa("a,m") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovo += -1.000000 d_bb(i,l) r1_bb(b,k) u2_abab(c,a,m,j) m2_abab(m,k,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -19386,7 +19386,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += tempArray[437]("a,k") * u2_abab("c,d,k,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += 1.000000 r1_bb(b,j) t1_aa(c,k) u1_bb(d,i) m2_abab(k,j,a,b) 
                     // flops: o1v3: 2, o1v2: 1 | mem: o1v3: 2, o0v2: 1, 
@@ -19413,7 +19413,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(a,b) r1_bb(c,k) t2_aaaa(b,d,i,j) u1_aa(a,l) m2_abab(l,k,d,c) 
                     // flops: o3v2: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -19434,14 +19434,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r1_bb(c,k) t1_aa(b,i) u2_aaaa(a,d,l,j) m2_abab(l,k,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") = tempArray[437]("d,l") * u2_aaaa("a,d,l,j") * t1_aa("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r1_bb(c,k) t1_aa(b,l) t1_aa(d,i) u1_aa(a,j) m2_abab(l,k,d,c) 
                     // flops: o2v2: 2, o2v1: 2 | mem: o2v2: 2, o1v1: 1, o2v0: 1, 
@@ -19460,28 +19460,28 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= tempArray[437]("d,l") * t1_aa("d,i") * u1_aa("a,l") * t1_aa("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_bb(c,k) t1_bb(b,j) u2_aaaa(a,d,l,i) m2_abab(l,k,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u2_aaaa("a,d,l,i") * tempArray[437]("d,l") * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_bb(c,k) t1_bb(b,j) t1_aa(d,i) u1_aa(a,l) m2_abab(l,k,d,c) 
                     // flops: o2v2: 2, o2v1: 2 | mem: o2v2: 2, o1v1: 1, o2v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t1_aa("d,i") * tempArray[437]("d,l") * u1_aa("a,l") * t1_bb("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_bb(c,k) t1_aa(a,i) u2_abab(d,b,l,j) m2_abab(l,k,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += u2_abab("d,b,l,j") * tempArray[437]("d,l") * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_bb(c,k) t1_bb(b,j) t1_aa(a,l) u1_aa(d,i) m2_abab(l,k,d,c) 
                     // flops: o2v2: 2, o2v1: 2 | mem: o2v2: 2, o1v1: 1, o2v0: 1, 
@@ -19508,14 +19508,14 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") -= tempArray[437]("d,l") * t2_abab("d,b,l,i") * u1_bb("a,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) P(a,b) r1_bb(c,k) t1_bb(b,i) u2_abab(d,a,l,j) m2_abab(l,k,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") -= tempArray[437]("d,l") * u2_abab("d,a,l,j") * t1_bb("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ovov += 1.000000 d_aa(i,j) r1_bb(c,k) u1_aa(b,l) m2_abab(l,k,a,c) 
                     // flops: o2v2: 2, o1v2: 1 | mem: o2v2: 2, o0v2: 1, 
@@ -19559,14 +19559,14 @@ namespace hilbert {
                 }
                 tempArray[437].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[438] += 1.000000 m2_bbbb("m,l,b,a") r1_bb("a,m") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
                     tempArray[438]("b,l") = m2_bbbb("m,l,b,a") * r1_bb("a,m");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oooo += 1.000000 d_aa(i,k) r1_bb(a,m) u1_bb(b,j) m2_bbbb(m,l,b,a) 
                     // flops: o4v0: 2, o2v1: 1 | mem: o4v0: 2, o2v0: 1, 
@@ -19589,7 +19589,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oooo"]("i,j,k,l") -= u1_bb("b,i") * tempArray[438]("b,l") * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 1.000000 d_aa(j,k) r1_bb(b,l) u2_abab(a,c,i,m) m2_bbbb(l,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -19600,7 +19600,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= u2_abab("a,c,j,m") * tempArray[438]("c,m") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 1.000000 d_aa(i,k) r1_bb(b,l) t1_bb(a,m) u1_bb(c,j) m2_bbbb(l,m,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -19611,14 +19611,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += t1_bb("c,j") * tempArray[438]("c,m") * u1_bb("a,m") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ooov += 1.000000 d_aa(i,k) r1_bb(b,l) u2_bbbb(a,c,m,j) m2_bbbb(l,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += u2_bbbb("a,c,m,j") * tempArray[438]("c,m") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -1.000000 d_bb(j,k) r1_bb(b,l) t1_bb(c,i) u1_bb(a,m) m2_bbbb(l,m,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -19629,28 +19629,28 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += u1_bb("c,j") * tempArray[438]("c,m") * t1_bb("a,m") * Id_blks["bb_oo"]("i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -1.000000 d_bb(j,k) r1_bb(b,l) u2_bbbb(a,c,m,i) m2_bbbb(l,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= u2_bbbb("a,c,m,i") * tempArray[438]("c,m") * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 1.000000 d_bb(i,k) r1_bb(b,l) t1_bb(c,j) u1_bb(a,m) m2_bbbb(l,m,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += t1_bb("c,j") * tempArray[438]("c,m") * u1_bb("a,m") * Id_blks["bb_oo"]("i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 1.000000 d_bb(i,k) r1_bb(b,l) u2_bbbb(a,c,m,j) m2_bbbb(l,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += u2_bbbb("a,c,m,j") * tempArray[438]("c,m") * Id_blks["bb_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -1.000000 d_bb(j,k) r1_bb(b,l) t1_bb(a,m) u1_bb(c,i) m2_bbbb(l,m,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -19665,7 +19665,7 @@ namespace hilbert {
                     tempPerm_bbbb_ooov("i,j,k,a") -= tempArray[438]("c,k") * u1_bb("c,j") * t1_bb("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -1.000000 d_aa(j,l) r1_bb(b,k) u2_abab(a,c,i,m) m2_bbbb(k,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -19676,7 +19676,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += u2_abab("a,c,j,m") * tempArray[438]("c,m") * Id_blks["aa_oo"]("i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovo += 1.000000 r1_bb(b,k) t1_bb(c,j) u1_aa(a,i) m2_bbbb(k,l,c,b) 
                     // flops: o3v1: 2, o2v1: 1 | mem: o3v1: 2, o2v0: 1, 
@@ -19687,7 +19687,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += u1_bb("c,j") * tempArray[438]("c,l") * t1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovo += -1.000000 d_bb(j,l) r1_bb(b,k) u2_abab(a,c,i,m) m2_bbbb(k,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -19698,7 +19698,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= u2_bbbb("a,c,m,j") * tempArray[438]("c,m") * Id_blks["bb_oo"]("i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += -1.000000 d_bb(i,l) r1_bb(b,k) t1_bb(c,j) u1_bb(a,m) m2_bbbb(k,m,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -19709,14 +19709,14 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += t1_bb("c,i") * tempArray[438]("c,m") * u1_bb("a,m") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 1.000000 d_bb(j,l) r1_bb(b,k) u2_bbbb(a,c,m,i) m2_bbbb(k,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += u2_bbbb("a,c,m,i") * tempArray[438]("c,m") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 1.000000 d_bb(j,l) r1_bb(b,k) t1_bb(a,m) u1_bb(c,i) m2_bbbb(k,m,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -19743,7 +19743,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= t1_bb("d,k") * tempArray[438]("b,k") * u1_aa("c,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 r1_bb(a,j) u2_abab(c,d,i,k) m2_bbbb(j,k,b,a) 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
@@ -19754,7 +19754,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[438]("d,l") * u2_abab("a,d,j,l") * t1_aa("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r1_bb(c,k) t2_abab(b,d,i,l) u1_aa(a,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
@@ -19773,7 +19773,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += t2_bbbb("b,d,l,j") * tempArray[438]("d,l") * u1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_bb(c,k) t1_bb(b,j) u2_abab(a,d,i,l) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
@@ -19784,7 +19784,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += u2_bbbb("b,d,l,j") * tempArray[438]("d,l") * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_bb(c,k) t1_aa(a,i) t1_bb(b,l) u1_bb(d,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 2 | mem: o2v2: 2, o1v1: 1, o2v0: 1, 
@@ -19815,7 +19815,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(a,b) r1_bb(c,k) t2_bbbb(b,d,i,j) u1_bb(a,l) m2_bbbb(k,l,d,c) 
                     // flops: o3v2: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -19836,21 +19836,21 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r1_bb(c,k) t1_bb(a,i) t1_bb(b,l) u1_bb(d,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 2 | mem: o2v2: 2, o1v1: 1, o2v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") = tempArray[438]("d,l") * u1_bb("d,j") * t1_bb("b,l") * t1_bb("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) P(a,b) r1_bb(c,k) t1_bb(b,i) u2_bbbb(a,d,l,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") -= tempArray[438]("d,l") * u2_bbbb("a,d,l,j") * t1_bb("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) P(a,b) r1_bb(c,k) t1_bb(b,l) t1_bb(d,i) u1_bb(a,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 2 | mem: o2v2: 2, o1v1: 1, o2v0: 1, 
@@ -19906,14 +19906,14 @@ namespace hilbert {
                 }
                 tempArray[438].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempArray[439] += 1.000000 m2_aaaa("m,k,b,a") r1_aa("a,m") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
                     tempArray[439]("b,k") = m2_aaaa("m,k,b,a") * r1_aa("a,m");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oooo += -1.000000 d_aa(j,k) r1_aa(a,m) u1_aa(b,i) m2_aaaa(m,l,b,a) 
                     // flops: o4v0: 2, o2v1: 1 | mem: o4v0: 2, o2v0: 1, 
@@ -19940,14 +19940,14 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += u1_aa("c,j") * tempArray[439]("c,m") * t1_aa("a,m") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -1.000000 d_aa(j,k) r1_aa(b,l) u2_aaaa(a,c,m,i) m2_aaaa(l,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= u2_aaaa("a,c,m,i") * tempArray[439]("c,m") * Id_blks["aa_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 1.000000 d_aa(i,k) r1_aa(b,l) t1_aa(c,j) u1_aa(a,m) m2_aaaa(l,m,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -19958,14 +19958,14 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= t1_aa("c,i") * tempArray[439]("c,m") * u1_aa("a,m") * Id_blks["aa_oo"]("j,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 1.000000 d_aa(i,k) r1_aa(b,l) u2_aaaa(a,c,m,j) m2_aaaa(l,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += u2_aaaa("a,c,m,j") * tempArray[439]("c,m") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -1.000000 d_aa(j,k) r1_aa(b,l) t1_aa(a,m) u1_aa(c,i) m2_aaaa(l,m,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -19988,7 +19988,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += u1_aa("c,i") * tempArray[439]("c,k") * t1_bb("a,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ooov += -1.000000 d_aa(i,k) r1_aa(b,l) u2_abab(c,a,m,j) m2_aaaa(l,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -20003,7 +20003,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += u2_abab("c,a,m,i") * tempArray[439]("c,m") * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += 1.000000 d_aa(j,l) r1_aa(b,k) t1_aa(c,i) u1_aa(a,m) m2_aaaa(k,m,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -20018,7 +20018,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= t1_aa("c,j") * tempArray[439]("c,m") * u1_aa("a,m") * Id_blks["aa_oo"]("i,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -1.000000 d_aa(i,l) r1_aa(b,k) u2_aaaa(a,c,m,j) m2_aaaa(k,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -20029,7 +20029,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += u2_aaaa("a,c,m,i") * tempArray[439]("c,m") * Id_blks["aa_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -1.000000 d_aa(i,l) r1_aa(b,k) t1_aa(a,m) u1_aa(c,j) m2_aaaa(k,m,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -20048,21 +20048,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += u1_aa("c,i") * tempArray[439]("c,m") * t1_aa("a,m") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovo += 1.000000 d_bb(j,l) r1_aa(b,k) u2_aaaa(a,c,m,i) m2_aaaa(k,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += u2_aaaa("a,c,m,i") * tempArray[439]("c,m") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovo += 1.000000 d_bb(j,l) r1_aa(b,k) t1_aa(c,i) u1_aa(a,m) m2_aaaa(k,m,c,b) 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += t1_aa("c,i") * tempArray[439]("c,m") * u1_aa("a,m") * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovo += -1.000000 d_bb(j,l) r1_aa(b,k) u2_abab(c,a,m,i) m2_aaaa(k,m,c,b) 
                     // flops: o2v2: 1, o3v1: 2 | mem: o3v1: 2, o1v1: 1, 
@@ -20073,7 +20073,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += u2_abab("c,a,m,j") * tempArray[439]("c,m") * Id_blks["bb_oo"]("i,l");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 r1_aa(b,j) t1_bb(d,i) u1_aa(c,k) m2_aaaa(j,k,a,b) 
                     // flops: o1v3: 2, o1v2: 1 | mem: o1v3: 2, o0v2: 1, 
@@ -20084,7 +20084,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") -= t1_aa("c,k") * tempArray[439]("a,k") * u1_bb("d,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 r1_aa(b,j) u2_abab(c,d,k,i) m2_aaaa(j,k,a,b) 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
@@ -20107,7 +20107,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(a,b) r1_aa(c,k) t2_aaaa(b,d,i,j) u1_aa(a,l) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -20128,7 +20128,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) P(a,b) r1_aa(c,k) t2_aaaa(b,d,l,i) u1_aa(a,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
@@ -20143,14 +20143,14 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[439]("d,l") * t1_aa("d,i") * u1_aa("a,l") * t1_aa("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) P(a,b) r1_aa(c,k) t1_aa(b,i) u2_aaaa(a,d,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") -= tempArray[439]("d,l") * u2_aaaa("a,d,l,j") * t1_aa("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r1_aa(c,k) t1_aa(a,i) t1_aa(b,l) u1_aa(d,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 2 | mem: o2v2: 2, o1v1: 1, o2v0: 1, 
@@ -20165,28 +20165,28 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += t2_aaaa("a,d,l,i") * tempArray[439]("d,l") * u1_bb("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(c,k) t1_bb(b,j) u2_aaaa(a,d,l,i) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += u2_aaaa("a,d,l,i") * tempArray[439]("d,l") * t1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(c,k) t1_aa(a,l) t1_aa(d,i) u1_bb(b,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 2, o2v1: 2 | mem: o2v2: 2, o1v1: 1, o2v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += t1_aa("d,i") * tempArray[439]("d,l") * t1_aa("a,l") * u1_bb("b,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_aa(c,k) t1_aa(a,i) u2_abab(d,b,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u2_abab("d,b,l,j") * tempArray[439]("d,l") * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(c,k) t2_abab(d,b,i,j) u1_aa(a,l) m2_aaaa(k,l,d,c) 
                     // flops: o3v2: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -20201,14 +20201,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t2_abab("d,b,l,j") * tempArray[439]("d,l") * u1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r1_aa(c,k) t1_bb(b,i) u2_abab(d,a,l,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[439]("d,l") * u2_abab("d,a,l,j") * t1_bb("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r1_aa(c,k) t2_abab(d,b,l,i) u1_bb(a,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 3 | mem: o2v2: 2, o1v1: 1, 
@@ -20826,7 +20826,7 @@ namespace hilbert {
                 }
                 tempArray[442].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[443] += 1.000000 s1_bb("b,m") m2_bbbb("m,l,a,b") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
@@ -21210,7 +21210,7 @@ namespace hilbert {
                 }
                 tempArray[444].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[445] += 1.000000 m2_abab("k,m,a,b") s1_bb("b,m") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
@@ -21787,7 +21787,7 @@ namespace hilbert {
                 tempArray[446].~TArrayD();
                 tempArray[447].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 t1_aa(a,i) t1_bb(b,j) m2_abab(l,k,c,d) s2_abab(c,d,l,k) 
                     // +               0.250000 t1_aa(a,i) t1_bb(b,j) m2_abab(l,k,d,c) s2_abab(d,c,l,k) 
@@ -21797,7 +21797,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_8 * tempArray[448]("a,b,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 t1_aa(a,i) t1_bb(b,j) m1_aa(k,c) s1_aa(c,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -21826,21 +21826,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += 0.250000 * scalar_2 * tempArray[448]("a,b,i,j");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_abab_oovv += 1.000000 t1_aa(a,i) t1_bb(b,j) m0 s0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[448]("a,b,i,j") * s0 * m0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 t1_aa(a,i) t1_bb(b,j) m1_bb(k,c) s1_bb(c,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_6 * tempArray[448]("a,b,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 t1_aa(a,i) t1_bb(b,j) m2_bbbb(l,k,c,d) s2_bbbb(c,d,l,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -21854,7 +21854,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += l0 * tempArray[448]("a,b,i,j") * r0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 t1_aa(a,i) t1_bb(b,j) m2_aaaa(l,k,c,d) s2_aaaa(c,d,l,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -21886,28 +21886,28 @@ namespace hilbert {
                 }
                 tempArray[448].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.250000 P(i,j) t1_bb(a,j) t1_bb(b,i) m2_bbbb(l,k,c,d) s2_bbbb(c,d,l,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") = -0.250000 * scalar_9 * tempArray[449]("a,b,j,i");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) t1_bb(a,j) t1_bb(b,i) m0 s0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
                     tempPerm_bbbb_oovv("i,j,a,b") -= tempArray[449]("a,b,j,i") * m0 * s0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.250000 P(i,j) t1_bb(a,j) t1_bb(b,i) m2_aaaa(l,k,c,d) s2_aaaa(c,d,l,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") -= 0.250000 * scalar_7 * tempArray[449]("a,b,j,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) t1_bb(a,j) t1_bb(b,i) m1_aa(k,c) s1_aa(c,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -21924,7 +21924,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") -= scalar_3 * tempArray[449]("a,b,j,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) t1_bb(a,j) t1_bb(b,i) m1_bb(k,c) s1_bb(c,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -21942,7 +21942,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") -= l0 * r0 * tempArray[449]("a,b,j,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.250000 P(i,j) t1_bb(a,j) t1_bb(b,i) m2_abab(l,k,c,d) s2_abab(c,d,l,k) 
                     // +               -0.250000 P(i,j) t1_bb(a,j) t1_bb(b,i) m2_abab(l,k,d,c) s2_abab(d,c,l,k) 
@@ -21985,7 +21985,7 @@ namespace hilbert {
                 }
                 tempArray[449].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) t1_aa(a,j) t1_aa(b,i) m1_aa(k,c) s1_aa(c,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -22006,7 +22006,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= scalar_3 * tempArray[450]("a,b,j,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.250000 P(i,j) t1_aa(a,j) t1_aa(b,i) m2_bbbb(l,k,c,d) s2_bbbb(c,d,l,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -22020,7 +22020,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= scalar_0 * tempArray[450]("a,b,j,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.250000 P(i,j) t1_aa(a,j) t1_aa(b,i) m2_abab(l,k,c,d) s2_abab(c,d,l,k) 
                     // +               -0.250000 P(i,j) t1_aa(a,j) t1_aa(b,i) m2_abab(l,k,d,c) s2_abab(d,c,l,k) 
@@ -22037,14 +22037,14 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= 0.250000 * scalar_4 * tempArray[450]("a,b,j,i");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) t1_aa(a,j) t1_aa(b,i) m0 s0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
                     tempPerm_aaaa_oovv("i,j,a,b") -= tempArray[450]("a,b,j,i") * m0 * s0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.250000 P(i,j) t1_aa(a,j) t1_aa(b,i) m2_aaaa(l,k,c,d) s2_aaaa(c,d,l,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -22058,7 +22058,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= l0 * r0 * tempArray[450]("a,b,j,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) t1_aa(a,j) t1_aa(b,i) m1_bb(k,c) s1_bb(c,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -22073,14 +22073,14 @@ namespace hilbert {
                 }
                 tempArray[450].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[451] += 1.000000 m1_aa("l,b") t2_abab("b,a,l,j") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
                     tempArray[451]("a,j") = m1_aa("l,b") * t2_abab("b,a,l,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_ooov += 1.000000 d_aa(i,k) t2_abab(b,a,l,j) m1_aa(l,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -22107,7 +22107,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[451]("b,j") * s0 * t1_aa("a,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 t2_abab(c,b,k,j) m1_aa(k,c) s1_aa(a,i) 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
@@ -22132,14 +22132,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) P(a,b) t1_bb(a,j) t2_abab(c,b,k,i) m1_aa(k,c) s0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") = -1.0 * tempArray[451]("b,i") * t1_bb("a,j") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) P(a,b) t2_abab(c,a,k,j) m1_aa(k,c) s1_bb(b,i) 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
@@ -22155,7 +22155,7 @@ namespace hilbert {
                 }
                 tempArray[451].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_ooov += -1.000000 d_aa(i,k) t2_bbbb(a,b,l,j) m1_bb(l,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -22178,21 +22178,21 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= tempArray[452]("a,i") * s0 * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 t2_bbbb(b,c,k,j) m1_bb(k,c) s1_aa(a,i) 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[452]("b,j") * s1_aa("a,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 t1_aa(a,i) t2_bbbb(b,c,k,j) m1_bb(k,c) s0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[452]("b,j") * s0 * t1_aa("a,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 r0 t2_bbbb(b,c,k,j) u1_aa(a,i) m1_bb(k,c) 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -22203,14 +22203,14 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") += r0 * tempArray[452]("b,i") * u1_bb("a,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) t1_bb(a,j) t2_bbbb(b,c,k,i) m1_bb(k,c) s0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[452]("b,i") * t1_bb("a,j") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) t2_bbbb(a,c,k,j) m1_bb(k,c) s1_bb(b,i) 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
@@ -22222,7 +22222,7 @@ namespace hilbert {
                 }
                 tempArray[452].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_aaaa_ooov += 1.000000 d_aa(i,k) t2_abab(a,b,j,l) m1_bb(l,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -22259,14 +22259,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) P(a,b) t1_aa(a,j) t2_abab(b,c,i,k) m1_bb(k,c) s0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") = -1.0 * tempArray[453]("b,i") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) P(a,b) t2_abab(a,c,j,k) m1_bb(k,c) s1_aa(b,i) 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
@@ -22281,14 +22281,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * u1_bb("b,j") * tempArray[453]("a,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 t1_bb(b,j) t2_abab(a,c,i,k) m1_bb(k,c) s0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += tempArray[453]("a,i") * s0 * t1_bb("b,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 t2_abab(a,c,i,k) m1_bb(k,c) s1_bb(b,j) 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
@@ -22300,7 +22300,7 @@ namespace hilbert {
                 }
                 tempArray[453].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_aaaa_ooov += 1.000000 d_aa(j,k) t2_aaaa(a,b,l,i) m1_aa(l,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -22323,7 +22323,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= tempArray[454]("a,i") * s0 * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) t2_aaaa(a,c,k,j) m1_aa(k,c) s1_aa(b,i) 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
@@ -22334,14 +22334,14 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += r0 * tempArray[454]("b,i") * u1_aa("a,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) t1_aa(a,j) t2_aaaa(b,c,k,i) m1_aa(k,c) s0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[454]("b,i") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 r0 t2_aaaa(a,c,k,i) u1_bb(b,j) m1_aa(k,c) 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -22352,7 +22352,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[454]("a,i") * s1_bb("b,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 t1_bb(b,j) t2_aaaa(a,c,k,i) m1_aa(k,c) s0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -22360,7 +22360,7 @@ namespace hilbert {
                 }
                 tempArray[454].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[455] += 1.000000 u2_bbbb("a,b,l,j") m1_bb("l,b") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
@@ -22571,7 +22571,7 @@ namespace hilbert {
                 tempArray[458].~TArrayD();
                 tempArray[459].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[460] += 1.000000 m1_aa("l,b") u2_aaaa("a,b,l,i") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
@@ -22659,7 +22659,7 @@ namespace hilbert {
                 }
                 tempArray[461].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[462] += 1.000000 m1_bb("l,b") u2_abab("a,b,i,l") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
@@ -22772,7 +22772,7 @@ namespace hilbert {
                 }
                 tempArray[464].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[465] += 1.000000 s2_aaaa("a,b,l,i") m1_aa("l,b") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
@@ -22844,7 +22844,7 @@ namespace hilbert {
                 }
                 tempArray[466].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[467] += 1.000000 m1_bb("l,b") s2_bbbb("a,b,l,j") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
@@ -22949,7 +22949,7 @@ namespace hilbert {
                 tempArray[468].~TArrayD();
                 tempArray[469].~TArrayD();
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempArray[470] += 1.000000 s2_abab("b,a,l,j") m1_aa("l,b") 
                     // flops: o2v2: 1, o1v1: 1 | mem: o1v1: 2, 
@@ -22985,7 +22985,7 @@ namespace hilbert {
                 }
                 tempArray[470].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[471] += 1.000000 t1_aa("a,i") u1_aa("b,j") 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
@@ -22996,7 +22996,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= scalar_11 * tempArray[471]("b,a,i,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -0.250000 P(i,j) P(a,b) r2_bbbb(d,c,k,l) t1_aa(b,i) u1_aa(a,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -23014,14 +23014,14 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") -= scalar_13 * tempArray[471]("b,a,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) P(a,b) r1_aa(c,k) t1_aa(b,i) u1_aa(a,j) m1_aa(k,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") -= scalar_10 * tempArray[471]("b,a,i,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) P(a,b) r0 t1_aa(b,i) u1_aa(a,j) m0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
@@ -23029,14 +23029,14 @@ namespace hilbert {
                 }
                 tempArray[471].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[472] += 1.000000 u1_bb("b,j") t1_bb("a,i") 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
                     tempArray[472]("b,a,j,i") = u1_bb("b,j") * t1_bb("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.250000 P(i,j) P(a,b) r2_abab(d,c,k,l) t1_bb(b,i) u1_bb(a,j) m2_abab(k,l,d,c) 
                     // +               -0.250000 P(i,j) P(a,b) r2_abab(d,c,l,k) t1_bb(b,i) u1_bb(a,j) m2_abab(l,k,d,c) 
@@ -23046,35 +23046,35 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") -= scalar_13 * tempArray[472]("a,b,j,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) P(a,b) r0 t1_bb(b,i) u1_bb(a,j) m0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
                     tempPerm_bbbb_oovv("i,j,a,b") -= r0 * tempArray[472]("a,b,j,i") * m0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) P(a,b) r1_bb(c,k) t1_bb(b,i) u1_bb(a,j) m1_bb(k,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") -= scalar_11 * tempArray[472]("a,b,j,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.250000 P(i,j) P(a,b) r2_aaaa(d,c,k,l) t1_bb(b,i) u1_bb(a,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") -= 0.250000 * scalar_12 * tempArray[472]("a,b,j,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) P(a,b) r1_aa(c,k) t1_bb(b,i) u1_bb(a,j) m1_aa(k,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") -= scalar_10 * tempArray[472]("a,b,j,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -0.250000 P(i,j) P(a,b) r2_bbbb(d,c,k,l) t1_bb(b,i) u1_bb(a,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -23082,14 +23082,14 @@ namespace hilbert {
                 }
                 tempArray[472].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[473] += 1.000000 u1_bb("b,j") t1_aa("a,i") 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
                     tempArray[473]("a,b,i,j") = u1_bb("b,j") * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 r2_aaaa(d,c,k,l) t1_aa(a,i) u1_bb(b,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -23103,7 +23103,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_13 * tempArray[473]("a,b,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 r1_bb(c,k) t1_aa(a,i) u1_bb(b,j) m1_bb(k,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -23114,14 +23114,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_10 * tempArray[473]("a,b,i,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 r0 t1_aa(a,i) u1_bb(b,j) m0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * m0 * tempArray[473]("a,b,i,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 r2_bbbb(d,c,k,l) t1_aa(a,i) u1_bb(b,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -23129,49 +23129,49 @@ namespace hilbert {
                 }
                 tempArray[473].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[474] += 1.000000 t1_bb("a,j") u1_aa("b,i") 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
                     tempArray[474]("b,a,i,j") = t1_bb("a,j") * u1_aa("b,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 r2_bbbb(d,c,k,l) t1_bb(b,j) u1_aa(a,i) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += 0.250000 * scalar_14 * tempArray[474]("a,b,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 r1_bb(c,k) t1_bb(b,j) u1_aa(a,i) m1_bb(k,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_11 * tempArray[474]("a,b,i,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 r2_aaaa(d,c,k,l) t1_bb(b,j) u1_aa(a,i) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += 0.250000 * scalar_12 * tempArray[474]("a,b,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(c,k) t1_bb(b,j) u1_aa(a,i) m1_aa(k,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_10 * tempArray[474]("a,b,i,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 r0 t1_bb(b,j) u1_aa(a,i) m0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r0 * m0 * tempArray[474]("a,b,i,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 r2_abab(d,c,k,l) t1_bb(b,j) u1_aa(a,i) m2_abab(k,l,d,c) 
                     // +               0.250000 r2_abab(d,c,l,k) t1_bb(b,j) u1_aa(a,i) m2_abab(l,k,d,c) 
@@ -23182,14 +23182,14 @@ namespace hilbert {
                 }
                 tempArray[474].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[475] += 1.000000 t1_bb("b,k") m1_bb("k,a") Id_blks["bb_oo"]("i,j") 
                     // flops: o2v2: 2, o1v2: 1 | mem: o2v2: 2, o0v2: 1, 
                     tempArray[475]("b,a,i,j") = t1_bb("b,k") * m1_bb("k,a") * Id_blks["bb_oo"]("i,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_bbbb_ovov += 1.000000 d_bb(i,j) t1_bb(b,k) m1_bb(k,a) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -23233,7 +23233,7 @@ namespace hilbert {
                 }
                 tempArray[476].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[477] += 1.000000 u1_bb("b,k") m1_bb("k,a") Id_blks["bb_oo"]("i,j") 
                     // flops: o2v2: 2, o1v2: 1 | mem: o2v2: 2, o0v2: 1, 
@@ -23323,7 +23323,7 @@ namespace hilbert {
                 tempArray[479].~TArrayD();
                 tempArray[480].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[481] += 1.000000 u1_aa("b,k") m1_aa("k,a") Id_blks["aa_oo"]("i,j") 
                     // flops: o2v2: 2, o1v2: 1 | mem: o2v2: 2, o0v2: 1, 
@@ -23372,7 +23372,7 @@ namespace hilbert {
                 tempArray[481].~TArrayD();
                 tempArray[482].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_aaaa_ovov += 1.000000 d_aa(i,j) t1_aa(b,k) m1_aa(k,a) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -23437,7 +23437,7 @@ namespace hilbert {
                 tempArray[484].~TArrayD();
                 tempArray[485].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[486] += 1.000000 u1_bb("c,i") m1_bb("j,b") 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
@@ -23485,7 +23485,7 @@ namespace hilbert {
                 }
                 tempArray[487].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[488] += 1.000000 s1_aa("d,i") m1_aa("j,b") 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
@@ -23513,7 +23513,7 @@ namespace hilbert {
                 }
                 tempArray[488].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_bbbb_ovov += -1.000000 t1_bb(b,i) m1_bb(j,a) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -23578,7 +23578,7 @@ namespace hilbert {
                 tempArray[490].~TArrayD();
                 tempArray[491].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[492] += 1.000000 u1_aa("c,i") m1_aa("j,b") 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
@@ -23606,7 +23606,7 @@ namespace hilbert {
                 }
                 tempArray[492].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_aaaa_ovov += -1.000000 t1_aa(b,i) m1_aa(j,a) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -23626,7 +23626,7 @@ namespace hilbert {
                 }
                 tempArray[493].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[494] += 1.000000 m1_bb("j,b") s1_bb("d,i") 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
@@ -23709,7 +23709,7 @@ namespace hilbert {
                     tempArray[499]("a,j,l,i") = Id_blks["aa_oo"]("j,l") * t1_aa("a,i");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_aaaa_ooov += 1.000000 d_aa(i,k) t1_aa(a,j) m0 s0 
                     // flops: o3v1: 1, o0v0: 2 | mem: o3v1: 1, o0v0: 2, 
@@ -23731,7 +23731,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= tempArray[499]("a,j,k,i") * r0 * l0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_aaaa_ooov += 1.000000 d_aa(i,k) t1_aa(a,j) m1_bb(l,b) s1_bb(b,l) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -23742,7 +23742,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= scalar_6 * tempArray[499]("a,j,k,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 0.250000 d_aa(i,k) t1_aa(a,j) m2_abab(m,l,b,c) s2_abab(b,c,m,l) 
                     // +               0.250000 d_aa(i,k) t1_aa(a,j) m2_abab(m,l,c,b) s2_abab(c,b,m,l) 
@@ -23770,7 +23770,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= 0.250000 * scalar_4 * tempArray[499]("a,j,k,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -0.250000 d_aa(j,k) t1_aa(a,i) m2_aaaa(m,l,b,c) s2_aaaa(b,c,m,l) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -23800,7 +23800,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += 0.250000 * scalar_2 * tempArray[499]("a,i,k,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 0.250000 d_aa(i,k) t1_aa(a,j) m2_bbbb(m,l,b,c) s2_bbbb(b,c,m,l) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -23836,7 +23836,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += scalar_1 * tempArray[499]("a,i,k,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_aaaa_ooov += 1.000000 d_aa(i,k) t1_aa(a,j) m1_aa(l,b) s1_aa(b,l) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -23858,7 +23858,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += tempArray[499]("a,j,l,i") * r0 * l0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovo += 0.250000 d_aa(j,l) t1_aa(a,i) m2_abab(m,k,b,c) s2_abab(b,c,m,k) 
                     // +               0.250000 d_aa(j,l) t1_aa(a,i) m2_abab(m,k,c,b) s2_abab(c,b,m,k) 
@@ -23894,7 +23894,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= scalar_0 * tempArray[499]("a,i,l,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -0.250000 d_aa(i,l) t1_aa(a,j) m2_bbbb(m,k,b,c) s2_bbbb(b,c,m,k) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -23916,7 +23916,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += 0.250000 * scalar_4 * tempArray[499]("a,j,l,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_aaaa_oovo += 1.000000 d_aa(j,l) t1_aa(a,i) m1_bb(k,b) s1_bb(b,k) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -23952,7 +23952,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += scalar_3 * tempArray[499]("a,j,l,i");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_aaaa_oovo += 1.000000 d_aa(j,l) t1_aa(a,i) m0 s0 
                     // flops: o3v1: 1, o0v0: 2 | mem: o3v1: 1, o0v0: 2, 
@@ -23963,7 +23963,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= tempArray[499]("a,i,l,j") * s0 * m0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovo += 0.250000 d_aa(j,l) t1_aa(a,i) m2_aaaa(m,k,b,c) s2_aaaa(b,c,m,k) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -23990,7 +23990,7 @@ namespace hilbert {
                 }
                 tempArray[499].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 0.250000 d_bb(i,k) t1_bb(a,j) m2_aaaa(m,l,b,c) s2_aaaa(b,c,m,l) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24020,7 +24020,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += tempArray[500]("a,i,k,j") * r0 * l0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_bbbb_ooov += 1.000000 d_bb(i,k) t1_bb(a,j) m1_bb(l,b) s1_bb(b,l) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24031,7 +24031,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= scalar_6 * tempArray[500]("a,j,k,i");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_bbbb_ooov += -1.000000 d_bb(j,k) t1_bb(a,i) m0 s0 
                     // flops: o3v1: 1, o0v0: 2 | mem: o3v1: 1, o0v0: 2, 
@@ -24042,7 +24042,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += tempArray[500]("a,i,k,j") * s0 * m0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_bbbb_ooov += -1.000000 d_bb(j,k) t1_bb(a,i) m1_aa(l,b) s1_aa(b,l) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24080,7 +24080,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += 0.250000 * scalar_2 * tempArray[500]("a,i,k,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 0.250000 d_bb(i,k) t1_bb(a,j) m2_abab(m,l,b,c) s2_abab(b,c,m,l) 
                     // +               0.250000 d_bb(i,k) t1_bb(a,j) m2_abab(m,l,c,b) s2_abab(c,b,m,l) 
@@ -24122,7 +24122,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += scalar_3 * tempArray[500]("a,i,k,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 0.250000 d_bb(j,l) t1_bb(a,i) m2_aaaa(m,k,b,c) s2_aaaa(b,c,m,k) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24166,7 +24166,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += scalar_1 * tempArray[500]("a,j,l,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 0.250000 d_bb(j,l) t1_bb(a,i) m2_bbbb(m,k,b,c) s2_bbbb(b,c,m,k) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24196,7 +24196,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += scalar_0 * tempArray[500]("a,j,l,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovo += 0.250000 d_bb(j,l) t1_bb(a,i) m2_abab(m,k,b,c) s2_abab(b,c,m,k) 
                     // +               0.250000 d_bb(j,l) t1_bb(a,i) m2_abab(m,k,c,b) s2_abab(c,b,m,k) 
@@ -24213,7 +24213,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= scalar_8 * tempArray[500]("a,i,l,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_bbbb_oovo += 1.000000 d_bb(j,l) t1_bb(a,i) m1_aa(k,b) s1_aa(b,k) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24224,7 +24224,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= scalar_5 * tempArray[500]("a,i,l,j");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_bbbb_oovo += 1.000000 d_bb(j,l) t1_bb(a,i) m0 s0 
                     // flops: o3v1: 1, o0v0: 2 | mem: o3v1: 1, o0v0: 2, 
@@ -24235,7 +24235,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= tempArray[500]("a,i,l,j") * s0 * m0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_bbbb_oovo += -1.000000 d_bb(i,l) t1_bb(a,j) m1_bb(k,b) s1_bb(b,k) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24258,7 +24258,7 @@ namespace hilbert {
                 }
                 tempArray[500].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[501] += 1.000000 Id_blks["aa_oo"]("j,l") u1_aa("b,i") 
                     // flops: o3v1: 2 | mem: o3v1: 2, 
@@ -24273,7 +24273,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= scalar_10 * tempArray[501]("a,j,k,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += -0.250000 d_aa(j,k) r2_aaaa(c,b,l,m) u1_aa(a,i) m2_aaaa(l,m,c,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24284,7 +24284,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += 0.250000 * scalar_12 * tempArray[501]("a,i,k,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_aaaa_ooov += 1.000000 d_aa(i,k) r0 u1_aa(a,j) m0 
                     // flops: o3v1: 1, o0v0: 2 | mem: o3v1: 1, o0v0: 2, 
@@ -24295,7 +24295,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= tempArray[501]("a,j,k,i") * m0 * r0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_ooov += 0.250000 d_aa(i,k) r2_abab(c,b,l,m) u1_aa(a,j) m2_abab(l,m,c,b) 
                     // +               0.250000 d_aa(i,k) r2_abab(c,b,m,l) u1_aa(a,j) m2_abab(m,l,c,b) 
@@ -24320,7 +24320,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") -= 0.250000 * scalar_14 * tempArray[501]("a,j,k,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_aaaa_ooov += -1.000000 d_aa(j,k) r1_bb(b,l) u1_aa(a,i) m1_bb(l,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24331,7 +24331,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_ooov"]("i,j,k,a") += scalar_11 * tempArray[501]("a,i,k,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -0.250000 d_aa(i,l) r2_bbbb(c,b,k,m) u1_aa(a,j) m2_bbbb(k,m,c,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24342,7 +24342,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += 0.250000 * scalar_14 * tempArray[501]("a,j,l,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_aaaa_oovo += 1.000000 d_aa(j,l) r1_aa(b,k) u1_aa(a,i) m1_aa(k,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24353,7 +24353,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= scalar_10 * tempArray[501]("a,i,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -0.250000 d_aa(i,l) r2_abab(c,b,k,m) u1_aa(a,j) m2_abab(k,m,c,b) 
                     // +               -0.250000 d_aa(i,l) r2_abab(c,b,m,k) u1_aa(a,j) m2_abab(m,k,c,b) 
@@ -24370,7 +24370,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += scalar_13 * tempArray[501]("a,j,l,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_aaaa_oovo += 1.000000 d_aa(j,l) r1_bb(b,k) u1_aa(a,i) m1_bb(k,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24381,7 +24381,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") -= scalar_11 * tempArray[501]("a,i,l,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovo += -0.250000 d_aa(i,l) r2_aaaa(c,b,k,m) u1_aa(a,j) m2_aaaa(k,m,c,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24392,7 +24392,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovo"]("i,j,a,l") += 0.250000 * scalar_12 * tempArray[501]("a,j,l,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_aaaa_oovo += 1.000000 d_aa(j,l) r0 u1_aa(a,i) m0 
                     // flops: o3v1: 1, o0v0: 2 | mem: o3v1: 1, o0v0: 2, 
@@ -24404,7 +24404,7 @@ namespace hilbert {
                 }
                 tempArray[501].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[502] += 1.000000 u1_bb("b,i") Id_blks["bb_oo"]("j,l") 
                     // flops: o3v1: 2 | mem: o3v1: 2, 
@@ -24419,7 +24419,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= scalar_10 * tempArray[502]("a,i,j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += 0.250000 d_bb(i,k) r2_bbbb(c,b,l,m) u1_bb(a,j) m2_bbbb(l,m,c,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24444,7 +24444,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= scalar_13 * tempArray[502]("a,i,j,k");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_bbbb_ooov += -1.000000 d_bb(j,k) r0 u1_bb(a,i) m0 
                     // flops: o3v1: 1, o0v0: 2 | mem: o3v1: 1, o0v0: 2, 
@@ -24455,7 +24455,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += tempArray[502]("a,j,i,k") * m0 * r0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_ooov += -0.250000 d_bb(j,k) r2_aaaa(c,b,l,m) u1_bb(a,i) m2_aaaa(l,m,c,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24466,7 +24466,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") += 0.250000 * scalar_12 * tempArray[502]("a,j,i,k");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_bbbb_ooov += 1.000000 d_bb(i,k) r1_bb(b,l) u1_bb(a,j) m1_bb(l,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24477,7 +24477,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_ooov"]("i,j,k,a") -= scalar_11 * tempArray[502]("a,i,j,k");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_oovo += -0.250000 d_bb(i,l) r2_aaaa(c,b,k,m) u1_bb(a,j) m2_aaaa(k,m,c,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24510,7 +24510,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") += scalar_13 * tempArray[502]("a,i,j,l");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_bbbb_oovo += 1.000000 d_bb(j,l) r0 u1_bb(a,i) m0 
                     // flops: o3v1: 1, o0v0: 2 | mem: o3v1: 1, o0v0: 2, 
@@ -24521,7 +24521,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovo"]("i,j,a,l") -= tempArray[502]("a,j,i,l") * m0 * r0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_bbbb_oovo += -1.000000 d_bb(i,l) r1_bb(b,k) u1_bb(a,j) m1_bb(k,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24556,7 +24556,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += 0.250000 * scalar_2 * tempArray[503]("a,i,j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovo += 0.250000 d_bb(j,l) t1_aa(a,i) m2_abab(m,k,b,c) s2_abab(b,c,m,k) 
                     // +               0.250000 d_bb(j,l) t1_aa(a,i) m2_abab(m,k,c,b) s2_abab(c,b,m,k) 
@@ -24573,14 +24573,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += tempArray[503]("a,i,j,l") * r0 * l0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovo += 0.250000 d_bb(j,l) t1_aa(a,i) m2_bbbb(m,k,b,c) s2_bbbb(b,c,m,k) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += 0.250000 * scalar_9 * tempArray[503]("a,i,j,l");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovo += 1.000000 d_bb(j,l) t1_aa(a,i) m1_bb(k,b) s1_bb(b,k) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24597,7 +24597,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += scalar_3 * tempArray[503]("a,i,j,l");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_abab_oovo += 1.000000 d_bb(j,l) t1_aa(a,i) m0 s0 
                     // flops: o3v1: 1, o0v0: 2 | mem: o3v1: 1, o0v0: 2, 
@@ -24611,14 +24611,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += scalar_1 * tempArray[503]("a,i,j,l");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovo += 1.000000 d_bb(j,l) t1_aa(a,i) m1_aa(k,b) s1_aa(b,k) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += scalar_5 * tempArray[503]("a,i,j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovo += 0.250000 d_bb(j,l) t1_aa(a,i) m2_aaaa(m,k,b,c) s2_aaaa(b,c,m,k) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24637,7 +24637,7 @@ namespace hilbert {
                 }
                 tempArray[503].~TArrayD();
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ooov += 0.250000 d_aa(i,k) t1_bb(a,j) m2_abab(m,l,b,c) s2_abab(b,c,m,l) 
                     // +               0.250000 d_aa(i,k) t1_bb(a,j) m2_abab(m,l,c,b) s2_abab(c,b,m,l) 
@@ -24647,7 +24647,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += scalar_8 * tempArray[504]("a,i,k,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_ooov += 1.000000 d_aa(i,k) t1_bb(a,j) m1_aa(l,b) s1_aa(b,l) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24673,7 +24673,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += tempArray[504]("a,i,k,j") * r0 * l0;
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_abab_ooov += 1.000000 d_aa(i,k) t1_bb(a,j) m0 s0 
                     // flops: o3v1: 1, o0v0: 2 | mem: o3v1: 1, o0v0: 2, 
@@ -24687,7 +24687,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += 0.250000 * scalar_2 * tempArray[504]("a,i,k,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ooov += 0.250000 d_aa(i,k) t1_bb(a,j) m2_bbbb(m,l,b,c) s2_bbbb(b,c,m,l) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24708,7 +24708,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += scalar_0 * tempArray[504]("a,i,k,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ooov += 0.250000 d_aa(i,k) t1_bb(a,j) m2_aaaa(m,l,b,c) s2_aaaa(b,c,m,l) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24716,7 +24716,7 @@ namespace hilbert {
                 }
                 tempArray[504].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[505] += 1.000000 u1_aa("b,i") Id_blks["bb_oo"]("j,l") 
                     // flops: o3v1: 2 | mem: o3v1: 2, 
@@ -24727,14 +24727,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += scalar_11 * tempArray[505]("a,i,j,l");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovo += 1.000000 d_bb(j,l) r0 u1_aa(a,i) m0 
                     // flops: o3v1: 1, o0v0: 2 | mem: o3v1: 1, o0v0: 2, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += tempArray[505]("a,i,j,l") * m0 * r0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovo += 0.250000 d_bb(j,l) r2_aaaa(c,b,k,m) u1_aa(a,i) m2_aaaa(k,m,c,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24752,7 +24752,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += 0.250000 * scalar_14 * tempArray[505]("a,i,j,l");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovo += 1.000000 d_bb(j,l) r1_aa(b,k) u1_aa(a,i) m1_aa(k,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24764,21 +24764,21 @@ namespace hilbert {
                 }
                 tempArray[505].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_ooov += 1.000000 d_aa(i,k) r0 u1_bb(a,j) m0 
                     // flops: o3v1: 1, o0v0: 2 | mem: o3v1: 1, o0v0: 2, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += tempArray[506]("a,i,k,j") * m0 * r0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 0.250000 d_aa(i,k) r2_bbbb(c,b,l,m) u1_bb(a,j) m2_bbbb(l,m,c,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += 0.250000 * scalar_14 * tempArray[506]("a,i,k,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_ooov += 1.000000 d_aa(i,k) r1_aa(b,l) u1_bb(a,j) m1_aa(l,b) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -24789,7 +24789,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") += scalar_11 * tempArray[506]("a,i,k,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ooov += 0.250000 d_aa(i,k) r2_abab(c,b,l,m) u1_bb(a,j) m2_abab(l,m,c,b) 
                     // +               0.250000 d_aa(i,k) r2_abab(c,b,m,l) u1_bb(a,j) m2_abab(m,l,c,b) 
@@ -24804,7 +24804,7 @@ namespace hilbert {
                 }
                 tempArray[506].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[507] += 1.000000 u1_bb("b,j") m1_bb("l,b") t1_bb("a,l") Id_blks["bb_oo"]("i,k") 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -24873,7 +24873,7 @@ namespace hilbert {
                 }
                 tempArray[509].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[510] += 1.000000 r1_bb("b,i") m1_bb("l,b") u1_bb("a,l") Id_blks["bb_oo"]("j,k") 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -24921,7 +24921,7 @@ namespace hilbert {
                 }
                 tempArray[511].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[512] += 1.000000 m1_bb("l,b") s1_bb("b,i") t1_bb("a,l") Id_blks["bb_oo"]("j,k") 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -24969,7 +24969,7 @@ namespace hilbert {
                 }
                 tempArray[513].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[514] += 1.000000 u1_aa("b,j") m1_aa("l,b") t1_aa("a,l") Id_blks["aa_oo"]("i,k") 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -25038,7 +25038,7 @@ namespace hilbert {
                 tempArray[515].~TArrayD();
                 tempArray[516].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[517] += 1.000000 t1_aa("b,j") m1_aa("l,b") u1_aa("a,l") Id_blks["aa_oo"]("i,k") 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -25066,7 +25066,7 @@ namespace hilbert {
                 }
                 tempArray[517].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_aaaa_ooov += 1.000000 d_aa(j,k) t1_aa(a,l) t1_aa(b,i) m1_aa(l,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -25086,7 +25086,7 @@ namespace hilbert {
                 }
                 tempArray[518].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[519] += 1.000000 t1_aa("b,i") m1_aa("l,b") s1_aa("a,l") Id_blks["aa_oo"]("j,k") 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -25114,7 +25114,7 @@ namespace hilbert {
                 }
                 tempArray[519].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_bbbb_ooov += -1.000000 d_bb(i,k) t1_bb(a,l) t1_bb(b,j) m1_bb(l,b) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -25134,7 +25134,7 @@ namespace hilbert {
                 }
                 tempArray[520].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[521] += 1.000000 m1_aa("l,b") s1_aa("b,i") t1_aa("a,l") Id_blks["aa_oo"]("j,k") 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -25203,7 +25203,7 @@ namespace hilbert {
                 }
                 tempArray[523].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[524] += 1.000000 t1_bb("b,j") m1_bb("l,b") u1_bb("a,l") Id_blks["bb_oo"]("i,k") 
                     // flops: o3v1: 2, o2v1: 2 | mem: o3v1: 2, o1v1: 1, o2v0: 1, 
@@ -25311,7 +25311,7 @@ namespace hilbert {
                 tempArray[528].~TArrayD();
                 tempArray[529].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[530] += 1.000000 t1_bb("b,j") m1_bb("k,b") s1_bb("a,i") 
                     // flops: o3v1: 2, o2v1: 1 | mem: o3v1: 2, o2v0: 1, 
@@ -25356,7 +25356,7 @@ namespace hilbert {
                 }
                 tempArray[532].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[533] += 1.000000 r1_bb("b,i") m1_bb("k,b") u1_bb("a,j") 
                     // flops: o3v1: 2, o2v1: 1 | mem: o3v1: 2, o2v0: 1, 
@@ -25414,7 +25414,7 @@ namespace hilbert {
                 }
                 tempArray[536].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[537] += 1.000000 t1_aa("b,j") m1_aa("k,b") s1_aa("a,i") 
                     // flops: o3v1: 2, o2v1: 1 | mem: o3v1: 2, o2v0: 1, 
@@ -25488,14 +25488,14 @@ namespace hilbert {
                 tempArray[539].~TArrayD();
                 tempArray[540].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[541] += 1.000000 m1_bb("l,b") Id_blks["bb_oo"]("j,k") 
                     // flops: o3v1: 2 | mem: o3v1: 2, 
                     tempArray[541]("b,l,j,k") = m1_bb("l,b") * Id_blks["bb_oo"]("j,k");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_bbbb_ovoo += -1.000000 d_bb(i,l) m1_bb(k,a) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -25539,14 +25539,14 @@ namespace hilbert {
                 }
                 tempArray[542].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[543] += 1.000000 Id_blks["aa_oo"]("j,k") m1_aa("l,b") 
                     // flops: o3v1: 2 | mem: o3v1: 2, 
                     tempArray[543]("b,j,k,l") = Id_blks["aa_oo"]("j,k") * m1_aa("l,b");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_aaaa_ovoo += 1.000000 d_aa(i,k) m1_aa(l,a) s0 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -25590,14 +25590,14 @@ namespace hilbert {
                 }
                 tempArray[544].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[545] += 1.000000 Id_blks["aa_oo"]("j,l") s1_aa("b,m") 
                     // flops: o3v1: 2 | mem: o3v1: 2, 
                     tempArray[545]("b,j,l,m") = Id_blks["aa_oo"]("j,l") * s1_aa("b,m");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_aaaa_ooov += -1.000000 d_aa(j,k) m0 s1_aa(a,i) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -25617,14 +25617,14 @@ namespace hilbert {
                 }
                 tempArray[545].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[546] += 1.000000 Id_blks["bb_oo"]("j,l") s1_bb("b,m") 
                     // flops: o3v1: 2 | mem: o3v1: 2, 
                     tempArray[546]("b,j,l,m") = Id_blks["bb_oo"]("j,l") * s1_bb("b,m");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_bbbb_ooov += -1.000000 d_bb(j,k) m0 s1_bb(a,i) 
                     // flops: o3v1: 1, o0v0: 1 | mem: o3v1: 1, o0v0: 1, 
@@ -25651,7 +25651,7 @@ namespace hilbert {
                     tempArray[547]("i,l,j,k") = Id_blks["aa_oo"]("i,l") * Id_blks["aa_oo"]("j,k");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_aaaa_oooo += 1.000000 d_aa(j,l) d_aa(i,k) m1_bb(m,a) s1_bb(a,m) 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
@@ -25681,7 +25681,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oooo"]("i,j,k,l") -= scalar_1 * tempArray[547]("i,l,j,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oooo += 0.250000 d_aa(j,l) d_aa(i,k) m2_aaaa(n,m,a,b) s2_aaaa(a,b,n,m) 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
@@ -25709,7 +25709,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oooo"]("i,j,k,l") += scalar_3 * tempArray[547]("j,l,i,k");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_aaaa_oooo += -1.000000 d_aa(i,l) d_aa(j,k) m1_aa(m,a) s1_aa(a,m) 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
@@ -25720,7 +25720,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oooo"]("i,j,k,l") += scalar_5 * tempArray[547]("j,l,i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oooo += -0.250000 d_aa(i,l) d_aa(j,k) m2_abab(n,m,a,b) s2_abab(a,b,n,m) 
                     // +               -0.250000 d_aa(i,l) d_aa(j,k) m2_abab(n,m,b,a) s2_abab(b,a,n,m) 
@@ -25756,7 +25756,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oooo"]("i,j,k,l") += 0.250000 * scalar_4 * tempArray[547]("j,l,i,k");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_aaaa_oooo += 1.000000 d_aa(j,l) d_aa(i,k) m0 s0 
                     // flops: o4v0: 1, o0v0: 2 | mem: o4v0: 1, o0v0: 2, 
@@ -25767,7 +25767,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oooo"]("i,j,k,l") -= tempArray[547]("i,l,j,k") * s0 * m0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oooo += 0.250000 d_aa(j,l) d_aa(i,k) m2_bbbb(n,m,a,b) s2_bbbb(a,b,n,m) 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
@@ -25802,7 +25802,7 @@ namespace hilbert {
                 }
                 tempArray[547].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_bbbb_oooo += -1.000000 d_bb(i,l) d_bb(j,k) m1_aa(m,a) s1_aa(a,m) 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
@@ -25813,7 +25813,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oooo"]("i,j,k,l") += scalar_5 * tempArray[548]("j,l,i,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oooo += 0.250000 d_bb(j,l) d_bb(i,k) m2_bbbb(n,m,a,b) s2_bbbb(a,b,n,m) 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
@@ -25838,7 +25838,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oooo"]("i,j,k,l") -= scalar_8 * tempArray[548]("i,l,j,k");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_bbbb_oooo += 1.000000 d_bb(j,l) d_bb(i,k) m0 s0 
                     // flops: o4v0: 1, o0v0: 2 | mem: o4v0: 1, o0v0: 2, 
@@ -25849,7 +25849,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oooo"]("i,j,k,l") -= tempArray[548]("i,l,j,k") * s0 * m0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oooo += 0.250000 d_bb(j,l) d_bb(i,k) m2_aaaa(n,m,a,b) s2_aaaa(a,b,n,m) 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
@@ -25909,7 +25909,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oooo"]("i,j,k,l") += 0.250000 * scalar_4 * tempArray[548]("j,l,i,k");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_bbbb_oooo += 1.000000 d_bb(j,l) d_bb(i,k) m1_bb(m,a) s1_bb(a,m) 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
@@ -25928,14 +25928,14 @@ namespace hilbert {
                     tempArray[549]("i,k,j,l") = Id_blks["bb_oo"]("j,l") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oooo += 1.000000 d_bb(j,l) d_aa(i,k) m1_bb(m,a) s1_bb(a,m) 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oooo"]("i,j,k,l") += scalar_6 * tempArray[549]("i,k,j,l");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_abab_oooo += 1.000000 d_bb(j,l) d_aa(i,k) m0 s0 
                     // flops: o4v0: 1, o0v0: 2 | mem: o4v0: 1, o0v0: 2, 
@@ -25960,7 +25960,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oooo"]("i,j,k,l") += scalar_0 * tempArray[549]("i,k,j,l");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oooo += 0.250000 d_bb(j,l) d_aa(i,k) m2_aaaa(n,m,a,b) s2_aaaa(a,b,n,m) 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
@@ -25993,7 +25993,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oooo"]("i,j,k,l") += 0.250000 * scalar_4 * tempArray[549]("i,k,j,l");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oooo += 1.000000 d_bb(j,l) d_aa(i,k) m1_aa(m,a) s1_aa(a,m) 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
@@ -26005,7 +26005,7 @@ namespace hilbert {
                 }
                 tempArray[549].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_bbbb_oooo += -1.000000 d_bb(j,l) t1_bb(a,i) m1_bb(k,a) s0 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
@@ -26025,7 +26025,7 @@ namespace hilbert {
                 }
                 tempArray[550].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[551] += 1.000000 u1_aa("a,j") m1_aa("k,a") Id_blks["aa_oo"]("i,l") 
                     // flops: o4v0: 2, o2v1: 1 | mem: o4v0: 2, o2v0: 1, 
@@ -26073,7 +26073,7 @@ namespace hilbert {
                 }
                 tempArray[552].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[553] += 1.000000 u1_bb("a,j") m1_bb("k,a") Id_blks["bb_oo"]("i,l") 
                     // flops: o4v0: 2, o2v1: 1 | mem: o4v0: 2, o2v0: 1, 
@@ -26101,7 +26101,7 @@ namespace hilbert {
                 }
                 tempArray[553].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_aaaa_oooo += -1.000000 d_aa(j,l) t1_aa(a,i) m1_aa(k,a) s0 
                     // flops: o4v0: 1, o0v0: 1 | mem: o4v0: 1, o0v0: 1, 
@@ -26166,7 +26166,7 @@ namespace hilbert {
                 tempArray[555].~TArrayD();
                 tempArray[556].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[557] += 1.000000 m1_aa("l,a") s1_aa("a,j") Id_blks["aa_oo"]("i,k") 
                     // flops: o4v0: 2, o2v1: 1 | mem: o4v0: 2, o2v0: 1, 
@@ -26235,7 +26235,7 @@ namespace hilbert {
                 }
                 tempArray[559].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[560] += 1.000000 t1_aa("a,l") m1_aa("l,b") 
                     // flops: o1v2: 1, o0v2: 1 | mem: o0v2: 2, 
@@ -26246,49 +26246,49 @@ namespace hilbert {
                     tempPerm_aaaa_ovvv("i,b,c,d") += r0 * tempArray[560]("d,b") * u1_aa("c,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_aaaa_ovvv += 1.000000 P(c,d) t1_aa(c,i) t1_aa(d,j) m1_aa(j,b) s0 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_aaaa_ovvv("i,b,c,d") += tempArray[560]("d,b") * t1_aa("c,i") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_vovv += -1.000000 P(c,d) r0 t1_aa(d,j) u1_aa(c,i) m1_aa(j,a) 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_aaaa_vovv("a,i,c,d") -= r0 * tempArray[560]("d,a") * u1_aa("c,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_aaaa_vovv += -1.000000 P(c,d) t1_aa(c,i) t1_aa(d,j) m1_aa(j,a) s0 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_aaaa_vovv("a,i,c,d") -= tempArray[560]("d,a") * t1_aa("c,i") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_vovv += 1.000000 t1_aa(c,j) m1_aa(j,a) s1_bb(d,i) 
                     // flops: o1v3: 2 | mem: o1v3: 2, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += tempArray[560]("c,a") * s1_bb("d,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_vovv += 1.000000 t1_bb(d,i) t1_aa(c,j) m1_aa(j,a) s0 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += tempArray[560]("c,a") * s0 * t1_bb("d,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_vovv += 1.000000 r0 t1_aa(c,j) u1_bb(d,i) m1_aa(j,a) 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += r0 * u1_bb("d,i") * tempArray[560]("c,a");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_vovo += 1.000000 d_bb(i,j) t1_aa(b,k) m1_aa(k,a) s0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -26296,21 +26296,21 @@ namespace hilbert {
                 }
                 tempArray[560].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[561] += 1.000000 t1_bb("a,l") m1_bb("l,b") 
                     // flops: o1v2: 1, o0v2: 1 | mem: o0v2: 2, 
                     tempArray[561]("a,b") = t1_bb("a,l") * m1_bb("l,b");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_ovvv += 1.000000 t1_aa(c,i) t1_bb(d,j) m1_bb(j,b) s0 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") += tempArray[561]("d,b") * s0 * t1_aa("c,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_ovvv += 1.000000 t1_bb(d,j) m1_bb(j,b) s1_aa(c,i) 
                     // flops: o1v3: 2 | mem: o1v3: 2, 
@@ -26321,14 +26321,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") += r0 * u1_aa("c,i") * tempArray[561]("d,b");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_bbbb_ovvv += 1.000000 P(c,d) t1_bb(c,i) t1_bb(d,j) m1_bb(j,b) s0 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     tempPerm_bbbb_ovvv("i,b,c,d") += tempArray[561]("d,b") * t1_bb("c,i") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_ovvv += 1.000000 P(c,d) r0 t1_bb(d,j) u1_bb(c,i) m1_bb(j,b) 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -26339,7 +26339,7 @@ namespace hilbert {
                     tempPerm_bbbb_vovv("a,i,c,d") -= r0 * tempArray[561]("d,a") * u1_bb("c,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_bbbb_vovv += -1.000000 P(c,d) t1_bb(c,i) t1_bb(d,j) m1_bb(j,a) s0 
                     // flops: o1v3: 2, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -26351,7 +26351,7 @@ namespace hilbert {
                 }
                 tempArray[561].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[562] += 1.000000 u1_bb("a,l") m1_bb("l,b") 
                     // flops: o1v2: 1, o0v2: 1 | mem: o0v2: 2, 
@@ -26432,7 +26432,7 @@ namespace hilbert {
                 tempArray[563].~TArrayD();
                 tempArray[564].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[565] += 1.000000 m1_aa("l,b") u1_aa("a,l") 
                     // flops: o1v2: 1, o0v2: 1 | mem: o0v2: 2, 
@@ -26464,28 +26464,28 @@ namespace hilbert {
                 }
                 tempArray[565].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oooo += -1.000000 d_bb(j,l) t1_aa(a,i) m1_aa(k,a) s0 
                     // flops: o4v0: 2, o0v0: 1 | mem: o4v0: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oooo"]("i,j,k,l") -= tempArray[566]("i,k") * s0 * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_ooov += -1.000000 P(i,j) r0 t1_aa(b,i) u1_aa(a,j) m1_aa(k,b) 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     tempPerm_aaaa_ooov("i,j,k,a") -= r0 * tempArray[566]("i,k") * u1_aa("a,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_aaaa_ooov += -1.000000 P(i,j) t1_aa(a,j) t1_aa(b,i) m1_aa(k,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     tempPerm_aaaa_ooov("i,j,k,a") -= tempArray[566]("i,k") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_ooov += -1.000000 r0 t1_aa(b,i) u1_bb(a,j) m1_aa(k,b) 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -26496,7 +26496,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= tempArray[566]("i,k") * s1_bb("a,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_ooov += -1.000000 t1_bb(a,j) t1_aa(b,i) m1_aa(k,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -26507,21 +26507,21 @@ namespace hilbert {
                     tempPerm_aaaa_oovo("i,j,a,l") += tempArray[566]("i,l") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovo += 1.000000 P(i,j) r0 t1_aa(b,i) u1_aa(a,j) m1_aa(l,b) 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     tempPerm_aaaa_oovo("i,j,a,l") += r0 * tempArray[566]("i,l") * u1_aa("a,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovo += -1.000000 d_bb(j,l) t1_aa(a,k) t1_aa(b,i) m1_aa(k,b) s0 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= tempArray[566]("i,k") * t1_aa("a,k") * s0 * Id_blks["bb_oo"]("j,l");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovo += -1.000000 d_bb(j,l) r0 t1_aa(b,i) u1_aa(a,k) m1_aa(k,b) 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
@@ -26548,7 +26548,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) r0 t1_aa(c,i) u2_aaaa(a,b,k,j) m1_aa(k,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -26559,7 +26559,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") += tempArray[566]("j,k") * s2_aaaa("a,b,k,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) t1_aa(c,j) t2_aaaa(a,b,k,i) m1_aa(k,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -26580,14 +26580,14 @@ namespace hilbert {
 
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(b,k) t1_aa(c,i) m1_aa(k,c) s0 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
                     tempPerm_aaaa_oovv("i,j,a,b") = tempArray[566]("i,k") * t1_aa("b,k") * t1_aa("a,j") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r1_aa(b,i) t1_aa(c,j) u1_aa(a,k) m1_aa(k,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -26622,7 +26622,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * t1_aa("a,k") * tempArray[566]("i,k") * u1_bb("b,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 t1_bb(b,j) t1_aa(a,k) t1_aa(c,i) m1_aa(k,c) s0 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -26633,21 +26633,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[566]("i,k") * s0 * t2_abab("a,b,k,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 t1_aa(a,k) t1_aa(c,i) m1_aa(k,c) s1_bb(b,j) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t1_aa("a,k") * tempArray[566]("i,k") * s1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r0 t1_aa(c,i) u2_abab(a,b,k,j) m1_aa(k,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r0 * u2_abab("a,b,k,j") * tempArray[566]("i,k");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 r0 t1_bb(b,j) t1_aa(c,i) u1_aa(a,k) m1_aa(k,c) 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -26662,7 +26662,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r1_aa("a,k") * tempArray[566]("i,k") * u1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 t1_aa(c,i) m1_aa(k,c) s2_abab(a,b,k,j) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -26670,21 +26670,21 @@ namespace hilbert {
                 }
                 tempArray[566].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[567] += 1.000000 m1_bb("l,a") t1_bb("a,j") 
                     // flops: o2v1: 1, o2v0: 1 | mem: o2v0: 2, 
                     tempArray[567]("l,j") = m1_bb("l,a") * t1_bb("a,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oooo += -1.000000 d_aa(i,k) t1_bb(a,j) m1_bb(l,a) s0 
                     // flops: o4v0: 2, o0v0: 1 | mem: o4v0: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oooo"]("i,j,k,l") -= tempArray[567]("l,j") * s0 * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_ooov += -1.000000 d_aa(i,k) t1_bb(b,j) m1_bb(l,b) s1_bb(a,l) 
                     // flops: o3v1: 2, o2v1: 1 | mem: o3v1: 2, o1v1: 1, 
@@ -26695,28 +26695,28 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= r0 * u1_bb("a,l") * tempArray[567]("l,j") * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_ooov += -1.000000 d_aa(i,k) t1_bb(a,l) t1_bb(b,j) m1_bb(l,b) s0 
                     // flops: o3v1: 2, o2v1: 1, o0v0: 1 | mem: o3v1: 2, o1v1: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_ooov"]("i,j,k,a") -= tempArray[567]("l,j") * t1_bb("a,l") * s0 * Id_blks["aa_oo"]("i,k");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_ooov += -1.000000 P(i,j) r0 t1_bb(b,i) u1_bb(a,j) m1_bb(k,b) 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     tempPerm_bbbb_ooov("i,j,k,a") -= r0 * tempArray[567]("k,i") * u1_bb("a,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_bbbb_ooov += -1.000000 P(i,j) t1_bb(a,j) t1_bb(b,i) m1_bb(k,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     tempPerm_bbbb_ooov("i,j,k,a") -= tempArray[567]("k,i") * t1_bb("a,j") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovo += -1.000000 t1_bb(b,j) m1_bb(l,b) s1_aa(a,i) 
                     // flops: o3v1: 2 | mem: o3v1: 2, 
@@ -26727,21 +26727,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= r0 * u1_aa("a,i") * tempArray[567]("l,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovo += -1.000000 t1_aa(a,i) t1_bb(b,j) m1_bb(l,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") -= tempArray[567]("l,j") * s0 * t1_aa("a,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovo += 1.000000 P(i,j) r0 t1_bb(b,i) u1_bb(a,j) m1_bb(l,b) 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
                     tempPerm_bbbb_oovo("i,j,a,l") += r0 * tempArray[567]("l,i") * u1_bb("a,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovo += 1.000000 P(i,j) t1_bb(a,j) t1_bb(b,i) m1_bb(l,b) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -26752,7 +26752,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[567]("k,j") * t1_bb("b,k") * s0 * t1_aa("a,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 r0 t1_bb(b,k) t1_bb(c,j) u1_aa(a,i) m1_bb(k,c) 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -26767,14 +26767,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r1_bb("b,k") * tempArray[567]("k,j") * u1_aa("a,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 t1_bb(c,j) t2_abab(a,b,i,k) m1_bb(k,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[567]("k,j") * s0 * t2_abab("a,b,i,k");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 r0 t1_aa(a,i) t1_bb(c,j) u1_bb(b,k) m1_bb(k,c) 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -26785,21 +26785,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t1_bb("b,k") * tempArray[567]("k,j") * s1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 t1_bb(c,j) m1_bb(k,c) s2_abab(a,b,i,k) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= tempArray[567]("k,j") * s2_abab("a,b,i,k");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 r1_aa(a,i) t1_bb(c,j) u1_bb(b,k) m1_bb(k,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u1_bb("b,k") * tempArray[567]("k,j") * r1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r0 t1_bb(c,j) u2_abab(a,b,i,k) m1_bb(k,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -26822,21 +26822,21 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) t1_bb(c,j) m1_bb(k,c) s2_bbbb(a,b,k,i) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
                     tempPerm_bbbb_oovv("i,j,a,b") = tempArray[567]("k,j") * s2_bbbb("a,b,k,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) t1_bb(c,j) t2_bbbb(a,b,k,i) m1_bb(k,c) s0 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[567]("k,j") * t2_bbbb("a,b,k,i") * s0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) r0 t1_bb(c,i) u2_bbbb(a,b,k,j) m1_bb(k,c) 
                     // flops: o3v2: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -26857,21 +26857,21 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) P(a,b) r0 t1_bb(b,j) t1_bb(c,i) u1_bb(a,k) m1_bb(k,c) 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") = -1.0 * r0 * tempArray[567]("k,i") * u1_bb("a,k") * t1_bb("b,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(b,k) t1_bb(c,i) m1_bb(k,c) s0 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
                     tempPerm_bbbb_oovv("i,j,a,b") += tempArray[567]("k,i") * t1_bb("b,k") * t1_bb("a,j") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r0 t1_bb(b,k) t1_bb(c,i) u1_bb(a,j) m1_bb(k,c) 
                     // flops: o2v2: 2, o2v1: 1, o0v0: 1 | mem: o2v2: 2, o1v1: 1, o0v0: 1, 
@@ -26963,7 +26963,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) r2_bbbb(a,b,k,i) u1_bb(c,j) m1_bb(k,c) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -26988,7 +26988,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r1_bb(b,i) t1_bb(a,k) u1_bb(c,j) m1_bb(k,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -27104,7 +27104,7 @@ namespace hilbert {
                 }
                 tempArray[569].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[570] += 1.000000 u1_aa("a,j") m1_aa("k,a") 
                     // flops: o2v1: 1, o2v0: 1 | mem: o2v0: 2, 
@@ -27155,7 +27155,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) r2_aaaa(a,b,k,i) u1_aa(c,j) m1_aa(k,c) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -27180,7 +27180,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r1_aa(b,i) t1_aa(a,k) u1_aa(c,j) m1_aa(k,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -27316,7 +27316,7 @@ namespace hilbert {
                 }
                 tempArray[571].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[572] += 1.000000 m1_bb("l,b") r1_bb("b,j") 
                     // flops: o2v1: 1, o2v0: 1 | mem: o2v0: 2, 
@@ -27339,7 +27339,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= u1_bb("b,k") * tempArray[572]("k,j") * t1_aa("a,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_bb(c,j) u2_abab(a,b,i,k) m1_bb(k,c) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -27362,7 +27362,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) r1_bb(c,i) u2_bbbb(a,b,k,j) m1_bb(k,c) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -27383,7 +27383,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) r1_bb(c,i) t1_bb(b,k) u1_bb(a,j) m1_bb(k,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -27423,7 +27423,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) r1_aa(c,i) u2_aaaa(a,b,k,j) m1_aa(k,c) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -27444,7 +27444,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) r1_aa(c,i) t1_aa(b,k) u1_aa(a,j) m1_aa(k,c) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -27463,7 +27463,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= t1_aa("a,k") * tempArray[573]("i,k") * u1_bb("b,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += -1.000000 r1_aa(c,i) u2_abab(a,b,k,j) m1_aa(k,c) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -27531,7 +27531,7 @@ namespace hilbert {
                 }
                 tempArray[574].~TArrayD();
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempArray[575] += 1.000000 s1_aa("a,j") m1_aa("l,a") 
                     // flops: o2v1: 1, o2v0: 1 | mem: o2v0: 2, 
@@ -27566,7 +27566,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) t2_aaaa(a,b,k,j) m1_aa(k,c) s1_aa(c,i) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -27587,7 +27587,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(i,j) P(a,b) t1_aa(a,j) t1_aa(b,k) m1_aa(k,c) s1_aa(c,i) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -27643,7 +27643,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) t2_bbbb(a,b,k,j) m1_bb(k,c) s1_bb(c,i) 
                     // flops: o3v2: 1, o2v2: 1 | mem: o2v2: 2, 
@@ -27664,7 +27664,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(i,j) P(a,b) t1_bb(a,j) t1_bb(b,k) m1_bb(k,c) s1_bb(c,i) 
                     // flops: o2v2: 2, o2v1: 1 | mem: o2v2: 2, o1v1: 1, 
@@ -27736,7 +27736,7 @@ namespace hilbert {
                 }
                 tempArray[577].~TArrayD();
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_ooov += 1.000000 d_aa(i,k) m0 s1_bb(a,j) 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -27750,7 +27750,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovo"]("i,j,a,l") += Id_blks["bb_oo"]("j,l") * l0 * r1_aa("a,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovo += 1.000000 d_bb(j,l) m0 s1_aa(a,i) 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -27768,7 +27768,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovoo"]("i,a,k,l") += Id_blks["aa_oo"]("i,k") * l1_bb("l,a") * r0;
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_vooo += 1.000000 d_bb(j,l) m1_aa(k,a) s0 
                     // flops: o3v1: 2, o0v0: 1 | mem: o3v1: 2, o0v0: 1, 
@@ -27782,14 +27782,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vooo"]("a,j,k,l") += Id_blks["bb_oo"]("j,l") * l1_aa("k,a") * r0;
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_vvvv += 0.500000 t2_aaaa(c,d,i,j) m2_aaaa(i,j,a,b) s0 
                     // flops: o2v4: 1, o0v4: 1, o0v0: 1 | mem: o0v4: 2, o0v0: 1, 
                     RDM_blks_["D2_aaaa_vvvv"]("a,b,c,d") += 0.500000 * t2_aaaa("c,d,i,j") * m2_aaaa("i,j,a,b") * s0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_vvvv += 0.500000 r0 u2_aaaa(c,d,i,j) m2_aaaa(i,j,a,b) 
                     // flops: o2v4: 1, o0v4: 1, o0v0: 1 | mem: o0v4: 2, o0v0: 1, 
@@ -27803,7 +27803,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_vvvv"]("a,b,c,d") += 0.500000 * l2_aaaa("i,j,a,b") * r0 * t2_aaaa("c,d,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_vvvv += 0.500000 m2_aaaa(j,i,a,b) s2_aaaa(c,d,j,i) 
                     // flops: o2v4: 1, o0v4: 1 | mem: o0v4: 2, 
@@ -27817,7 +27817,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_vvvv"]("a,b,c,d") += 0.500000 * l2_aaaa("j,i,a,b") * r2_aaaa("c,d,j,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_aaaa_vvvv += -1.000000 P(c,d) r1_aa(d,i) u1_aa(c,j) m2_aaaa(i,j,a,b) 
                     // flops: o1v4: 1, o2v3: 1, o0v4: 1 | mem: o0v4: 2, o1v3: 1, 
@@ -27832,7 +27832,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vvvv"]("a,b,c,d") += l2_abab("i,j,a,b") * r0 * t2_abab("c,d,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vvvv += 0.500000 t2_abab(c,d,i,j) m2_abab(i,j,a,b) s0 
                     // +               0.500000 t2_abab(c,d,j,i) m2_abab(j,i,a,b) s0 
@@ -27840,7 +27840,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vvvv"]("a,b,c,d") += t2_abab("c,d,i,j") * m2_abab("i,j,a,b") * s0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_vvvv += 0.500000 m2_abab(j,i,a,b) s2_abab(c,d,j,i) 
                     // +               0.500000 m2_abab(i,j,a,b) s2_abab(c,d,i,j) 
@@ -27861,7 +27861,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vvvv"]("a,b,c,d") += l2_abab("j,i,a,b") * r2_abab("c,d,j,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_vvvv += 0.500000 t2_bbbb(c,d,i,j) m2_bbbb(i,j,a,b) s0 
                     // flops: o2v4: 1, o0v4: 1, o0v0: 1 | mem: o0v4: 2, o0v0: 1, 
@@ -27875,7 +27875,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_vvvv"]("a,b,c,d") += 0.500000 * l2_bbbb("i,j,a,b") * r0 * t2_bbbb("c,d,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_vvvv += 0.500000 m2_bbbb(j,i,a,b) s2_bbbb(c,d,j,i) 
                     // flops: o2v4: 1, o0v4: 1 | mem: o0v4: 2, 
@@ -27893,14 +27893,14 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_vvvv"]("a,b,c,d") += 0.500000 * l2_bbbb("j,i,a,b") * r2_bbbb("c,d,j,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // tempPerm_bbbb_vvvv += -1.000000 P(c,d) r1_bb(d,i) u1_bb(c,j) m2_bbbb(i,j,a,b) 
                     // flops: o1v4: 1, o2v3: 1, o0v4: 1 | mem: o0v4: 2, o1v3: 1, 
                     tempPerm_bbbb_vvvv("a,b,c,d") -= m2_bbbb("i,j,a,b") * r1_bb("d,i") * u1_bb("c,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vvov += 1.000000 t1_bb(d,j) m2_abab(i,j,a,b) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -27914,7 +27914,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vvov"]("a,b,i,d") += l2_abab("i,j,a,b") * r0 * t1_bb("d,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vvov += 1.000000 m2_abab(i,j,a,b) s1_bb(d,j) 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
@@ -27932,7 +27932,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") += l1_bb("j,b") * r1_bb("d,j") * t1_aa("c,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += -1.000000 r2_abab(a,d,i,j) u1_aa(c,k) m2_abab(k,j,a,b) 
                     // flops: o3v3: 1, o2v3: 1, o1v3: 1 | mem: o1v3: 2, o2v2: 1, 
@@ -27946,7 +27946,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") += l1_bb("j,b") * r0 * t2_abab("c,d,i,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += 1.000000 r0 u2_abab(c,d,i,j) m1_bb(j,b) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -27961,14 +27961,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") -= r2_aaaa("c,a,j,i") * m2_abab("j,k,a,b") * u1_bb("d,k");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_ovvv += 1.000000 r1_bb(d,j) u1_aa(c,i) m1_bb(j,b) 
                     // flops: o1v3: 2, o1v2: 1 | mem: o1v3: 2, o0v2: 1, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") += r1_bb("d,j") * m1_bb("j,b") * u1_aa("c,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_ovvv += 1.000000 t2_abab(c,a,i,j) m2_bbbb(k,j,b,a) s1_bb(d,k) 
                     // flops: o3v3: 1, o2v3: 1, o1v3: 1 | mem: o1v3: 2, o2v2: 1, 
@@ -27982,21 +27982,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") += l1_bb("j,b") * r2_abab("c,d,i,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_ovvv += 1.000000 t2_abab(c,d,i,j) m1_bb(j,b) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") += t2_abab("c,d,i,j") * m1_bb("j,b") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_ovvv += 1.000000 t1_aa(c,i) m1_bb(j,b) s1_bb(d,j) 
                     // flops: o1v3: 2, o1v2: 1 | mem: o1v3: 2, o0v2: 1, 
                     RDM_blks_["D2_abab_ovvv"]("i,b,c,d") += m1_bb("j,b") * s1_bb("d,j") * t1_aa("c,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += -1.000000 r2_bbbb(d,b,j,i) u1_aa(c,k) m2_abab(k,j,a,b) 
                     // flops: o3v3: 1, o2v3: 1, o1v3: 1 | mem: o1v3: 2, o2v2: 1, 
@@ -28010,7 +28010,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += l1_aa("j,a") * r1_aa("c,j") * t1_bb("d,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += 1.000000 t2_abab(b,d,j,i) m2_aaaa(k,j,a,b) s1_aa(c,k) 
                     // flops: o3v3: 1, o2v3: 1, o1v3: 1 | mem: o1v3: 2, o2v2: 1, 
@@ -28024,14 +28024,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += l1_aa("j,a") * r2_abab("c,d,j,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_vovv += 1.000000 r1_aa(c,j) u1_bb(d,i) m1_aa(j,a) 
                     // flops: o1v3: 2, o1v2: 1 | mem: o1v3: 2, o0v2: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += r1_aa("c,j") * m1_aa("j,a") * u1_bb("d,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += 1.000000 r0 u2_abab(c,d,j,i) m1_aa(j,a) 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
@@ -28049,28 +28049,28 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += l1_aa("j,a") * r0 * t2_abab("c,d,j,i");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_vovv += 1.000000 m1_aa(j,a) s2_abab(c,d,j,i) 
                     // flops: o2v3: 1, o1v3: 1 | mem: o1v3: 2, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += m1_aa("j,a") * s2_abab("c,d,j,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_vovv += 1.000000 t2_abab(c,d,j,i) m1_aa(j,a) s0 
                     // flops: o2v3: 1, o1v3: 1, o0v0: 1 | mem: o1v3: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += t2_abab("c,d,j,i") * m1_aa("j,a") * s0;
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_vovv += 1.000000 t1_bb(d,i) m1_aa(j,a) s1_aa(c,j) 
                     // flops: o1v3: 2, o1v2: 1 | mem: o1v3: 2, o0v2: 1, 
                     RDM_blks_["D2_abab_vovv"]("a,i,c,d") += m1_aa("j,a") * s1_aa("c,j") * t1_bb("d,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovv += 1.000000 r0 u2_aaaa(a,b,i,j) m0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
@@ -28084,14 +28084,14 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") += scalar_0 * t2_aaaa("a,b,i,j");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_aaaa_oovv += 1.000000 t2_aaaa(a,b,i,j) m0 s0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") += t2_aaaa("a,b,i,j") * m0 * s0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovv += 0.250000 r2_bbbb(d,c,k,l) u2_aaaa(a,b,i,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28102,14 +28102,14 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") += 0.250000 * scalar_12 * u2_aaaa("a,b,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_aaaa_oovv += 1.000000 t2_aaaa(a,b,i,j) m1_aa(k,c) s1_aa(c,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") += scalar_5 * t2_aaaa("a,b,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovv += 0.250000 t2_aaaa(a,b,i,j) m2_bbbb(l,k,c,d) s2_bbbb(c,d,l,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28130,7 +28130,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") += 0.250000 * scalar_4 * t2_aaaa("a,b,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovv += 0.250000 t2_aaaa(a,b,i,j) m2_aaaa(l,k,c,d) s2_aaaa(c,d,l,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28151,14 +28151,14 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") += 0.250000 * scalar_2 * t2_aaaa("a,b,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_aaaa_oovv += 1.000000 t2_aaaa(a,b,i,j) m1_bb(k,c) s1_bb(c,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") += scalar_6 * t2_aaaa("a,b,i,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovv += 1.000000 r1_bb(c,k) u2_aaaa(a,b,i,j) m1_bb(k,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28172,7 +28172,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") += scalar_1 * t2_aaaa("a,b,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_aaaa_oovv += 0.250000 r2_abab(d,c,k,l) u2_aaaa(a,b,i,j) m2_abab(k,l,d,c) 
                     // +               0.250000 r2_abab(d,c,l,k) u2_aaaa(a,b,i,j) m2_abab(l,k,d,c) 
@@ -28182,7 +28182,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") += scalar_13 * u2_aaaa("a,b,i,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_aaaa_oovv += 1.000000 r1_aa(c,k) u2_aaaa(a,b,i,j) m1_aa(k,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28196,7 +28196,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_oovv"]("i,j,a,b") += l0 * r2_aaaa("a,b,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_oovv += 1.000000 m0 s2_aaaa(a,b,i,j) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28223,7 +28223,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += 1.000000 P(a,b) r2_aaaa(b,c,i,j) u1_aa(a,k) m1_aa(k,c) 
                     // flops: o3v2: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -28248,7 +28248,7 @@ namespace hilbert {
                     tempPerm_aaaa_oovv("i,j,a,b") = -1.0 * l0 * t1_aa("a,j") * r1_aa("b,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_aaaa_oovv += -1.000000 P(i,j) P(a,b) r1_aa(b,i) u1_aa(a,j) m0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -28263,7 +28263,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += t1_bb("b,j") * m0 * s1_aa("a,i");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r0 u2_abab(a,b,i,j) m0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
@@ -28277,21 +28277,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += 0.250000 * scalar_4 * t2_abab("a,b,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 t2_abab(a,b,i,j) m1_aa(k,c) s1_aa(c,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_5 * t2_abab("a,b,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 t2_abab(a,b,i,j) m2_aaaa(l,k,c,d) s2_aaaa(c,d,l,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += 0.250000 * scalar_7 * t2_abab("a,b,i,j");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_abab_oovv += 1.000000 t2_abab(a,b,i,j) m0 s0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
@@ -28308,21 +28308,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_3 * t2_abab("a,b,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 t2_abab(a,b,i,j) m1_bb(k,c) s1_bb(c,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_6 * t2_abab("a,b,i,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_bb(c,k) u2_abab(a,b,i,j) m1_bb(k,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_11 * u2_abab("a,b,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 r2_abab(c,b,i,j) u1_aa(a,k) m1_aa(k,c) 
                     // flops: o3v2: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -28348,21 +28348,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += l0 * r1_bb("b,j") * t1_aa("a,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 t2_abab(a,b,i,j) m2_bbbb(l,k,c,d) s2_bbbb(c,d,l,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += 0.250000 * scalar_9 * t2_abab("a,b,i,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(a,i) u1_bb(b,j) m0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r1_aa("a,i") * u1_bb("b,j") * m0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 r2_bbbb(d,c,k,l) u2_abab(a,b,i,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28387,21 +28387,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += 0.250000 * scalar_2 * t2_abab("a,b,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 m0 s2_abab(a,b,i,j) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += m0 * s2_abab("a,b,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_oovv += -1.000000 r2_abab(a,c,i,j) u1_bb(b,k) m1_bb(k,c) 
                     // flops: o3v2: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") -= r2_abab("a,c,i,j") * m1_bb("k,c") * u1_bb("b,k");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_oovv += 0.250000 r2_abab(d,c,k,l) u2_abab(a,b,i,j) m2_abab(k,l,d,c) 
                     // +               0.250000 r2_abab(d,c,l,k) u2_abab(a,b,i,j) m2_abab(l,k,d,c) 
@@ -28411,7 +28411,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_13 * u2_abab("a,b,i,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 t1_aa(a,i) m0 s1_bb(b,j) 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -28429,21 +28429,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_1 * t2_abab("a,b,i,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_abab_oovv += 1.000000 r1_aa(c,k) u2_abab(a,b,i,j) m1_aa(k,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += scalar_10 * u2_abab("a,b,i,j");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_oovv += 1.000000 r1_bb(b,j) u1_aa(a,i) m0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_oovv"]("i,j,a,b") += r1_bb("b,j") * u1_aa("a,i") * m0;
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_oovv += 1.000000 r1_bb(c,k) u2_bbbb(a,b,i,j) m1_bb(k,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28461,14 +28461,14 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += l0 * r0 * t2_bbbb("a,b,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_bbbb_oovv += 1.000000 t2_bbbb(a,b,i,j) m1_bb(k,c) s1_bb(c,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += scalar_6 * t2_bbbb("a,b,i,j");
                 }
 
-                if (include_u0_) {
+                if (includes_.at("u0")) {
 
                     // D2_bbbb_oovv += 1.000000 t2_bbbb(a,b,i,j) m0 s0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
@@ -28482,14 +28482,14 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += scalar_1 * t2_bbbb("a,b,i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_bbbb_oovv += 1.000000 t2_bbbb(a,b,i,j) m1_aa(k,c) s1_aa(c,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += scalar_5 * t2_bbbb("a,b,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovv += 0.250000 r2_bbbb(d,c,k,l) u2_bbbb(a,b,i,j) m2_bbbb(k,l,d,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28507,7 +28507,7 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += 0.250000 * scalar_2 * t2_bbbb("a,b,i,j");
                 }
 
-                if (include_u1_ && include_u2_) {
+                if (includes_.at("u1") && includes_.at("u2")) {
 
                     // D2_bbbb_oovv += 1.000000 r1_aa(c,k) u2_bbbb(a,b,i,j) m1_aa(k,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28532,35 +28532,35 @@ namespace hilbert {
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += scalar_0 * t2_bbbb("a,b,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovv += 0.250000 r2_aaaa(d,c,k,l) u2_bbbb(a,b,i,j) m2_aaaa(k,l,d,c) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += 0.250000 * scalar_12 * u2_bbbb("a,b,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovv += 1.000000 r0 u2_bbbb(a,b,i,j) m0 
                     // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2, 
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += r0 * u2_bbbb("a,b,i,j") * m0;
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovv += 0.250000 t2_bbbb(a,b,i,j) m2_bbbb(l,k,c,d) s2_bbbb(c,d,l,k) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += 0.250000 * scalar_9 * t2_bbbb("a,b,i,j");
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_oovv += 1.000000 m0 s2_bbbb(a,b,i,j) 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
                     RDM_blks_["D2_bbbb_oovv"]("i,j,a,b") += m0 * s2_bbbb("a,b,i,j");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_bbbb_oovv += 0.250000 r2_abab(d,c,k,l) u2_bbbb(a,b,i,j) m2_abab(k,l,d,c) 
                     // +               0.250000 r2_abab(d,c,l,k) u2_bbbb(a,b,i,j) m2_abab(l,k,d,c) 
@@ -28593,7 +28593,7 @@ namespace hilbert {
 
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += 1.000000 P(a,b) r2_bbbb(b,c,i,j) u1_bb(a,k) m1_bb(k,c) 
                     // flops: o3v2: 2, o2v2: 1 | mem: o2v2: 2, o3v1: 1, 
@@ -28618,7 +28618,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") = -1.0 * l0 * t1_bb("a,j") * r1_bb("b,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // tempPerm_bbbb_oovv += -1.000000 P(i,j) P(a,b) r1_bb(b,i) u1_bb(a,j) m0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -28629,7 +28629,7 @@ namespace hilbert {
                     tempPerm_bbbb_oovv("i,j,a,b") -= t1_bb("a,j") * s1_bb("b,i") * m0;
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_aaaa_vvoo += 1.000000 m2_aaaa(i,j,a,b) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28643,7 +28643,7 @@ namespace hilbert {
                     RDM_blks_["D2_aaaa_vvoo"]("a,b,i,j") += l2_aaaa("i,j,a,b") * r0;
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_abab_vvoo += 1.000000 m2_abab(i,j,a,b) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28657,7 +28657,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vvoo"]("a,b,i,j") += l2_abab("i,j,a,b") * r0;
                 }
 
-                if (include_u0_ && include_u2_) {
+                if (includes_.at("u0") && includes_.at("u2")) {
 
                     // D2_bbbb_vvoo += 1.000000 m2_bbbb(i,j,a,b) s0 
                     // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1, 
@@ -28675,7 +28675,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovov"]("i,a,j,b") += l1_bb("k,a") * r1_bb("b,k") * Id_blks["aa_oo"]("i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_ovov += 1.000000 d_aa(i,j) m1_bb(k,a) s1_bb(b,k) 
                     // flops: o2v2: 2, o1v2: 1 | mem: o2v2: 2, o0v2: 1, 
@@ -28686,7 +28686,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_voov"]("a,i,j,b") += r0 * u1_bb("b,i") * m1_aa("j,a");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_voov += 1.000000 t1_bb(b,i) m1_aa(j,a) s0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -28700,7 +28700,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_voov"]("a,i,j,b") += l1_aa("j,a") * r0 * t1_bb("b,i");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_voov += 1.000000 m1_aa(j,a) s1_bb(b,i) 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
@@ -28714,21 +28714,21 @@ namespace hilbert {
                     RDM_blks_["D2_abab_voov"]("a,i,j,b") += l1_aa("j,a") * r1_bb("b,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_voov += -1.000000 r0 u2_abab(c,b,k,i) m2_aaaa(k,j,a,c) 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_voov"]("a,i,j,b") -= r0 * u2_abab("c,b,k,i") * m2_aaaa("k,j,a,c");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_ovvo += 1.000000 m1_bb(j,a) s1_aa(b,i) 
                     // flops: o2v2: 2 | mem: o2v2: 2, 
                     RDM_blks_["D2_abab_ovvo"]("i,a,b,j") += m1_bb("j,a") * s1_aa("b,i");
                 }
 
-                if (include_u0_ && include_u1_) {
+                if (includes_.at("u0") && includes_.at("u1")) {
 
                     // D2_abab_ovvo += 1.000000 t1_aa(b,i) m1_bb(j,a) s0 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -28746,14 +28746,14 @@ namespace hilbert {
                     RDM_blks_["D2_abab_ovvo"]("i,a,b,j") += l1_bb("j,a") * r1_aa("b,i");
                 }
 
-                if (include_u2_) {
+                if (includes_.at("u2")) {
 
                     // D2_abab_ovvo += -1.000000 r0 u2_abab(b,c,i,k) m2_bbbb(k,j,a,c) 
                     // flops: o3v3: 1, o2v2: 1, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
                     RDM_blks_["D2_abab_ovvo"]("i,a,b,j") -= r0 * u2_abab("b,c,i,k") * m2_bbbb("k,j,a,c");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_ovvo += 1.000000 r0 u1_aa(b,i) m1_bb(j,a) 
                     // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1, 
@@ -28767,7 +28767,7 @@ namespace hilbert {
                     RDM_blks_["D2_abab_vovo"]("a,i,b,j") += l1_aa("k,a") * r1_aa("b,k") * Id_blks["bb_oo"]("i,j");
                 }
 
-                if (include_u1_) {
+                if (includes_.at("u1")) {
 
                     // D2_abab_vovo += 1.000000 d_bb(i,j) m1_aa(k,a) s1_aa(b,k) 
                     // flops: o2v2: 2, o1v2: 1 | mem: o2v2: 2, o0v2: 1, 

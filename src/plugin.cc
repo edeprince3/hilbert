@@ -54,7 +54,6 @@
     #include <tiledarray.h>
     #include "cc_cavity/include/cc_cavity.h"
     #include "cc_cavity/include/derived/qed_ccsd.h"
-    #include "cc_cavity/include/lambda_driver.h"
 
     #if MAX_CC_LEVEL >= 3
         #include "cc_cavity/include/derived/qed_ccsdt.h"
@@ -716,22 +715,26 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
             if (has_photon)
                 qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD(qed_ref_wfn, options));
             else
+            #ifdef KEEP_NO_QED // build separate object for CCSD w/o qed?
                 qedcc = std::shared_ptr<CC_Cavity>(new CC_Cavity(qed_ref_wfn, options));
+            #else
+                qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD(qed_ref_wfn, options));
+            #endif
+//
         }
 
         // compute the energy
         double energy = qedcc->compute_energy();
 
-        // perform lambda iterations if requested
-        bool do_lambda = options.get_bool("PERFORM_LAMBDA");
-
-        if (do_lambda) {
-            if (!has_photon)
-                throw PsiException("LAMBDA iterations require the `QED_CC_INCLUDE_U*` flags to be set (for now)",
-                                   __FILE__, __LINE__);
-            std::shared_ptr<LambdaDriver> lambda_driver(new LambdaDriver(qedcc, options));
-            lambda_driver->compute_lambda();
-        }
+//        // perform lambda iterations if requested
+//        bool do_lambda = options.get_bool("PERFORM_LAMBDA");
+//        if (do_lambda) {
+//            if (!has_photon)
+//                throw PsiException("LAMBDA iterations require the `QED_CC_INCLUDE_U*` flags to be set (for now)",
+//                                   __FILE__, __LINE__);
+//            std::shared_ptr<LambdaDriver> lambda_driver(new LambdaDriver(qedcc, options));
+//            lambda_driver->compute_lambda();
+//        }
 
         // perform QED-EOM-CC if requested
         bool do_eom = options.get_bool("PERFORM_EOM");
@@ -746,8 +749,13 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
                     eom_driver = std::shared_ptr<EOM_Driver>(
                         new EOM_EE_QED_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
                 else
+                #ifdef KEEP_NO_QED
                     eom_driver = std::shared_ptr<EOM_Driver>(
                         new EOM_EE_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
+                #else
+                eom_driver = std::shared_ptr<EOM_Driver>(
+                        new EOM_EE_QED_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
+                #endif
             }
             else if (options.get_str("EOM_TYPE") == "EA") { // use EOM for electron attachment
 //throw PsiException("QED-EOM-EA-CC is not fuctional for release yet.", __FILE__, __LINE__);
@@ -761,12 +769,18 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
             // compute the RDMs and oscillator strengths for the given EOM type
             if (options.get_str("EOM_TYPE") == "EE") {
-                TA::get_default_world().gop.serial_invoke([]() {
-                    outfile->Printf("Computing EOM 1-RDM and oscillator strengths...");
-                });
+                Printf("Computing EOM 1-RDM and oscillator strengths...");
 
                 // compute the RDMs
-                std::shared_ptr<EOM_EE_RDM> rdm(new EOM_EE_RDM((std::shared_ptr<EOM_Driver>) eom_driver, options));
+//                if (has_photon)
+//                    std::shared_ptr<EOM_RDM> rdm(new EOM_EE_QED_RDM((std::shared_ptr<EOM_Driver>) eom_driver, options));
+//                else
+                #ifdef KEEP_NO_QED
+                    std::shared_ptr<EOM_RDM> rdm(new EOM_EE_RDM((std::shared_ptr<EOM_Driver>) eom_driver, options));
+                #else
+                    std::shared_ptr<EOM_RDM> rdm(new EOM_EE_RDM((std::shared_ptr<EOM_Driver>) eom_driver, options));
+                #endif
+
                 rdm->compute_eom_1rdm();
 
                 // compute the oscillator strengths

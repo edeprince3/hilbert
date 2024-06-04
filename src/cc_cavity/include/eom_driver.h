@@ -45,20 +45,6 @@ namespace hilbert {
         // world object
         World & world_;
 
-        // thread safe print function
-        inline void Printf(const char *format, ...) const {
-            va_list argptr;
-            va_start(argptr, format);
-            char input[1024];
-            vsprintf(input, format, argptr);
-            va_end(argptr);
-            world_.gop.serial_invoke(
-                    [=]() {
-                        outfile->Printf("%s", input);
-                    }
-            );
-        }
-
         /**
          * Calculate the index of an element in an upper triangular array from its row and column indices (i,j)
          * @param i row index
@@ -144,13 +130,7 @@ namespace hilbert {
         size_t initdim_ = M_ * options_.get_int("INDIM"); // initial subspace size scaled by number of roots
 
         // initialize included operator bools
-        bool include_t3_ = cc_wfn_->include_t3_;
-        bool include_t4_ = cc_wfn_->include_t4_;
-        bool include_u0_ = cc_wfn_->include_u0_;
-        bool include_u1_ = cc_wfn_->include_u1_;
-        bool include_u2_ = cc_wfn_->include_u2_;
-        bool include_u3_ = cc_wfn_->include_u3_;
-        bool include_u4_ = cc_wfn_->include_u4_;
+        map<string, bool> includes_ = cc_wfn_->includes_;
 
         /// eom-cc parameters
 

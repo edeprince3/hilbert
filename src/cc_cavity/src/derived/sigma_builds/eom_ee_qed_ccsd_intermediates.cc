@@ -77,9 +77,9 @@ void hilbert::EOM_EE_QED_CCSD::build_common_ops() {
     TArrayMap &Id = cc_wfn_->Id_blks_;
 
     map<string, bool> includes_ = {
-        {"u0", include_u0_},
-        {"u1", include_u1_},
-        {"u2", include_u2_}
+        {"u0", includes_["u0"]},
+        {"u1", includes_["u1"]},
+        {"u2", includes_["u2"]}
     };
 
     {

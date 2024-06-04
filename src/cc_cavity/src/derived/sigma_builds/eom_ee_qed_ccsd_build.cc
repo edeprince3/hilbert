@@ -59,14 +59,14 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
 
     double u0 = cc_wfn_->scalar_amps_["u0"];
 
-    bool include_s0_ = include_u0_;
-    bool include_m0_ = include_u0_;
+    includes_["s0"] = includes_["u0"];
+    includes_["m0"] = includes_["u0"];
 
-    bool include_s1_ = include_u1_;
-    bool include_m1_ = include_u1_;
+    includes_["s1"] = includes_["u1"];
+    includes_["m1"] = includes_["u1"];
 
-    bool include_s2_ = include_u2_;
-    bool include_m2_ = include_u2_;
+    includes_["s2"] = includes_["u2"];
+    includes_["m2"] = includes_["u2"];
 
     TArrayMap &V_blks_ = cc_wfn_->V_blks_;
     TArrayMap &F_blks_ = cc_wfn_->F_blks_;
@@ -98,7 +98,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
         double scalar9;
         double scalar10;
         double scalar11;
-        if (include_u1_){
+        if (includes_["u1"]){
             scalar0 = dot(dp_aa_ov("j,b"), u1_aa_vo("b,j"));
             scalar1 = dot(dp_bb_ov("j,b"), u1_bb_vo("b,j"));
         }
@@ -129,7 +129,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_bbbb_ovov("m,e,i,a") += tempArray[0]("e,a,m,i");
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += 1.000000 <i,j||b,a>_bbbb t2_bbbb(b,e,m,j)
             // flops: o2v2: 1 | mem: o2v2: 1,
@@ -148,7 +148,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_aaaa_ovov("m,e,i,a") += tempArray[1]("e,a,m,i");
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += 1.000000 <i,j||b,a>_aaaa t2_aaaa(b,e,m,j)
             // flops: o2v2: 1 | mem: o2v2: 1,
@@ -167,7 +167,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_aaaa_ovov("m,e,i,a") += tempArray[2]("e,a,m,i");
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += 1.000000 <i,j||a,b>_abab t2_abab(e,b,m,j)
             // flops: o2v2: 1 | mem: o2v2: 1,
@@ -186,7 +186,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_bbbb_ovov("m,e,i,a") += tempArray[3]("e,a,m,i");
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += 1.000000 <j,i||b,a>_abab t2_abab(b,e,j,m)
             // flops: o2v2: 1 | mem: o2v2: 1,
@@ -205,7 +205,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_aaaa_ovov("m,e,i,a") -= tempArray[4]("a,e,m,i");
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += -0.500000 d_aa(m,i) <k,j||b,a>_aaaa t2_aaaa(b,e,k,j)
             // flops: o2v2: 1 | mem: o2v2: 1,
@@ -225,7 +225,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_aaaa_ovov("m,e,i,a") -= tempArray[5]("a,e,m,i");
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += -0.500000 d_aa(m,i) <k,j||a,b>_abab t2_abab(e,b,k,j)
             // +                   -0.500000 d_aa(m,i) <j,k||a,b>_abab t2_abab(e,b,j,k)
@@ -245,7 +245,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_bbbb_ovov("m,e,i,a") -= tempArray[6]("a,e,m,i");
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += -0.500000 d_bb(m,i) <k,j||b,a>_bbbb t2_bbbb(b,e,k,j)
             // flops: o2v2: 1 | mem: o2v2: 1,
@@ -265,7 +265,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_bbbb_ovov("m,e,i,a") -= tempArray[7]("a,e,m,i");
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += -0.500000 d_bb(m,i) <k,j||b,a>_abab t2_abab(b,e,k,j)
             // +                   -0.500000 d_bb(m,i) <j,k||b,a>_abab t2_abab(b,e,j,k)
@@ -285,7 +285,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_aaaa_ovov("m,e,i,a") -= tempArray[8]("e,a,i,m");
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += -0.500000 d_aa(e,a) <i,j||b,c>_aaaa t2_aaaa(b,c,m,j)
             // flops: o2v2: 1 | mem: o2v2: 1,
@@ -305,7 +305,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_aaaa_ovov("m,e,i,a") -= tempArray[9]("e,a,i,m");
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += -0.500000 d_aa(e,a) <i,j||b,c>_abab t2_abab(b,c,m,j)
             // +                   -0.500000 d_aa(e,a) <i,j||c,b>_abab t2_abab(c,b,m,j)
@@ -325,7 +325,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_bbbb_ovov("m,e,i,a") -= tempArray[10]("e,a,i,m");
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += -0.500000 d_bb(e,a) <i,j||b,c>_bbbb t2_bbbb(b,c,m,j)
             // flops: o2v2: 1 | mem: o2v2: 1,
@@ -345,7 +345,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_bbbb_ovov("m,e,i,a") -= tempArray[11]("e,a,i,m");
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += -0.500000 d_bb(e,a) <j,i||b,c>_abab t2_abab(b,c,j,m)
             // +                   -0.500000 d_bb(e,a) <j,i||c,b>_abab t2_abab(c,b,j,m)
@@ -380,7 +380,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_aaaa_ovov("m,e,i,a") += tempArray[12]("e,a,m,i") * scalar5;
         }
 
-        if (include_u0_) {
+        if (includes_["u0"]) {
 
             // H_ss_aaaa_ovov += -1.000000 d_aa(e,a) d_aa(m,i) d-_aa(j,j) u0
             // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2,
@@ -394,14 +394,14 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_aaaa_ovov("m,e,i,a") -= 0.500000 * tempArray[12]("e,a,m,i") * scalar11;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_ss_aaaa_ovov += -1.000000 d_aa(e,a) d_aa(m,i) d-_aa(j,b) u1_aa(b,j)
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
             H_ss_aaaa_ovov("m,e,i,a") -= tempArray[12]("e,a,m,i") * scalar0;
         }
 
-        if (include_u0_) {
+        if (includes_["u0"]) {
 
             // H_ss_aaaa_ovov += -1.000000 d_aa(e,a) d_aa(m,i) d-_bb(j,j) u0
             // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2,
@@ -415,7 +415,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_aaaa_ovov("m,e,i,a") += 0.250000 * tempArray[12]("e,a,m,i") * scalar2;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_ss_aaaa_ovov += -1.000000 d_aa(e,a) d_aa(m,i) d-_bb(j,b) u1_bb(b,j)
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
@@ -434,7 +434,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_aaaa_ovov("m,e,i,a") -= tempArray[12]("e,a,m,i") * scalar10;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += -2.000000 d_aa(e,a) d_aa(m,i) d-_bb(j,b) u1_bb(b,j)
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
@@ -477,42 +477,42 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_u1u1_aaaa_ovov("m,e,i,a") -= 0.500000 * tempArray[12]("e,a,m,i") * scalar11;
         }
 
-        if (include_u0_ && include_u1_) {
+        if (includes_["u0"] && includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += -1.000000 d_aa(e,a) d_aa(m,i) d-_bb(j,j) u0
             // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2,
             H_u1u1_aaaa_ovov("m,e,i,a") -= tempArray[12]("e,a,m,i") * scalar8 * u0;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += 1.000000 d_aa(e,a) d_aa(m,i) f_aa(j,j)
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
             H_u1u1_aaaa_ovov("m,e,i,a") += tempArray[12]("e,a,m,i") * scalar5;
         }
 
-        if (include_u0_ && include_u1_) {
+        if (includes_["u0"] && includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += -1.000000 d_aa(e,a) d_aa(m,i) d-_aa(j,j) u0
             // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2,
             H_u1u1_aaaa_ovov("m,e,i,a") -= tempArray[12]("e,a,m,i") * scalar7 * u0;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += 1.000000 d_aa(e,a) d_aa(m,i) f_bb(j,j)
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
             H_u1u1_aaaa_ovov("m,e,i,a") += tempArray[12]("e,a,m,i") * scalar6;
         }
 
-        if (include_u0_) {
+        if (includes_["u0"]) {
 
             // cH_ss_aaaa_ovov += 1.000000 d_aa(e,a) d_aa(m,i) u0
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
             cH_ss_aaaa_ovov("m,e,i,a") += tempArray[12]("e,a,m,i") * u0;
         }
 
-        if (include_u0_ && include_u1_) {
+        if (includes_["u0"] && includes_["u1"]) {
 
             // cH_u1u1_aaaa_ovov += 1.000000 d_aa(e,a) d_aa(m,i) u0
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
@@ -539,7 +539,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_bbbb_ovov("m,e,i,a") -= 0.500000 * tempArray[13]("e,a,m,i") * scalar11;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_ss_bbbb_ovov += -1.000000 d_bb(e,a) d_bb(m,i) d-_aa(j,b) u1_aa(b,j)
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
@@ -553,7 +553,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_bbbb_ovov("m,e,i,a") += 0.250000 * tempArray[13]("e,a,m,i") * scalar2;
         }
 
-        if (include_u0_) {
+        if (includes_["u0"]) {
 
             // H_ss_bbbb_ovov += -1.000000 d_bb(e,a) d_bb(m,i) d-_bb(j,j) u0
             // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2,
@@ -564,7 +564,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_bbbb_ovov("m,e,i,a") -= tempArray[13]("e,a,m,i") * scalar7 * u0;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_ss_bbbb_ovov += -1.000000 d_bb(e,a) d_bb(m,i) d-_bb(j,b) u1_bb(b,j)
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
@@ -594,7 +594,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_bbbb_ovov("m,e,i,a") += tempArray[13]("e,a,m,i") * scalar3;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += 1.000000 d_bb(e,a) d_bb(m,i) f_bb(j,j)
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
@@ -625,14 +625,14 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_u1u1_bbbb_ovov("m,e,i,a") -= tempArray[13]("e,a,m,i") * scalar10;
         }
 
-        if (include_u0_ && include_u1_) {
+        if (includes_["u0"] && includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += -1.000000 d_bb(e,a) d_bb(m,i) d-_bb(j,j) u0
             // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2,
             H_u1u1_bbbb_ovov("m,e,i,a") -= tempArray[13]("e,a,m,i") * scalar8 * u0;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += 1.000000 d_bb(e,a) d_bb(m,i) w0
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
@@ -643,14 +643,14 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_u1u1_bbbb_ovov("m,e,i,a") += tempArray[13]("e,a,m,i") * scalar5;
         }
 
-        if (include_u0_ && include_u1_) {
+        if (includes_["u0"] && includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += -1.000000 d_bb(e,a) d_bb(m,i) d-_aa(j,j) u0
             // flops: o2v2: 1, o0v0: 2 | mem: o2v2: 1, o0v0: 2,
             H_u1u1_bbbb_ovov("m,e,i,a") -= tempArray[13]("e,a,m,i") * scalar7 * u0;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += -2.000000 d_bb(e,a) d_bb(m,i) d-_bb(j,b) u1_bb(b,j)
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
@@ -665,14 +665,14 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_u1u1_bbbb_ovov("m,e,i,a") -= 2.000000 * tempArray[13]("e,a,m,i") * scalar0;
         }
 
-        if (include_u0_) {
+        if (includes_["u0"]) {
 
             // cH_ss_bbbb_ovov += 1.000000 d_bb(e,a) d_bb(m,i) u0
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
             cH_ss_bbbb_ovov("m,e,i,a") += tempArray[13]("e,a,m,i") * u0;
         }
 
-        if (include_u0_ && include_u1_) {
+        if (includes_["u0"] && includes_["u1"]) {
 
             // cH_u1u1_bbbb_ovov += 1.000000 d_bb(e,a) d_bb(m,i) u0
             // flops: o2v2: 1, o0v0: 1 | mem: o2v2: 1, o0v0: 1,
@@ -680,7 +680,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
         }
         tempArray[13].~TArrayD();
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // tempArray[14] += 1.000000 dp_bb_ov("j,a") u1_bb_vo("e,j") Id_blks_["bb_oo"]("m,i")
             // flops: o2v2: 2, o1v2: 1 | mem: o2v2: 2, o0v2: 1,
@@ -754,7 +754,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_aaaa_ovov("m,e,i,a") -= Id_blks_["aa_vv"]("e,a") * F_blks_["aa_oo"]("i,m");
         }
 
-        if (include_u0_) {
+        if (includes_["u0"]) {
 
             // H_ss_aaaa_ovov += -1.000000 d_aa(m,i) d-_aa(e,a) u0
             // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1,
@@ -769,14 +769,14 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_bbbb_ovov("m,e,i,a") += Id_blks_["bb_vv"]("e,a") * dp_bb_oo("i,m") * u0;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_ss_bbbb_ovov += -1.000000 d-_bb(i,a) u1_bb(e,m)
             // flops: o2v2: 2 | mem: o2v2: 2,
             H_ss_bbbb_ovov("m,e,i,a") -= dp_bb_ov("i,a") * u1_bb_vo("e,m");
         }
 
-        if (include_u0_) {
+        if (includes_["u0"]) {
 
             // H_ss_bbbb_ovov += -1.000000 d_bb(m,i) d-_bb(e,a) u0
             // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1,
@@ -798,7 +798,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_ss_bbbb_ovov("m,e,i,a") -= V_blks_["bbbb_vovo"]("e,i,a,m");
         }
 
-        if (include_u0_) {
+        if (includes_["u0"]) {
 
             // H_u0u0 += -0.500000 <i,j||i,j>_abab
             // flops: o0v0: 1 | mem: o0v0: 1,
@@ -821,7 +821,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_u0u0 -= scalar8 * u0;
         }
 
-        if (include_u0_ && include_u1_) {
+        if (includes_["u0"] && includes_["u1"]) {
 
             // H_u0u0 += -2.000000 d-_aa(i,a) u1_aa(a,i)
             // flops: o0v0: 1 | mem: o0v0: 1,
@@ -832,7 +832,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_u0u0 -= 2.000000 * scalar1;
         }
 
-        if (include_u0_) {
+        if (includes_["u0"]) {
 
             // H_u0u0 += -0.500000 <j,i||j,i>_aaaa
             // flops: o0v0: 1 | mem: o0v0: 1,
@@ -875,7 +875,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_u0u0 += 0.250000 * scalar4;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += -1.000000 d-_aa(i,a) u1_aa(e,m)
             // flops: o2v2: 2 | mem: o2v2: 2,
@@ -890,21 +890,21 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_u1u1_aaaa_ovov("m,e,i,a") += Id_blks_["aa_oo"]("m,i") * F_blks_["aa_vv"]("e,a");
         }
 
-        if (include_u0_ && include_u1_) {
+        if (includes_["u0"] && includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += -1.000000 d_aa(m,i) d-_aa(e,a) u0
             // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1,
             H_u1u1_aaaa_ovov("m,e,i,a") -= Id_blks_["aa_oo"]("m,i") * dp_aa_vv("e,a") * u0;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += -1.000000 d_aa(e,a) f_aa(i,m)
             // flops: o2v2: 2 | mem: o2v2: 2,
             H_u1u1_aaaa_ovov("m,e,i,a") -= Id_blks_["aa_vv"]("e,a") * F_blks_["aa_oo"]("i,m");
         }
 
-        if (include_u0_ && include_u1_) {
+        if (includes_["u0"] && includes_["u1"]) {
 
             // H_u1u1_aaaa_ovov += 1.000000 d_aa(e,a) d-_aa(i,m) u0
             // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1,
@@ -915,7 +915,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_u1u1_bbbb_ovov("m,e,i,a") -= Id_blks_["bb_oo"]("m,i") * dp_bb_vv("e,a") * u0;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += 1.000000 <i,e||a,m>_bbbb
             // flops: o2v2: 1 | mem: o2v2: 1,
@@ -930,21 +930,21 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
             H_u1u1_bbbb_ovov("m,e,i,a") -= Id_blks_["bb_vv"]("e,a") * F_blks_["bb_oo"]("i,m");
         }
 
-        if (include_u0_ && include_u1_) {
+        if (includes_["u0"] && includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += 1.000000 d_bb(e,a) d-_bb(i,m) u0
             // flops: o2v2: 2, o0v0: 1 | mem: o2v2: 2, o0v0: 1,
             H_u1u1_bbbb_ovov("m,e,i,a") += Id_blks_["bb_vv"]("e,a") * dp_bb_oo("i,m") * u0;
         }
 
-        if (include_u1_) {
+        if (includes_["u1"]) {
 
             // H_u1u1_bbbb_ovov += -1.000000 d-_bb(i,a) u1_bb(e,m)
             // flops: o2v2: 2 | mem: o2v2: 2,
             H_u1u1_bbbb_ovov("m,e,i,a") -= dp_bb_ov("i,a") * u1_bb_vo("e,m");
         }
 
-        if (include_u0_) {
+        if (includes_["u0"]) {
 
             // cH_u0u0 += 1.000000 u0
             // flops: o0v0: 1 | mem: o0v0: 1,
@@ -970,12 +970,12 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
 
     // pluck out diagonals
     size_t dim_tot = singleDim_;
-    if (include_u0_) ++dim_tot;
-    if (include_u1_) dim_tot += singleDim_;
+    if (includes_["u0"]) ++dim_tot;
+    if (includes_["u1"]) dim_tot += singleDim_;
     auto * ss_diag = (double*) calloc(dim_tot, sizeof(double));
 
     size_t id = 0;
-    if (include_u0_){
+    if (includes_["u0"]){
         ss_diag[id++] = H_u0u0;
     }
 
@@ -999,7 +999,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
 
     // extract singles w/ hw
     
-    if (include_u1_){
+    if (includes_["u1"]){
         forall(H_u1u1_aaaa_ovov, [id,oa,va,ob,vb,ss_diag](auto &tile, auto &x){
             size_t m = x[0], e = x[1], i = x[2], a = x[3];
             if (m==i && e==a){
@@ -1075,9 +1075,9 @@ void hilbert::EOM_EE_QED_CCSD::build_Hc_cH(size_t L) {
     TArrayMap &f = cc_wfn_->F_blks_;
 
     map<string, bool> includes_ = {
-            {"u0", include_u0_},
-            {"u1", include_u1_},
-            {"u2", include_u2_}
+            {"u0", includes_["u0"]},
+            {"u1", includes_["u1"]},
+            {"u2", includes_["u2"]}
     };
 
     /// build sigma vectors for this trial
@@ -1099,17 +1099,17 @@ void hilbert::EOM_EE_QED_CCSD::build_Hc_cH(size_t L) {
     sigvec_blks_["sigmal2_abab"] = makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
     sigvec_blks_["sigmal2_bbbb"] = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
 
-    if (include_u0_) {
+    if (includes_["u0"]) {
         sigvec_blks_["sigmas0"] = makeTensor(world_, {L}, true);
         sigvec_blks_["sigmam0"] = makeTensor(world_, {L}, true);
     }
-    if (include_u1_) {
+    if (includes_["u1"]) {
         sigvec_blks_["sigmas1_aa"] = makeTensor(world_, {L, va_, oa_}, true);
         sigvec_blks_["sigmas1_bb"] = makeTensor(world_, {L, vb_, ob_}, true);
         sigvec_blks_["sigmam1_aa"] = makeTensor(world_, {L, va_, oa_}, true);
         sigvec_blks_["sigmam1_bb"] = makeTensor(world_, {L, vb_, ob_}, true);
     }
-    if (include_u2_) {
+    if (includes_["u2"]) {
         sigvec_blks_["sigmas2_aaaa"] = makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
         sigvec_blks_["sigmas2_abab"] = makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
         sigvec_blks_["sigmas2_bbbb"] = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
@@ -1207,17 +1207,17 @@ void hilbert::EOM_EE_QED_CCSD::build_Hc_cH(size_t L) {
             csigmas2_aaaa, csigmas2_abab, csigmas2_bbbb,
             csigmam2_aaaa, csigmam2_abab, csigmam2_bbbb;
 
-    if (include_u0_) {
+    if (includes_["u0"]) {
         csigmas0 = sigvec_blks_["sigmas0"].clone();
         csigmam0 = sigvec_blks_["sigmam0"].clone();
     }
-    if (include_u1_) {
+    if (includes_["u1"]) {
         csigmas1_aa = sigvec_blks_["sigmas1_aa"].clone();
         csigmas1_bb = sigvec_blks_["sigmas1_bb"].clone();
         csigmam1_aa = sigvec_blks_["sigmam1_aa"].clone();
         csigmam1_bb = sigvec_blks_["sigmam1_bb"].clone();
     }
-    if (include_u2_) {
+    if (includes_["u2"]) {
         csigmas2_aaaa = sigvec_blks_["sigmas2_aaaa"].clone();
         csigmas2_abab = sigvec_blks_["sigmas2_abab"].clone();
         csigmas2_bbbb = sigvec_blks_["sigmas2_bbbb"].clone();
@@ -16037,12 +16037,12 @@ void hilbert::EOM_EE_QED_CCSD::build_Hc_cH(size_t L) {
     sigmal2_abab("I,e,f,m,n") += l2["abab_Loovv"]("I,m,n,e,f") * the_rest;
     sigmal2_bbbb("I,e,f,m,n") += l2["bbbb_Loovv"]("I,m,n,e,f") * the_rest;
 
-    if ( include_u0_ ) {
+    if ( includes_["u0"] ) {
         sigmas0("I") += s0("I") * the_rest;
         sigmam0("I") += m0("I") * the_rest;
     }
 
-    if ( include_u1_ ) {
+    if ( includes_["u1"] ) {
         sigmas1_aa("I,e,m") += s1["aa_Lvo"]("I,e,m") * the_rest;
         sigmas1_bb("I,e,m") += s1["bb_Lvo"]("I,e,m") * the_rest;
 
@@ -16050,7 +16050,7 @@ void hilbert::EOM_EE_QED_CCSD::build_Hc_cH(size_t L) {
         sigmam1_bb("I,e,m") += m1["bb_Lov"]("I,m,e") * the_rest;
     }
 
-    if ( include_u2_ ) {
+    if ( includes_["u2"] ) {
         sigmas2_aaaa("I,e,f,m,n") += s2["aaaa_Lvvoo"]("I,e,f,m,n") * the_rest;
         sigmas2_abab("I,e,f,m,n") += s2["abab_Lvvoo"]("I,e,f,m,n") * the_rest;
         sigmas2_bbbb("I,e,f,m,n") += s2["bbbb_Lvvoo"]("I,e,f,m,n") * the_rest;
@@ -16069,16 +16069,16 @@ void hilbert::EOM_EE_QED_CCSD::build_Hc_cH(size_t L) {
     sigmar2_abab("I,a,b,i,j") += coherent_scalar * csigmar2_abab("I,a,b,i,j");
     sigmar2_bbbb("I,a,b,i,j") += coherent_scalar * csigmar2_bbbb("I,a,b,i,j");
 
-    if (include_u0_) {
+    if (includes_["u0"]) {
         sigmas0("I") += coherent_scalar * csigmas0("I");
     }
 
-    if (include_u1_) {
+    if (includes_["u1"]) {
         sigmas1_aa("I,a,i") += coherent_scalar * csigmas1_aa("I,a,i");
         sigmas1_bb("I,a,i") += coherent_scalar * csigmas1_bb("I,a,i");
     }
 
-    if (include_u2_) {
+    if (includes_["u2"]) {
         sigmas2_aaaa("I,a,b,i,j") += coherent_scalar * csigmas2_aaaa("I,a,b,i,j");
         sigmas2_abab("I,a,b,i,j") += coherent_scalar * csigmas2_abab("I,a,b,i,j");
         sigmas2_bbbb("I,a,b,i,j") += coherent_scalar * csigmas2_bbbb("I,a,b,i,j");
@@ -16091,16 +16091,16 @@ void hilbert::EOM_EE_QED_CCSD::build_Hc_cH(size_t L) {
     sigmal2_abab("I,a,b,i,j") += coherent_scalar * csigmal2_abab("I,a,b,i,j");
     sigmal2_bbbb("I,a,b,i,j") += coherent_scalar * csigmal2_bbbb("I,a,b,i,j");
 
-    if (include_u0_) {
+    if (includes_["u0"]) {
         sigmam0("I") += coherent_scalar * csigmam0("I");
     }
 
-    if (include_u1_) {
+    if (includes_["u1"]) {
         sigmam1_aa("I,a,i") += coherent_scalar * csigmam1_aa("I,a,i");
         sigmam1_bb("I,a,i") += coherent_scalar * csigmam1_bb("I,a,i");
     }
 
-    if (include_u2_) {
+    if (includes_["u2"]) {
         sigmam2_aaaa("I,a,b,i,j") += coherent_scalar * csigmam2_aaaa("I,a,b,i,j");
         sigmam2_abab("I,a,b,i,j") += coherent_scalar * csigmam2_abab("I,a,b,i,j");
         sigmam2_bbbb("I,a,b,i,j") += coherent_scalar * csigmam2_bbbb("I,a,b,i,j");
