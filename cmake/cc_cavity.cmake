@@ -105,7 +105,7 @@ set(qed_cc
 
   src/cc_cavity/misc/ta_diis.cc
   src/cc_cavity/misc/timer.cc
-  src/cc_cavity/misc/ta_helper.cc
+  src/cc_cavity/misc/ta_helper.hpp
 )
 
 # files to build the QED-CC equations (residuals)

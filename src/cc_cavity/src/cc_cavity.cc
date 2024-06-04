@@ -41,7 +41,7 @@
 #include <psi4/lib3index/dftensor.h>
 #include <psi4/libqt/qt.h>
 
-#include "cc_cavity/misc/ta_helper.h"
+#include "cc_cavity/misc/ta_helper.hpp"
 #include "misc/threeindexintegrals.h"
 
 #include <mkl.h>

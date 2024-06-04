@@ -31,7 +31,7 @@
 #include <tiledarray.h>
 #include "polaritonic_scf/hf.h"
 #include "misc/nonsym_davidson_solver.h"
-#include "cc_cavity/misc/ta_helper.h"
+#include "cc_cavity/misc/ta_helper.hpp"
 #include <psi4/libpsio/psio.hpp>
 #include "cc_cavity/misc/ta_diis.h"
 #include "cc_cavity/misc/timer.h"

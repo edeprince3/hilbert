@@ -24,28 +24,23 @@
  *  @END LICENSE
  */
 
-#ifndef TA_HELPER_CC
-#define TA_HELPER_CC
-#include "ta_helper.h"
+#ifndef TA_HELPER_H
+#define TA_HELPER_H
 #include <tiledarray.h>
+#include <cstdio>
 
-using namespace TA;
 using namespace std;
+using namespace TA;
 namespace TA_Helper {
 
-    template<typename T>
-    TArray<T> makeTensor(World &world, const initializer_list<size_t> &N, bool fillZero) {
-        TArray<T> array(world, makeRange(N));
+    size_t tile_size_ = -1; // default value to use all elements in a tile
 
-        if (fillZero)
-            array.fill(0.0);
-
-        world.gop.fence();
-        return array;
-    }
-
-    template<typename T>
-    TiledRange makeRange(const initializer_list<size_t> &N) {// create range
+    /**
+     * create a new tiled range with the dimensions specified in the vector, N
+     * @param N the target dimensions of the tiled range
+     * @return the tiled range
+     */
+    TiledRange makeRange(const initializer_list<size_t> &N){ // create range
         vector<size_t> Nblk;
         vector<TiledRange1> trange;
 
@@ -71,8 +66,6 @@ namespace TA_Helper {
         TiledRange TR(trange);
         return TR;
     }
-
-    template<typename T>
     TiledRange makeRange(const vector<size_t> &N) {// create range
         vector<size_t> Nblk;
         vector<TiledRange1> trange;
@@ -100,9 +93,36 @@ namespace TA_Helper {
         return TR;
     }
 
-    template<typename T>
-    TArray<T> makeTensor(World &world, const initializer_list<size_t> &N, const T *data,
-                                              initializer_list<size_t> Off) {
+    /**
+     * create a new tiled array with the dimensions specified in the vector, N
+     * @param world the world object
+     * @param N the target dimensions of the tiled array
+     * @param fillZero if true, the array will be filled with zeros
+     * @return the tiled array
+     */
+    template<typename T = double>
+    TArray<T> makeTensor(World &world, const initializer_list<size_t> &N, bool fillZero) {
+        TArray<T> array(world, makeRange(N));
+
+        if (fillZero)
+            array.fill(0.0);
+
+        world.gop.fence();
+        return array;
+    }
+
+    /**
+     * create a new tiled array with the dimensions specified in the vector, N, and fill it with values from data
+     * @param world the world object
+     * @param N the target dimensions of the tiled array
+     * @param data the data to fill the array with
+     * @param Off the offsets of the data in each dimension (Default: {}, i.e. no offset)
+     * @return the tiled array
+     */
+    template<typename T = double>
+    TArray<T>
+    makeTensor(World &world, const initializer_list<size_t> &N, const T *data,
+               initializer_list<size_t> Off = {}) {
         // create tensor
         TArray<T> array = makeTensor(world, N, false);
 
@@ -140,7 +160,8 @@ namespace TA_Helper {
 
             // fill tensor with data
             array.template init_elements(
-                    [data, N_size, off_it, dim_sizes](const typename TArray<T>::index &I) { // fill tensor with data
+                    [data, N_size, off_it, dim_sizes](
+                            const typename TArray<T>::index &I) { // fill tensor with data
                         size_t index = 0;
                         // calculate index
                         for (size_t i = 0; i < N_size; i++) {
@@ -158,12 +179,23 @@ namespace TA_Helper {
         }
     }
 
-    template<typename T>
-    TArray<T> makeTensor(World &world,
-                                              const initializer_list<size_t> &NL,
-                                              const initializer_list<size_t> &NR,
-                                              const T *const *data,
-                                              initializer_list<size_t> Off) {
+    /**
+     * create a new tiled array with the dimensions specified in the vector, N, and fill it with values from data
+     * where data is a 2D array and NL and NR are the dimensions within the 2D array
+     * @param world  the world object
+     * @param NL  the left dimensions of the 2D array
+     * @param NR the right dimensions of the 2D array
+     * @param data the data to fill the array with
+     * @param Off the offsets of the data in each dimension (Default: {}, i.e. no offset)
+     * @return the tiled array
+     */
+    template<typename T = double>
+    TArray<T>
+    makeTensor(World &world,
+               const initializer_list<size_t> &NL,
+               const initializer_list<size_t> &NR,
+               const T *const *data,
+               initializer_list<size_t> Off = {}) {
 
         vector<size_t> N(NL.begin(), NL.end());
         N.insert(N.end(), NR.begin(), NR.end());
@@ -239,91 +271,30 @@ namespace TA_Helper {
         }
     }
 
-    template<typename T, typename Op>
-    void forall(TArray<T> &tensor, Op &&op) {
-        // assert that Op has the correct signature
-        static_assert(is_invocable_v<Op, Tensor<T> &, const typename Tensor<T>::range_type::index_type &>,
-                      "TA_Helper::forall: Op must have the signature void(Tensor<T> &, ElementIndex &)");
+    /**
+     * loop over all elements in the tiled array and apply a function, op, using each element
+     * @param tensor the tiled array to iterate over
+     * @param op the function to perform an operation using each element
+     *           the function must take a Tensor<T> (the tile) and a vector<size_t> (the index) as arguments
+     */
+    template<typename Tile, typename Policy, typename Op,
+            typename = typename std::enable_if<!TiledArray::detail::is_array<
+                    typename std::decay<Op>::type>::value>::type,
+            typename = typename std::enable_if<detail::is_invocable<Op, Tile &,
+                    const Range::index_type &>::value>::type>
+    void forall(DistArray<Tile, Policy> &arg, Op &&op, bool fence = true) {
 
-        // get rank of tensor
-        tensor.world().gop.fence();
-        size_t rank = tensor.trange().rank();
-        foreach_inplace(tensor, [rank, &op](Tensor<T> &tile) {
-            const auto &lobound = tile.range().lobound();
-            const auto &upbound = tile.range().upbound();
+        // wrap Op into a shallow-copy copyable handle
+        auto op_shared_handle = make_op_shared_handle(std::forward<Op>(op));
 
-            vector<size_t> x(rank, 0);
-            function<void(size_t)> loop_body = [&loop_body, &lobound, &upbound, &op, &tile, &x](size_t dim) {
-                if (dim == x.size()) {
-                    op(tile, x);
-                    return;
-                }
-
-                for (x[dim] = lobound[dim]; x[dim] < upbound[dim]; ++x[dim]) {
-                    loop_body(dim + 1);
-                }
-            };
-
-            loop_body(0);
-        });
-        tensor.world().gop.fence();
-    }
-
-    template<typename T>
-    T *arrayFromTensor(TArray<T> tensor, const initializer_list<size_t> &N, initializer_list<size_t> Off) {
-
-        // create array of dimension sizes for indexing
-        size_t N_size = N.size();
-        auto *dim_sizes = (size_t *) alloca(N_size * sizeof(size_t));
-
-        dim_sizes[N_size - 1] = 1; // last index dimension size is 1
-
-        // {o,v,o,v} -> i*v*o*v + a*o*v + j*v + b
-        auto N_it = N.begin(); // create iterator for N
-        for (int i = ((int) N_size) - 2; i >= 0; --i) {
-            // calculate dimension size for index i
-            dim_sizes[i] = dim_sizes[i + 1] * N_it[i + 1];
-        }
-
-        size_t array_size = dim_sizes[0] * N_it[0];
-
-        // initialize data array
-        auto *data = (T *) malloc(array_size * sizeof(T));
-        memset(data, 0, array_size * sizeof(T));
-
-        if (Off.size() == 0) { // if Off is empty
-            // fill array with data from tensor
-            forall(tensor, [data, N_size, dim_sizes](Tensor<T> &tile, vector<size_t> &x) {
-                size_t index = 0;
-                for (size_t i = 0; i < N_size; i++)
-                    index += x[i] * dim_sizes[i];
-
-                // get value
-                data[index] = tile[x]; // set value
-            });
-        } else if (Off.size() == N.size()) { // if Off is not empty
-            auto off_it = Off.begin(); // create iterator for Off
-
-            // fill array with data from tensor
-            forall(tensor, [data, N_size, dim_sizes, off_it](Tensor<T> &tile, vector<size_t> &x) {
-                size_t index = 0;
-                for (size_t i = 0; i < N_size; i++)
-                    index += (x[i] + off_it[i]) * dim_sizes[i];
-
-                // get value
-                data[index] = tile[x]; // set value
-            });
-        } else {
-            throw runtime_error("TA_Helper::arrayFromTensor: Off.size() != N.size() and Off != {}");
-        }
-
-        // sync array across all nodes
-        tensor.world().gop.fence();
-        tensor.world().gop.reduce(data, array_size, plus<>());
-
-        return data;
+        // Use foreach_inplace to iterate over tiles and modify elements
+        foreach_inplace(
+                arg,
+                [op = std::move(op_shared_handle)](Tile &tile) mutable {
+                    for (const Range::index_type &index: tile.range())
+                        op(tile, index);
+                }, fence); // Fence before and after the data is modified
     }
 }
 
-
-#endif //TILEDARRAY_TA_HELPER_CC
+#endif
