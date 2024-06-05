@@ -66,6 +66,8 @@ namespace hilbert {
 
     public:
 
+        TA::World& world_ = TA::get_default_world(); // TA world object
+
         /**
          *  @brief CC_Cavity constructor
          *  @param[in] wfn      Wavefunction object
