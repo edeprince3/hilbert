@@ -45,8 +45,6 @@ using namespace TA_Helper;
 
 namespace hilbert {
 
-    TA::World& world_ = TA::get_default_world(); // TA world object
-
     // thread safe print function in scope of hilbert namespace
     inline void Printf(const char *format, ...) {
         va_list argptr;
@@ -54,6 +52,7 @@ namespace hilbert {
         char input[1024];
         vsprintf(input, format, argptr);
         va_end(argptr);
+        TA::World& world_ = TA::get_default_world(); // TA world object
         world_.gop.serial_invoke(
                 [=]() {
                     outfile->Printf("%s", input);
