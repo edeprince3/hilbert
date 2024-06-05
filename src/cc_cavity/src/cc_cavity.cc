@@ -925,12 +925,5 @@ namespace hilbert {
         amp_vec.clear(); resid_vec.clear(); // clear vectors
     }
 
-    double CC_Cavity::compute_residual_norms(bool return_tot) {
-
-    }
-
-    void CC_Cavity::print_properties() {
-
-    }
 }
 
