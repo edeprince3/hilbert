@@ -69,7 +69,8 @@ namespace hilbert {
                 exit(1);
             }
 
-            return (2 * N - i - 3) * i / 2 + j - 1;
+            size_t ij = (2 * N - i - 3) * i / 2 + j - 1;
+            return ij;
         }
 
         /**
@@ -80,7 +81,7 @@ namespace hilbert {
          * @param N leading dimension of the array
          * @return index of the element in the triangular array
          */
-        inline static size_t cube_2_tri_idx(size_t i, size_t j, size_t k, size_t N) {
+        static inline size_t cube_2_tri_idx(size_t i, size_t j, size_t k, size_t N) {
             if (N < 3){
                 cout << "The leading dimension of the array must be at least 3.\n"
                         "Check number of occupied and virtual orbitals.\n"
@@ -97,8 +98,9 @@ namespace hilbert {
                 exit(1);
             }
 
-            size_t ij_pair = (N * (N - 1) / 2) - ((N - i) * (N - i - 1) / 2) + (j - i - 1);
-            return (ij_pair * (ij_pair + 1) / 2) + k - j - 1;
+            size_t ij = (N * (N - 1) / 2) - ((N - i) * (N - i - 1) / 2) + (j - i - 1);
+            size_t ijk = (ij * (ij + 1) / 2) + k - j - 1;
+            return ijk;
         }
 
         /** ------------------------ Common Attributes ------------------------ */
