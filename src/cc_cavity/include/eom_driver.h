@@ -59,7 +59,7 @@ namespace hilbert {
                         "row index: " << i << ", column index: " << j << "\n";
                 exit(1);
             }
-            if (N == 2)
+            if (N == 2) // ij index is just i because only one j index
                 return i;
 
             if (i > j) {
@@ -88,7 +88,8 @@ namespace hilbert {
                         "row index: " << i << ", column index: " << j << ", third index: " << k << "\n";
                 exit(1);
             }
-            if (N == 3) return sqr_2_tri_idx(i, j, N);
+            if (N == 3)
+                return sqr_2_tri_idx(i, j, N); // ijk index is just ij index because only one k index
 
             if (i > j || j > k) {
                 cout << "The first index must be less than or equal to the second index. "
