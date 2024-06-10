@@ -236,20 +236,9 @@ double PolaritonicUKS::compute_energy() {
     outfile->Printf("\n");
     outfile->Printf("\n");
 
-    // allocate memory for eigenvectors and eigenvalues of the overlap matrix
-    std::shared_ptr<Matrix> Sevec ( new Matrix(nso_,nso_) );
-    std::shared_ptr<Vector> Seval ( new Vector(nso_) );
-
     // build S^(-1/2) symmetric orthogonalization matrix
-    S_->diagonalize(Sevec,Seval);
-
-    std::shared_ptr<Matrix> Shalf = (std::shared_ptr<Matrix>)( new Matrix(nso_,nso_) );
-    for (int mu = 0; mu < nso_; mu++) {
-        Shalf->pointer()[mu][mu] = 1.0 / sqrt(Seval->pointer()[mu]);
-    }
-
-    // transform Seval back to nonorthogonal basis
-    Shalf->back_transform(Sevec);
+    SharedMatrix Shalf(new Matrix(S_));
+    Shalf->power(-0.5);
 
     // allocate memory for F' and its eigenvectors and eigenvalues
     std::shared_ptr<Matrix> Fevec_a ( new Matrix(nso_,nso_) );
@@ -546,9 +535,11 @@ double PolaritonicUKS::compute_energy() {
         gnorm_b = grad_b->rms();
 
         // DIIS extrapolation
-        diis->WriteVector(&(Fprime_a->pointer()[0][0]),&(Fprime_b->pointer()[0][0]));
-        diis->WriteErrorVector(&(grad_a->pointer()[0][0]),&(grad_b->pointer()[0][0]));
-        diis->Extrapolate(&(Fprime_a->pointer()[0][0]),&(Fprime_b->pointer()[0][0]));
+        if (iter != 0) {
+            diis->WriteVector(&(Fprime_a->pointer()[0][0]),&(Fprime_b->pointer()[0][0]));
+            diis->WriteErrorVector(&(grad_a->pointer()[0][0]),&(grad_b->pointer()[0][0]));
+            diis->Extrapolate(&(Fprime_a->pointer()[0][0]),&(Fprime_b->pointer()[0][0]));
+        }
 
         // Diagonalize F' to obtain C'
         Fprime_a->diagonalize(Fevec_a,epsilon_a_,ascending);
@@ -590,6 +581,32 @@ double PolaritonicUKS::compute_energy() {
     if ( n_photon_states_ > 1 ) {
         update_cavity_terms();
     } 
+    
+    // get expected dipole moment
+    std::shared_ptr<Matrix> D_total = Da_->clone(); 
+    D_total->add(Db_);
+
+    // polaritonic dipole moment
+    double e_dipole_x = dipole_[0]->vector_dot(D_total);
+    double e_dipole_y = dipole_[1]->vector_dot(D_total);
+    double e_dipole_z = dipole_[2]->vector_dot(D_total);
+    
+    // total dipole moment
+    double dipole_x = e_dipole_x + nuc_dip_x_;
+    double dipole_y = e_dipole_y + nuc_dip_y_;
+    double dipole_z = e_dipole_z + nuc_dip_z_;
+
+    outfile->Printf("\n");
+    outfile->Printf("    * Polaritonic Dipole Moment: %20.12lf %20.12lf %20.12lf\n",e_dipole_x,e_dipole_y,e_dipole_z);
+    outfile->Printf("    *     Nuclear Dipole Moment: %20.12lf %20.12lf %20.12lf\n",nuc_dip_x_,nuc_dip_y_,nuc_dip_z_);
+    outfile->Printf("    *       Total Dipole Moment: %20.12lf %20.12lf %20.12lf\n",dipole_x,dipole_y,dipole_z);
+    
+    // get magnitude of total dipole moment
+    double dipole_mag = sqrt(dipole_x * dipole_x + dipole_y * dipole_y + dipole_z * dipole_z);
+    outfile->Printf("    *                 Magnitude: %20.12lf\n",dipole_mag);
+
+
+    outfile->Printf("\n");
 
     // print orbital energies
     epsilon_a_->print();

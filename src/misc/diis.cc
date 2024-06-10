@@ -28,6 +28,8 @@
 
 #include <psi4/libqt/qt.h>
 #include <psi4/libpsio/psio.hpp>
+#include "psi4/libpsi4util/process.h"
+#include <psi4/liboptions/liboptions.h>
 #include <psi4/psifiles.h>
 
 #include <string.h>
@@ -38,8 +40,9 @@ namespace hilbert{
 
 DIIS::DIIS(int n) {
 
+    Options& options = psi::Process::environment.options;
     dimdiis_           = n;
-    maxdiis_           = 8;
+    maxdiis_           = options.get_int("DIIS_MAX_VECS"); // (default 8)
     diis_iter_         = 0;
     replace_diis_iter_ = 1;
     diisvec_           = (double*)malloc(sizeof(double)*(maxdiis_+1));

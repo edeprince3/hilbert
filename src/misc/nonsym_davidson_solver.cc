@@ -186,63 +186,53 @@ void NonSymmetricEigenvalueEigenvector(long int dim, double **M, double * eigval
         }
     }   
             
-    // DGEEV(&vl,&vr,&n,M,&n,eigval,wi,el,&n,er,&n,work,&lwork,&info);
     psi::fnocc::DGEEV(vl,vr,n,Asp[0],n,eigrp,eigip,elsp[0],n,ersp[0],n,work,lwork,info);
-    //outfile->Printf("info %d\n",info);
-        
-    //stable selection sort
-    std::shared_ptr<Vector> evr_temp (new Vector(dim));
-    std::shared_ptr<Vector> evl_temp (new Vector(dim));
-    double* evrp = evr_temp->pointer();
-    double* evlp = evl_temp->pointer();
-    size_t i, j, jmin;
-    for (j = 0; j < n-1; j++) {
-        jmin = j;
-        // find index of minimum eigenvalue from j to n
-        for (i = j+1; i < n; i++) {
-            if (eigrp[jmin] > eigrp[i] ) {
-                jmin = i;
-            }   
-        }   
-        //save current eigenvalue and eigenvectors associated with index jmin
-        double eigr = eigrp[jmin];
-        double eigi = eigip[jmin];
-        for (i = 0; i < n; i++) {
-            evrp[i] = ersp[jmin][i];
-            evlp[i] = elsp[jmin][i];
-        }   
-        //shift values
-        while (jmin > j) {
-            eigrp[jmin] = eigrp[jmin-1];
-            eigip[jmin] = eigip[jmin-1];
-            for (i = 0; i < n; i++) {
-                ersp[jmin][i] = ersp[jmin-1][i];
-                elsp[jmin][i] = elsp[jmin-1][i];
-            }
-            jmin--;
-        }
-        eigrp[j] = eigr;
-        eigip[j] = eigi;
-        for (i = 0; i < n; i++) {
-            ersp[j][i] = evrp[i];
-            elsp[j][i] = evlp[i];
-        }  
-     }
 
-     for (int i = 0; i < n; i++) {
-         for (int j = 0; j < n; j++) {
-              er[i][j]=ersp[i][j];
-              el[i][j]=elsp[i][j];
-         }
-     }
-     for (int i = 0; i < n; i++) {
-         eigval[i]=eigrp[i];
-         wi[i]=eigip[i];
-     }
-     //outfile->Printf("after sort\n");
-     //for (int k = 0; k < n; k++) {
-     //    outfile->Printf("%d %20.12lf %20.12lf\n",k, eigrp[k],eigip[k]);
-     //}
+    // perform argument sort by pairing eigenvalues with index
+    typedef std::pair<std::complex<double>, size_t> complex_w_idx;
+    auto *eig_pair = (complex_w_idx *) malloc(n * sizeof(complex_w_idx));
+
+    for (size_t i = 0; i < n; i++) {
+        eig_pair[i].first = {eigrp[i], eigip[i]};
+        eig_pair[i].second = i;
+    }
+
+    // sort by eigenvalue
+    std::stable_sort(eig_pair, eig_pair + n,
+        [](const complex_w_idx &l, const complex_w_idx &r) {
+            // sort by real part (lowest first)
+            std::complex<double> l_val = l.first;
+            std::complex<double> r_val = r.first;
+            bool correctOrder = l_val.real() < r_val.real();
+
+            if (!correctOrder) {
+                // sort by imaginary part (positive first) if same real part
+                bool same_real_part = fabs(l_val.real() - r_val.real()) <= 1e-16;
+                if (same_real_part) {
+                    return l_val.imag() > r_val.imag();
+                }
+            }
+
+            // return true if l should come before r
+            return correctOrder;
+        }
+    );
+
+    // apply sorted indices to reorder eigensystem
+    for (size_t i = 0; i < n; ++i) {
+        // get ordered index
+        size_t min_i = eig_pair[i].second;
+
+        // reorder eigenvalue
+        eigval[i] = eigrp[min_i];
+        wi[i] = eigip[min_i];
+
+        // reorder eigenvector
+        for (size_t j = 0; j < n; j++) {
+            er[i][j] = ersp[min_i][j];
+            el[i][j] = elsp[min_i][j];
+        }
+    }
 
      free(work);
 
@@ -343,34 +333,15 @@ void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, do
         }
         Qp[i][min_pos] = 1.0;
         Adiag2[min_pos] = BIGNUM;
-       // lambda_oldp[i] = minimum;
     }
     free(Adiag2);
     int L = init_dim;
-    /*
-    //random guess
-    srand(time(0));
-    for (size_t i = 0; i < init_dim; i++) {
-        for (size_t j = 1; j < N; j++){
-       Qp[i][j] = ((double)rand()/RAND_MAX);
-        }
-    }
-    qr_orthogonalization(maxdim,N,L,Qp);
-    */
+
     int iter = 0;
-    int maxit = 100;
+    int maxit = eom_maxiter;
     bool convergence = false;
     outfile->Printf("\n");
     while (iter < maxit) {
-      /*
-      outfile->Printf("test orthogonality of basis Q\n");
-      for (int m = 0; m < L; m++) {
-          for (int n = 0; n < L; n++) {
-          double a = C_DDOT(N, Qp[m], 1, Qp[n], 1);
-          outfile->Printf("%d %d %20.12lf\n",m, n, a);
-          }
-      }
-      */
       //this code only checks convergence of the real part of the eigenvalues
       for (int i = 0; i < M+1; i++) {
           lambda_oldp[i] = lambdap[i];
@@ -408,53 +379,7 @@ void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, do
           }
       }
       NonSymmetricEigenvalueEigenvector(L, Bp, lambdap, lambdaip, Clp,Crp);
-/*
-      for (int m = 0; m < L; m++) {
-          for (int n = 0; n < L; n++) {
-              double a = C_DDOT(L, Clp[m], 1, Crp[n], 1);
-              outfile->Printf("%d %d %20.12lf\n",m, n, a);
-          }
-      }
-      */
-      //outfile->Printf("\n");
-      /*
-      outfile->Printf("check degeneracy\n");
-      int  m=0;
-      while (m<L) {
-          int ndeg=1;
-          for (int n = m+1; n < L; n++) {
-              if(fabs(lambdap[n] - lambdap[m]) <= 1e-12) ndeg++;
-          }
-      outfile->Printf("%4d %4d\n",m,ndeg);
-      if (ndeg ==1) {
-      double RValue1 = C_DDOT(L, Clp[m], 1, Crp[m], 1);
-      for (int I = 0; I < L; I++) {
-          if (RValue1 < 0.0) {
-             Crp[m][I] /= -sqrt(fabs(RValue1));
-             Clp[m][I] /= sqrt(fabs(RValue1));
-          } else {
-             Crp[m][I] /= sqrt(RValue1);
-             Clp[m][I] /= sqrt(RValue1);
-          }
-      }
-      } else {
-           //   biorthogonal_svd(m,ndeg,L,Clp,Crp);
-             eigenvectors_swap(Clp,Crp,m,ndeg,L);
-      }
-           m+=ndeg;
-      }
-      */
-      //schmidt_biorthogonal(Clp,Crp,L,L);
-      // biorthogonal_svd(L,L,Clp,Crp);
-      /*
-      outfile->Printf("product of left and right");
-      for (int m = 0; m < L; m++) {
-          for (int n = 0; n < L; n++) {
-              double a = C_DDOT(L, Clp[m], 1, Crp[n], 1);
-              outfile->Printf("%d %d %20.12lf\n",m, n, a);
-          }
-      }
-      */
+
      for (size_t k = 0; k < M+1; k++) {
           for (size_t n = 0; n < N; n++) {
               Rrp[k][n]= 0.0;
@@ -476,14 +401,12 @@ void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, do
                    Rrp[k][n]= dum1;
                    Rlp[k][n]= dum2;
              }
-             //outfile->Printf("%20.12lf %20.12lf\n", lambdap[k], lambdaip[k]);
           }
           else {
              complex_root++;
              if (complex_root%2==0) continue;
 	     double re = lambdap[k];
 	     double im = lambdaip[k];
-             //outfile->Printf("%20.12lf %20.12lf\n", re,im);
              for (size_t n = 0; n < N; n++) {
                  double res_rr = 0.0;
                  double res_ri = 0.0;
@@ -517,11 +440,22 @@ void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, do
       for (int k = 0; k < Mn; k++) {
           double normvalr = C_DDOT(N, Rrp[k], 1, Rrp[k], 1);
           double normvall = C_DDOT(N, Rlp[k], 1, Rlp[k], 1);
-          double error = lambdap[k]-lambda_oldp[k];
           normvalr = sqrt(normvalr);
           normvall = sqrt(normvall);
-          if ((normvalr < residual_norm) && (normvall < residual_norm) && ((fabs(error) < 1e-8)) ) {
-                 conv++;
+
+          double e_error = lambdap[k]-lambda_oldp[k];
+          bool e_conv = fabs(e_error) < eom_r_conv;
+
+          // residual norms are less than the threshold
+          bool r_resid_conv = normvalr < residual_norm;
+          bool l_resid_conv = normvall < residual_norm;
+
+          // or residual norms are less than convergence criterion
+          r_resid_conv |= normvall < eom_r_conv;
+          l_resid_conv |= normvalr < eom_r_conv;
+
+          if (r_resid_conv && l_resid_conv && e_conv) {
+                 conv++; // count the number of converged roots
           }
           else {
              //find rows of residual that have norm larger than some threshold
@@ -529,21 +463,12 @@ void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, do
           }
           outfile->Printf("residual norm%d %20.12lf %20.12lf\n", k,normvalr,normvall);
       }
-      /*
-      outfile->Printf("size of index %d\n", index.size());
-      if (index.size() >0) {
-         for (auto it = index.begin(); it != index.end(); ++it) {
-               outfile->Printf("%d\n", *it);
-         }
-      }
-      */
+
       outfile->Printf("check_convergence %d\n", conv);
       outfile->Printf("energy error, dimension %d\n", L);
       for (int k = 0; k < Mn; k++) {
           double error = lambdap[k]-lambda_oldp[k];
-           //outfile->Printf("eig_error%d %20.12lf \n", k,error);
            outfile->Printf("eig_error%d %20.12lf %20.12lf \n", k,error,lambdap[k]);
-
       }
       if (conv == Mn) {
          convergence = true;
@@ -622,44 +547,6 @@ void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, do
                       Qp[i][k] = 0.0;
                   }
               }
-	      /*
-	      //Gram-Schmidt 
-              double dotval, normval;
-              size_t k,i, I;
-              L = 0;
-              for (k = 0; k < 2 * (Mn +index.size()); k++) {
-                  if (L>0) {
-                     // Q->print();
-                      for (i = 0; i < L; i++) {
-                          dotval = C_DDOT(N, Qp[i], 1, Qnp[k], 1);
-                          for (I = 0; I < N; I++) Qnp[k][I] -= dotval * Qp[i][I];
-                      }
-		      //reorthogonalization
-                      for (i = 0; i < L; i++) {
-                          dotval = C_DDOT(N, Qp[i], 1, Qnp[k], 1);
-                          for (I = 0; I < N; I++) Qnp[k][I] -= dotval * Qp[i][I];
-                      }
-                  }
-                  normval = C_DDOT(N, Qnp[k], 1, Qnp[k], 1);
-                  normval = sqrt(normval);
-                  //outfile->Printf("trial vector norm%30.18lf\n",normval);
-                  if (normval > 1e-20) {
-                      for (I = 0; I < N; I++) {
-                          Qp[L][I] = Qnp[k][I] / normval;
-                      }
-                      L++;
-                      //outfile->Printf("check orthogonality1\n");
-                      for (int i = 0; i < L; i++) {
-                          for (int j = 0; j < L; j++) {
-                              double a = C_DDOT(N, Qp[i], 1, Qp[j], 1);
-                              //outfile->Printf("%d %d %30.16lf",i,j,a);
-                              if ((i!=j) && (fabs(a)>1e-12)) outfile->Printf(" detect linear dependency\n");
-                              //outfile->Printf("\n");
-                          }
-                      }
-                  }
-              }
-	      */
 	      //Lapack Householder
               //copy new vectors into place 
               for (size_t i = 0; i < 2 * (Mn +index.size()) ; i++) {
@@ -682,40 +569,6 @@ void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, do
                       Qnp[2*k+1][n]= Rrp[index[k]][n];
                   }
               }
-	      /*
-	      //Gram-Schmidt 
-              double dotval, normval;
-              size_t k,i, I;
-              for (k = 0; k < 2 * index.size(); k++) {
-                  for (i = 0; i < L; i++) {
-                      dotval = C_DDOT(N, Qp[i], 1, Qnp[k], 1);
-                      for (I = 0; I < N; I++) Qnp[k][I] -= dotval * Qp[i][I];
-                  }
-                  //reorthogonalization
-                  for (i = 0; i < L; i++) {
-                      dotval = C_DDOT(N, Qp[i], 1, Qnp[k], 1);
-                      for (I = 0; I < N; I++) Qnp[k][I] -= dotval * Qp[i][I];
-                  }
-                  normval = C_DDOT(N, Qnp[k], 1, Qnp[k], 1);
-                  normval = sqrt(normval);
-                  //outfile->Printf("trial vector norm2%30.18lf\n",normval);
-                  if (normval > 1e-20) {
-                      for (I = 0; I < N; I++) {
-                          Qp[L][I] = Qnp[k][I] / normval;
-                      }
-                      L++;
-                      //outfile->Printf("check orthogonality2\n");
-                      for (int i = 0; i < L; i++) {
-                          for (int j = 0; j < L; j++) {
-                              double a = C_DDOT(N, Qp[i], 1, Qp[j], 1);
-                              //outfile->Printf("%d %d %30.16lf",i,j,a);
-                              if (i!=j && fabs(a)>1e-12) outfile->Printf(" detect linear dependency\n");
-                              //outfile->Printf("\n");
-                          }
-                      }
-                  }
-              }
-	      */
 	     //Lapack Householder
               for (size_t k = 0; k < index.size(); k++) {
                   for (size_t n = 0; n < N; n++) {
@@ -732,8 +585,6 @@ void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, do
              outfile->Printf("need %d vectors (for imaginary part)\n", Mn);
           }
           else Mn=M;
-
-
 
           if (maxdim - L < 2 * Mn) {
              outfile->Printf("Subspace too large: maxdim = %d, L = %d\n", maxdim, L);
@@ -760,44 +611,7 @@ void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, do
                      Qp[i][k] = 0.0;
                  }
              }
-             /*
-	     //Gram-Schmidt 
-             double dotval, normval;
-             size_t k,i, I;
-             L = 0;
-             for (k = 0; k < 4 * Mn; k++) {
-                 if (L>0) {
-                    // Q->print();
-                     for (i = 0; i < L; i++) {
-                         dotval = C_DDOT(N, Qp[i], 1, Qnp[k], 1);
-                         for (I = 0; I < N; I++) Qnp[k][I] -= dotval * Qp[i][I];
-                     }
-                     //reorthogonalization
-                     for (i = 0; i < L; i++) {
-                         dotval = C_DDOT(N, Qp[i], 1, Qnp[k], 1);
-                         for (I = 0; I < N; I++) Qnp[k][I] -= dotval * Qp[i][I];
-                     }
-                 }
-                 normval = C_DDOT(N, Qnp[k], 1, Qnp[k], 1);
-                 normval = sqrt(normval);
-                 //outfile->Printf("trial vector norm%30.18lf\n",normval);
-                 if (normval > 1e-20) {
-                     for (I = 0; I < N; I++) {
-                         Qp[L][I] = Qnp[k][I] / normval;
-                     }
-                     L++;
-                     //outfile->Printf("check orthogonality1\n");
-                     for (int i = 0; i < L; i++) {
-                         for (int j = 0; j < L; j++) {
-                             double a = C_DDOT(N, Qp[i], 1, Qp[j], 1);
-                             //outfile->Printf("%d %d %30.16lf",i,j,a);
-                             if ((i!=j) && (fabs(a)>1e-12)) outfile->Printf(" detect linear dependency\n");
-                             //outfile->Printf("\n");
-                         }
-                     }
-                 }
-             }
-	     */
+
 	     //Lapack Householder
              // copy new vectors into place 
              for (size_t i = 0; i < 4 * Mn; i++) {
@@ -821,42 +635,7 @@ void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, do
                      Qnp[2*k+1][n]= Rrp[k][n];
                  }
              }
-	     /*
-	     //Gram-Schmidt 
-             double dotval, normval;
-             size_t k,i, I;
-             for (k = 0; k < 2 * M; k++) {
-                 //outfile->Printf("L %d\n",L);
-                 for (i = 0; i < L; i++) {
-                     dotval = C_DDOT(N, Qp[i], 1, Qnp[k], 1);
-                     for (I = 0; I < N; I++) Qnp[k][I] -= dotval * Qp[i][I];
-                 }
-                 //reorthogonalization
-                 for (i = 0; i < L; i++) {
-                     dotval = C_DDOT(N, Qp[i], 1, Qnp[k], 1);
-                     for (I = 0; I < N; I++) Qnp[k][I] -= dotval * Qp[i][I];
-                 }
-                 normval = C_DDOT(N, Qnp[k], 1, Qnp[k], 1);
-                 normval = sqrt(normval);
-                 //outfile->Printf("trial vector norm%30.18lf\n",normval);
-                 if (normval > 1e-20) {
-                     for (I = 0; I < N; I++) {
-                         Qp[L][I] = Qnp[k][I] / normval;
-                     }
-                     L++;
-                     //outfile->Printf("check orthogonality1\n");
-                     for (int i = 0; i < L; i++) {
-                         for (int j = 0; j < L; j++) {
-                             double a = C_DDOT(N, Qp[i], 1, Qp[j], 1);
-                             //outfile->Printf("%d %d %30.16lf",i,j,a);
-                             if (i!=j && fabs(a)>1e-12) outfile->Printf(" detect linear dependency\n");
-                             //outfile->Printf("\n");
-                         }
-                     }
-                 }
-             }
-             */
-	     //Lapack Householder
+	         //Lapack Householder
              for (size_t k = 0; k < Mn; k++) {
                  for (size_t n = 0; n < N; n++) {
                      Qp[L+k][n]= Rrp[k][n];
@@ -868,8 +647,11 @@ void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, do
              //Q->print();
           }
       }
-      iter++;
-      outfile->Printf("\n");
+
+      //get the eigenvectors from desired roots
+      outfile->Printf("\nIter %5d / %-5d\n", ++iter, maxit);
+      writeVectors(N, M, maxdim, reval, rer, rel, Clp, Crp, Qp, lambdap, lambdaip, L, false);
+
     }
     outfile->Printf("\n");
     if (convergence == false) {
@@ -878,18 +660,66 @@ void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, do
     }
     outfile->Printf("\n");
 
-    //get the eigenvectors from desired roots; even if the Davidson procedure fails
-    for (int k = 0; k < M; k++) {
-	 reval[k]=lambdap[k];
-	 for (int n = 0; n < N; n++) {
-             rer[k][n] = 0.0;
-             rel[k][n] = 0.0;
-             for (int m = 0; m < L; m++) {
-                 rer[k][n] +=  Qp[m][n] *Crp[k][m];
-                 rel[k][n] +=  Qp[m][n] *Clp[k][m];
+}
+
+int Nonsym_DavidsonSolver::writeVectors(int N, int M, int maxdim, double *reval, double **rer, double **rel,
+                                        double *const *Clp, double *const *Crp, double *const *Qp,
+                                        const double *lambdap, const double *lambdaip, int L, bool doPrint) const {
+    int M_i = M;
+    int num_i = 0;
+    for (int k = 0; k < M && M <= maxdim; ++k) {
+        bool isComplex = fabs(lambdaip[k]) >= 1e-16;
+        if (isComplex) {
+            // move to the next eigenvalue for complex conjugate pairs
+            ++M;
+            ++k;
+            ++num_i;
+            isComplex = true;
+        }
+        int l = k - num_i;
+        if (isComplex && doPrint) outfile->Printf("%5d %20.12lf %20.12lf\n", l, lambdap[k - 1], lambdaip[k - 1]);
+        if (doPrint) outfile->Printf("%5d %20.12lf --------------------\n", l, lambdap[k], lambdaip[k]);
+        if (!isComplex) {
+            reval[l] = lambdap[k]; // eigenvalues
+            for (int n = 0; n < N; n++) {
+                rer[l][n] = 0.0;
+                rel[l][n] = 0.0;
+
+                // eigenvectors
+                for (int m = 0; m < L; m++) {
+                    rer[l][n] += Qp[m][n] * Crp[k][m];
+                    rel[l][n] += Qp[m][n] * Clp[k][m];
+                }
+            }
+        } else {
+            reval[l] = lambdap[k]; // get real part of eigenvalues
+            for (int n = 0; n < N; n++) {
+                rer[l][n] = 0.0;
+                rel[l][n] = 0.0;
+                std::complex<double> evec_r;
+                std::complex<double> evec_l;
+
+                // get complex eigenvectors
+                for (int m = 0; m < L; m++) {
+                    std::complex dumr(Qp[m][n] * Crp[k - 1][m] * lambdap[k - 1],
+                                      Qp[m][n] * Crp[k - 1][m] * lambdaip[k - 1]);
+                    std::complex duml(Qp[m][n] * Clp[k][m] * lambdap[k], Qp[m][n] * Clp[k][m] * lambdaip[k]);
+
+                    evec_r += dumr;
+                    evec_l += duml;
+                }
+
+                // get real components of eigenvectors
+                rer[l][n] = evec_r.real();
+                rel[l][n] = evec_l.real();
             }
         }
     }
+    if (M > maxdim){
+        outfile->Printf("WARNING: %d complex eigenvalues encountered. Subspace is insufficient to store them and provide the requested roots.\n", num_i);
+    }
+    M = M_i;
+    return M;
 }
 
 void Nonsym_DavidsonSolver::real_generalized_eigenvalue_problem(double *Hdiag, double *Sdiag, size_t N, size_t M, double *reval, double **rer, BuildSigma2 build_sigma2, size_t maxdim,size_t init_dim, double residual_norm, bool use_residual_norm) {
