@@ -33,14 +33,14 @@ using namespace std;
 using namespace TA;
 namespace TA_Helper {
 
-    size_t tile_size_ = -1; // default value to use all elements in a tile
+    static inline size_t tile_size_ = -1; // default value to use all elements in a tile
 
     /**
      * create a new tiled range with the dimensions specified in the vector, N
      * @param N the target dimensions of the tiled range
      * @return the tiled range
      */
-    inline TiledRange makeRange(const initializer_list<size_t> &N){ // create range
+    static inline TiledRange makeRange(const initializer_list<size_t> &N){ // create range
         vector<size_t> Nblk;
         vector<TiledRange1> trange;
 
@@ -66,7 +66,7 @@ namespace TA_Helper {
         TiledRange TR(trange);
         return TR;
     }
-    TiledRange makeRange(const vector<size_t> &N) {// create range
+    static inline TiledRange makeRange(const vector<size_t> &N) {// create range
         vector<size_t> Nblk;
         vector<TiledRange1> trange;
 
@@ -101,7 +101,7 @@ namespace TA_Helper {
      * @return the tiled array
      */
     template<typename T = double>
-    inline TArray<T> makeTensor(World &world, const initializer_list<size_t> &N, bool fillZero) {
+    static inline TArray<T> makeTensor(World &world, const initializer_list<size_t> &N, bool fillZero) {
         TArray<T> array(world, makeRange(N));
 
         if (fillZero)
@@ -120,7 +120,7 @@ namespace TA_Helper {
      * @return the tiled array
      */
     template<typename T = double>
-    inline TArray<T> makeTensor(World &world, const initializer_list<size_t> &N, const T *data,
+    static inline TArray<T> makeTensor(World &world, const initializer_list<size_t> &N, const T *data,
                initializer_list<size_t> Off = {}) {
         // create tensor
         TArray<T> array = makeTensor(world, N, false);
@@ -189,7 +189,7 @@ namespace TA_Helper {
      * @return the tiled array
      */
     template<typename T = double>
-    inline TArray<T> makeTensor(World &world,
+    static inline TArray<T> makeTensor(World &world,
                const initializer_list<size_t> &NL,
                const initializer_list<size_t> &NR,
                const T *const *data,
@@ -280,7 +280,7 @@ namespace TA_Helper {
                     typename std::decay<Op>::type>::value>::type,
             typename = typename std::enable_if<detail::is_invocable<Op, Tile &,
                     const Range::index_type &>::value>::type>
-    inline void forall(DistArray<Tile, Policy> &arg, Op &&op, bool fence = true) {
+    static inline void forall(DistArray<Tile, Policy> &arg, Op &&op, bool fence = true) {
 
         // wrap Op into a shallow-copy copyable handle
         auto op_shared_handle = make_op_shared_handle(std::forward<Op>(op));

@@ -75,15 +75,15 @@ else()
     endif()
 endif()
 
+# print build type
+message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+
 # set initial compile flags
 set(CMAKE_CXX_FLAGS_INIT           "" CACHE STRING "Initial C++ compile flags")
 set(CMAKE_CXX_FLAGS_DEBUG          "-O0 -g -Wall" CACHE STRING "Initial C++ debug compile flags")
 set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -mcpu=native -DNDEBUG" CACHE STRING "Initial C++ minimum size release compile flags")
 set(CMAKE_CXX_FLAGS_RELEASE        "-O3 -mcpu=native -DNDEBUG" CACHE STRING "Initial C++ release compile flags")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -Wall" CACHE STRING "Initial C++ release with debug info compile flags")
-
-# print build type
-message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
   
 # enable python bindings for tiledarray (requires shared library)
 #set(TA_PYTHON ON)
@@ -102,13 +102,14 @@ FetchContent_Declare(tiledarray
 )
 FetchContent_MakeAvailable(tiledarray)
 
-set_target_properties(tiledarray PROPERTIES CMAKE_BUILD_TYPE Release)
-set_target_properties(tiledarray PROPERTIES CMAKE_POSITION_INDEPENDENT_CODE ON)
+#set_target_properties(tiledarray PROPERTIES CMAKE_BUILD_TYPE Release)
+#set_target_properties(tiledarray PROPERTIES CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+
 
 # files for QED-CC
 set(qed_cc
   src/cc_cavity/src/cc_cavity.cc
-  src/cc_cavity/src/derived/ccsd.cc
   src/cc_cavity/src/derived/qed_ccsd.cc
 
   src/cc_cavity/misc/ta_diis.cc
@@ -121,6 +122,9 @@ set(qed_cc_builds
     src/cc_cavity/src/derived/residuals/qed_ccsd_resid.cc
 )
 if (KEEP_NO_QED)
+    set(qed_cc
+        ${qed_cc}
+        src/cc_cavity/src/derived/ccsd.cc)
     set(qed_cc_builds
         ${qed_cc_builds}
         src/cc_cavity/src/derived/residuals/ccsd_resid.cc
