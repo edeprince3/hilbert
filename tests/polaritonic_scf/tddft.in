@@ -38,6 +38,8 @@ set hilbert {
   n_photon_states          2
   cavity_frequency         [0.0, 0.0, $w]
   cavity_coupling_strength [0.0, 0.0, $g]
+  maxdim                   15
+  indim                    5
 }
 
 activate(h2)

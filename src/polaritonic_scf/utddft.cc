@@ -508,8 +508,38 @@ double PolaritonicUTDDFT::compute_energy() {
     // number of desired roots
     int M = options_.get_int("NUM_ROOTS");
 
-    // maximum subspace size
-    int maxdim = 8 * M;
+    // subspace multipliers
+    size_t MD = options_.get_int("MAXDIM");
+    size_t ID = options_.get_int("INDIM");
+
+    // set maximum and initial subspace dimensions
+    size_t maxdim = MD*M;
+    size_t init_dim = ID*M;
+    if ( M > N ) {
+        outfile->Printf("    WARNING: NUM_ROOTS > N, NUM_ROOTS = %i, N = %i\n",M,N);
+        outfile->Printf("        setting NUM_ROOTS = N\n");
+        M = N;
+    }
+    if ( init_dim < M ) {
+        outfile->Printf("    WARNING: INDIM < NUM_ROOTS, INDIM = %i, NUM_ROOTS = %i\n",init_dim,M);
+        outfile->Printf("        setting INDIM = NUM_ROOTS\n");
+        init_dim = M;
+    }
+    if ( init_dim > N ) {
+        outfile->Printf("    WARNING: INDIM > N, INDIM = %i, N = %i\n",init_dim,N);
+        outfile->Printf("        setting INDIM = N\n");
+        init_dim = N;
+    }
+    if ( maxdim < init_dim ) { 
+        outfile->Printf("    WARNING: MAXDIM < INDIM, MAXDIM = %i, INDIM = %i\n",maxdim,init_dim);
+        outfile->Printf("        setting MAXDIM = INDIM\n");
+        maxdim = init_dim;
+    }
+    if ( maxdim > N ) {
+        outfile->Printf("    WARNING: MAXDIM > N, MAXDIM = %i, N = %i\n",maxdim,N);
+        outfile->Printf("        setting MAXDIM = N\n");
+        maxdim = N;
+    }
 
     // (approximate) diagonal of Hamiltonian
     double * Hdiag = build_hamiltonian_diagonals();
@@ -522,7 +552,6 @@ double PolaritonicUTDDFT::compute_energy() {
     double ** rerp = rer->pointer();
     double ** relp = rel->pointer();
 
-    int init_dim = 4 * M;
     bool use_residual_norm = true;
     double residual_norm = 1e-5;
 
