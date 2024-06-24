@@ -133,7 +133,7 @@ def run_polaritonic_scf_gradient(name, **kwargs):
     elif ( lowername == 'polaritonic-uks' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UKS')
     elif ( lowername == 'polaritonic-rks' ):
-        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UKS')
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RKS')
     elif ( lowername == 'polaritonic-rcis' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RCIS')
     elif ( lowername == 'polaritonic-uccsd' ):
