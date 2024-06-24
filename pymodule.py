@@ -79,7 +79,7 @@ def run_polaritonic_scf(name, **kwargs):
     #if ref_wfn is None:
     #    ref_wfn = psi4.driver.scf_helper(name, **kwargs)
     if ref_wfn is None:
-        if ( lowername == 'polaritonic-uks' ):
+        if ( lowername == 'polaritonic-uks' or lowername == 'polaritonic-rks' or lowername == 'polaritonic-tddft'):
             func = psi4.core.get_option('HILBERT','CAVITY_QED_DFT_FUNCTIONAL')
             en, ref_wfn = psi4.driver.energy(func, **kwargs, return_wfn=True)
         else :
