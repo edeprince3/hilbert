@@ -86,6 +86,19 @@ class PolaritonicUTDDFT: public PolaritonicHF {
 
     // hybrid alpha?
     double x_alpha_;
+
+    /// alpha + beta dipole x
+    std::shared_ptr<Matrix> Dipole_x_;
+
+    /// alpha + beta dipole y
+    std::shared_ptr<Matrix> Dipole_y_;
+
+    /// alpha + beta dipole z
+    std::shared_ptr<Matrix> Dipole_z_;
+
+    /// alpha + beta MO transformation matrix
+    std::shared_ptr<Matrix> C_;
+
 };
 
 } // End namespaces

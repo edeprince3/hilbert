@@ -189,6 +189,60 @@ void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
 
         jk_ = myjk;
     }
+
+    // alpha + beta MO transformation matrix
+    C_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nmo_));
+    C_->zero();
+    double ** cp = C_->pointer();
+    double ** ca = Ca_->pointer();
+    double ** cb = Cb_->pointer();
+
+    for (size_t mu = 0; mu < nso_; mu++) {
+        size_t count = 0;
+        for (size_t i = 0; i < nalpha_; i++) {
+            cp[mu][count++] = ca[mu][i];
+        }
+        for (size_t i = 0; i < nbeta_; i++) {
+            cp[mu+nso_][count++] = cb[mu][i];
+        }
+        for (size_t i = nalpha_; i < nmo_; i++) {
+            cp[mu][count++] = ca[mu][i];
+        }
+        for (size_t i = nbeta_; i < nmo_; i++) {
+            cp[mu+nso_][count++] = cb[mu][i];
+        }
+    }
+
+    // dipole integrals in spin-orbital basis
+    Dipole_x_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
+    Dipole_y_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
+    Dipole_z_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nso_));
+    Dipole_x_->zero();
+    Dipole_y_->zero();
+    Dipole_z_->zero();
+    double ** dx = Dipole_x_->pointer();
+    double ** dy = Dipole_y_->pointer();
+    double ** dz = Dipole_z_->pointer();
+    double ** dipole_x_p = dipole_[0]->pointer();
+    double ** dipole_y_p = dipole_[1]->pointer();
+    double ** dipole_z_p = dipole_[2]->pointer();
+    for (size_t mu = 0; mu < nso_; mu++) {
+        for (size_t nu = 0; nu < nso_; nu++) {
+
+            dx[mu][nu]           = dipole_x_p[mu][nu];
+            dx[mu+nso_][nu+nso_] = dipole_x_p[mu][nu];
+
+            dy[mu][nu]           = dipole_y_p[mu][nu];
+            dy[mu+nso_][nu+nso_] = dipole_y_p[mu][nu];
+
+            dz[mu][nu]           = dipole_z_p[mu][nu];
+            dz[mu+nso_][nu+nso_] = dipole_z_p[mu][nu];
+
+        }
+    }
+    Dipole_x_->transform(C_);
+    Dipole_y_->transform(C_);
+    Dipole_z_->transform(C_);
 }
 
 double PolaritonicUTDDFT::compute_energy() {
@@ -202,11 +256,6 @@ double PolaritonicUTDDFT::compute_energy() {
         update_cavity_terms();
     }
 
-    // transform dipole integrals to MO basis
-    dipole_[0]->transform(Ca_);
-    dipole_[1]->transform(Ca_);
-    dipole_[2]->transform(Ca_);
-
     double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
     double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
     double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
@@ -215,9 +264,9 @@ double PolaritonicUTDDFT::compute_energy() {
     double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
     double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
 
-    double ** dx = dipole_[0]->pointer();
-    double ** dy = dipole_[1]->pointer();
-    double ** dz = dipole_[2]->pointer();
+    double ** dx = Dipole_x_->pointer();
+    double ** dy = Dipole_y_->pointer();
+    double ** dz = Dipole_z_->pointer();
 
     std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
     HCavity_z->zero();
@@ -362,35 +411,30 @@ double PolaritonicUTDDFT::compute_energy() {
         for (int j = 0; j < oa; j++) {
             for (int b = 0; b < va; b++) {
                 double cr = (rerp[state][j*va + b] + rerp[state][j*va + b + oa*va])/nrm;
-                mu_x_r += dx[j][b + oa] * cr;
-                mu_y_r += dy[j][b + oa] * cr;
-                mu_z_r += dz[j][b + oa] * cr;
+                mu_x_r += dx[j][b + oa + ob] * cr;
+                mu_y_r += dy[j][b + oa + ob] * cr;
+                mu_z_r += dz[j][b + oa + ob] * cr;
             }
         }
         for (int j = 0; j < ob; j++) {
             for (int b = 0; b < vb; b++) {
                 double cr = (rerp[state][j*vb + b + 2 * oa*va] + rerp[state][j*vb + b + ob*vb + 2 * oa*va])/nrm;
-                mu_x_r += dx[j][b + ob] * cr;
-                mu_y_r += dy[j][b + ob] * cr;
-                mu_z_r += dz[j][b + ob] * cr;
+                mu_x_r += dx[j + oa][b + oa + ob + va] * cr;
+                mu_y_r += dy[j + oa][b + oa + ob + va] * cr;
+                mu_z_r += dz[j + oa][b + oa + ob + va] * cr;
             }
         }
         double w = revalp[state];
-        double f = 2.0 * 2.0/3.0*w*(mu_x_r * mu_x_r + mu_y_r * mu_y_r + mu_z_r * mu_z_r);
-        outfile->Printf("    %5i %20.12lf %20.12lf %10.6lf %10.6lf %10.6lf %10.6lf\n", state, w, energy_ + w, mu_x_r, mu_y_r, mu_z_r, f);
-        //outfile->Printf("    %5i %5s %20.12lf %20.12lf %20.12lf %10.6lf %10.6lf %10.6lf %10.6lf\n", state, type.c_str(),w,energy_ + w,photon_weight,mu_x_r,mu_y_r,mu_z_r,f);
-
-        //outfile->Printf("    %5i %20.12lf %20.12lf\n", state, w, energy_ + w);
+        double f = 2.0/3.0*w*(mu_x_r * mu_x_r + mu_y_r * mu_y_r + mu_z_r * mu_z_r);
+        outfile->Printf("    %5i %5s %20.12lf %20.12lf %20.12lf %10.6lf %10.6lf %10.6lf %10.6lf\n", state, type.c_str(), w, energy_ + w, photon_weight, mu_x_r, mu_y_r, mu_z_r, f);
     }
-    outfile->Printf("%d %d %d\n",oa,va,N);
-    outfile->Printf("%d %d %d\n",ob,vb,N);
+/*
+// TODO: fix
     for (int state = 0; state < M; state++) {
 
         double w = revalp[state];//sqrt(revalp[state]);
         outfile->Printf("state =%5i eig = %20.12lf eV\n", state,w* 27.21138);
 
-/*
-// TODO: fix
         for (size_t  p = 0; p < N; p++) {
              double dum = rerp[state][p];
              //print only transitions' contribution with amplitude larger than 0.1
