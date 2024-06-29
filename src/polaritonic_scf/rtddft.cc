@@ -25,6 +25,7 @@
  */
 
 #include <psi4/psi4-dec.h>
+#include <psi4/physconst.h>
 #include <psi4/liboptions/liboptions.h>
 #include <psi4/libpsio/psio.hpp>
 
@@ -304,7 +305,7 @@ double PolaritonicRTDDFT::compute_energy() {
     free(Hdiag);
 
     outfile->Printf("\n");
-    outfile->Printf("    QED-TDDFT energies:\n");
+    outfile->Printf("    ==> QED-TDDFT energies <==\n");
     outfile->Printf("\n");
     outfile->Printf("    ");
     outfile->Printf("%5s","state");
@@ -360,38 +361,60 @@ double PolaritonicRTDDFT::compute_energy() {
                 mu_z_r += dz[j][b+o] * cr;
             }
         }
-        double w = revalp[state];//sqrt(revalp[state]);
+        double w = revalp[state];
         double f = 2.0 * 2.0/3.0*w*(mu_x_r * mu_x_r + mu_y_r * mu_y_r + mu_z_r * mu_z_r);
 
         outfile->Printf("    %5i %5s %20.12lf %20.12lf %20.12lf %10.6lf %10.6lf %10.6lf %10.6lf\n", state, type.c_str(),w,energy_ + w,photon_weight,mu_x_r,mu_y_r,mu_z_r,f);
     }
-    outfile->Printf("%d %d %d\n",o,v,N);
+
+    
+    outfile->Printf("\n");
+    outfile->Printf("    ==> QED-TDDFT significant amplitudes <==\n");
     for (int state = 0; state < M; state++) {
 
-        double w = revalp[state];//sqrt(revalp[state]);
-        outfile->Printf("state =%5i eig = %20.12lf eV\n", state,w* 27.21138);
+        double w = revalp[state];
+        outfile->Printf("\n");
+        outfile->Printf("    %5s","state");
+        outfile->Printf(" %20s","ex energy (eV)");
+        outfile->Printf(" %4s","id");
+        outfile->Printf(" %12s","value");
+        outfile->Printf(" %12s","transition");
+        outfile->Printf(" %5s","type");
+        outfile->Printf("\n");
 
+        bool print = true;
         for (size_t  p = 0; p < N; p++) {
              double dum = rerp[state][p];
              //print only transitions' contribution with amplitude larger than 0.1
              if (fabs(dum)  > 0.1) {
-             outfile->Printf("%4d %20.12lf\t", p, dum);
-             if (p<o*v) {
-                outfile->Printf("electron    excitation");
-                size_t a =p%v;
-                size_t i = (p-a)/v;
-                outfile->Printf("%4d   ->%4d\n",i+1,a+o+1);
-             }
-             else if ((o*v-1< p) && (p < 2*o*v)) {
-                outfile->Printf("electron de-excitation");
-                size_t a =p%v;
-                size_t i = (p-a)/v;
-                outfile->Printf("%4d   ->%4d\n",i+1,a+o+1);
-             }
-             else if (p==2*o*v) {outfile->Printf("photon excitation\n");
-             }
-             else {outfile->Printf("photon de-excitation\n");
-             }
+                 if (print) {
+                     outfile->Printf("    %5i", state);
+                     outfile->Printf(" %20.12lf", w * pc_hartree2ev);
+                     print = false;
+                 }else {
+                     outfile->Printf("         ");
+                     outfile->Printf("                     ");
+                 }
+                 outfile->Printf(" %4i", p);
+                 outfile->Printf(" %12.8lf", dum);
+                 if (p < o*v) {
+                    size_t a = p % v;
+                    size_t i = (p-a) / v;
+                    outfile->Printf(" %4d -> %4d",i + 1, a + o + 1);
+                    outfile->Printf(" %5s\n", "X");
+                 }
+                 else if ( ( o*v - 1 < p) && ( p < 2*o*v )) {
+                    size_t a = p % v;
+                    size_t i = (p-a) / v;
+                    outfile->Printf(" %4d -> %4d",i + 1, a + o + 1);
+                    outfile->Printf(" %5s\n", "Y");
+                 }else if (p == 2*o*v) {
+                     outfile->Printf("             ");
+                     outfile->Printf(" %5s\n", "M");
+                 }else {
+                     outfile->Printf("             ");
+                     outfile->Printf(" %5s\n", "N");
+                 }
              }
         }
     }
