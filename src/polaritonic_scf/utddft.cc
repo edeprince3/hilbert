@@ -66,10 +66,6 @@ PolaritonicUTDDFT::PolaritonicUTDDFT(std::shared_ptr<Wavefunction> reference_wav
 }
 
 PolaritonicUTDDFT::~PolaritonicUTDDFT() {
-
-    free(int1_);
-    free(int2_);
-
 }
 
 void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
@@ -85,9 +81,9 @@ void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
     outfile->Printf( "        *******************************************************\n");
     outfile->Printf("\n");
 
-    // UTTDFT only works with TDA for now
+    // UTDDFT only works with TDA for now
     if ( !options_.get_bool("TDSCF_TDA") ) {
-        throw PsiException("polaritonic utddft only works with TDA df for now",__FILE__,__LINE__);
+        //throw PsiException("polaritonic rtddft only works with TDA df for now",__FILE__,__LINE__);
     }
 
     // ensure scf_type df
@@ -100,110 +96,12 @@ void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
         throw PsiException("polaritonic utddft only works with c1 symmetry for now.",__FILE__,__LINE__);
     }
 
-    // ensure closed shell
-    if ( nalpha_ != nbeta_ ) {
-        throw PsiException("polaritonic TDDFT only works with nalpha = nbeta (for now)",__FILE__,__LINE__);
-    }
-
     // get primary basis:
     std::shared_ptr<BasisSet> primary = reference_wavefunction_->get_basisset("ORBITAL");
-
-    int o = nalpha_;
-    int v = nso_ - nalpha_;
-
-    nQ_ = 0;
-    if ( options_.get_str("SCF_TYPE") == "DF" ) {
-
-        // get auxiliary basis:
-        std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
-
-        // total number of auxiliary basis functions
-        nQ_ = auxiliary->nbf();
-
-        std::shared_ptr<DFTensor> DF (new DFTensor(primary,auxiliary,Ca_,o,v,o,v,options_));
-
-        std::shared_ptr<Matrix> tmpoo = DF->Qoo();
-        std::shared_ptr<Matrix> tmpov = DF->Qov();
-        std::shared_ptr<Matrix> tmpvv = DF->Qvv();
-
-        double ** Qoo = tmpoo->pointer();
-        double ** Qov = tmpov->pointer();
-        double ** Qvv = tmpvv->pointer();
-
-        int1_ = (double*)malloc(o*o*v*v*sizeof(double));
-        int2_ = (double*)malloc(o*o*v*v*sizeof(double));
-
-        memset((void*)int1_,'\0',o*o*v*v*sizeof(double));
-        memset((void*)int2_,'\0',o*o*v*v*sizeof(double));
-
-        F_DGEMM('n','t',o*v,o*v,nQ_,1.0,&(Qov[0][0]),o*v,&(Qov[0][0]),o*v,0.0,int1_,o*v);
-        F_DGEMM('n','t',v*v,o*o,nQ_,1.0,&(Qvv[0][0]),v*v,&(Qoo[0][0]),o*o,0.0,int2_,v*v);
-
-    }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
-
-        //outfile->Printf("    ==> Transform three-index integrals <==\n");
-        //outfile->Printf("\n");
-
-        double start = omp_get_wtime();
-        ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
-
-        double * Qmo = (double*)malloc(nmo_*(nmo_+1)/2*nQ_*sizeof(double));
-        memset((void*)Qmo,'\0',nmo_*(nmo_+1)/2*nQ_*sizeof(double));
-
-        std::shared_ptr<PSIO> psio(new PSIO());
-        psio->open(PSIF_DCC_QMO,PSIO_OPEN_OLD);
-        psio->read_entry(PSIF_DCC_QMO,"(Q|mn) Integrals",(char*)Qmo,sizeof(double)*nQ_ * nmo_*(nmo_+1)/2);
-        psio->close(PSIF_DCC_QMO,1);
-
-        double end = omp_get_wtime();
-
-        double * Qoo = (double*)malloc(o*o*nQ_*sizeof(double));
-        double * Qov = (double*)malloc(o*v*nQ_*sizeof(double));
-        double * Qvv = (double*)malloc(v*v*nQ_*sizeof(double));
-
-        for (size_t Q = 0; Q < nQ_; Q++) {
-            for (size_t i = 0; i < o; i++) {
-                for (size_t j = 0; j < o; j++) {
-                    Qoo[Q*o*o+i*o+j] = Qmo[Q*nmo_*(nmo_+1)/2+INDEX(i,j)];
-                }
-            }
-            for (size_t i = 0; i < o; i++) {
-                for (size_t a = 0; a < v; a++) {
-                    Qov[Q*o*v+i*v+a] = Qmo[Q*nmo_*(nmo_+1)/2+INDEX(i,a+o)];
-                }
-            }
-            for (size_t a = 0; a < v; a++) {
-                for (size_t b = 0; b < v; b++) {
-                    Qvv[Q*v*v+a*v+b] = Qmo[Q*nmo_*(nmo_+1)/2+INDEX(a+o,b+o)];
-                }
-            }
-        }
-
-        free(Qmo);
-
-        //outfile->Printf("\n");
-        //outfile->Printf("        Time for integral transformation:  %7.2lf s\n",end-start);
-        //outfile->Printf("\n");
-
-        int1_ = (double*)malloc(o*o*v*v*sizeof(double));
-        int2_ = (double*)malloc(o*o*v*v*sizeof(double));
-
-        memset((void*)int1_,'\0',o*o*v*v*sizeof(double));
-        memset((void*)int2_,'\0',o*o*v*v*sizeof(double));
-
-        F_DGEMM('n','t',o*v,o*v,nQ_,1.0,Qov,o*v,Qov,o*v,0.0,int1_,o*v);
-        F_DGEMM('n','t',v*v,o*o,nQ_,1.0,Qvv,v*v,Qoo,o*o,0.0,int2_,v*v);
-
-        free(Qoo);
-        free(Qov);
-        free(Qvv);
-
-    }
 
     // determine the DFT functional and initialize the potential object
     psi::scf::HF* scfwfn = (psi::scf::HF*)dummy_wfn.get();
     std::shared_ptr<SuperFunctional> functional = scfwfn->functional();
-    //std::shared_ptr<VBase> potential = VBase::build_V(primary,functional,options_,(options_.get_str("REFERENCE") == "RKS" ? "RV" : "UV"));
     potential_ = (std::shared_ptr<VBase>)VBase::build_V(primary,functional,options_,(options_.get_str("REFERENCE") == "RKS" ? "RV" : "UV"));
 
     // initialize potential object
@@ -290,19 +188,15 @@ void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
         myjk->initialize();
 
         jk_ = myjk;
-
     }
-
-
-
 }
 
 double PolaritonicUTDDFT::compute_energy() {
 
     outfile->Printf("\n");
     outfile->Printf("    No. basis functions:            %5i\n",nso_);
-    outfile->Printf("    No. auxiliary basis functions:  %5i\n",nQ_);
-    outfile->Printf("    No. electrons:                  %5i\n",nalpha_ + nbeta_);
+    outfile->Printf("    No. alpha electrons:            %5i\n",nalpha_);
+    outfile->Printf("    No. beta electrons:             %5i\n",nbeta_);
 
     if ( n_photon_states_ > 1 ) {
         update_cavity_terms();
@@ -312,15 +206,6 @@ double PolaritonicUTDDFT::compute_energy() {
     dipole_[0]->transform(Ca_);
     dipole_[1]->transform(Ca_);
     dipole_[2]->transform(Ca_);
-
-    int o = nalpha_;
-    int v = nso_ - nalpha_;
-
-    std::shared_ptr<Matrix> ham (new Matrix((2*o*v+1)*n_photon_states_,(2*o*v+1)*n_photon_states_));
-
-    double ** hp = ham->pointer();
-    double * ea = epsilon_a_->pointer();
-    double * eb = epsilon_b_->pointer();
 
     double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
     double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
@@ -343,176 +228,24 @@ double PolaritonicUTDDFT::compute_energy() {
         throw PsiException("polaritonic TDDFT does not work with N_PHOTON_STATES > 2",__FILE__,__LINE__);
     }
 
-    for (int i = 0; i < o; i++) {
-        for (int a = 0; a < v; a++) {
-            for (int n = 0; n < n_photon_states_; n++) {
-                int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                int ian_b = (i * v + a + o*v) * n_photon_states_ + n;
-                for (int j = 0; j < o; j++) {
-                    for (int b = 0; b < v; b++) {
-                        for (int m = 0; m < n_photon_states_; m++) {
-                            int jbm_a = (j * v + b      ) * n_photon_states_ + m;
-                            int jbm_b = (j * v + b + o*v) * n_photon_states_ + m;
-
-                            // cases:
-                            hp[ian_a][jbm_a] = 0.0;
-                            hp[ian_a][jbm_b] = 0.0;
-                            hp[ian_b][jbm_a] = 0.0;
-                            hp[ian_b][jbm_b] = 0.0;
-
-                            // full diagonal 
-                            if ( i == j && a == b && m == n ) {
-                                hp[ian_a][jbm_a] += ea[a+o] - ea[i] + HCavity_z->pointer()[m][m];
-                                hp[ian_b][jbm_b] += eb[a+o] - eb[i] + HCavity_z->pointer()[m][m];
-                            }
-
-                            // diagonal in photon states
-                            if ( m == n ) {
-                                int iajb = i * o * v * v + a * o * v + j * v + b;
-                                int ijab = i * o * v * v + j * v * v + a * v + b;
-                                hp[ian_a][jbm_a] += int1_[iajb] - int2_[ijab];
-                                hp[ian_a][jbm_b] += int1_[iajb];
-                                hp[ian_b][jbm_a] += int1_[iajb];
-                                hp[ian_b][jbm_b] += int1_[iajb] - int2_[ijab];
-
-                                // dipole self energy contribution
-                                hp[ian_a][jbm_a] += lambda_z * lambda_z * (dz[i][a+o]*dz[j][b+o] - dz[i][j]*dz[a+o][b+o]);
-                                hp[ian_a][jbm_b] += lambda_z * lambda_z * (dz[i][a+o]*dz[j][b+o]);
-                                hp[ian_b][jbm_a] += lambda_z * lambda_z * (dz[i][a+o]*dz[j][b+o]);
-                                hp[ian_b][jbm_b] += lambda_z * lambda_z * (dz[i][a+o]*dz[j][b+o] - dz[i][j]*dz[a+o][b+o]);
-
-                                // coherent-state basis terms ... actually, these should be contained in orbital energies
-                                //if ( i == j ) {
-                                //    hp[ian][jbm] -= lambda_z * lambda_z * dz[a+o][b+o] * tot_dip_z_;
-                                //}
-                                //if ( a == b ) {
-                                //    hp[ian][jbm] -= lambda_z * lambda_z * dz[i][j] * tot_dip_z_;
-                                //}
-
-                            }
-
-                            if ( i == j && n == m + 1 ) {
-                                hp[ian_a][jbm_a] -= coupling_factor_z * sqrt(n) * dz[a+o][b+o];
-                                hp[ian_b][jbm_b] -= coupling_factor_z * sqrt(n) * dz[a+o][b+o];
-                            }
-
-                            if ( i == j && n == m - 1 ) {
-                                hp[ian_a][jbm_a] -= coupling_factor_z * sqrt(m) * dz[a+o][b+o];
-                                hp[ian_b][jbm_b] -= coupling_factor_z * sqrt(m) * dz[a+o][b+o];
-                            }
-
-                            if ( a == b && n == m + 1 ) {
-                                hp[ian_a][jbm_a] += coupling_factor_z * sqrt(n) * dz[i][j];
-                                hp[ian_b][jbm_b] += coupling_factor_z * sqrt(n) * dz[i][j];
-                            }
-
-                            if ( a == b && n == m - 1 ) {
-                                hp[ian_a][jbm_a] += coupling_factor_z * sqrt(m) * dz[i][j];
-                                hp[ian_b][jbm_b] += coupling_factor_z * sqrt(m) * dz[i][j];
-                            }
-
-                            if ( a == b && i == j && n == m + 1 ) {
-                                for (int k = 0; k < o; k++) {
-                                    hp[ian_a][jbm_a] -= coupling_factor_z * sqrt(n) * dz[k][k];
-                                    hp[ian_b][jbm_b] -= coupling_factor_z * sqrt(n) * dz[k][k];
-                                }
-                            }
-
-                            if ( a == b && i == j && n == m - 1 ) {
-                                for (int k = 0; k < o; k++) {
-                                    hp[ian_a][jbm_a] -= coupling_factor_z * sqrt(m) * dz[k][k];
-                                    hp[ian_b][jbm_b] -= coupling_factor_z * sqrt(m) * dz[k][k];
-                                }
-                            }
-
-                            // more coherent-state terms ... these affect diagonals in electronic basis
-                            if ( i == j && a == b && n == m + 1 ) {
-                                hp[ian_a][jbm_a] += coupling_factor_z * sqrt(n) * tot_dip_z_;
-                                hp[ian_b][jbm_b] += coupling_factor_z * sqrt(n) * tot_dip_z_;
-                            }
-
-                            if ( i == j && a == b && n == m - 1 ) {
-                                hp[ian_a][jbm_a] += coupling_factor_z * sqrt(m) * tot_dip_z_;
-                                hp[ian_b][jbm_b] += coupling_factor_z * sqrt(m) * tot_dip_z_;
-                            }
-
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // now, couple |0,n+1> and |0,n-1> to |ia,n>
-    int off = 2 * o * v * n_photon_states_;
-    for (int i = 0; i < o; i++) {
-        for (int a = 0; a < v; a++) {
-            for (int n = 0; n < n_photon_states_; n++) {
-                int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                int ian_b = (i * v + a + o*v) * n_photon_states_ + n;
-                // case 1
-                if ( n < n_photon_states_ - 1 ) {
-                    hp[ian_a][off+n+1] = -coupling_factor_z * sqrt(n+1) * dz[i][a+o];
-                    hp[off+n+1][ian_a] = -coupling_factor_z * sqrt(n+1) * dz[i][a+o];
-                    hp[ian_b][off+n+1] = -coupling_factor_z * sqrt(n+1) * dz[i][a+o];
-                    hp[off+n+1][ian_b] = -coupling_factor_z * sqrt(n+1) * dz[i][a+o];
-                }
-
-                // case 2
-                if ( n > 0 ) {
-                    hp[ian_a][off+n-1] = -coupling_factor_z * sqrt(n) * dz[i][a+o];
-                    hp[off+n-1][ian_a] = -coupling_factor_z * sqrt(n) * dz[i][a+o];
-                    hp[ian_b][off+n-1] = -coupling_factor_z * sqrt(n) * dz[i][a+o];
-                    hp[off+n-1][ian_b] = -coupling_factor_z * sqrt(n) * dz[i][a+o];
-                }
-            }
-        }
-    }
-
-    // now, couple |0,n> to all other |0,m> ... really just updating diagonals
-    for (int n = 0; n < n_photon_states_; n++) {
-        for (int m = 0; m < n_photon_states_; m++) {
-            hp[off+n][off+m] += HCavity_z->pointer()[n][m];
-        }
-    }
-
-    std::shared_ptr<Matrix> eigvec (new Matrix((2*o*v+1)*n_photon_states_,(2*o*v+1)*n_photon_states_));
-    std::shared_ptr<Vector> eigval (new Vector((2*o*v+1)*n_photon_states_));
-    ham->diagonalize(eigvec,eigval);
-
-    eigval->print();
-
-/*
-    for (int i = 0; i < 50; i++) {
-        double photon_weight = 0.0;
-        for (int j = off + 1; j < off + n_photon_states_; j++) {
-            double dum = eigvec->pointer()[j][i];
-            photon_weight += dum*dum;
-        }
-        //printf(" %20.12lf %20.12lf",energy_ + eigval->pointer()[i],photon_weight);
-        printf(" %20.12lf %20.12lf\n",energy_ + eigval->pointer()[i],photon_weight);
-    }
-    printf("\n");
-    fflush(stdout);
-*/
-    
-    // print orbital energies
-    //epsilon_a_->print();
-
     // ok, try solving iteratively with davison
+    //std::shared_ptr<Nonsym_DavidsonSolver> david (new Nonsym_DavidsonSolver());
     std::shared_ptr<Nonsym_DavidsonSolver> david (new Nonsym_DavidsonSolver());
 
     // dimension of the problem
-    int N = (2*o*v+1)*n_photon_states_;
+    int oa = nalpha_;
+    int ob = nbeta_;
+    int va = nso_ - oa;
+    int vb = nso_ - ob;
+
+    int N = 2*(oa*va+ob*vb) + 2;
 
     // number of desired roots
     int M = options_.get_int("NUM_ROOTS");
 
-    // subspace multipliers
+    // maximum subspace size
     size_t MD = options_.get_int("MAXDIM");
     size_t ID = options_.get_int("INDIM");
-
-    // set maximum and initial subspace dimensions
     size_t maxdim = MD*M;
     size_t init_dim = ID*M;
     if ( M > N ) {
@@ -540,9 +273,14 @@ double PolaritonicUTDDFT::compute_energy() {
         outfile->Printf("        setting MAXDIM = N\n");
         maxdim = N;
     }
+    outfile->Printf("    No. states:                     %5i\n",N);
+    outfile->Printf("    No. roots:                      %5i\n",M);
+    outfile->Printf("    Max subspace dim:               %5i\n",maxdim);
+    outfile->Printf("    Initial subspace dim:           %5i\n",init_dim);
 
     // (approximate) diagonal of Hamiltonian
     double * Hdiag = build_hamiltonian_diagonals();
+    double * Sdiag = build_overlap_diagonals();
 
     std::shared_ptr<Matrix> rel ( new Matrix(M,N) );
     std::shared_ptr<Matrix> rer ( new Matrix(M,N) );
@@ -553,40 +291,272 @@ double PolaritonicUTDDFT::compute_energy() {
     double ** relp = rel->pointer();
 
     bool use_residual_norm = true;
-    double residual_norm = 1e-5;
+    double residual_norm = options_.get_double("RESIDUAL_NORM");
 
     // call eigensolver
-    david->solve(Hdiag,
-                 N,
-                 M,
-                 revalp,
-                 rerp,
-                 relp,
-                 [&](int N, int maxdim, int L, double **Q, double **sigmar, double **sigmal) {
-                        build_sigma(N,maxdim,L, Q,sigmar,sigmal);
-                 }, maxdim, init_dim, residual_norm, use_residual_norm);
+    david->real_generalized_eigenvalue_problem(Hdiag,
+                                               Sdiag,
+                                               N,
+                                               M,
+                                               revalp,
+                                               rerp,
+                                               [&](int N, int maxdim, int L, double **Q, double **sigmar, double **sigmal) {
+                                                      build_sigma_generalized(N,maxdim,L, Q, sigmar,sigmal);
+                                               }, maxdim, init_dim, residual_norm, use_residual_norm);
 
     free(Hdiag);
 
+    outfile->Printf("\n");
+    outfile->Printf("    cQED-TDDFT energies:\n");
+    outfile->Printf("\n");
+    outfile->Printf("    ");
+    outfile->Printf("%5s","state");
+    outfile->Printf(" %5s","type");
+    outfile->Printf(" %20s","energy (Eh)");
+    outfile->Printf(" %20s","ex energy (Eh)");
+    outfile->Printf(" %20s","photon weight");
+    outfile->Printf(" %10s","mu_x");
+    outfile->Printf(" %10s","mu_y");
+    outfile->Printf(" %10s","mu_z");
+    outfile->Printf(" %10s","f");
+    outfile->Printf("\n");
+
+    for (int state = 0; state < M; state++) {
+
+/*
+// TODO: fix
+        // normalization
+        double m_weight = rerp[state][2*o*v  ] * rerp[state][2*o*v  ];
+        double n_weight = rerp[state][2*o*v+1] * rerp[state][2*o*v+1];
+        double photon_weight = m_weight - n_weight;
+        double x_weight = 0.0;
+        double y_weight = 0.0;
+        for (int j = 0; j < o*v; j++) {
+            x_weight += rerp[state][j    ] * rerp[state][j    ];
+            y_weight += rerp[state][j+o*v] * rerp[state][j+o*v];
+        }
+        double electron_weight = x_weight - y_weight;
+        double nrm = photon_weight + electron_weight;
+        std::string type;
+        if ( nrm > 0.0 ) {
+            type = "ex";
+            electron_weight /= nrm;
+            photon_weight /= nrm;
+        }else {
+            type = "de-ex";
+            electron_weight /= nrm;
+            photon_weight /= nrm;
+            nrm = -nrm;
+        }
+
+        // oscillator strengths
+        double mu_x_r = 0.0;
+        double mu_y_r = 0.0;
+        double mu_z_r = 0.0;
+        double mu_x_l = 0.0;
+        double mu_y_l = 0.0;
+        double mu_z_l = 0.0;
+        nrm = sqrt(nrm);
+        for (int j = 0; j < o; j++) {
+            for (int b = 0; b < v; b++) {
+                double cr = (rerp[state][j*v+b] + rerp[state][j*v+b+o*v])/nrm;
+                mu_x_r += dx[j][b+o] * cr;
+                mu_y_r += dy[j][b+o] * cr;
+                mu_z_r += dz[j][b+o] * cr;
+            }
+        }
+        double f = 2.0 * 2.0/3.0*w*(mu_x_r * mu_x_r + mu_y_r * mu_y_r + mu_z_r * mu_z_r);
+        outfile->Printf("    %5i %5s %20.12lf %20.12lf %20.12lf %10.6lf %10.6lf %10.6lf %10.6lf\n", state, type.c_str(),w,energy_ + w,photon_weight,mu_x_r,mu_y_r,mu_z_r,f);
+*/
+
+        double w = revalp[state];
+        outfile->Printf("    %5i %20.12lf %20.12lf\n", state, w, energy_ + w);
+    }
+    outfile->Printf("%d %d %d\n",oa,va,N);
+    outfile->Printf("%d %d %d\n",ob,vb,N);
+    for (int state = 0; state < M; state++) {
+
+        double w = revalp[state];//sqrt(revalp[state]);
+        outfile->Printf("state =%5i eig = %20.12lf eV\n", state,w* 27.21138);
+
+/*
+// TODO: fix
+        for (size_t  p = 0; p < N; p++) {
+             double dum = rerp[state][p];
+             //print only transitions' contribution with amplitude larger than 0.1
+             if (fabs(dum)  > 0.1) {
+             outfile->Printf("%4d %20.12lf\t", p, dum);
+             if (p<o*v) {
+                outfile->Printf("electron    excitation");
+                size_t a =p%v;
+                size_t i = (p-a)/v;
+                outfile->Printf("%4d   ->%4d\n",i+1,a+o+1);
+             }
+             else if ((o*v-1< p) && (p < 2*o*v)) {
+                outfile->Printf("electron de-excitation");
+                size_t a =p%v;
+                size_t i = (p-a)/v;
+                outfile->Printf("%4d   ->%4d\n",i+1,a+o+1);
+             }
+             else if (p==2*o*v) {outfile->Printf("photon excitation\n");
+             }
+             else {outfile->Printf("photon de-excitation\n");
+             }
+             }
+        }
+*/
+    }
 
     return 0.0;
 }
 
-void PolaritonicUTDDFT::build_sigma(int N, int maxdim, int L, double **Q, double **sigmar, double **sigmal){
+// cQED-TDDFT:
+// 
+// |  A  B  g*  g* | ( X )     |  1  0  0  0 | ( X )
+// |  B  A  g*  g* | ( Y ) = W |  0 -1  0  0 | ( Y )
+// |  g  g  w   0  | ( M )     |  0  0  1  0 | ( M )
+// |  g  g  0   w  | ( N )     |  0  0  0 -1 | ( N )
+// 
+// 
+// 
+// this function solves the generalized eigenvalue problem S c = 1/w H c
+void PolaritonicUTDDFT::build_sigma_generalized(int N, int maxdim, int L, double **Q, double **sigmah, double **sigmas){
 
     for (int i = 0; i < N; i++) {
         for (int I = 0; I < maxdim; I++) {
-            sigmar[i][I] = 0.0;
-            sigmal[i][I] = 0.0;
-
+            sigmah[i][I] = 0.0;
+            sigmas[i][I] = 0.0;
         }
     }
 
-    int o = nalpha_;
-    int v = nso_ - nalpha_;
+    // TDDFT-PF:
+
+    // sigmah_x =  Ax + By + g*m + g*n
+    // sigmah_y =  Bx + Ay + g*m + g*n
+    // sigmah_m =  gx + gy +  wm
+    // sigmah_n =  gx + gy       +  wn
+
+    double * Ax = (double*)malloc(N*L*sizeof(double));
+    double * Bx = (double*)malloc(N*L*sizeof(double));
+    double * Ay = (double*)malloc(N*L*sizeof(double));
+    double * By = (double*)malloc(N*L*sizeof(double));
+    double * x  = (double*)malloc(N*L*sizeof(double));
+    double * y  = (double*)malloc(N*L*sizeof(double));
+
+    memset((void*)Ax,'\0',N*L*sizeof(double));
+    memset((void*)Bx,'\0',N*L*sizeof(double));
+    memset((void*)Ay,'\0',N*L*sizeof(double));
+    memset((void*)By,'\0',N*L*sizeof(double));
+    memset((void*)x, '\0',N*L*sizeof(double));
+    memset((void*)y, '\0',N*L*sizeof(double));
+
+    double *m = (double*)malloc(L*sizeof(double));
+    double *gm = (double*)malloc(N*L*sizeof(double));
+    double *sigma_m_h = (double*)malloc(L*sizeof(double));
+    double *sigma_m_s = (double*)malloc(L*sizeof(double));
+    double *n = (double*)malloc(L*sizeof(double));
+    double *gn = (double*)malloc(N*L*sizeof(double));
+
+    memset((void*)m,'\0',L*sizeof(double));
+    memset((void*)gm,'\0',N*L*sizeof(double));
+    memset((void*)sigma_m_h,'\0',L*sizeof(double));
+    memset((void*)sigma_m_s,'\0',L*sizeof(double));
+    memset((void*)n,'\0',L*sizeof(double));
+    memset((void*)gn,'\0',N*L*sizeof(double));
+
+    int oa = nalpha_;
+    int va = nso_ - oa;
+    int ob = nbeta_;
+    int vb = nso_ - ob;
+
+    // unpack input vectors
+    for (int I = 0; I < L; I++) {
+        for (int j = 0; j < oa*va; j++) {
+            x[I*N+j] = Q[I][j];
+            y[I*N+j] = Q[I][j + oa*va];
+        }
+        for (int j = 0; j < ob*vb; j++) {
+            x[I*N + oa*va + j] = Q[I][2*oa*va + j];
+            y[I*N + oa*va + j] = Q[I][2*oa*va + j + ob*vb];
+        }
+        m[I] = Q[I][2*(oa*va+ob*vb)];
+        n[I] = Q[I][2*(oa*va+ob*vb)+1];
+    }
+
+    build_Au_Bu(N, L, x, Ax, Bx);
+    build_Au_Bu(N, L, y, Ay, By);
+    // TODO
+    //build_gm(N, L, m, gm);
+    // TODO
+    //build_gm(N, L, n, gn);
+    // TODO
+    //build_sigma_m(N, L, x, y, m, sigma_m_h, sigma_m_s); // sigma_m_s need to be overwritten
+
+    // x, y
+    for (int i = 0; i < oa*va; i++) {
+        for (int I = 0; I < L; I++) {
+            sigmah[i        ][I] =  Ax[I*N + i] + By[I*N + i]; // TODO + gm[I*N+i] + gn[I*N+i];
+            sigmah[i + oa*va][I] =  Bx[I*N + i] + Ay[I*N + i]; // TODO + gm[I*N+i] + gn[I*N+i];
+
+            sigmas[i        ][I] =  x[I*N + i];
+            sigmas[i + oa*va][I] = -y[I*N + i];
+        }
+    }
+    for (int i = 0; i < ob*vb; i++) {
+        for (int I = 0; I < L; I++) {
+            sigmah[2*oa*va + i        ][I] =  Ax[I*N + oa*va + i] + By[I*N + oa*va + i]; // TODO + gm[I*N+i] + gn[I*N+i];
+            sigmah[2*oa*va + i + ob*vb][I] =  Bx[I*N + oa*va + i] + Ay[I*N + oa*va + i]; // TODO + gm[I*N+i] + gn[I*N+i];
+
+            sigmas[2*oa*va + i        ][I] =  x[I*N + oa*va + i];
+            sigmas[2*oa*va + i + ob*vb][I] = -y[I*N + oa*va + i];
+        }
+    }
+    // m, n
+    // TODO:
+/*
+    for (int I = 0; I < L; I++) {
+        sigmah[2*o*v  ][I] =  sigma_m_h[I] + cavity_frequency_[2] * m[I];
+        sigmas[2*o*v  ][I] =  m[I]; 
+
+        sigmah[2*o*v+1][I] =  sigma_m_h[I] + cavity_frequency_[2] * n[I]; 
+        sigmas[2*o*v+1][I] = -n[I];
+    }
+*/
+
+    free(x);
+    free(y);
+    free(Ax);
+    free(Bx);
+    free(Ay);
+    free(By);
+    free(m);
+    free(sigma_m_h);
+    free(sigma_m_s);
+    free(gm);
+    free(n);
+    free(gn);
+}
+
+// build Au and Bu according to Yihan's formalism that includes only (1) single 
+// excitations and de-excitations and (2) photon excitations and de-excitations, 
+// but no coupled photon / electron excitations. Also, this formalism only works
+// for n_photon_states_ = 2
+
+// Yihan calls this TDDFT-JC
+// note that Au will contain contribution from m
+
+void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double *Bu){
+
+    if ( n_photon_states_ > 2 ) {
+        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+    }
+
+    int oa = nalpha_;
+    int ob = nbeta_;
+    int va = nso_ - oa;
+    int vb = nso_ - ob;
 
     double * c = (double*)malloc(N*sizeof(double));
-    double * s = (double*)malloc(N*sizeof(double));
 
     double ** cap = Ca_->pointer();
     double ** cbp = Cb_->pointer();
@@ -604,6 +574,7 @@ void PolaritonicUTDDFT::build_sigma(int N, int maxdim, int L, double **Q, double
     double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
     double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
 
+    // TODO: need separate dipole_a and dipole_b
     double ** dx = dipole_[0]->pointer();
     double ** dy = dipole_[1]->pointer();
     double ** dz = dipole_[2]->pointer();
@@ -616,105 +587,102 @@ void PolaritonicUTDDFT::build_sigma(int N, int maxdim, int L, double **Q, double
 
         // unpack a vector
         for (int j = 0; j < N; j++) {
-            c[j] = Q[I][j];
+            c[j] = u[I*N+j];
         }
 
         // push density matrices on JK object
-        // we need density matrices for alpha and beta, as well as
-        // alpha and beta plus a photon
+        // we need density matrices for alpha as well as
+        // alpha plus a photon
 
         // Da(mu,nu) = ca(j,b) Ca(mu,j) Ca(nu,b) = Ca(mu,j) Ca'(nu,j)
         // Ca'(nu,j) = ca(j,b) Ca(nu,b)
 
-        // Db(mu,nu) = cb(j,b) Cb(mu,j) Cb(nu,b) = Cb(mu,j) Cb'(nu,j)
-        // Cb'(nu,j) = cb(j,b) Cb(nu,b)
-
         // etc.
 
-        // loop over photon states
-        for (int n = 0; n < n_photon_states_; n++) {
+        // singles
 
-            // alpha
-            std::shared_ptr<Matrix> cra (new Matrix(Ca_) );
-            std::shared_ptr<Matrix> cla (new Matrix(Ca_) );
+        // alpha
+        std::shared_ptr<Matrix> cra (new Matrix(Ca_) );
+        std::shared_ptr<Matrix> cla (new Matrix(Ca_) );
 
-            double ** clp = cla->pointer();
-            double ** crp = cra->pointer();
+        double ** clap = cla->pointer();
+        double ** crap = cra->pointer();
 
-            cra->zero();
-            cla->zero();
+        cra->zero();
+        cla->zero();
 
-            for (int mu = 0; mu < nso_; mu++) {
-                for (int i = 0; i < o; i++) {
+        for (int mu = 0; mu < nso_; mu++) {
+            for (int i = 0; i < oa; i++) {
 
-                    // left is plain orbitals
-                    clp[mu][i] = cap[mu][i];
+                // left is plain orbitals
+                clap[mu][i] = cap[mu][i];
 
-                    // right is modified orbitals
-                    double dum = 0.0;
-                    for (int a = 0; a < v; a++) {
-                        int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                        dum += cap[mu][a+o] * c[ian_a];
-                    }
-                    crp[mu][i] = dum;
-
+                // right is modified orbitals
+                double dum = 0.0;
+                for (int a = 0; a < va; a++) {
+                    int ia = i * va + a;
+                    dum += cap[mu][a+oa] * c[ia];
                 }
+                crap[mu][i] = dum;
+
             }
-
-            // push alpha orbitals onto JK object
-            C_left.push_back(cla);
-            C_right.push_back(cra);
-
-            // beta
-            std::shared_ptr<Matrix> crb (new Matrix(Cb_) );
-            std::shared_ptr<Matrix> clb (new Matrix(Cb_) );
-
-            clp = clb->pointer();
-            crp = crb->pointer();
-
-            crb->zero();
-            clb->zero();
-
-            for (int mu = 0; mu < nso_; mu++) {
-                for (int i = 0; i < o; i++) {
-
-                    // left is plain orbitals
-                    clp[mu][i] = cbp[mu][i];
-
-                    // right is modified orbitals
-                    double dum = 0.0;
-                    for (int a = 0; a < v; a++) {
-                        int ian_b = (i * v + a + o*v) * n_photon_states_ + n;
-                        dum += cbp[mu][a+o] * c[ian_b];
-                    }
-                    crp[mu][i] = dum;
-
-                }
-            }
-
-            // push alpha orbitals onto JK object
-            C_left.push_back(clb);
-            C_right.push_back(crb);
-
-            // build pseudo densities for xc contribution
-            if (needs_xc_) {
-
-                auto Dx_a = linalg::doublet(cla, cra, false, true);
-                auto Dx_b = linalg::doublet(clb, crb, false, true);
-                //std::shared_ptr<Matrix> Dx_a (new Matrix(nso_,nso_));
-                //std::shared_ptr<Matrix> Dx_b (new Matrix(nso_,nso_));
-                //C_DGEMM('n','t',nso_,nso_,o,1.0,&(cla->pointer()[0][0]),nso_,&(cra->pointer()[0][0]),nso_,0.0,&(Dx_a->pointer()[0][0]),nso_);
-                //C_DGEMM('n','t',nso_,nso_,o,1.0,&(clb->pointer()[0][0]),nso_,&(crb->pointer()[0][0]),nso_,0.0,&(Dx_b->pointer()[0][0]),nso_);
-
-
-                Vx.push_back(std::make_shared<Matrix>("Vax temp", Dx_a->rowspi(), Dx_a->colspi(), Dx_a->symmetry()));
-                Vx.push_back(std::make_shared<Matrix>("Vbx temp", Dx_b->rowspi(), Dx_b->colspi(), Dx_b->symmetry()));
-                Dx.push_back(Dx_a);
-                Dx.push_back(Dx_b);
-    
-            }    
-
         }
+
+        // push alpha orbitals onto JK object
+        C_left.push_back(cla);
+        C_right.push_back(cra);
+
+        // build pseudo densities for xc contribution
+        if (needs_xc_) {
+
+            auto Dx_a = linalg::doublet(cla, cra, false, true);
+
+            Vx.push_back(std::make_shared<Matrix>("Vax temp", Dx_a->rowspi(), Dx_a->colspi(), Dx_a->symmetry()));
+
+            Dx.push_back(Dx_a);
+        }
+
+        // beta
+        std::shared_ptr<Matrix> crb (new Matrix(Cb_) );
+        std::shared_ptr<Matrix> clb (new Matrix(Cb_) );
+
+        double ** clbp = clb->pointer();
+        double ** crbp = crb->pointer();
+
+        crb->zero();
+        clb->zero();
+
+        for (int mu = 0; mu < nso_; mu++) {
+            for (int i = 0; i < ob; i++) {
+
+                // left is plain orbitals
+                clbp[mu][i] = cbp[mu][i];
+
+                // right is modified orbitals
+                double dum = 0.0;
+                for (int a = 0; a < vb; a++) {
+                    int ia = i * vb + a;
+                    dum += cbp[mu][a+ob] * c[oa*va + ia];
+                }
+                crbp[mu][i] = dum;
+
+            }
+        }
+
+        // push beta orbitals onto JK object
+        C_left.push_back(clb);
+        C_right.push_back(crb);
+
+        // build pseudo densities for xc contribution
+        if (needs_xc_) {
+
+            auto Dx_b = linalg::doublet(clb, crb, false, true);
+
+            Vx.push_back(std::make_shared<Matrix>("Vbx temp", Dx_b->rowspi(), Dx_b->colspi(), Dx_b->symmetry()));
+
+            Dx.push_back(Dx_b);
+        }
+
     }
 
     // form J/K
@@ -733,332 +701,343 @@ void PolaritonicUTDDFT::build_sigma(int N, int maxdim, int L, double **Q, double
     double * ea = epsilon_a_->pointer();
     double * eb = epsilon_b_->pointer();
 
+// TODO:
+/*
     double * tmp_a = (double*)malloc(o*v*sizeof(double));
-    double * tmp_b = (double*)malloc(o*v*sizeof(double));
+    double * tmp_b = (double*)malloc(o*o*sizeof(double));
+*/
 
     for (int I = 0; I < L; I++) {
 
         // unpack a vector
         for (int j = 0; j < N; j++) {
-            c[j] = Q[I][j];
+            c[j] = u[I*N+j];
         }
 
-        for (int n = 0; n < n_photon_states_; n++) {
+        // a <- a+b coulomb
+        std::shared_ptr<Matrix> sa (new Matrix(jk_->J()[count]));
+        sa->add(jk_->J()[count+1]);
 
-            // a,b <- a coulomb
-            std::shared_ptr<Matrix> sa (new Matrix(jk_->J()[count]));
-            std::shared_ptr<Matrix> sb (new Matrix(jk_->J()[count]));
+        // b <- a+b coulomb
+        std::shared_ptr<Matrix> sb (new Matrix(jk_->J()[count]));
+        sb->add(jk_->J()[count+1]);
 
-            // a,b <- b coulomb
-            sa->add(jk_->J()[count+1]);
-            sb->add(jk_->J()[count+1]);
+        // xc?
+        // a <- a
+        // b <- b
+        if ( needs_xc_ ) {
+            sa->axpy(1.0, Vx[count]);
+            sb->axpy(1.0, Vx[count+1]);
+        }
 
-            // xc?
-            // a <- a
-            // b <- b
-            if ( needs_xc_ ) {
-                sa->axpy(1.0,Vx[count]);
-                //sb->axpy(1.0,Vx[count]);
+        // exact exchange?
+        // a <- a
+        // b <- b
+        if (is_x_hybrid_) {
+            sa->axpy(-x_alpha_,jk_->K()[count]);
+            sb->axpy(-x_alpha_,jk_->K()[count+1]);
+        }
 
-                //sa->axpy(1.0,Vx[count+1]);
-                sb->axpy(1.0,Vx[count+1]);
+        // LRC functional?
+        // a <- a
+        // b <- b
+        if (is_x_lrc_) {
+            double beta = 1.0 - x_alpha_;
+            sa->axpy(-beta,jk_->wK()[count]);
+            sb->axpy(-beta,jk_->wK()[count+1]);
+        }
+
+        // update counter
+        count += 2;
+
+        // transform jk, e.g., j(a,i) = j(mu,nu) c(mu,a) c(nu,i)
+
+        sa->transform(Ca_);
+        sb->transform(Cb_);
+
+        double ** sap = sa->pointer();
+        double ** sbp = sb->pointer();
+
+        // alpha
+        for (int i = 0; i < oa; i++) {
+            for (int a = 0; a < va; a++) {
+                int ia = i * va + a;
+
+                Au[I*N+ia] = sap[i][a+oa];
+                Bu[I*N+ia] = sap[a+oa][i];
             }
+        }
+        // beta
+        for (int i = 0; i < ob; i++) {
+            for (int a = 0; a < vb; a++) {
+                int ia = i * vb + a;
 
-            // exact exchange?
-            // a <- a
-            // b <- b
-            if (is_x_hybrid_) {
-                sa->axpy(-x_alpha_,jk_->K()[count]);
-                sb->axpy(-x_alpha_,jk_->K()[count+1]);
-            }
-
-            // LRC functional?
-            // a <- a
-            // b <- b
-            if (is_x_lrc_) {
-                double beta = 1.0 - x_alpha_;
-                sa->axpy(-beta,jk_->wK()[count]);
-                sb->axpy(-beta,jk_->wK()[count+1]);
-            }
-
-            // update counter
-            count += 2;
-
-            // transform jk, e.g., j(a,i) = j(mu,nu) c(mu,a) c(nu,i)
-
-            sa->transform(Ca_);
-            sb->transform(Cb_);
-
-            double ** sap = sa->pointer();
-            double ** sbp = sb->pointer();
-
-            for (int i = 0; i < o; i++) {
-                for (int a = 0; a < v; a++) {
-                    int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                    int ian_b = (i * v + a + o*v) * n_photon_states_ + n;
-
-                    sigmar[ian_a][I] = sap[i][a+o];
-                    sigmar[ian_b][I] = sbp[i][a+o];
-                                                  
-                    sigmal[ian_a][I] = sap[i][a+o];
-                    sigmal[ian_b][I] = sbp[i][a+o];
-                }
+                Au[I*N+ia + oa*va] = sbp[i][a+ob];
+                Bu[I*N+ia + oa*va] = sbp[a+ob][i];
             }
         }
 
-        // singles diagonals
+        // singles diagonals (alpha)
+        for (int i = 0; i < oa; i++) {
+            for (int a = 0; a < va; a++) {
+                int ia = i * va + a;
+                Au[I*N+ia] += c[ia] * (ea[a+oa] - ea[i]);
+            }
+        }
+        // singles diagonals (beta)
+        for (int i = 0; i < ob; i++) {
+            for (int a = 0; a < vb; a++) {
+                int ia = i * vb + a;
+                Au[I*N+ia + oa*va] += c[ia + oa*va] * (eb[a+ob] - eb[i]);
+            }
+        }
+
+        // dipole self energy (for singles)
+// TODO
+/*
+        // J-like contribution from dipole self energy
+        double dipole_Ja = 0.0;
         for (int i = 0; i < o; i++) {
             for (int a = 0; a < v; a++) {
-                for (int n = 0; n < n_photon_states_; n++) {
-                    int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                    int ian_b = (i * v + a + o*v) * n_photon_states_ + n;
+                int ia = i * v + a;
 
-                    sigmar[ian_a][I] += c[ian_a] * (ea[a+o] - ea[i] + n * cavity_frequency_[2]);
-                    sigmar[ian_b][I] += c[ian_b] * (eb[a+o] - eb[i] + n * cavity_frequency_[2]);
-
-                    sigmal[ian_a][I] += c[ian_a] * (ea[a+o] - ea[i] + n * cavity_frequency_[2]);
-                    sigmal[ian_b][I] += c[ian_b] * (eb[a+o] - eb[i] + n * cavity_frequency_[2]);
-                }
+                dipole_Ja += c[ia] * dz[i][a+o];
             }
         }
 
-        // now, |0,n> diagonals
-        int off = 2 * o * v * n_photon_states_;
-        for (int n = 0; n < n_photon_states_; n++) {
-            sigmar[off+n][I] += n * cavity_frequency_[2] * c[off+n];
-            sigmal[off+n][I] += n * cavity_frequency_[2] * c[off+n];
-        }
+        // intermediate for K-like contribution from dipole self energy
 
-        // dipole self energy
-        for (int n = 0; n < n_photon_states_; n++) {
+        // ignore if following QED-TDDFT outlined in J. Chem. Phys. 155, 064107 (2021)
+        memset((void*)tmp_a,'\0',o*v*sizeof(double));
+        memset((void*)tmp_b,'\0',o*o*sizeof(double));
 
-            // J-like contribution from dipole self energy
-            double dipole_Ja = 0.0;
-            double dipole_Jb = 0.0;
-            for (int i = 0; i < o; i++) {
-                for (int a = 0; a < v; a++) {
-                    int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                    int ian_b = (i * v + a + o*v) * n_photon_states_ + n;
+        if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
 
-                    dipole_Ja += c[ian_a] * dz[i][a+o];
-                    dipole_Jb += c[ian_b] * dz[i][a+o];
-                }
-            }
-
-            // intermediate for K-like contribution from dipole self energy
-            memset((void*)tmp_a,'\0',o*v*sizeof(double));
-            memset((void*)tmp_b,'\0',o*v*sizeof(double));
+            // A term
             for (int i = 0; i < o; i++) {
                 for (int a = 0; a < v; a++) {
                     double dum_a = 0.0;
-                    double dum_b = 0.0;
                     for (int j = 0; j < o; j++) {
-                        int jan_a = (j * v + a      ) * n_photon_states_ + n;
-                        int jan_b = (j * v + a + o*v) * n_photon_states_ + n;
+                        int ja = j * v + a;
 
-                        dum_a += c[jan_a] * dz[i][j];
-                        dum_b += c[jan_b] * dz[i][j];
+                        dum_a += c[ja] * dz[i][j];
                     }
 
                     tmp_a[a*o+i] = dum_a;
-                    tmp_b[a*o+i] = dum_b;
                 }
             }
 
+            // B term
             for (int i = 0; i < o; i++) {
-                for (int a = 0; a < v; a++) {
-
-                    double dipole_Ja_ia = dipole_Ja * dz[i][a+o];
-                    double dipole_Jb_ia = dipole_Jb * dz[i][a+o];
-
-                    double dipole_Ka = 0.0;
-                    double dipole_Kb = 0.0;
-                    for (int b = 0; b < v; b++) {
-                        dipole_Ka += tmp_a[b*o+i] * dz[a+o][b+o];
-                        dipole_Kb += tmp_b[b*o+i] * dz[a+o][b+o];
-                    }
-
-                    int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                    int ian_b = (i * v + a + o*v) * n_photon_states_ + n;
-
-                    sigmar[ian_a][I] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Jb_ia - dipole_Ka);
-                    sigmar[ian_b][I] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Jb_ia - dipole_Kb);
-
-                    sigmal[ian_a][I] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Jb_ia - dipole_Ka);
-                    sigmal[ian_b][I] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Jb_ia - dipole_Kb);
-                }
-            }
-        }
-
-        // coupling terms
-        for (int n = 0; n < n_photon_states_; n++) {
-
-            double sqrt_n = sqrt(n);
-
-            for (int i = 0; i < o; i++) {
-                for (int a = 0; a < v; a++) {
-
-                    int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                    int ian_b = (i * v + a + o*v) * n_photon_states_ + n;
-
-                    double dum_a = 0.0;
+                for (int j = 0; j < o; j++) {
                     double dum_b = 0.0;
+                    for (int b = 0; b < v; b++) {
+                        int jb = j * v + b;
 
-                    // d(n,m+1)
-                    int m = n - 1;
-                    if ( m > -1 ) {
-                        // d(i,j)
-                        for (int b = 0; b < v; b++) {
-                            int ibm_a = (i * v + b      ) * n_photon_states_ + m;
-                            int ibm_b = (i * v + b + o*v) * n_photon_states_ + m;
-                            dum_a -= sqrt_n * c[ibm_a] * dz[a+o][b+o];
-                            dum_b -= sqrt_n * c[ibm_b] * dz[a+o][b+o];
-                        }
-                        // d(a,b)
-                        for (int j = 0; j < o; j++) {
-                            int jam_a = (j * v + a      ) * n_photon_states_ + m;
-                            int jam_b = (j * v + a + o*v) * n_photon_states_ + m;
-                            dum_a += sqrt_n * c[jam_a] * dz[i][j];
-                            dum_b += sqrt_n * c[jam_b] * dz[i][j];
-                        }
-                        // d(i,j) d(a,b)
-                        int iam_a = (i * v + a      ) * n_photon_states_ + m;
-                        int iam_b = (i * v + a + o*v) * n_photon_states_ + m;
-                        for (int k = 0; k < o; k++) {
-                            dum_a -= sqrt_n * c[iam_a] * dz[k][k];
-                            dum_b -= sqrt_n * c[iam_b] * dz[k][k];
-                        }
-                        // more coherent-state terms ... these affect diagonals in the electronic basis
-                        dum_a += sqrt_n * tot_dip_z_ * c[iam_a];
-                        dum_b += sqrt_n * tot_dip_z_ * c[iam_b];
+                        dum_b += c[jb] * dz[b+o][i];
                     }
 
-                    // d(n,m-1)
-                    m = n + 1;
-                    if ( m < n_photon_states_ ) {
-                        double sqrt_m = sqrt(m);
-                        // d(i,j)
-                        for (int b = 0; b < v; b++) {
-                            int ibm_a = (i * v + b      ) * n_photon_states_ + m;
-                            int ibm_b = (i * v + b + o*v) * n_photon_states_ + m;
-                            dum_a -= sqrt_m * c[ibm_a] * dz[a+o][b+o];
-                            dum_b -= sqrt_m * c[ibm_b] * dz[a+o][b+o];
-                        }
-                        // d(a,b)
-                        for (int j = 0; j < o; j++) {
-                            int jam_a = (j * v + a      ) * n_photon_states_ + m;
-                            int jam_b = (j * v + a + o*v) * n_photon_states_ + m;
-                            dum_a += sqrt_m * c[jam_a] * dz[i][j];
-                            dum_b += sqrt_m * c[jam_b] * dz[i][j];
-                        }
-                        // d(i,j) d(a,b)
-                        int iam_a = (i * v + a      ) * n_photon_states_ + m;
-                        int iam_b = (i * v + a + o*v) * n_photon_states_ + m;
-                        for (int k = 0; k < o; k++) {
-                            dum_a -= sqrt_m * c[iam_a] * dz[k][k];
-                            dum_b -= sqrt_m * c[iam_b] * dz[k][k];
-                        }
-                        // more coherent-state terms ... these affect diagonals in the electronic basis
-                        dum_a += sqrt_m * tot_dip_z_ * c[iam_a];
-                        dum_b += sqrt_m * tot_dip_z_ * c[iam_b];
-                    }
-
-                    sigmar[ian_a][I] += coupling_factor_z * dum_a;
-                    sigmar[ian_b][I] += coupling_factor_z * dum_b;
-
-                    sigmal[ian_a][I] += coupling_factor_z * dum_a;
-                    sigmal[ian_b][I] += coupling_factor_z * dum_b;
-
+                    tmp_b[i*o+j] = dum_b;
                 }
             }
-
         }
 
-        // lastly, couple |0,n+1> and |0,n-1> to |ia,n>
         for (int i = 0; i < o; i++) {
             for (int a = 0; a < v; a++) {
-                for (int n = 0; n < n_photon_states_; n++) {
-                    int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                    int ian_b = (i * v + a + o*v) * n_photon_states_ + n;
-                    // case 1
-                    if ( n < n_photon_states_ - 1 ) {
-                        double factor = -coupling_factor_z * sqrt(n+1) * dz[i][a+o];
 
-                        double val_a   = factor * c[ian_a];
-                        double val_b   = factor * c[ian_b];
-                        double val_np1 = factor * c[off+n+1];
+                double dipole_Ja_ia = dipole_Ja * dz[i][a+o];
 
-                        sigmar[ian_a][I]   += val_np1;
-                        sigmar[ian_b][I]   += val_np1;
-                        sigmar[off+n+1][I] += val_a + val_b;
-
-                        sigmal[ian_a][I]   += val_np1;
-                        sigmal[ian_b][I]   += val_np1;
-                        sigmal[off+n+1][I] += val_a + val_b;
-
-                    }
-
-                    // case 2
-                    if ( n > 0 ) {
-                        double factor = -coupling_factor_z * sqrt(n) * dz[i][a+o];
-
-                        double val_a   = factor * c[ian_a];
-                        double val_b   = factor * c[ian_b];
-                        double val_nm1 = factor * c[off+n-1];
-
-                        sigmar[ian_a][I]   += val_nm1;
-                        sigmar[ian_b][I]   += val_nm1;
-                        sigmar[off+n-1][I] += val_a + val_b;
-
-                        sigmal[ian_a][I]   += val_nm1;
-                        sigmal[ian_b][I]   += val_nm1;
-                        sigmal[off+n-1][I] += val_a + val_b;
-                    }
+                // A term
+                double dipole_Ka_A = 0.0;
+                for (int b = 0; b < v; b++) {
+                    dipole_Ka_A += tmp_a[b*o+i] * dz[a+o][b+o];
                 }
+                // B term
+                double dipole_Ka_B = 0.0;
+                for (int j = 0; j < o; j++) {
+                    dipole_Ka_B += tmp_b[i*o+j] * dz[a+o][j];
+                }
+
+                int ia = i * v + a;
+
+                Au[I*N+ia] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia - dipole_Ka_A);
+                Bu[I*N+ia] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia - dipole_Ka_B);
             }
         }
+*/
 
     }
-
-
+// TODO:
+/*
     free(tmp_a);
     free(tmp_b);
-
+*/
     free(c);
-    free(s);
-
 }
 
-double * PolaritonicUTDDFT::build_hamiltonian_diagonals(){
+void PolaritonicUTDDFT::build_gm(int N, int L, double *m, double *gm) {
+
+    if ( n_photon_states_ > 2 ) {
+        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+    }
 
     int o = nalpha_;
     int v = nso_ - nalpha_;
 
-    double * H = (double*)malloc((2*o*v+1)*n_photon_states_*sizeof(double));; 
-    memset((void*)H,'\0',(2*o*v+1)*n_photon_states_*sizeof(double));
+    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+
+    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
+    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+
+    double ** dx = dipole_[0]->pointer();
+    double ** dy = dipole_[1]->pointer();
+    double ** dz = dipole_[2]->pointer();
+
+    for (int I = 0; I < L; I++) {
+
+        // couple |0,1> to |ia,0>
+        for (int i = 0; i < o; i++) {
+            for (int a = 0; a < v; a++) {
+                int ia = i * v + a;
+
+                // <ia| H |0,1>
+                gm[I*N+ia] = -sqrt(2.0) * coupling_factor_z * dz[i][a+o] * m[I];
+            }
+        }
+    }
+}
+
+void PolaritonicUTDDFT::build_sigma_m(int N, int L, double *x, double *y, double *m, double *sigma_m_r, double *sigma_m_l) {
+
+    if ( n_photon_states_ > 2 ) {
+        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+    }
+
+    int o = nalpha_;
+    int v = nso_ - nalpha_;
+
+    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+
+    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
+    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+
+    double ** dx = dipole_[0]->pointer();
+    double ** dy = dipole_[1]->pointer();
+    double ** dz = dipole_[2]->pointer();
+
+    for (int I = 0; I < L; I++) {
+
+        // |0,1> diagonal
+        sigma_m_r[I] = 0.0;//cavity_frequency_[2] * m[I];
+        sigma_m_l[I] = 0.0;//cavity_frequency_[2] * m[I];
+
+        // couple |0,1> to |ia,0>
+
+        for (int i = 0; i < o; i++) {
+            for (int a = 0; a < v; a++) {
+
+                int ia = i * v + a;
+
+                // <ia| H |0,1>
+                double factor = -sqrt(2.0)*coupling_factor_z * dz[i][a+o];
+                    
+                sigma_m_r[I] += factor * ( x[I*N+ia] + y[I*N+ia] );
+                sigma_m_l[I] += factor * ( x[I*N+ia] - y[I*N+ia] );
+            }
+        }
+    }
+}
+
+// build approximation to diagonal of A matrix in basis that excludes |0,0> and de-excitation |0,-n>
+double * PolaritonicUTDDFT::build_hamiltonian_diagonals(){
+
+    int oa = nalpha_;
+    int ob = nbeta_;
+    int va = nso_ - oa;
+    int vb = nso_ - ob;
+
+    int dim = 2*(oa*va+ob*vb)+2;
+
+    double * H = (double*)malloc(dim*sizeof(double));
+    memset((void*)H,'\0',dim*sizeof(double));
 
     double * ea = epsilon_a_->pointer();
     double * eb = epsilon_b_->pointer();
 
-    for (int i = 0; i < o; i++) {
-        for (int a = 0; a < v; a++) {
-            for (int n = 0; n < n_photon_states_; n++) {
-                int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                int ian_b = (i * v + a + o*v) * n_photon_states_ + n;
-                H[ian_a] = ea[a+o] - ea[i] + n * cavity_frequency_[2];
-                H[ian_b] = eb[a+o] - eb[i] + n * cavity_frequency_[2];
-            }
+    for (int i = 0; i < oa; i++) {
+        for (int a = 0; a < va; a++) {
+            int ia = i * va + a;
+            H[ia]         = ea[a+oa] - ea[i];
+            H[oa*va + ia] = ea[a+oa] - ea[i];
         }
     }
 
-    // now, |0,n> diagonals
-    int off = 2 * o * v * n_photon_states_;
-    for (int n = 0; n < n_photon_states_; n++) {
-        H[off+n] = n * cavity_frequency_[2];
+    for (int i = 0; i < ob; i++) {
+        for (int a = 0; a < vb; a++) {
+            int ia = i * vb + a;
+            H[2*oa*va + ia]         = eb[a+ob] - eb[i];
+            H[2*oa*va + ob*vb + ia] = eb[a+ob] - eb[i];
+        }
     }
+
+    // now, |0,1> diagonals
+    if ( n_photon_states_ > 2 ) {
+        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+    }
+
+    int off = 2 * (oa * va + ob * vb);
+    H[off  ] = cavity_frequency_[2];
+    H[off+1] = cavity_frequency_[2];
 
     return H;
 }
 
+double * PolaritonicUTDDFT::build_overlap_diagonals(){
+
+    int oa = nalpha_;
+    int ob = nbeta_;
+    int va = nso_ - oa;
+    int vb = nso_ - ob;
+
+    int dim = 2*(oa*va+ob*vb)+2;
+
+    double * S = (double*)malloc(dim*sizeof(double));
+    memset((void*)S,'\0',dim*sizeof(double));
+
+    double * ea = epsilon_a_->pointer();
+
+    for (int i = 0; i < oa; i++) {
+        for (int a = 0; a < va; a++) {
+            int ia = i * va + a;
+            S[ia]         =  1.0;
+            S[oa*va + ia] = -1.0;
+        }
+    }
+    for (int i = 0; i < ob; i++) {
+        for (int a = 0; a < vb; a++) {
+            int ia = i * vb + a;
+            S[2*oa*va + ia]         =  1.0;
+            S[2*oa*va + ob*vb + ia] = -1.0;
+        }
+    }
+
+    // now, |0,1> diagonals
+    if ( n_photon_states_ > 2 ) {
+        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+    }
+
+    int off = 2 * (oa * va + ob * vb);
+    S[off  ] =  1.0;
+    S[off+1] = -1.0;
+
+    return S;
+}
 
 } // End namespaces
+
