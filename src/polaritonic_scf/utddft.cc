@@ -748,11 +748,10 @@ void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
     double * ea = epsilon_a_->pointer();
     double * eb = epsilon_b_->pointer();
 
-// TODO:
-/*
-    double * tmp_a = (double*)malloc(o*v*sizeof(double));
-    double * tmp_b = (double*)malloc(o*o*sizeof(double));
-*/
+    double * tmpa_a = (double*)malloc(oa*va*sizeof(double));
+    double * tmpa_b = (double*)malloc(oa*oa*sizeof(double));
+    double * tmpb_a = (double*)malloc(ob*vb*sizeof(double));
+    double * tmpb_b = (double*)malloc(ob*ob*sizeof(double));
 
     for (int I = 0; I < L; I++) {
 
@@ -841,84 +840,133 @@ void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
 
         // dipole self energy (for singles)
 // TODO
-/*
-        // J-like contribution from dipole self energy
+        // J-like contribution from dipole self energy (alpha)
         double dipole_Ja = 0.0;
-        for (int i = 0; i < o; i++) {
-            for (int a = 0; a < v; a++) {
-                int ia = i * v + a;
-
-                dipole_Ja += c[ia] * dz[i][a+o];
+        for (int i = 0; i < oa; i++) {
+            for (int a = 0; a < va; a++) {
+                int ia = i * va + a;
+                dipole_Ja += c[ia] * dz[i][a + oa + ob];
+            }
+        }
+        double dipole_Jb = 0.0;
+        for (int i = 0; i < ob; i++) {
+            for (int a = 0; a < vb; a++) {
+                int ia = i * vb + a;
+                dipole_Jb += c[ia + oa*va] * dz[i + oa][a + oa + ob + va];
             }
         }
 
         // intermediate for K-like contribution from dipole self energy
 
         // ignore if following QED-TDDFT outlined in J. Chem. Phys. 155, 064107 (2021)
-        memset((void*)tmp_a,'\0',o*v*sizeof(double));
-        memset((void*)tmp_b,'\0',o*o*sizeof(double));
+        memset((void*)tmpa_a,'\0',oa*va*sizeof(double));
+        memset((void*)tmpa_b,'\0',oa*oa*sizeof(double));
+        memset((void*)tmpb_a,'\0',ob*vb*sizeof(double));
+        memset((void*)tmpb_b,'\0',ob*ob*sizeof(double));
 
         if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
 
-            // A term
-            for (int i = 0; i < o; i++) {
-                for (int a = 0; a < v; a++) {
+            // A term (alpha)
+            for (int i = 0; i < oa; i++) {
+                for (int a = 0; a < va; a++) {
                     double dum_a = 0.0;
-                    for (int j = 0; j < o; j++) {
-                        int ja = j * v + a;
-
+                    for (int j = 0; j < oa; j++) {
+                        int ja = j * va + a;
                         dum_a += c[ja] * dz[i][j];
                     }
-
-                    tmp_a[a*o+i] = dum_a;
+                    tmpa_a[a*oa+i] = dum_a;
                 }
             }
 
-            // B term
-            for (int i = 0; i < o; i++) {
-                for (int j = 0; j < o; j++) {
-                    double dum_b = 0.0;
-                    for (int b = 0; b < v; b++) {
-                        int jb = j * v + b;
-
-                        dum_b += c[jb] * dz[b+o][i];
+            // A term (beta)
+            for (int i = 0; i < ob; i++) {
+                for (int a = 0; a < vb; a++) {
+                    double dum_a = 0.0;
+                    for (int j = 0; j < ob; j++) {
+                        int ja = j * vb + a;
+                        dum_a += c[ja + oa*va] * dz[i + oa][j + oa];
                     }
+                    tmpb_a[a*ob+i] = dum_a;
+                }
+            }
 
-                    tmp_b[i*o+j] = dum_b;
+            // B term (alpha)
+            for (int i = 0; i < oa; i++) {
+                for (int j = 0; j < oa; j++) {
+                    double dum_b = 0.0;
+                    for (int b = 0; b < va; b++) {
+                        int jb = j * va + b;
+                        dum_b += c[jb] * dz[b + oa + ob][i];
+                    }
+                    tmpa_b[i*oa+j] = dum_b;
+                }
+            }
+
+            // B term (beta)
+            for (int i = 0; i < ob; i++) {
+                for (int j = 0; j < ob; j++) {
+                    double dum_b = 0.0;
+                    for (int b = 0; b < vb; b++) {
+                        int jb = j * vb + b;
+                        dum_b += c[jb + oa*va] * dz[b + oa + ob + va][i + oa];
+                    }
+                    tmpb_b[i*ob+j] = dum_b;
                 }
             }
         }
 
-        for (int i = 0; i < o; i++) {
-            for (int a = 0; a < v; a++) {
+        // alpha
+        for (int i = 0; i < oa; i++) {
+            for (int a = 0; a < va; a++) {
 
-                double dipole_Ja_ia = dipole_Ja * dz[i][a+o];
+                double dipole_J_ia = (dipole_Ja + dipole_Jb) * dz[i][a + oa + ob];
 
                 // A term
                 double dipole_Ka_A = 0.0;
-                for (int b = 0; b < v; b++) {
-                    dipole_Ka_A += tmp_a[b*o+i] * dz[a+o][b+o];
+                for (int b = 0; b < va; b++) {
+                    dipole_Ka_A += tmpa_a[b*oa + i] * dz[a + oa + ob][b + oa + ob];
                 }
                 // B term
                 double dipole_Ka_B = 0.0;
-                for (int j = 0; j < o; j++) {
-                    dipole_Ka_B += tmp_b[i*o+j] * dz[a+o][j];
+                for (int j = 0; j < oa; j++) {
+                    dipole_Ka_B += tmpa_b[i*oa + j] * dz[a + oa + ob][j];
                 }
 
-                int ia = i * v + a;
+                int ia = i * va + a;
 
-                Au[I*N+ia] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia - dipole_Ka_A);
-                Bu[I*N+ia] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia - dipole_Ka_B);
+                Au[I*N + ia] += lambda_z * lambda_z * (dipole_J_ia - dipole_Ka_A);
+                Bu[I*N + ia] += lambda_z * lambda_z * (dipole_J_ia - dipole_Ka_B);
+
             }
         }
-*/
+        // beta
+        for (int i = 0; i < ob; i++) {
+            for (int a = 0; a < vb; a++) {
 
+                double dipole_J_ia = (dipole_Ja + dipole_Jb) * dz[i + oa][a + oa + ob + va];
+
+                // A term
+                double dipole_Kb_A = 0.0;
+                for (int b = 0; b < vb; b++) {
+                    dipole_Kb_A += tmpb_a[b*ob + i] * dz[a + oa + ob + va][b + oa + ob + va];
+                }
+                // B term
+                double dipole_Kb_B = 0.0;
+                for (int j = 0; j < ob; j++) {
+                    dipole_Kb_B += tmpb_b[i*ob + j] * dz[a + oa + ob + va][j + oa];
+                }
+
+                int ia = i * vb + a;
+
+                Au[I*N + ia + oa*va] += lambda_z * lambda_z * (dipole_J_ia - dipole_Kb_A);
+                Bu[I*N + ia + oa*va] += lambda_z * lambda_z * (dipole_J_ia - dipole_Kb_B);
+            }
+        }
     }
-// TODO:
-/*
-    free(tmp_a);
-    free(tmp_b);
-*/
+    free(tmpa_a);
+    free(tmpa_b);
+    free(tmpb_a);
+    free(tmpb_b);
     free(c);
 }
 
