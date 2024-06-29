@@ -307,13 +307,13 @@ double PolaritonicUTDDFT::compute_energy() {
     free(Hdiag);
 
     outfile->Printf("\n");
-    outfile->Printf("    cQED-TDDFT energies:\n");
+    outfile->Printf("    QED-TDDFT energies:\n");
     outfile->Printf("\n");
     outfile->Printf("    ");
     outfile->Printf("%5s","state");
     outfile->Printf(" %5s","type");
-    outfile->Printf(" %20s","energy (Eh)");
     outfile->Printf(" %20s","ex energy (Eh)");
+    outfile->Printf(" %20s","energy (Eh)");
     outfile->Printf(" %20s","photon weight");
     outfile->Printf(" %10s","mu_x");
     outfile->Printf(" %10s","mu_y");
@@ -323,17 +323,19 @@ double PolaritonicUTDDFT::compute_energy() {
 
     for (int state = 0; state < M; state++) {
 
-/*
-// TODO: fix
         // normalization
-        double m_weight = rerp[state][2*o*v  ] * rerp[state][2*o*v  ];
-        double n_weight = rerp[state][2*o*v+1] * rerp[state][2*o*v+1];
+        double m_weight = rerp[state][2 * (oa*va + ob*vb)    ] * rerp[state][2 * (oa*va + ob*vb)    ];
+        double n_weight = rerp[state][2 * (oa*va + ob*vb) + 1] * rerp[state][2 * (oa*va + ob*vb) + 1];
         double photon_weight = m_weight - n_weight;
         double x_weight = 0.0;
         double y_weight = 0.0;
-        for (int j = 0; j < o*v; j++) {
-            x_weight += rerp[state][j    ] * rerp[state][j    ];
-            y_weight += rerp[state][j+o*v] * rerp[state][j+o*v];
+        for (int j = 0; j < oa*va; j++) {
+            x_weight += rerp[state][j        ] * rerp[state][j        ];
+            y_weight += rerp[state][j + oa*va] * rerp[state][j + oa*va];
+        }
+        for (int j = 0; j < ob*vb; j++) {
+            x_weight += rerp[state][j + 2*oa*va        ] * rerp[state][j + 2*oa*va        ];
+            y_weight += rerp[state][j + 2*oa*va + ob*vb] * rerp[state][j + 2*oa*va + ob*vb];
         }
         double electron_weight = x_weight - y_weight;
         double nrm = photon_weight + electron_weight;
@@ -357,20 +359,28 @@ double PolaritonicUTDDFT::compute_energy() {
         double mu_y_l = 0.0;
         double mu_z_l = 0.0;
         nrm = sqrt(nrm);
-        for (int j = 0; j < o; j++) {
-            for (int b = 0; b < v; b++) {
-                double cr = (rerp[state][j*v+b] + rerp[state][j*v+b+o*v])/nrm;
-                mu_x_r += dx[j][b+o] * cr;
-                mu_y_r += dy[j][b+o] * cr;
-                mu_z_r += dz[j][b+o] * cr;
+        for (int j = 0; j < oa; j++) {
+            for (int b = 0; b < va; b++) {
+                double cr = (rerp[state][j*va + b] + rerp[state][j*va + b + oa*va])/nrm;
+                mu_x_r += dx[j][b + oa] * cr;
+                mu_y_r += dy[j][b + oa] * cr;
+                mu_z_r += dz[j][b + oa] * cr;
             }
         }
-        double f = 2.0 * 2.0/3.0*w*(mu_x_r * mu_x_r + mu_y_r * mu_y_r + mu_z_r * mu_z_r);
-        outfile->Printf("    %5i %5s %20.12lf %20.12lf %20.12lf %10.6lf %10.6lf %10.6lf %10.6lf\n", state, type.c_str(),w,energy_ + w,photon_weight,mu_x_r,mu_y_r,mu_z_r,f);
-*/
-
+        for (int j = 0; j < ob; j++) {
+            for (int b = 0; b < vb; b++) {
+                double cr = (rerp[state][j*vb + b + 2 * oa*va] + rerp[state][j*vb + b + ob*vb + 2 * oa*va])/nrm;
+                mu_x_r += dx[j][b + ob] * cr;
+                mu_y_r += dy[j][b + ob] * cr;
+                mu_z_r += dz[j][b + ob] * cr;
+            }
+        }
         double w = revalp[state];
-        outfile->Printf("    %5i %20.12lf %20.12lf\n", state, w, energy_ + w);
+        double f = 2.0 * 2.0/3.0*w*(mu_x_r * mu_x_r + mu_y_r * mu_y_r + mu_z_r * mu_z_r);
+        outfile->Printf("    %5i %20.12lf %20.12lf %10.6lf %10.6lf %10.6lf %10.6lf\n", state, w, energy_ + w, mu_x_r, mu_y_r, mu_z_r, f);
+        //outfile->Printf("    %5i %5s %20.12lf %20.12lf %20.12lf %10.6lf %10.6lf %10.6lf %10.6lf\n", state, type.c_str(),w,energy_ + w,photon_weight,mu_x_r,mu_y_r,mu_z_r,f);
+
+        //outfile->Printf("    %5i %20.12lf %20.12lf\n", state, w, energy_ + w);
     }
     outfile->Printf("%d %d %d\n",oa,va,N);
     outfile->Printf("%d %d %d\n",ob,vb,N);
@@ -410,7 +420,7 @@ double PolaritonicUTDDFT::compute_energy() {
     return 0.0;
 }
 
-// cQED-TDDFT:
+// QED-TDDFT:
 // 
 // |  A  B  g*  g* | ( X )     |  1  0  0  0 | ( X )
 // |  B  A  g*  g* | ( Y ) = W |  0 -1  0  0 | ( Y )

@@ -304,13 +304,13 @@ double PolaritonicRTDDFT::compute_energy() {
     free(Hdiag);
 
     outfile->Printf("\n");
-    outfile->Printf("    cQED-TDDFT energies:\n");
+    outfile->Printf("    QED-TDDFT energies:\n");
     outfile->Printf("\n");
     outfile->Printf("    ");
     outfile->Printf("%5s","state");
     outfile->Printf(" %5s","type");
-    outfile->Printf(" %20s","energy (Eh)");
     outfile->Printf(" %20s","ex energy (Eh)");
+    outfile->Printf(" %20s","energy (Eh)");
     outfile->Printf(" %20s","photon weight");
     outfile->Printf(" %10s","mu_x");
     outfile->Printf(" %10s","mu_y");
@@ -399,7 +399,7 @@ double PolaritonicRTDDFT::compute_energy() {
     return 0.0;
 }
 
-// cQED-TDDFT:
+// QED-TDDFT:
 // 
 // |  A  B  g*  g* | ( X )     |  1  0  0  0 | ( X )
 // |  B  A  g*  g* | ( Y ) = W |  0 -1  0  0 | ( Y )
