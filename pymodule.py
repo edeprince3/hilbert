@@ -69,8 +69,10 @@ def run_polaritonic_scf(name, **kwargs):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RCIS')
     elif ( lowername == 'polaritonic-uccsd' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UCCSD')
-    elif ( lowername == 'polaritonic-tddft' ):
-        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_TDDFT')
+    elif ( lowername == 'polaritonic-rtddft' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RTDDFT')
+    elif ( lowername == 'polaritonic-utddft' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UTDDFT')
 
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
     # Fock matrices, and more
@@ -79,7 +81,7 @@ def run_polaritonic_scf(name, **kwargs):
     #if ref_wfn is None:
     #    ref_wfn = psi4.driver.scf_helper(name, **kwargs)
     if ref_wfn is None:
-        if ( lowername == 'polaritonic-uks' or lowername == 'polaritonic-rks' or lowername == 'polaritonic-tddft'):
+        if ( lowername == 'polaritonic-uks' or lowername == 'polaritonic-rks' or lowername == 'polaritonic-rtddft' or lowername == 'polaritonic-utddft'):
             func = psi4.core.get_option('HILBERT','CAVITY_QED_DFT_FUNCTIONAL')
             en, ref_wfn = psi4.driver.energy(func, **kwargs, return_wfn=True)
         else :
@@ -722,7 +724,8 @@ psi4.driver.procedures['energy']['polaritonic-rohf'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-uks'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-rks'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-rcis'] = run_polaritonic_scf
-psi4.driver.procedures['energy']['polaritonic-tddft'] = run_polaritonic_scf
+psi4.driver.procedures['energy']['polaritonic-rtddft'] = run_polaritonic_scf
+psi4.driver.procedures['energy']['polaritonic-utddft'] = run_polaritonic_scf
 psi4.driver.procedures['energy']['polaritonic-uccsd'] = run_polaritonic_scf
 
 psi4.driver.procedures['gradient']['polaritonic-rhf'] = run_polaritonic_scf_gradient

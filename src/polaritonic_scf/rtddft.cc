@@ -402,8 +402,7 @@ double PolaritonicRTDDFT::compute_energy() {
                     size_t i = (p-a) / v;
                     outfile->Printf(" %4d -> %4d",i + 1, a + o + 1);
                     outfile->Printf(" %5s\n", "X");
-                 }
-                 else if ( ( o*v - 1 < p) && ( p < 2*o*v )) {
+                 }else if ( ( o*v - 1 < p) && ( p < 2*o*v )) {
                     size_t a = p % v;
                     size_t i = (p-a) / v;
                     outfile->Printf(" %4d -> %4d",i + 1, a + o + 1);
