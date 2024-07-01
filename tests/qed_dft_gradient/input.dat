@@ -19,11 +19,18 @@ set {
   d_convergence 1e-10 
 } 
 
+# frequency: 2.0 eV
+w = 0.07349864501573
+
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+g = 0.05 / np.sqrt(2.0 * w)
+
 set { 
   maxiter 500
   n_photon_states          2
-  cavity_frequency         [0.0, 0.0, 0.495589583372]
-  cavity_coupling_strength [0.0, 0.0, 0.150221990521748]
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
 }
 
 set points 3

@@ -490,6 +490,11 @@ double PolaritonicUTDDFT::compute_energy() {
         }
     }
 
+    // add excitation energies to psi variables
+    for (int state = 0; state < M; state++) {
+        Process::environment.globals["QED-TDDFT ROOT 0 -> ROOT " + std::to_string(state+1) + " EXCITATION ENERGY"] = revalp[state];
+    }
+
     return 0.0;
 }
 

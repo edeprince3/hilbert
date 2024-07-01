@@ -1,9 +1,9 @@
 
     -----------------------------------------------------------------------
           Psi4: An Open-Source Ab Initio Electronic Structure Package
-                               Psi4 undefined 
+                               Psi4 1.9.1 
 
-                         Git: Rev {master} d3a7619 dirty
+                         Git: Rev {HEAD} f53cdd7 dirty
 
 
     D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
@@ -19,7 +19,8 @@
                             Additional Code Authors
     E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
     J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
-    P. Verma, M. H. Lechner, and A. Jiang
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, and D. L. Poole
 
              Previous Authors, Complete List of Code Contributors,
                        and Citations for Specific Modules
@@ -30,11 +31,11 @@
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Saturday, 16 April 2022 03:07PM
+    Psi4 started on: Monday, 01 July 2024 01:31PM
 
-    Process ID: 80827
-    Host:       ed11
-    PSIDATADIR: /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4
+    Process ID: 65448
+    Host:       wc-dhcp35d189.employee-secure.wireless.fsu.edu
+    PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
     Memory:     500.0 MiB
     Threads:    1
     
@@ -78,23 +79,29 @@ set {
   d_convergence 1e-10 
 } 
 
-# apparently lambda = 0.149557981435142
-set hilbert {
+# frequency: 2.0 eV
+w = 0.07349864501573
+
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+g = 0.05 / np.sqrt(2.0 * w)
+
+set {
   maxiter 500
   n_photon_states          2
-  cavity_frequency         [0.0, 0.0, 0.495589583372]
-  cavity_coupling_strength [0.0, 0.0, 0.150221990521748]
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
+  qed_dft_functional tpssh
 }
 
-ref_dft = -76.409786399931
+ref_dft = -76.453452994149
 
 set reference uks
 activate(mol1)
 set basis def2-tzvppd
-en,wfn = energy('tpssh',return_wfn=True)
-energy('polaritonic-uks',ref_wfn=wfn)
+energy('qed-dft')
 
-compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QEDFT total energy (xyz)") # TEST
+compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QED-DFT total energy (xyz)") # TEST
 
 set reference uks
 activate(mol2)
@@ -102,10 +109,9 @@ set basis def2-tzvppd
 set hilbert {
     rotate_polarization_axis "ZXY"
 }
-en,wfn = energy('tpssh',return_wfn=True)
-energy('polaritonic-uks',ref_wfn=wfn)
+energy('qed-dft')
 
-compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QEDFT total energy (zxy)") # TEST
+compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QED-DFT total energy (zxy)") # TEST
 
 set reference uks
 activate(mol3)
@@ -113,25 +119,31 @@ set basis def2-tzvppd
 set hilbert {
     rotate_polarization_axis "YZX"
 }
-en,wfn = energy('tpssh',return_wfn=True)
-energy('polaritonic-uks',ref_wfn=wfn)
+energy('qed-dft')
 
-compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QEDFT total energy (yzx)") # TEST
+compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QED-DFT total energy (yzx)") # TEST
 --------------------------------------------------------------------------
-Warning: As of v1.5, the ~/.psi4rc file will no longer be read into Psi4 input.
 
-Scratch directory: /scratch/deprince/scratch/
+Scratch directory: /tmp/
 
-*** tstart() called on ed11
-*** at Sat Apr 16 15:07:16 2022
+Scratch directory: /tmp/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
+*** at Mon Jul  1 13:31:08 2024
 
    => Loading Basis Set <=
 
     Name: DEF2-TZVPPD
     Role: ORBITAL
     Keyword: BASIS
-    atoms 1   entry O          line   218 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-tzvppd.gbs 
-    atoms 2-3 entry H          line    14 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-tzvppd.gbs 
+    atoms 1   entry O          line   218 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-tzvppd.gbs 
+    atoms 2-3 entry H          line    14 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-tzvppd.gbs 
 
 
          ---------------------------------------------------------
@@ -192,14 +204,14 @@ Scratch directory: /scratch/deprince/scratch/
 
    => LibXC <=
 
-    Version 5.1.5
-    S. Lehtola, C. Steigemann, M. J. Oliveira, and M. A. Marques, SoftwareX 7, 1 (2018) (10.1016/j.softx.2017.11.002)
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
 
    => Composite Functional: TPSSH <= 
 
     TPSSh Hyb-GGA Exchange-Correlation Functional
 
-    V. N. Staroverov, G. E. Scuseria, J. Tao, and J. P. Perdew, J. Chem. Phys. 119, 12129 (2003) (10.1063/1.1626543)
+    V. N. Staroverov, G. E. Scuseria, J. Tao, and J. P. Perdew.,  J. Chem. Phys. 119, 12129 (2003) (10.1063/1.1626543)
 
     Deriv               =              1
     GGA                 =           TRUE
@@ -230,6 +242,7 @@ Scratch directory: /scratch/deprince/scratch/
     Pruning Scheme         =           NONE
     Nuclear Scheme         =       TREUTLER
 
+    Blocking Scheme        =         OCTREE
     BS radius alpha        =              1
     Pruning alpha          =              1
     Radial Points          =             75
@@ -245,24 +258,23 @@ Scratch directory: /scratch/deprince/scratch/
     Name: (DEF2-TZVPPD AUX)
     Role: JKFIT
     Keyword: DF_BASIS_SCF
-    atoms 1   entry O          line   318 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-universal-jkfit.gbs 
-    atoms 2-3 entry H          line    18 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
 
   ==> Integral Setup <==
 
-  DFHelper Memory: AOs need 0.006 GiB; user supplied 0.019 GiB. Using in-core AOs.
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
 
-  ==> MemDFJK: Density-Fitted J/K Matrices <==
-
-    J tasked:                   Yes
-    K tasked:                   Yes
-    wK tasked:                   No
-    OpenMP threads:               1
-    Memory [MiB]:                19
-    Algorithm:                 Core
-    Schwarz Cutoff:           1E-12
-    Mask sparsity (%):       0.0000
-    Fitting Condition:        1E-10
+    J tasked:                  Yes
+    K tasked:                  Yes
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:               19
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
 
    => Auxiliary Basis Set <=
 
@@ -296,17 +308,17 @@ Scratch directory: /scratch/deprince/scratch/
 
                            Total Energy        Delta E     RMS |[F,P]|
 
-   @DF-UKS iter SAD:   -76.08031840199428   -7.60803e+01   0.00000e+00 
-   @DF-UKS iter   1:   -76.27801403090177   -1.97696e-01   9.73962e-03 DIIS
-   @DF-UKS iter   2:   -75.65428927880446    6.23725e-01   1.87770e-02 DIIS
-   @DF-UKS iter   3:   -76.45680588119154   -8.02517e-01   9.52017e-04 DIIS
-   @DF-UKS iter   4:   -76.45912034191690   -2.31446e-03   1.01016e-04 DIIS
-   @DF-UKS iter   5:   -76.45914002664813   -1.96847e-05   2.04677e-05 DIIS
-   @DF-UKS iter   6:   -76.45914082469754   -7.98049e-07   1.61197e-06 DIIS
-   @DF-UKS iter   7:   -76.45914082880880   -4.11126e-09   1.16199e-07 DIIS
-   @DF-UKS iter   8:   -76.45914082884286   -3.40634e-11   7.42146e-09 DIIS
-   @DF-UKS iter   9:   -76.45914082884289   -2.84217e-14   3.69983e-10 DIIS
-   @DF-UKS iter  10:   -76.45914082884298   -8.52651e-14   3.25601e-11 DIIS
+   @DF-UKS iter SAD:   -76.08031840199953   -7.60803e+01   0.00000e+00 
+   @DF-UKS iter   1:   -76.27801403090662   -1.97696e-01   9.73962e-03 ADIIS/DIIS
+   @DF-UKS iter   2:   -75.65428927880754    6.23725e-01   1.87770e-02 ADIIS/DIIS
+   @DF-UKS iter   3:   -76.45889713039095   -8.04608e-01   3.92377e-04 ADIIS/DIIS
+   @DF-UKS iter   4:   -76.45909512278082   -1.97992e-04   1.51761e-04 ADIIS/DIIS
+   @DF-UKS iter   5:   -76.45914010067978   -4.49779e-05   1.95970e-05 DIIS
+   @DF-UKS iter   6:   -76.45914082190890   -7.21229e-07   2.01961e-06 DIIS
+   @DF-UKS iter   7:   -76.45914082882956   -6.92066e-09   8.34876e-08 DIIS
+   @DF-UKS iter   8:   -76.45914082884842   -1.88578e-11   1.04136e-08 DIIS
+   @DF-UKS iter   9:   -76.45914082884856   -1.42109e-13   3.57192e-10 DIIS
+   @DF-UKS iter  10:   -76.45914082884858   -1.42109e-14   1.90075e-11 DIIS
   Energy and wave function converged.
 
 
@@ -317,9 +329,9 @@ Scratch directory: /scratch/deprince/scratch/
       Nbeta    =    5.0000000031 ; deviation = 3.108e-09
       Ntotal   =   10.0000000062 ; deviation = 6.217e-09 
 
-   @Spin Contamination Metric:  -1.598721155E-14
+   @Spin Contamination Metric:  -8.881784197E-15
    @S^2 Expected:                0.000000000E+00
-   @S^2 Observed:               -1.598721155E-14
+   @S^2 Observed:               -8.881784197E-15
    @S   Expected:                0.000000000E+00
    @S   Observed:                0.000000000E+00
 
@@ -392,18 +404,20 @@ Scratch directory: /scratch/deprince/scratch/
               A 
     DOCC [     5 ]
     SOCC [     0 ]
+    NA   [     5 ]
+    NB   [     5 ]
 
-  @DF-UKS Final Energy:   -76.45914082884298
+  @DF-UKS Final Energy:   -76.45914082884858
 
    => Energetics <=
 
     Nuclear Repulsion Energy =              8.8014655645634061
-    One-Electron Energy =                -122.3530360269481605
-    Two-Electron Energy =                  45.4971098847357851
-    DFT Exchange-Correlation Energy =      -8.4046802511940157
+    One-Electron Energy =                -122.3530360183997630
+    Two-Electron Energy =                  45.4971098751182765
+    DFT Exchange-Correlation Energy =      -8.4046802501304949
     Empirical Dispersion Energy =           0.0000000000000000
     VV10 Nonlocal Energy =                  0.0000000000000000
-    Total Energy =                        -76.4591408288429761
+    Total Energy =                        -76.4591408288485752
 
   UHF NO Occupations:
   HONO-2 :    3  A 2.0000000
@@ -422,52 +436,52 @@ Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
 
 Properties computed using the SCF density matrix
 
-  Nuclear Dipole Moment: [e a0]
-     X:     0.0000      Y:     0.0000      Z:     1.0191
 
-  Electronic Dipole Moment: [e a0]
-     X:    -0.0000      Y:     0.0000      Z:    -0.2932
+ Multipole Moments:
 
-  Dipole Moment: [e a0]
-     X:    -0.0000      Y:     0.0000      Z:     0.7259     Total:     0.7259
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
 
-  Dipole Moment: [D]
-     X:    -0.0000      Y:     0.0000      Z:     1.8450     Total:     1.8450
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Y            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Z            :         -0.2932123            1.0190771            0.7258648
+ Magnitude           :                                                    0.7258648
 
+ ------------------------------------------------------------------------------------
 
-*** tstop() called on ed11 at Sat Apr 16 15:07:24 2022
+*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:11 2024
 Module time:
-	user time   =       8.27 seconds =       0.14 minutes
-	system time =       0.21 seconds =       0.00 minutes
-	total time  =          8 seconds =       0.13 minutes
+	user time   =       2.56 seconds =       0.04 minutes
+	system time =       0.22 seconds =       0.00 minutes
+	total time  =          3 seconds =       0.05 minutes
 Total time:
-	user time   =       8.27 seconds =       0.14 minutes
-	system time =       0.21 seconds =       0.00 minutes
-	total time  =          8 seconds =       0.13 minutes
-
-Scratch directory: /scratch/deprince/scratch/
+	user time   =       2.56 seconds =       0.04 minutes
+	system time =       0.22 seconds =       0.00 minutes
+	total time  =          3 seconds =       0.05 minutes
    => Loading Basis Set <=
 
     Name: (DEF2-TZVPPD AUX)
     Role: JKFIT
     Keyword: DF_BASIS_SCF
-    atoms 1   entry O          line   318 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-universal-jkfit.gbs 
-    atoms 2-3 entry H          line    18 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
 
    => Loading Basis Set <=
 
     Name: (DEF2-TZVPPD AUX)
     Role: RIFIT
     Keyword: DF_BASIS_CC
-    atoms 1   entry O          line   333 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-tzvppd-ri.gbs 
-    atoms 2-3 entry H          line    22 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-tzvppd-ri.gbs 
+    atoms 1   entry O          line   333 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-tzvppd-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-tzvppd-ri.gbs 
 
 
 Reading options from the HILBERT block
 Calling plugin hilbert.so.
 
 
-    Molecular point group: c1
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
     Full point group: C2v
 
     Geometry (in Angstrom), charge = 0, multiplicity = 1:
@@ -698,14 +712,14 @@ Calling plugin hilbert.so.
 
    => LibXC <=
 
-    Version 5.1.5
-    S. Lehtola, C. Steigemann, M. J. Oliveira, and M. A. Marques, SoftwareX 7, 1 (2018) (10.1016/j.softx.2017.11.002)
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
 
    => Composite Functional: TPSSH <= 
 
     TPSSh Hyb-GGA Exchange-Correlation Functional
 
-    V. N. Staroverov, G. E. Scuseria, J. Tao, and J. P. Perdew, J. Chem. Phys. 119, 12129 (2003) (10.1063/1.1626543)
+    V. N. Staroverov, G. E. Scuseria, J. Tao, and J. P. Perdew.,  J. Chem. Phys. 119, 12129 (2003) (10.1063/1.1626543)
 
     Deriv               =              1
     GGA                 =           TRUE
@@ -736,6 +750,7 @@ Calling plugin hilbert.so.
     Pruning Scheme         =           NONE
     Nuclear Scheme         =       TREUTLER
 
+    Blocking Scheme        =         OCTREE
     BS radius alpha        =              1
     Pruning alpha          =              1
     Radial Points          =             75
@@ -757,215 +772,233 @@ Calling plugin hilbert.so.
 
 
 
-    Guess energy:      -73.581996027681
+    Guess energy:      -73.582850070056
 
     ==>  Begin SCF Iterations <==
 
      Iter               energy                   dE          RMS |[F,P]| 
-        0     -76.408014659176      -2.826018631495       0.000532001744
-        1     -76.409181294696      -0.001166635521       0.000558048020
-        2     -76.408028964181       0.001152330515       0.000973261458
-        3     -76.409786191935      -0.001757227754       0.000009684121
-        4     -76.409786398238      -0.000000206302       0.000000867893
-        5     -76.409786399895      -0.000000001657       0.000000129511
-        6     -76.409786399931      -0.000000000036       0.000000013690
-        7     -76.409786399931      -0.000000000000       0.000000001969
-        8     -76.409786399931      -0.000000000000       0.000000000059
+        0     -76.453426515181      -2.870576445125       0.000059461228
+        1     -76.453443041585      -0.000016526404       0.000071034787
+        2     -76.453421584427       0.000021457157       0.000129543631
+        3     -76.453452987815      -0.000031403388       0.000001722402
+        4     -76.453452994107      -0.000000006292       0.000000140690
+        5     -76.453452994148      -0.000000000041       0.000000024069
+        6     -76.453452994149      -0.000000000001       0.000000001158
+        7     -76.453452994149       0.000000000000       0.000000000217
+        8     -76.453452994149      -0.000000000000       0.000000000005
 
     SCF iterations converged!
 
-    * Polaritonic UKS total energy:     -76.409786399931
 
-    dipole self energy (one electron):       0.074272900515
-    dipole self energy (two electron):      -0.026391984182
-    dipole self energy (total):              0.047880916333
+    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
+
+    one-electron part;        0.008573777086
+    two-electron part:       -0.002911692830
+    total:                    0.005662084256
 
 
-    ==> lambda-free contributions to dipole self energy <== 
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
-    one electron (xx):       5.724581242672
+    one electron (xx):       5.822321531223
     one electron (xy):       0.000000000000
     one electron (xz):       0.000000000000
-    one electron (yy):       7.637935999290
+    one electron (yy):       7.705328020596
     one electron (yz):      -0.000000000000
-    one electron (zz):       6.641117898061
+    one electron (zz):       6.859021669007
 
-    two electron (xx):      -1.798237471037
-    two electron (xy):       0.000000000000
+    two electron (xx):      -1.787601320293
+    two electron (xy):      -0.000000000000
     two electron (xz):      -0.000000000000
-    two electron (yy):      -2.852807277418
-    two electron (yz):       0.000000000000
-    two electron (zz):      -2.359841574840
+    two electron (yy):      -2.834977655642
+    two electron (yz):      -0.000000000000
+    two electron (zz):      -2.329354264389
+
+    total (xx):              4.034720210929
+    total (xy):              0.000000000000
+    total (xz):              0.000000000000
+    total (yy):              4.870350364954
+    total (yz):             -0.000000000000
+    total (zz):              4.529667404618
+
+    * Polaritonic UKS total energy:     -76.453452994149
 
  #  #
  Irrep: 1
-      1:  -19.042949256931426
-      2:   -0.969973027505657
-      3:   -0.483422668472082
-      4:   -0.353318583892935
-      5:   -0.274568367084290
-      6:    0.046265430297326
-      7:    0.106125753436745
-      8:    0.147618868755568
-      9:    0.204151979120176
-     10:    0.228760345077071
-     11:    0.241543696324625
-     12:    0.248241205027805
-     13:    0.302421438096363
-     14:    0.317727725048214
-     15:    0.363363429167550
-     16:    0.383816554847182
-     17:    0.400757160298378
-     18:    0.494081590673980
-     19:    0.506163029284606
-     20:    0.533211284543415
-     21:    0.552562247655265
-     22:    0.611924611666247
-     23:    0.671715166613303
-     24:    0.720030692485219
-     25:    0.724153887934974
-     26:    0.748394466140528
-     27:    0.909502351815308
-     28:    0.971014666342169
-     29:    1.003160783382720
-     30:    1.039343458587893
-     31:    1.132971023817971
-     32:    1.184638023635589
-     33:    1.301376376541233
-     34:    1.360647107543794
-     35:    1.840291716196392
-     36:    1.893616639916890
-     37:    1.968461805997260
-     38:    2.088112235438059
-     39:    2.228993175114296
-     40:    2.566572885785745
-     41:    2.739475324628643
-     42:    2.754652426446960
-     43:    3.012459551480603
-     44:    3.141641617595279
-     45:    3.218529175518115
-     46:    3.302279229739696
-     47:    3.353201200522272
-     48:    3.363837880876395
-     49:    3.384554960105274
-     50:    3.631101767212848
-     51:    3.826832071761178
-     52:    3.882391931293647
-     53:    3.975683054413467
-     54:    4.013849193084035
-     55:    4.101551042160420
-     56:    4.144614413112738
-     57:    4.219978474223999
-     58:    4.649781055909365
-     59:    4.650850096239192
-     60:    4.924294424844525
-     61:    5.115626248193598
-     62:    5.597735143296524
-     63:    6.098740819140858
-     64:    6.369749944601524
-     65:    6.427298085198561
-     66:    6.559308791618242
-     67:    6.607320598768331
-     68:    6.705671874924273
-     69:    6.819192586956456
-     70:    6.934243574178125
-     71:    7.406346498013233
-     72:    7.508984113162803
-     73:    7.769054963811913
-     74:   43.832163137918087
+      1:  -19.062235784450881
+      2:   -0.977230298174144
+      3:   -0.498514578402174
+      4:   -0.368598456918138
+      5:   -0.290846396280274
+      6:   -0.003200172005075
+      7:    0.054907302050221
+      8:    0.087937351427405
+      9:    0.104711555737044
+     10:    0.140349757801743
+     11:    0.170370062389216
+     12:    0.198143452581375
+     13:    0.207276534581942
+     14:    0.229357385814947
+     15:    0.269656067072868
+     16:    0.279415337080352
+     17:    0.320418956741518
+     18:    0.405845483400199
+     19:    0.425197474396098
+     20:    0.457943449862331
+     21:    0.505466716029082
+     22:    0.512382726110406
+     23:    0.611917485373686
+     24:    0.673010263285795
+     25:    0.682674572996921
+     26:    0.683707741704820
+     27:    0.868319911268227
+     28:    0.945413797708180
+     29:    0.951848224681825
+     30:    1.012200002249195
+     31:    1.078297885706339
+     32:    1.144174776503246
+     33:    1.256716955652487
+     34:    1.315534191070162
+     35:    1.817333384016109
+     36:    1.874597790334158
+     37:    1.939999225325040
+     38:    2.059508880120234
+     39:    2.199182938475962
+     40:    2.536738747515714
+     41:    2.713356985243218
+     42:    2.734097372384575
+     43:    2.985822631643149
+     44:    3.120616137690614
+     45:    3.199702289555869
+     46:    3.279340231080094
+     47:    3.326954501298095
+     48:    3.339406411592172
+     49:    3.364722681989964
+     50:    3.608532336046758
+     51:    3.808315874801163
+     52:    3.862452667866518
+     53:    3.946860800680556
+     54:    3.991448725686789
+     55:    4.082928806629710
+     56:    4.121395969176882
+     57:    4.192657341115704
+     58:    4.628202268869437
+     59:    4.629660744485625
+     60:    4.902775482205484
+     61:    5.092947297774466
+     62:    5.578909384468102
+     63:    6.078355822487740
+     64:    6.352138860540643
+     65:    6.410922218507320
+     66:    6.541606282712683
+     67:    6.588155272573031
+     68:    6.682404633107468
+     69:    6.801213525054543
+     70:    6.916587989527590
+     71:    7.385370993893523
+     72:    7.489045378880864
+     73:    7.749150039597802
+     74:   43.812339018769372
 
 
  #  #
  Irrep: 1
-      1:  -19.042949256931450
-      2:   -0.969973027505702
-      3:   -0.483422668472102
-      4:   -0.353318583892944
-      5:   -0.274568367084296
-      6:    0.046265430297317
-      7:    0.106125753436738
-      8:    0.147618868755560
-      9:    0.204151979120171
-     10:    0.228760345077036
-     11:    0.241543696324621
-     12:    0.248241205027795
-     13:    0.302421438096359
-     14:    0.317727725048188
-     15:    0.363363429167600
-     16:    0.383816554847157
-     17:    0.400757160298387
-     18:    0.494081590673993
-     19:    0.506163029284606
-     20:    0.533211284543317
-     21:    0.552562247655272
-     22:    0.611924611666226
-     23:    0.671715166613300
-     24:    0.720030692485223
-     25:    0.724153887934993
-     26:    0.748394466140388
-     27:    0.909502351815335
-     28:    0.971014666342169
-     29:    1.003160783382443
-     30:    1.039343458587888
-     31:    1.132971023817972
-     32:    1.184638023635602
-     33:    1.301376376541215
-     34:    1.360647107543473
-     35:    1.840291716196391
-     36:    1.893616639916887
-     37:    1.968461805997243
-     38:    2.088112235437761
-     39:    2.228993175114242
-     40:    2.566572885785560
-     41:    2.739475324628589
-     42:    2.754652426446954
-     43:    3.012459551480421
-     44:    3.141641617595277
-     45:    3.218529175518094
-     46:    3.302279229739701
-     47:    3.353201200522151
-     48:    3.363837880876395
-     49:    3.384554960105263
-     50:    3.631101767212844
-     51:    3.826832071761183
-     52:    3.882391931293647
-     53:    3.975683054413470
-     54:    4.013849193084034
-     55:    4.101551042160417
-     56:    4.144614413112684
-     57:    4.219978474223994
-     58:    4.649781055909354
-     59:    4.650850096239173
-     60:    4.924294424844490
-     61:    5.115626248193329
-     62:    5.597735143296521
-     63:    6.098740819140854
-     64:    6.369749944601521
-     65:    6.427298085198555
-     66:    6.559308791618234
-     67:    6.607320598768331
-     68:    6.705671874924241
-     69:    6.819192586956439
-     70:    6.934243574178111
-     71:    7.406346498013222
-     72:    7.508984113162798
-     73:    7.769054963811756
-     74:   43.832163137918130
+      1:  -19.062235784450692
+      2:   -0.977230298173204
+      3:   -0.498514578401752
+      4:   -0.368598456918168
+      5:   -0.290846396280272
+      6:   -0.003200172004348
+      7:    0.054907302050201
+      8:    0.087937351427410
+      9:    0.104711555737087
+     10:    0.140349757801686
+     11:    0.170370062389697
+     12:    0.198143452581303
+     13:    0.207276534582627
+     14:    0.229357385814888
+     15:    0.269656067073339
+     16:    0.279415337080052
+     17:    0.320418956742480
+     18:    0.405845483400075
+     19:    0.425197474397286
+     20:    0.457943449862312
+     21:    0.505466716029632
+     22:    0.512382726110344
+     23:    0.611917485374431
+     24:    0.673010263285618
+     25:    0.682674572996996
+     26:    0.683707741706137
+     27:    0.868319911268559
+     28:    0.945413797708198
+     29:    0.951848224684866
+     30:    1.012200002249157
+     31:    1.078297885706848
+     32:    1.144174776502960
+     33:    1.256716955652654
+     34:    1.315534191073610
+     35:    1.817333384016122
+     36:    1.874597790334146
+     37:    1.939999225325320
+     38:    2.059508880122149
+     39:    2.199182938477706
+     40:    2.536738747516795
+     41:    2.713356985243951
+     42:    2.734097372384501
+     43:    2.985822631644086
+     44:    3.120616137690600
+     45:    3.199702289556027
+     46:    3.279340231080116
+     47:    3.326954501298280
+     48:    3.339406411592194
+     49:    3.364722681989946
+     50:    3.608532336046733
+     51:    3.808315874801165
+     52:    3.862452667866522
+     53:    3.946860800680598
+     54:    3.991448725686807
+     55:    4.082928806629717
+     56:    4.121395969177223
+     57:    4.192657341115583
+     58:    4.628202268869516
+     59:    4.629660744485794
+     60:    4.902775482206671
+     61:    5.092947297776695
+     62:    5.578909384468110
+     63:    6.078355822487894
+     64:    6.352138860540683
+     65:    6.410922218507345
+     66:    6.541606282712965
+     67:    6.588155272573050
+     68:    6.682404633107796
+     69:    6.801213525054523
+     70:    6.916587989527588
+     71:    7.385370993893450
+     72:    7.489045378881763
+     73:    7.749150039598937
+     74:   43.812339018768597
 
-    QEDFT total energy (xyz)..............................................................PASSED
+    QED-DFT total energy (xyz)............................................................PASSED
 
-Scratch directory: /scratch/deprince/scratch/
+Scratch directory: /tmp/
 
-*** tstart() called on ed11
-*** at Sat Apr 16 15:07:34 2022
+Scratch directory: /tmp/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
+*** at Mon Jul  1 13:31:14 2024
 
    => Loading Basis Set <=
 
     Name: DEF2-TZVPPD
     Role: ORBITAL
     Keyword: BASIS
-    atoms 1   entry O          line   218 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-tzvppd.gbs 
-    atoms 2-3 entry H          line    14 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-tzvppd.gbs 
+    atoms 1   entry O          line   218 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-tzvppd.gbs 
+    atoms 2-3 entry H          line    14 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-tzvppd.gbs 
 
 
          ---------------------------------------------------------
@@ -993,7 +1026,7 @@ Scratch directory: /scratch/deprince/scratch/
 
   Rotational constants: A =     25.12555  B =     13.37733  C =      8.72955 [cm^-1]
   Rotational constants: A = 753245.07149  B = 401042.16706  C = 261705.25473 [MHz]
-  Nuclear repulsion =    8.801465564563404
+  Nuclear repulsion =    8.801465564563406
 
   Charge       = 0
   Multiplicity = 1
@@ -1026,14 +1059,14 @@ Scratch directory: /scratch/deprince/scratch/
 
    => LibXC <=
 
-    Version 5.1.5
-    S. Lehtola, C. Steigemann, M. J. Oliveira, and M. A. Marques, SoftwareX 7, 1 (2018) (10.1016/j.softx.2017.11.002)
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
 
    => Composite Functional: TPSSH <= 
 
     TPSSh Hyb-GGA Exchange-Correlation Functional
 
-    V. N. Staroverov, G. E. Scuseria, J. Tao, and J. P. Perdew, J. Chem. Phys. 119, 12129 (2003) (10.1063/1.1626543)
+    V. N. Staroverov, G. E. Scuseria, J. Tao, and J. P. Perdew.,  J. Chem. Phys. 119, 12129 (2003) (10.1063/1.1626543)
 
     Deriv               =              1
     GGA                 =           TRUE
@@ -1064,12 +1097,13 @@ Scratch directory: /scratch/deprince/scratch/
     Pruning Scheme         =           NONE
     Nuclear Scheme         =       TREUTLER
 
+    Blocking Scheme        =         OCTREE
     BS radius alpha        =              1
     Pruning alpha          =              1
     Radial Points          =             75
     Spherical Points       =            302
-    Total Points           =          66726
-    Total Blocks           =            562
+    Total Points           =          66724
+    Total Blocks           =            560
     Max Points             =            256
     Max Functions          =             74
     Weights Tolerance      =       1.00E-15
@@ -1079,24 +1113,23 @@ Scratch directory: /scratch/deprince/scratch/
     Name: (DEF2-TZVPPD AUX)
     Role: JKFIT
     Keyword: DF_BASIS_SCF
-    atoms 1   entry O          line   318 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-universal-jkfit.gbs 
-    atoms 2-3 entry H          line    18 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
 
   ==> Integral Setup <==
 
-  DFHelper Memory: AOs need 0.006 GiB; user supplied 0.018 GiB. Using in-core AOs.
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
 
-  ==> MemDFJK: Density-Fitted J/K Matrices <==
-
-    J tasked:                   Yes
-    K tasked:                   Yes
-    wK tasked:                   No
-    OpenMP threads:               1
-    Memory [MiB]:                18
-    Algorithm:                 Core
-    Schwarz Cutoff:           1E-12
-    Mask sparsity (%):       0.0000
-    Fitting Condition:        1E-10
+    J tasked:                  Yes
+    K tasked:                  Yes
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:               18
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
 
    => Auxiliary Basis Set <=
 
@@ -1130,17 +1163,17 @@ Scratch directory: /scratch/deprince/scratch/
 
                            Total Energy        Delta E     RMS |[F,P]|
 
-   @DF-UKS iter SAD:   -76.08031840199082   -7.60803e+01   0.00000e+00 
-   @DF-UKS iter   1:   -76.27801403089887   -1.97696e-01   9.73962e-03 DIIS
-   @DF-UKS iter   2:   -75.65428927880447    6.23725e-01   1.87770e-02 DIIS
-   @DF-UKS iter   3:   -76.45680588118778   -8.02517e-01   9.52017e-04 DIIS
-   @DF-UKS iter   4:   -76.45912034191325   -2.31446e-03   1.01016e-04 DIIS
-   @DF-UKS iter   5:   -76.45914002664428   -1.96847e-05   2.04677e-05 DIIS
-   @DF-UKS iter   6:   -76.45914082469380   -7.98050e-07   1.61197e-06 DIIS
-   @DF-UKS iter   7:   -76.45914082880506   -4.11126e-09   1.16199e-07 DIIS
-   @DF-UKS iter   8:   -76.45914082883904   -3.39782e-11   7.42146e-09 DIIS
-   @DF-UKS iter   9:   -76.45914082883914   -9.94760e-14   3.69983e-10 DIIS
-   @DF-UKS iter  10:   -76.45914082883925   -1.13687e-13   3.25597e-11 DIIS
+   @DF-UKS iter SAD:   -76.08031840199693   -7.60803e+01   0.00000e+00 
+   @DF-UKS iter   1:   -76.27801403090443   -1.97696e-01   9.73962e-03 ADIIS/DIIS
+   @DF-UKS iter   2:   -75.65428927880733    6.23725e-01   1.87770e-02 ADIIS/DIIS
+   @DF-UKS iter   3:   -76.45889713038817   -8.04608e-01   3.92377e-04 ADIIS/DIIS
+   @DF-UKS iter   4:   -76.45909512277777   -1.97992e-04   1.51761e-04 ADIIS/DIIS
+   @DF-UKS iter   5:   -76.45914010067696   -4.49779e-05   1.95970e-05 DIIS
+   @DF-UKS iter   6:   -76.45914082190599   -7.21229e-07   2.01961e-06 DIIS
+   @DF-UKS iter   7:   -76.45914082882655   -6.92056e-09   8.34876e-08 DIIS
+   @DF-UKS iter   8:   -76.45914082884548   -1.89289e-11   1.04136e-08 DIIS
+   @DF-UKS iter   9:   -76.45914082884568   -1.98952e-13   3.57192e-10 DIIS
+   @DF-UKS iter  10:   -76.45914082884568    0.00000e+00   1.90075e-11 DIIS
   Energy and wave function converged.
 
 
@@ -1151,9 +1184,9 @@ Scratch directory: /scratch/deprince/scratch/
       Nbeta    =    5.0000000031 ; deviation = 3.108e-09
       Ntotal   =   10.0000000062 ; deviation = 6.217e-09 
 
-   @Spin Contamination Metric:  -2.220446049E-14
+   @Spin Contamination Metric:  -3.019806627E-14
    @S^2 Expected:                0.000000000E+00
-   @S^2 Observed:               -2.220446049E-14
+   @S^2 Observed:               -3.019806627E-14
    @S   Expected:                0.000000000E+00
    @S   Observed:                0.000000000E+00
 
@@ -1226,18 +1259,20 @@ Scratch directory: /scratch/deprince/scratch/
               A 
     DOCC [     5 ]
     SOCC [     0 ]
+    NA   [     5 ]
+    NB   [     5 ]
 
-  @DF-UKS Final Energy:   -76.45914082883925
+  @DF-UKS Final Energy:   -76.45914082884568
 
    => Energetics <=
 
-    Nuclear Repulsion Energy =              8.8014655645634043
-    One-Electron Energy =                -122.3530360269419077
-    Two-Electron Energy =                  45.4971098847324740
-    DFT Exchange-Correlation Energy =      -8.4046802511932128
+    Nuclear Repulsion Energy =              8.8014655645634061
+    One-Electron Energy =                -122.3530360183946186
+    Two-Electron Energy =                  45.4971098751153207
+    DFT Exchange-Correlation Energy =      -8.4046802501297897
     Empirical Dispersion Energy =           0.0000000000000000
     VV10 Nonlocal Energy =                  0.0000000000000000
-    Total Energy =                        -76.4591408288392529
+    Total Energy =                        -76.4591408288456762
 
   UHF NO Occupations:
   HONO-2 :    3  A 2.0000000
@@ -1256,52 +1291,52 @@ Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
 
 Properties computed using the SCF density matrix
 
-  Nuclear Dipole Moment: [e a0]
-     X:     0.0000      Y:     1.0191      Z:     0.0000
 
-  Electronic Dipole Moment: [e a0]
-     X:     0.0000      Y:    -0.2932      Z:     0.0000
+ Multipole Moments:
 
-  Dipole Moment: [e a0]
-     X:     0.0000      Y:     0.7259      Z:     0.0000     Total:     0.7259
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
 
-  Dipole Moment: [D]
-     X:     0.0000      Y:     1.8450      Z:     0.0000     Total:     1.8450
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Y            :         -0.2932123            1.0190771            0.7258648
+ Dipole Z            :         -0.0000000            0.0000000           -0.0000000
+ Magnitude           :                                                    0.7258648
 
+ ------------------------------------------------------------------------------------
 
-*** tstop() called on ed11 at Sat Apr 16 15:07:43 2022
+*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:16 2024
 Module time:
-	user time   =       8.72 seconds =       0.15 minutes
+	user time   =       2.49 seconds =       0.04 minutes
 	system time =       0.09 seconds =       0.00 minutes
-	total time  =          9 seconds =       0.15 minutes
+	total time  =          2 seconds =       0.03 minutes
 Total time:
-	user time   =      26.13 seconds =       0.44 minutes
-	system time =       0.37 seconds =       0.01 minutes
-	total time  =         27 seconds =       0.45 minutes
-
-Scratch directory: /scratch/deprince/scratch/
+	user time   =       8.10 seconds =       0.13 minutes
+	system time =       0.35 seconds =       0.01 minutes
+	total time  =          8 seconds =       0.13 minutes
    => Loading Basis Set <=
 
     Name: (DEF2-TZVPPD AUX)
     Role: JKFIT
     Keyword: DF_BASIS_SCF
-    atoms 1   entry O          line   318 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-universal-jkfit.gbs 
-    atoms 2-3 entry H          line    18 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
 
    => Loading Basis Set <=
 
     Name: (DEF2-TZVPPD AUX)
     Role: RIFIT
     Keyword: DF_BASIS_CC
-    atoms 1   entry O          line   333 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-tzvppd-ri.gbs 
-    atoms 2-3 entry H          line    22 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-tzvppd-ri.gbs 
+    atoms 1   entry O          line   333 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-tzvppd-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-tzvppd-ri.gbs 
 
 
 Reading options from the HILBERT block
 Calling plugin hilbert.so.
 
 
-    Molecular point group: c1
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
     Full point group: C2v
 
     Geometry (in Angstrom), charge = 0, multiplicity = 1:
@@ -1532,14 +1567,14 @@ Calling plugin hilbert.so.
 
    => LibXC <=
 
-    Version 5.1.5
-    S. Lehtola, C. Steigemann, M. J. Oliveira, and M. A. Marques, SoftwareX 7, 1 (2018) (10.1016/j.softx.2017.11.002)
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
 
    => Composite Functional: TPSSH <= 
 
     TPSSh Hyb-GGA Exchange-Correlation Functional
 
-    V. N. Staroverov, G. E. Scuseria, J. Tao, and J. P. Perdew, J. Chem. Phys. 119, 12129 (2003) (10.1063/1.1626543)
+    V. N. Staroverov, G. E. Scuseria, J. Tao, and J. P. Perdew.,  J. Chem. Phys. 119, 12129 (2003) (10.1063/1.1626543)
 
     Deriv               =              1
     GGA                 =           TRUE
@@ -1570,12 +1605,13 @@ Calling plugin hilbert.so.
     Pruning Scheme         =           NONE
     Nuclear Scheme         =       TREUTLER
 
+    Blocking Scheme        =         OCTREE
     BS radius alpha        =              1
     Pruning alpha          =              1
     Radial Points          =             75
     Spherical Points       =            302
-    Total Points           =          66726
-    Total Blocks           =            562
+    Total Points           =          66724
+    Total Blocks           =            560
     Max Points             =            256
     Max Functions          =             74
     Weights Tolerance      =       1.00E-15
@@ -1591,215 +1627,233 @@ Calling plugin hilbert.so.
 
 
 
-    Guess energy:      -73.581996027677
+    Guess energy:      -73.582850070053
 
     ==>  Begin SCF Iterations <==
 
      Iter               energy                   dE          RMS |[F,P]| 
-        0     -76.408014659171      -2.826018631494       0.000532001744
-        1     -76.409181294692      -0.001166635521       0.000558048020
-        2     -76.408028964177       0.001152330515       0.000973261458
-        3     -76.409786191931      -0.001757227754       0.000009684121
-        4     -76.409786398233      -0.000000206302       0.000000867893
-        5     -76.409786399890      -0.000000001657       0.000000129511
-        6     -76.409786399926      -0.000000000036       0.000000013690
-        7     -76.409786399927      -0.000000000000       0.000000001969
-        8     -76.409786399927      -0.000000000000       0.000000000059
+        0     -76.453426515178      -2.870576445124       0.000059461228
+        1     -76.453443041582      -0.000016526404       0.000071034787
+        2     -76.453421584424       0.000021457158       0.000129543631
+        3     -76.453452987812      -0.000031403388       0.000001722402
+        4     -76.453452994104      -0.000000006292       0.000000140690
+        5     -76.453452994145      -0.000000000041       0.000000024069
+        6     -76.453452994147      -0.000000000001       0.000000001158
+        7     -76.453452994147       0.000000000000       0.000000000217
+        8     -76.453452994147      -0.000000000000       0.000000000005
 
     SCF iterations converged!
 
-    * Polaritonic UKS total energy:     -76.409786399927
 
-    dipole self energy (one electron):       0.074272900515
-    dipole self energy (two electron):      -0.026391984182
-    dipole self energy (total):              0.047880916333
+    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
+
+    one-electron part;        0.008573777086
+    two-electron part:       -0.002911692830
+    total:                    0.005662084256
 
 
-    ==> lambda-free contributions to dipole self energy <== 
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
-    one electron (xx):       5.724581242675
+    one electron (xx):       5.822321531225
     one electron (xy):       0.000000000000
     one electron (xz):      -0.000000000000
-    one electron (yy):       7.637935999293
-    one electron (yz):      -0.000000000000
-    one electron (zz):       6.641117898064
+    one electron (yy):       7.705328020600
+    one electron (yz):       0.000000000001
+    one electron (zz):       6.859021669009
 
-    two electron (xx):      -1.798237471038
+    two electron (xx):      -1.787601320294
     two electron (xy):      -0.000000000000
-    two electron (xz):       0.000000000000
-    two electron (yy):      -2.852807277419
+    two electron (xz):      -0.000000000000
+    two electron (yy):      -2.834977655643
     two electron (yz):       0.000000000000
-    two electron (zz):      -2.359841574841
+    two electron (zz):      -2.329354264389
+
+    total (xx):              4.034720210931
+    total (xy):              0.000000000000
+    total (xz):             -0.000000000000
+    total (yy):              4.870350364956
+    total (yz):              0.000000000001
+    total (zz):              4.529667404620
+
+    * Polaritonic UKS total energy:     -76.453452994147
 
  #  #
  Irrep: 1
-      1:  -19.042949256931522
-      2:   -0.969973027505460
-      3:   -0.483422668472001
-      4:   -0.353318583892867
-      5:   -0.274568367084348
-      6:    0.046265430297527
-      7:    0.106125753436759
-      8:    0.147618868755652
-      9:    0.204151979120660
-     10:    0.228760345078055
-     11:    0.241543696325202
-     12:    0.248241205027901
-     13:    0.302421438096416
-     14:    0.317727725050261
-     15:    0.363363429169442
-     16:    0.383816554848299
-     17:    0.400757160298475
-     18:    0.494081590675204
-     19:    0.506163029284445
-     20:    0.533211284549013
-     21:    0.552562247656302
-     22:    0.611924611667308
-     23:    0.671715166617236
-     24:    0.720030692484896
-     25:    0.724153887935762
-     26:    0.748394466146883
-     27:    0.909502351825712
-     28:    0.971014666342342
-     29:    1.003160783393048
-     30:    1.039343458588350
-     31:    1.132971023818974
-     32:    1.184638023637189
-     33:    1.301376376546618
-     34:    1.360647107555969
-     35:    1.840291716196331
-     36:    1.893616639916923
-     37:    1.968461805997939
-     38:    2.088112235442221
-     39:    2.228993175131690
-     40:    2.566572885789150
-     41:    2.739475324634744
-     42:    2.754652426446048
-     43:    3.012459551480644
-     44:    3.141641617595322
-     45:    3.218529175519177
-     46:    3.302279229738115
-     47:    3.353201200527733
-     48:    3.363837880876824
-     49:    3.384554960105340
-     50:    3.631101767213020
-     51:    3.826832071761175
-     52:    3.882391931293847
-     53:    3.975683054413862
-     54:    4.013849193084079
-     55:    4.101551042160324
-     56:    4.144614413114459
-     57:    4.219978474224733
-     58:    4.649781055911933
-     59:    4.650850096239330
-     60:    4.924294424852130
-     61:    5.115626248201015
-     62:    5.597735143296684
-     63:    6.098740819141300
-     64:    6.369749944601721
-     65:    6.427298085198961
-     66:    6.559308791618675
-     67:    6.607320598768613
-     68:    6.705671874924917
-     69:    6.819192586956479
-     70:    6.934243574179040
-     71:    7.406346498013781
-     72:    7.508984113164768
-     73:    7.769054963814999
-     74:   43.832163137918229
+      1:  -19.062235784446173
+      2:   -0.977230298165689
+      3:   -0.498514578398148
+      4:   -0.368598456909241
+      5:   -0.290846396269034
+      6:   -0.003200172007591
+      7:    0.054907302046618
+      8:    0.087937351424053
+      9:    0.104711555731182
+     10:    0.140349757798570
+     11:    0.170370062387423
+     12:    0.198143452577624
+     13:    0.207276534580307
+     14:    0.229357385810342
+     15:    0.269656067071105
+     16:    0.279415337073702
+     17:    0.320418956741352
+     18:    0.405845483396224
+     19:    0.425197474398700
+     20:    0.457943449865792
+     21:    0.505466716029363
+     22:    0.512382726111041
+     23:    0.611917485374642
+     24:    0.673010263283445
+     25:    0.682674572997430
+     26:    0.683707741708959
+     27:    0.868319911267526
+     28:    0.945413797707090
+     29:    0.951848224694971
+     30:    1.012200002248350
+     31:    1.078297885704361
+     32:    1.144174776501104
+     33:    1.256716955646649
+     34:    1.315534191071916
+     35:    1.817333384023808
+     36:    1.874597790340049
+     37:    1.939999225331906
+     38:    2.059508880126796
+     39:    2.199182938469235
+     40:    2.536738747502059
+     41:    2.713356985231221
+     42:    2.734097372392098
+     43:    2.985822631646263
+     44:    3.120616137686749
+     45:    3.199702289551426
+     46:    3.279340231075122
+     47:    3.326954501296137
+     48:    3.339406411584918
+     49:    3.364722681983529
+     50:    3.608532336041325
+     51:    3.808315874796028
+     52:    3.862452667856037
+     53:    3.946860800667888
+     54:    3.991448725681159
+     55:    4.082928806630272
+     56:    4.121395969175683
+     57:    4.192657341107066
+     58:    4.628202268870609
+     59:    4.629660744480717
+     60:    4.902775482195522
+     61:    5.092947297760416
+     62:    5.578909384479580
+     63:    6.078355822495023
+     64:    6.352138860550400
+     65:    6.410922218518750
+     66:    6.541606282718606
+     67:    6.588155272583784
+     68:    6.682404633118129
+     69:    6.801213525063432
+     70:    6.916587989536812
+     71:    7.385370993902353
+     72:    7.489045378877549
+     73:    7.749150039597758
+     74:   43.812339018775333
 
 
  #  #
  Irrep: 1
-      1:  -19.042949256931522
-      2:   -0.969973027505412
-      3:   -0.483422668471996
-      4:   -0.353318583892859
-      5:   -0.274568367084349
-      6:    0.046265430297482
-      7:    0.106125753436759
-      8:    0.147618868755654
-      9:    0.204151979120664
-     10:    0.228760345078097
-     11:    0.241543696325204
-     12:    0.248241205027904
-     13:    0.302421438096411
-     14:    0.317727725050295
-     15:    0.363363429169554
-     16:    0.383816554848335
-     17:    0.400757160298496
-     18:    0.494081590675245
-     19:    0.506163029284439
-     20:    0.533211284549098
-     21:    0.552562247656305
-     22:    0.611924611667337
-     23:    0.671715166617283
-     24:    0.720030692484883
-     25:    0.724153887935845
-     26:    0.748394466146972
-     27:    0.909502351825605
-     28:    0.971014666342351
-     29:    1.003160783393173
-     30:    1.039343458588357
-     31:    1.132971023818979
-     32:    1.184638023637178
-     33:    1.301376376546538
-     34:    1.360647107556115
-     35:    1.840291716196329
-     36:    1.893616639916921
-     37:    1.968461805997947
-     38:    2.088112235442276
-     39:    2.228993175131368
-     40:    2.566572885789136
-     41:    2.739475324634685
-     42:    2.754652426446046
-     43:    3.012459551480660
-     44:    3.141641617595323
-     45:    3.218529175519160
-     46:    3.302279229738117
-     47:    3.353201200527602
-     48:    3.363837880876820
-     49:    3.384554960105341
-     50:    3.631101767213017
-     51:    3.826832071761176
-     52:    3.882391931293848
-     53:    3.975683054413858
-     54:    4.013849193084079
-     55:    4.101551042160329
-     56:    4.144614413114486
-     57:    4.219978474224731
-     58:    4.649781055911885
-     59:    4.650850096239329
-     60:    4.924294424852010
-     61:    5.115626248200983
-     62:    5.597735143296686
-     63:    6.098740819141296
-     64:    6.369749944601721
-     65:    6.427298085198963
-     66:    6.559308791618665
-     67:    6.607320598768620
-     68:    6.705671874924922
-     69:    6.819192586956479
-     70:    6.934243574179037
-     71:    7.406346498013776
-     72:    7.508984113164715
-     73:    7.769054963814928
-     74:   43.832163137918229
+      1:  -19.062235784446159
+      2:   -0.977230298164373
+      3:   -0.498514578398437
+      4:   -0.368598456909218
+      5:   -0.290846396269030
+      6:   -0.003200172007499
+      7:    0.054907302046542
+      8:    0.087937351424059
+      9:    0.104711555731181
+     10:    0.140349757798439
+     11:    0.170370062387242
+     12:    0.198143452577630
+     13:    0.207276534579843
+     14:    0.229357385810258
+     15:    0.269656067070584
+     16:    0.279415337072968
+     17:    0.320418956739336
+     18:    0.405845483395146
+     19:    0.425197474397959
+     20:    0.457943449865697
+     21:    0.505466716029226
+     22:    0.512382726111000
+     23:    0.611917485374367
+     24:    0.673010263283700
+     25:    0.682674572997395
+     26:    0.683707741708309
+     27:    0.868319911264062
+     28:    0.945413797707091
+     29:    0.951848224692843
+     30:    1.012200002248391
+     31:    1.078297885704000
+     32:    1.144174776499683
+     33:    1.256716955645431
+     34:    1.315534191070237
+     35:    1.817333384023817
+     36:    1.874597790340081
+     37:    1.939999225331829
+     38:    2.059508880125214
+     39:    2.199182938464582
+     40:    2.536738747502120
+     41:    2.713356985230186
+     42:    2.734097372392117
+     43:    2.985822631644160
+     44:    3.120616137686772
+     45:    3.199702289551404
+     46:    3.279340231074990
+     47:    3.326954501296906
+     48:    3.339406411584887
+     49:    3.364722681983539
+     50:    3.608532336041241
+     51:    3.808315874796028
+     52:    3.862452667856034
+     53:    3.946860800667915
+     54:    3.991448725681173
+     55:    4.082928806630279
+     56:    4.121395969175263
+     57:    4.192657341106975
+     58:    4.628202268870598
+     59:    4.629660744480127
+     60:    4.902775482193459
+     61:    5.092947297760690
+     62:    5.578909384479593
+     63:    6.078355822495046
+     64:    6.352138860550405
+     65:    6.410922218518762
+     66:    6.541606282718341
+     67:    6.588155272583807
+     68:    6.682404633117991
+     69:    6.801213525063458
+     70:    6.916587989536766
+     71:    7.385370993902218
+     72:    7.489045378876320
+     73:    7.749150039598498
+     74:   43.812339018775361
 
-    QEDFT total energy (zxy)..............................................................PASSED
+    QED-DFT total energy (zxy)............................................................PASSED
 
-Scratch directory: /scratch/deprince/scratch/
+Scratch directory: /tmp/
 
-*** tstart() called on ed11
-*** at Sat Apr 16 15:07:52 2022
+Scratch directory: /tmp/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
+*** at Mon Jul  1 13:31:20 2024
 
    => Loading Basis Set <=
 
     Name: DEF2-TZVPPD
     Role: ORBITAL
     Keyword: BASIS
-    atoms 1   entry O          line   218 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-tzvppd.gbs 
-    atoms 2-3 entry H          line    14 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-tzvppd.gbs 
+    atoms 1   entry O          line   218 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-tzvppd.gbs 
+    atoms 2-3 entry H          line    14 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-tzvppd.gbs 
 
 
          ---------------------------------------------------------
@@ -1827,7 +1881,7 @@ Scratch directory: /scratch/deprince/scratch/
 
   Rotational constants: A =     25.12555  B =     13.37733  C =      8.72955 [cm^-1]
   Rotational constants: A = 753245.07149  B = 401042.16706  C = 261705.25473 [MHz]
-  Nuclear repulsion =    8.801465564563404
+  Nuclear repulsion =    8.801465564563406
 
   Charge       = 0
   Multiplicity = 1
@@ -1860,14 +1914,14 @@ Scratch directory: /scratch/deprince/scratch/
 
    => LibXC <=
 
-    Version 5.1.5
-    S. Lehtola, C. Steigemann, M. J. Oliveira, and M. A. Marques, SoftwareX 7, 1 (2018) (10.1016/j.softx.2017.11.002)
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
 
    => Composite Functional: TPSSH <= 
 
     TPSSh Hyb-GGA Exchange-Correlation Functional
 
-    V. N. Staroverov, G. E. Scuseria, J. Tao, and J. P. Perdew, J. Chem. Phys. 119, 12129 (2003) (10.1063/1.1626543)
+    V. N. Staroverov, G. E. Scuseria, J. Tao, and J. P. Perdew.,  J. Chem. Phys. 119, 12129 (2003) (10.1063/1.1626543)
 
     Deriv               =              1
     GGA                 =           TRUE
@@ -1898,11 +1952,12 @@ Scratch directory: /scratch/deprince/scratch/
     Pruning Scheme         =           NONE
     Nuclear Scheme         =       TREUTLER
 
+    Blocking Scheme        =         OCTREE
     BS radius alpha        =              1
     Pruning alpha          =              1
     Radial Points          =             75
     Spherical Points       =            302
-    Total Points           =          66726
+    Total Points           =          66724
     Total Blocks           =            554
     Max Points             =            255
     Max Functions          =             74
@@ -1913,24 +1968,23 @@ Scratch directory: /scratch/deprince/scratch/
     Name: (DEF2-TZVPPD AUX)
     Role: JKFIT
     Keyword: DF_BASIS_SCF
-    atoms 1   entry O          line   318 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-universal-jkfit.gbs 
-    atoms 2-3 entry H          line    18 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
 
   ==> Integral Setup <==
 
-  DFHelper Memory: AOs need 0.006 GiB; user supplied 0.019 GiB. Using in-core AOs.
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
 
-  ==> MemDFJK: Density-Fitted J/K Matrices <==
-
-    J tasked:                   Yes
-    K tasked:                   Yes
-    wK tasked:                   No
-    OpenMP threads:               1
-    Memory [MiB]:                19
-    Algorithm:                 Core
-    Schwarz Cutoff:           1E-12
-    Mask sparsity (%):       0.0000
-    Fitting Condition:        1E-10
+    J tasked:                  Yes
+    K tasked:                  Yes
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:               19
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
 
    => Auxiliary Basis Set <=
 
@@ -1964,17 +2018,17 @@ Scratch directory: /scratch/deprince/scratch/
 
                            Total Energy        Delta E     RMS |[F,P]|
 
-   @DF-UKS iter SAD:   -76.08031840200825   -7.60803e+01   0.00000e+00 
-   @DF-UKS iter   1:   -76.27801403091472   -1.97696e-01   9.73962e-03 DIIS
-   @DF-UKS iter   2:   -75.65428927881123    6.23725e-01   1.87770e-02 DIIS
-   @DF-UKS iter   3:   -76.45680588120639   -8.02517e-01   9.52017e-04 DIIS
-   @DF-UKS iter   4:   -76.45912034193189   -2.31446e-03   1.01016e-04 DIIS
-   @DF-UKS iter   5:   -76.45914002666296   -1.96847e-05   2.04677e-05 DIIS
-   @DF-UKS iter   6:   -76.45914082471256   -7.98050e-07   1.61197e-06 DIIS
-   @DF-UKS iter   7:   -76.45914082882388   -4.11131e-09   1.16199e-07 DIIS
-   @DF-UKS iter   8:   -76.45914082885781   -3.39355e-11   7.42146e-09 DIIS
-   @DF-UKS iter   9:   -76.45914082885795   -1.42109e-13   3.69982e-10 DIIS
-   @DF-UKS iter  10:   -76.45914082885801   -5.68434e-14   3.25597e-11 DIIS
+   @DF-UKS iter SAD:   -76.08031840199763   -7.60803e+01   0.00000e+00 
+   @DF-UKS iter   1:   -76.27801403090498   -1.97696e-01   9.73962e-03 ADIIS/DIIS
+   @DF-UKS iter   2:   -75.65428927880610    6.23725e-01   1.87770e-02 ADIIS/DIIS
+   @DF-UKS iter   3:   -76.45889713038912   -8.04608e-01   3.92377e-04 ADIIS/DIIS
+   @DF-UKS iter   4:   -76.45909512277873   -1.97992e-04   1.51761e-04 ADIIS/DIIS
+   @DF-UKS iter   5:   -76.45914010067796   -4.49779e-05   1.95970e-05 DIIS
+   @DF-UKS iter   6:   -76.45914082190698   -7.21229e-07   2.01961e-06 DIIS
+   @DF-UKS iter   7:   -76.45914082882749   -6.92050e-09   8.34876e-08 DIIS
+   @DF-UKS iter   8:   -76.45914082884629   -1.88010e-11   1.04136e-08 DIIS
+   @DF-UKS iter   9:   -76.45914082884656   -2.70006e-13   3.57191e-10 DIIS
+   @DF-UKS iter  10:   -76.45914082884660   -4.26326e-14   1.90071e-11 DIIS
   Energy and wave function converged.
 
 
@@ -1985,9 +2039,9 @@ Scratch directory: /scratch/deprince/scratch/
       Nbeta    =    5.0000000031 ; deviation = 3.108e-09
       Ntotal   =   10.0000000062 ; deviation = 6.217e-09 
 
-   @Spin Contamination Metric:  -2.486899575E-14
+   @Spin Contamination Metric:  -3.286260153E-14
    @S^2 Expected:                0.000000000E+00
-   @S^2 Observed:               -2.486899575E-14
+   @S^2 Observed:               -3.286260153E-14
    @S   Expected:                0.000000000E+00
    @S   Observed:                0.000000000E+00
 
@@ -2060,18 +2114,20 @@ Scratch directory: /scratch/deprince/scratch/
               A 
     DOCC [     5 ]
     SOCC [     0 ]
+    NA   [     5 ]
+    NB   [     5 ]
 
-  @DF-UKS Final Energy:   -76.45914082885801
+  @DF-UKS Final Energy:   -76.45914082884660
 
    => Energetics <=
 
-    Nuclear Repulsion Energy =              8.8014655645634043
-    One-Electron Energy =                -122.3530360269628972
-    Two-Electron Energy =                  45.4971098847373199
-    DFT Exchange-Correlation Energy =      -8.4046802511958330
+    Nuclear Repulsion Energy =              8.8014655645634061
+    One-Electron Energy =                -122.3530360183966081
+    Two-Electron Energy =                  45.4971098751166636
+    DFT Exchange-Correlation Energy =      -8.4046802501300615
     Empirical Dispersion Energy =           0.0000000000000000
     VV10 Nonlocal Energy =                  0.0000000000000000
-    Total Energy =                        -76.4591408288580112
+    Total Energy =                        -76.4591408288465999
 
   UHF NO Occupations:
   HONO-2 :    3  A 2.0000000
@@ -2090,52 +2146,52 @@ Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
 
 Properties computed using the SCF density matrix
 
-  Nuclear Dipole Moment: [e a0]
-     X:     1.0191      Y:     0.0000      Z:     0.0000
 
-  Electronic Dipole Moment: [e a0]
-     X:    -0.2932      Y:     0.0000      Z:    -0.0000
+ Multipole Moments:
 
-  Dipole Moment: [e a0]
-     X:     0.7259      Y:     0.0000      Z:    -0.0000     Total:     0.7259
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
 
-  Dipole Moment: [D]
-     X:     1.8450      Y:     0.0000      Z:    -0.0000     Total:     1.8450
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :         -0.2932123            1.0190771            0.7258648
+ Dipole Y            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Z            :         -0.0000000            0.0000000           -0.0000000
+ Magnitude           :                                                    0.7258648
 
+ ------------------------------------------------------------------------------------
 
-*** tstop() called on ed11 at Sat Apr 16 15:08:01 2022
+*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:22 2024
 Module time:
-	user time   =       9.07 seconds =       0.15 minutes
+	user time   =       2.50 seconds =       0.04 minutes
 	system time =       0.07 seconds =       0.00 minutes
-	total time  =          9 seconds =       0.15 minutes
+	total time  =          2 seconds =       0.03 minutes
 Total time:
-	user time   =      44.67 seconds =       0.74 minutes
-	system time =       0.53 seconds =       0.01 minutes
-	total time  =         45 seconds =       0.75 minutes
-
-Scratch directory: /scratch/deprince/scratch/
+	user time   =      13.68 seconds =       0.23 minutes
+	system time =       0.47 seconds =       0.01 minutes
+	total time  =         14 seconds =       0.23 minutes
    => Loading Basis Set <=
 
     Name: (DEF2-TZVPPD AUX)
     Role: JKFIT
     Keyword: DF_BASIS_SCF
-    atoms 1   entry O          line   318 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-universal-jkfit.gbs 
-    atoms 2-3 entry H          line    18 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
 
    => Loading Basis Set <=
 
     Name: (DEF2-TZVPPD AUX)
     Role: RIFIT
     Keyword: DF_BASIS_CC
-    atoms 1   entry O          line   333 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-tzvppd-ri.gbs 
-    atoms 2-3 entry H          line    22 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/def2-tzvppd-ri.gbs 
+    atoms 1   entry O          line   333 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-tzvppd-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-tzvppd-ri.gbs 
 
 
 Reading options from the HILBERT block
 Calling plugin hilbert.so.
 
 
-    Molecular point group: c1
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
     Full point group: C2v
 
     Geometry (in Angstrom), charge = 0, multiplicity = 1:
@@ -2366,14 +2422,14 @@ Calling plugin hilbert.so.
 
    => LibXC <=
 
-    Version 5.1.5
-    S. Lehtola, C. Steigemann, M. J. Oliveira, and M. A. Marques, SoftwareX 7, 1 (2018) (10.1016/j.softx.2017.11.002)
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
 
    => Composite Functional: TPSSH <= 
 
     TPSSh Hyb-GGA Exchange-Correlation Functional
 
-    V. N. Staroverov, G. E. Scuseria, J. Tao, and J. P. Perdew, J. Chem. Phys. 119, 12129 (2003) (10.1063/1.1626543)
+    V. N. Staroverov, G. E. Scuseria, J. Tao, and J. P. Perdew.,  J. Chem. Phys. 119, 12129 (2003) (10.1063/1.1626543)
 
     Deriv               =              1
     GGA                 =           TRUE
@@ -2404,11 +2460,12 @@ Calling plugin hilbert.so.
     Pruning Scheme         =           NONE
     Nuclear Scheme         =       TREUTLER
 
+    Blocking Scheme        =         OCTREE
     BS radius alpha        =              1
     Pruning alpha          =              1
     Radial Points          =             75
     Spherical Points       =            302
-    Total Points           =          66726
+    Total Points           =          66724
     Total Blocks           =            554
     Max Points             =            255
     Max Functions          =             74
@@ -2425,204 +2482,214 @@ Calling plugin hilbert.so.
 
 
 
-    Guess energy:      -73.581996027695
+    Guess energy:      -73.582850070054
 
     ==>  Begin SCF Iterations <==
 
      Iter               energy                   dE          RMS |[F,P]| 
-        0     -76.408014659191      -2.826018631496       0.000532001744
-        1     -76.409181294711      -0.001166635521       0.000558048020
-        2     -76.408028964196       0.001152330515       0.000973261458
-        3     -76.409786191950      -0.001757227754       0.000009684121
-        4     -76.409786398253      -0.000000206302       0.000000867893
-        5     -76.409786399910      -0.000000001657       0.000000129511
-        6     -76.409786399946      -0.000000000036       0.000000013690
-        7     -76.409786399946      -0.000000000000       0.000000001969
-        8     -76.409786399946       0.000000000000       0.000000000059
+        0     -76.453426515179      -2.870576445124       0.000059461228
+        1     -76.453443041583      -0.000016526404       0.000071034787
+        2     -76.453421584425       0.000021457158       0.000129543631
+        3     -76.453452987813      -0.000031403388       0.000001722402
+        4     -76.453452994105      -0.000000006292       0.000000140690
+        5     -76.453452994146      -0.000000000041       0.000000024069
+        6     -76.453452994147      -0.000000000001       0.000000001158
+        7     -76.453452994147       0.000000000000       0.000000000217
+        8     -76.453452994147      -0.000000000000       0.000000000005
 
     SCF iterations converged!
 
-    * Polaritonic UKS total energy:     -76.409786399946
 
-    dipole self energy (one electron):       0.074272900515
-    dipole self energy (two electron):      -0.026391984182
-    dipole self energy (total):              0.047880916333
+    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
+
+    one-electron part;        0.008573777086
+    two-electron part:       -0.002911692830
+    total:                    0.005662084256
 
 
-    ==> lambda-free contributions to dipole self energy <== 
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
-    one electron (xx):       5.724581242665
-    one electron (xy):      -0.000000000000
+    one electron (xx):       5.822321531222
+    one electron (xy):       0.000000000000
     one electron (xz):       0.000000000000
-    one electron (yy):       7.637935999283
+    one electron (yy):       7.705328020599
     one electron (yz):       0.000000000000
-    one electron (zz):       6.641117898055
+    one electron (zz):       6.859021669009
 
-    two electron (xx):      -1.798237471036
+    two electron (xx):      -1.787601320293
     two electron (xy):      -0.000000000000
-    two electron (xz):      -0.000000000000
-    two electron (yy):      -2.852807277416
+    two electron (xz):       0.000000000000
+    two electron (yy):      -2.834977655643
     two electron (yz):      -0.000000000000
-    two electron (zz):      -2.359841574838
+    two electron (zz):      -2.329354264389
+
+    total (xx):              4.034720210929
+    total (xy):              0.000000000000
+    total (xz):              0.000000000000
+    total (yy):              4.870350364956
+    total (yz):              0.000000000000
+    total (zz):              4.529667404620
+
+    * Polaritonic UKS total energy:     -76.453452994147
 
  #  #
  Irrep: 1
-      1:  -19.042949256933472
-      2:   -0.969973027506851
-      3:   -0.483422668473321
-      4:   -0.353318583894211
-      5:   -0.274568367085552
-      6:    0.046265430296572
-      7:    0.106125753436096
-      8:    0.147618868755037
-      9:    0.204151979119876
-     10:    0.228760345077889
-     11:    0.241543696324450
-     12:    0.248241205027679
-     13:    0.302421438095855
-     14:    0.317727725048885
-     15:    0.363363429168418
-     16:    0.383816554846630
-     17:    0.400757160297531
-     18:    0.494081590674518
-     19:    0.506163029284062
-     20:    0.533211284550652
-     21:    0.552562247655264
-     22:    0.611924611667679
-     23:    0.671715166615217
-     24:    0.720030692483955
-     25:    0.724153887933663
-     26:    0.748394466143208
-     27:    0.909502351818137
-     28:    0.971014666341405
-     29:    1.003160783363919
-     30:    1.039343458587654
-     31:    1.132971023816386
-     32:    1.184638023635423
-     33:    1.301376376544857
-     34:    1.360647107542398
-     35:    1.840291716195441
-     36:    1.893616639915910
-     37:    1.968461805995713
-     38:    2.088112235425451
-     39:    2.228993175122408
-     40:    2.566572885775830
-     41:    2.739475324630881
-     42:    2.754652426444731
-     43:    3.012459551466483
-     44:    3.141641617594499
-     45:    3.218529175515683
-     46:    3.302279229738134
-     47:    3.353201200512416
-     48:    3.363837880875634
-     49:    3.384554960104357
-     50:    3.631101767211759
-     51:    3.826832071760229
-     52:    3.882391931292915
-     53:    3.975683054412705
-     54:    4.013849193083201
-     55:    4.101551042159399
-     56:    4.144614413108948
-     57:    4.219978474223179
-     58:    4.649781055909408
-     59:    4.650850096237200
-     60:    4.924294424846350
-     61:    5.115626248184610
-     62:    5.597735143295392
-     63:    6.098740819138887
-     64:    6.369749944600293
-     65:    6.427298085197178
-     66:    6.559308791617657
-     67:    6.607320598767045
-     68:    6.705671874922150
-     69:    6.819192586955075
-     70:    6.934243574176521
-     71:    7.406346498011673
-     72:    7.508984113161087
-     73:    7.769054963800192
-     74:   43.832163137914961
+      1:  -19.062235784453772
+      2:   -0.977230298177706
+      3:   -0.498514578404701
+      4:   -0.368598456923037
+      5:   -0.290846396286874
+      6:   -0.003200172002645
+      7:    0.054907302051194
+      8:    0.087937351428550
+      9:    0.104711555739877
+     10:    0.140349757802623
+     11:    0.170370062390266
+     12:    0.198143452583095
+     13:    0.207276534584180
+     14:    0.229357385816539
+     15:    0.269656067076676
+     16:    0.279415337081530
+     17:    0.320418956747559
+     18:    0.405845483402835
+     19:    0.425197474396673
+     20:    0.457943449859418
+     21:    0.505466716028476
+     22:    0.512382726109687
+     23:    0.611917485377493
+     24:    0.673010263284842
+     25:    0.682674572996316
+     26:    0.683707741705194
+     27:    0.868319911270153
+     28:    0.945413797708605
+     29:    0.951848224678755
+     30:    1.012200002249763
+     31:    1.078297885706053
+     32:    1.144174776506661
+     33:    1.256716955650940
+     34:    1.315534191071161
+     35:    1.817333384010976
+     36:    1.874597790329991
+     37:    1.939999225321489
+     38:    2.059508880106603
+     39:    2.199182938461613
+     40:    2.536738747493519
+     41:    2.713356985231378
+     42:    2.734097372378957
+     43:    2.985822631621188
+     44:    3.120616137692488
+     45:    3.199702289554665
+     46:    3.279340231080697
+     47:    3.326954501288561
+     48:    3.339406411595919
+     49:    3.364722681993311
+     50:    3.608532336050014
+     51:    3.808315874804356
+     52:    3.862452667872978
+     53:    3.946860800687805
+     54:    3.991448725689458
+     55:    4.082928806628749
+     56:    4.121395969177645
+     57:    4.192657341121214
+     58:    4.628202268868807
+     59:    4.629660744484616
+     60:    4.902775482192291
+     61:    5.092947297753774
+     62:    5.578909384461570
+     63:    6.078355822482471
+     64:    6.352138860535081
+     65:    6.410922218500823
+     66:    6.541606282707505
+     67:    6.588155272567014
+     68:    6.682404633099609
+     69:    6.801213525049469
+     70:    6.916587989521561
+     71:    7.385370993887789
+     72:    7.489045378871113
+     73:    7.749150039582285
+     74:   43.812339018764582
 
 
  #  #
  Irrep: 1
-      1:  -19.042949256933490
-      2:   -0.969973027506880
-      3:   -0.483422668473330
-      4:   -0.353318583894212
-      5:   -0.274568367085553
-      6:    0.046265430296563
-      7:    0.106125753436095
-      8:    0.147618868755039
-      9:    0.204151979119879
-     10:    0.228760345077904
-     11:    0.241543696324450
-     12:    0.248241205027677
-     13:    0.302421438095864
-     14:    0.317727725048919
-     15:    0.363363429168332
-     16:    0.383816554846658
-     17:    0.400757160297532
-     18:    0.494081590674482
-     19:    0.506163029284062
-     20:    0.533211284550731
-     21:    0.552562247655263
-     22:    0.611924611667704
-     23:    0.671715166615232
-     24:    0.720030692483940
-     25:    0.724153887933652
-     26:    0.748394466143292
-     27:    0.909502351818041
-     28:    0.971014666341400
-     29:    1.003160783364193
-     30:    1.039343458587648
-     31:    1.132971023816385
-     32:    1.184638023635375
-     33:    1.301376376544851
-     34:    1.360647107542510
-     35:    1.840291716195454
-     36:    1.893616639915906
-     37:    1.968461805995712
-     38:    2.088112235425539
-     39:    2.228993175122362
-     40:    2.566572885775797
-     41:    2.739475324630904
-     42:    2.754652426444738
-     43:    3.012459551466583
-     44:    3.141641617594505
-     45:    3.218529175515682
-     46:    3.302279229738127
-     47:    3.353201200512448
-     48:    3.363837880875634
-     49:    3.384554960104365
-     50:    3.631101767211758
-     51:    3.826832071760237
-     52:    3.882391931292924
-     53:    3.975683054412702
-     54:    4.013849193083198
-     55:    4.101551042159408
-     56:    4.144614413108971
-     57:    4.219978474223174
-     58:    4.649781055909409
-     59:    4.650850096237201
-     60:    4.924294424846360
-     61:    5.115626248184540
-     62:    5.597735143295397
-     63:    6.098740819138888
-     64:    6.369749944600296
-     65:    6.427298085197175
-     66:    6.559308791617662
-     67:    6.607320598767047
-     68:    6.705671874922130
-     69:    6.819192586955077
-     70:    6.934243574176515
-     71:    7.406346498011675
-     72:    7.508984113161115
-     73:    7.769054963800166
-     74:   43.832163137914975
+      1:  -19.062235784453794
+      2:   -0.977230298177549
+      3:   -0.498514578404635
+      4:   -0.368598456923043
+      5:   -0.290846396286852
+      6:   -0.003200172002672
+      7:    0.054907302051248
+      8:    0.087937351428554
+      9:    0.104711555739911
+     10:    0.140349757802707
+     11:    0.170370062390630
+     12:    0.198143452583103
+     13:    0.207276534584255
+     14:    0.229357385816568
+     15:    0.269656067077237
+     16:    0.279415337082062
+     17:    0.320418956748210
+     18:    0.405845483403621
+     19:    0.425197474396886
+     20:    0.457943449859407
+     21:    0.505466716028745
+     22:    0.512382726109698
+     23:    0.611917485376989
+     24:    0.673010263285083
+     25:    0.682674572996312
+     26:    0.683707741705263
+     27:    0.868319911270192
+     28:    0.945413797708565
+     29:    0.951848224683687
+     30:    1.012200002249774
+     31:    1.078297885706378
+     32:    1.144174776507014
+     33:    1.256716955650587
+     34:    1.315534191073779
+     35:    1.817333384010991
+     36:    1.874597790330025
+     37:    1.939999225321683
+     38:    2.059508880109987
+     39:    2.199182938460126
+     40:    2.536738747494752
+     41:    2.713356985231015
+     42:    2.734097372378936
+     43:    2.985822631625667
+     44:    3.120616137692490
+     45:    3.199702289554766
+     46:    3.279340231080952
+     47:    3.326954501289567
+     48:    3.339406411595908
+     49:    3.364722681993314
+     50:    3.608532336050047
+     51:    3.808315874804367
+     52:    3.862452667872998
+     53:    3.946860800687890
+     54:    3.991448725689418
+     55:    4.082928806628709
+     56:    4.121395969178359
+     57:    4.192657341121354
+     58:    4.628202268869056
+     59:    4.629660744484224
+     60:    4.902775482191419
+     61:    5.092947297755614
+     62:    5.578909384461563
+     63:    6.078355822482528
+     64:    6.352138860535065
+     65:    6.410922218500778
+     66:    6.541606282707557
+     67:    6.588155272566985
+     68:    6.682404633100007
+     69:    6.801213525049431
+     70:    6.916587989521771
+     71:    7.385370993887847
+     72:    7.489045378870673
+     73:    7.749150039582629
+     74:   43.812339018764568
 
-    QEDFT total energy (yzx)..............................................................PASSED
+    QED-DFT total energy (yzx)............................................................PASSED
 
-    Psi4 stopped on: Saturday, 16 April 2022 03:08PM
-    Psi4 wall time for execution: 0:00:55.98
+    Psi4 stopped on: Monday, 01 July 2024 01:31PM
+    Psi4 wall time for execution: 0:00:17.10
 
 *** Psi4 exiting successfully. Buy a developer a beer!

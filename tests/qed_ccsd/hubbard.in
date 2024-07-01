@@ -29,10 +29,6 @@ set hilbert {
   cavity_frequency         [0.0, 0.0, 1.028]
   cavity_coupling_strength [0.0, 0.0, 0.01]
 
-  #n_photon_states          1
-  #cavity_frequency         [0.0, 0.0, 0.0]
-  #cavity_coupling_strength [0.0, 0.0, 0.0]
-
   hubbard_hamiltonian true
   hubbard_t  0.5
   hubbard_u  1.0
