@@ -323,10 +323,10 @@ double PolaritonicUTDDFT::compute_energy() {
         outfile->Printf("        setting MAXDIM = N\n");
         maxdim = N;
     }
-    outfile->Printf("    No. states:                     %5i\n",N);
-    outfile->Printf("    No. roots:                      %5i\n",M);
-    outfile->Printf("    Max subspace dim:               %5i\n",maxdim);
-    outfile->Printf("    Initial subspace dim:           %5i\n",init_dim);
+    outfile->Printf("    No. requested roots:            %5i\n",M);
+    outfile->Printf("    Problem dimension:              %5i\n",N);
+    outfile->Printf("    Max subspace dimension:         %5i\n",maxdim);
+    outfile->Printf("    Initial subspace dimension:     %5i\n",init_dim);
 
     // (approximate) diagonal of Hamiltonian
     double * Hdiag = build_hamiltonian_diagonals();
