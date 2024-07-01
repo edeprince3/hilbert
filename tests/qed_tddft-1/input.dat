@@ -15,17 +15,6 @@ RKS_B3LYP_cc_pvdz = [0.263001195667,
                      0.797368119446,
                      0.856751194367]
 
-UKS_B3LYP_cc_pvdz = [0.240698951321,
-                     0.263001195667,
-                     0.269122724641,
-                     0.315056562381,
-                     0.315169421848,
-                     0.335248924487,
-                     0.359912987039,
-                     0.382196090115,
-                     0.427213676123,
-                     0.445996622580]
-
 molecule {
          O            0.000000000000     0.000000000000    -0.068516219320 
          H            0.000000000000    -0.790689573744     0.543701060715 
@@ -72,12 +61,4 @@ energy('qed-tddft')
 for n, ref in enumerate(RKS_B3LYP_cc_pvdz):
     ex_en = psi4.variable(f"QED-TDDFT ROOT 0 -> ROOT {n+1} EXCITATION ENERGY")
     compare_values(ref,ex_en, 4, f"Restricted QED-TDDFT excitation energy {n+1}")
-
-# unrestricted tddft
-set reference uks 
-energy('qed-tddft')
-
-for n, ref in enumerate(UKS_B3LYP_cc_pvdz):
-    ex_en = psi4.variable(f"QED-TDDFT ROOT 0 -> ROOT {n+1} EXCITATION ENERGY")
-    compare_values(ref,ex_en, 4, f"Unrestricted QED-TDDFT excitation energy {n+1}")
 
