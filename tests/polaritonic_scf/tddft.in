@@ -5,12 +5,6 @@ import hilbert
 import numpy as np
 
 molecule h2 {
-
-#h 0.0 0.0 0.0
-#h 0.0 0.0 r
-#o 
-#h 1 1.0
-#h 1 1.0 2 104.5
          O            0.000000000000     0.000000000000    -0.068516219320 
          H            0.000000000000    -0.790689573744     0.543701060715 
          H            0.000000000000     0.790689573744     0.543701060715 
@@ -46,14 +40,20 @@ activate(h2)
 
 h2.r = 0.76
 set num_roots 10
-
-#set wcombine false
-set reference rks
 set TDSCF_TDA false
 set TDSCF_STATES 10
-energy('td-b3lyp')
 set df_ints_io save
+set qed_dft_functional b3lyp
+
+# restricted tddft
 set reference rks
+energy('td-b3lyp')
 en,wfn = energy('b3lyp',return_wfn=True)
-energy('polaritonic-tddft',ref_wfn=wfn) 
+energy('qed-tddft',ref_wfn=wfn) 
+
+# restricted tddft
+set reference uks
+energy('td-b3lyp')
+en,wfn = energy('b3lyp',return_wfn=True)
+energy('qed-tddft',ref_wfn=wfn) 
 

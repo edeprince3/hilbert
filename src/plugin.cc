@@ -336,7 +336,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION POLARITONIC SCF -*/
 
         /*- functional for cavity QED-DFT -*/
-        options.add_str("CAVITY_QED_DFT_FUNCTIONAL", "B3LYP");
+        options.add_str("QED_DFT_FUNCTIONAL", "B3LYP");
 
         /*- number of photon number states -*/
         options.add_int("N_PHOTON_STATES", 1);

@@ -30,10 +30,10 @@ set points 5
 set reference uks
 #set dft_spherical_points 5810
 set {
-    cavity_qed_dft_functional 'pbe'
+    qed_dft_functional 'pbe'
 }
-g1 = np.asarray(gradient('polaritonic-uks',dertype=0))
-g2 = np.asarray(gradient('polaritonic-uks',dertype=1))
+g1 = np.asarray(gradient('qed-dft',dertype=0))
+g2 = np.asarray(gradient('qed-dft',dertype=1))
 diff = g2 - g1
 print('||g-g||',np.linalg.norm(diff))
 
