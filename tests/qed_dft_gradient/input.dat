@@ -13,7 +13,7 @@ symmetry c1
 }
 
 set {
-  basis sto-3g #cc-pvdz #def2-tzvppd #d-aug-cc-pv5z
+  basis sto-3g 
   scf_type df 
   e_convergence 1e-10
   d_convergence 1e-10 
@@ -26,14 +26,17 @@ set {
   cavity_coupling_strength [0.0, 0.0, 0.150221990521748]
 }
 
-set points 5
+set points 3
 set reference uks
-#set dft_spherical_points 5810
+set dft_spherical_points 590
 set {
     qed_dft_functional 'pbe'
 }
 g1 = np.asarray(gradient('qed-dft',dertype=0))
 g2 = np.asarray(gradient('qed-dft',dertype=1))
 diff = g2 - g1
-print('||g-g||',np.linalg.norm(diff))
+
+
+#print('||g-g||',np.linalg.norm(diff))
+compare_values(0.0, np.linalg.norm(diff), 5, "QED-DFT numerical versus analytic energy gradient") # TEST
 
