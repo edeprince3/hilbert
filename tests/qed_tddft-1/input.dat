@@ -4,13 +4,18 @@ sys.path.insert(0, '../../..')
 import hilbert
 import numpy as np
 
-molecule h2 {
+RKS_B3LYP_cc_pvdz = [0.263001195667,
+                     0.269122724641,
+                     0.335248924487,
+                     0.359912987039,
+                     0.427213676123,
+                     0.495157203226,
+                     0.603715553309,
+                     0.741980246477,
+                     0.797368119446,
+                     0.856751194367]
 
-#h 0.0 0.0 0.0
-#h 0.0 0.0 r
-#o 
-#h 1 1.0
-#h 1 1.0 2 104.5
+molecule {
          O            0.000000000000     0.000000000000    -0.068516219320 
          H            0.000000000000    -0.790689573744     0.543701060715 
          H            0.000000000000     0.790689573744     0.543701060715 
@@ -19,20 +24,21 @@ nocom
 symmetry c1
 }
 
-set { basis cc-pvdz
+set {
+  basis cc-pvdz
   scf_type cd 
   e_convergence 1e-8
   d_convergence 1e-8
   cholesky_tolerance 1e-12
 } 
 
+# freq: w
+w = 0.265754876050
 
-# freq: w from CIS
 # lambda: 0.05
 # coupling g = 0.05 / sqrt(2*w)
-
-w = 0.265754876050
 g = 0.05 / np.sqrt(2.0 * w)
+
 set hilbert {
   maxiter 500
   n_photon_states          2
@@ -40,20 +46,19 @@ set hilbert {
   cavity_coupling_strength [0.0, 0.0, $g]
   maxdim                   15
   indim                    5
+  qed_dft_functional b3lyp
 }
 
-activate(h2)
-
-h2.r = 0.76
 set num_roots 10
-
-#set wcombine false
-set reference rks
 set TDSCF_TDA false
 set TDSCF_STATES 10
-energy('td-b3lyp')
 set df_ints_io save
+
+# restricted tddft
 set reference rks
-en,wfn = energy('b3lyp',return_wfn=True)
-energy('polaritonic-tddft',ref_wfn=wfn) 
+energy('qed-tddft')
+
+for n, ref in enumerate(RKS_B3LYP_cc_pvdz):
+    ex_en = psi4.variable(f"QED-TDDFT ROOT 0 -> ROOT {n+1} EXCITATION ENERGY")
+    compare_values(ref,ex_en, 4, f"Restricted QED-TDDFT excitation energy {n+1}")
 

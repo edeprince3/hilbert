@@ -1,4 +1,4 @@
-# test against hubbard model polaritonic CC
+# test against hubbard model qed-CC
 # https://journals.aps.org/prresearch/pdf/10.1103/PhysRevResearch.2.023262
 
 sys.path.insert(0, '../../..')
@@ -54,7 +54,7 @@ ref_1 = -1.43791 # CC-SD-S-0
 ref_2 = -1.43795 # CC-SD-S-D
 ref_3 = -1.43796 # CC-SD-S-DT
 
-en = energy('polaritonic-uccsd') 
+en = energy('qed-ccsd') 
 #compare_values(ref_0, en, 5, "CCSD(0)") # TEST
 #compare_values(ref_1, en, 5, "CC-SD-S-O") # TEST
 #compare_values(ref_2, en, 5, "CC-SD-S-D") # TEST

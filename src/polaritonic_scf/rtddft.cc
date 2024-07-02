@@ -25,6 +25,7 @@
  */
 
 #include <psi4/psi4-dec.h>
+#include <psi4/physconst.h>
 #include <psi4/liboptions/liboptions.h>
 #include <psi4/libpsio/psio.hpp>
 
@@ -66,12 +67,6 @@ PolaritonicRTDDFT::PolaritonicRTDDFT(std::shared_ptr<Wavefunction> reference_wav
 }
 
 PolaritonicRTDDFT::~PolaritonicRTDDFT() {
-
-/*
-    free(int1_);
-    free(int2_);
-*/
-
 }
 
 void PolaritonicRTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
@@ -87,19 +82,14 @@ void PolaritonicRTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
     outfile->Printf( "        *******************************************************\n");
     outfile->Printf("\n");
 
-    // RTTDFT only works with TDA for now
-    if ( !options_.get_bool("TDSCF_TDA") ) {
-        //throw PsiException("polaritonic rtddft only works with TDA df for now",__FILE__,__LINE__);
-    }
-
     // ensure scf_type df
     if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" ) {
-        throw PsiException("polaritonic utddft only works with scf_type df for now",__FILE__,__LINE__);
+        throw PsiException("polaritonic rtddft only works with scf_type df for now",__FILE__,__LINE__);
     }
 
     // ensure running in c1 symmetry
     if ( reference_wavefunction_->nirrep() > 1 ) {
-        throw PsiException("polaritonic utddft only works with c1 symmetry for now.",__FILE__,__LINE__);
+        throw PsiException("polaritonic rtddft only works with c1 symmetry for now.",__FILE__,__LINE__);
     }
 
     // ensure closed shell
@@ -110,104 +100,9 @@ void PolaritonicRTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
     // get primary basis:
     std::shared_ptr<BasisSet> primary = reference_wavefunction_->get_basisset("ORBITAL");
 
-    int o = nalpha_;
-    int v = nso_ - nalpha_;
-
-/*
-    nQ_ = 0;
-    if ( options_.get_str("SCF_TYPE") == "DF" ) {
-
-        // get auxiliary basis:
-        std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
-
-        // total number of auxiliary basis functions
-        nQ_ = auxiliary->nbf();
-
-        std::shared_ptr<DFTensor> DF (new DFTensor(primary,auxiliary,Ca_,o,v,o,v,options_));
-
-        std::shared_ptr<Matrix> tmpoo = DF->Qoo();
-        std::shared_ptr<Matrix> tmpov = DF->Qov();
-        std::shared_ptr<Matrix> tmpvv = DF->Qvv();
-
-        double ** Qoo = tmpoo->pointer();
-        double ** Qov = tmpov->pointer();
-        double ** Qvv = tmpvv->pointer();
-
-        int1_ = (double*)malloc(o*o*v*v*sizeof(double));
-        int2_ = (double*)malloc(o*o*v*v*sizeof(double));
-
-        memset((void*)int1_,'\0',o*o*v*v*sizeof(double));
-        memset((void*)int2_,'\0',o*o*v*v*sizeof(double));
-
-        F_DGEMM('n','t',o*v,o*v,nQ_,1.0,&(Qov[0][0]),o*v,&(Qov[0][0]),o*v,0.0,int1_,o*v);
-        F_DGEMM('n','t',v*v,o*o,nQ_,1.0,&(Qvv[0][0]),v*v,&(Qoo[0][0]),o*o,0.0,int2_,v*v);
-
-    }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
-
-        //outfile->Printf("    ==> Transform three-index integrals <==\n");
-        //outfile->Printf("\n");
-
-        double start = omp_get_wtime();
-        ThreeIndexIntegrals(reference_wavefunction_,nQ_,memory_);
-
-        double * Qmo = (double*)malloc(nmo_*(nmo_+1)/2*nQ_*sizeof(double));
-        memset((void*)Qmo,'\0',nmo_*(nmo_+1)/2*nQ_*sizeof(double));
-
-        std::shared_ptr<PSIO> psio(new PSIO());
-        psio->open(PSIF_DCC_QMO,PSIO_OPEN_OLD);
-        psio->read_entry(PSIF_DCC_QMO,"(Q|mn) Integrals",(char*)Qmo,sizeof(double)*nQ_ * nmo_*(nmo_+1)/2);
-        psio->close(PSIF_DCC_QMO,1);
-
-        double end = omp_get_wtime();
-
-        double * Qoo = (double*)malloc(o*o*nQ_*sizeof(double));
-        double * Qov = (double*)malloc(o*v*nQ_*sizeof(double));
-        double * Qvv = (double*)malloc(v*v*nQ_*sizeof(double));
-
-        for (size_t Q = 0; Q < nQ_; Q++) {
-            for (size_t i = 0; i < o; i++) {
-                for (size_t j = 0; j < o; j++) {
-                    Qoo[Q*o*o+i*o+j] = Qmo[Q*nmo_*(nmo_+1)/2+INDEX(i,j)];
-                }
-            }
-            for (size_t i = 0; i < o; i++) {
-                for (size_t a = 0; a < v; a++) {
-                    Qov[Q*o*v+i*v+a] = Qmo[Q*nmo_*(nmo_+1)/2+INDEX(i,a+o)];
-                }
-            }
-            for (size_t a = 0; a < v; a++) {
-                for (size_t b = 0; b < v; b++) {
-                    Qvv[Q*v*v+a*v+b] = Qmo[Q*nmo_*(nmo_+1)/2+INDEX(a+o,b+o)];
-                }
-            }
-        }
-
-        free(Qmo);
-
-        //outfile->Printf("\n");
-        //outfile->Printf("        Time for integral transformation:  %7.2lf s\n",end-start);
-        //outfile->Printf("\n");
-
-        int1_ = (double*)malloc(o*o*v*v*sizeof(double));
-        int2_ = (double*)malloc(o*o*v*v*sizeof(double));
-
-        memset((void*)int1_,'\0',o*o*v*v*sizeof(double));
-        memset((void*)int2_,'\0',o*o*v*v*sizeof(double));
-
-        F_DGEMM('n','t',o*v,o*v,nQ_,1.0,Qov,o*v,Qov,o*v,0.0,int1_,o*v);
-        F_DGEMM('n','t',v*v,o*o,nQ_,1.0,Qvv,v*v,Qoo,o*o,0.0,int2_,v*v);
-
-        free(Qoo);
-        free(Qov);
-        free(Qvv);
-
-    }
-*/
-
     // determine the DFT functional and initialize the potential object
     psi::scf::HF* scfwfn = (psi::scf::HF*)dummy_wfn.get();
     std::shared_ptr<SuperFunctional> functional = scfwfn->functional();
-    //std::shared_ptr<VBase> potential = VBase::build_V(primary,functional,options_,(options_.get_str("REFERENCE") == "RKS" ? "RV" : "UV"));
     potential_ = (std::shared_ptr<VBase>)VBase::build_V(primary,functional,options_,(options_.get_str("REFERENCE") == "RKS" ? "RV" : "UV"));
 
     // initialize potential object
@@ -294,11 +189,7 @@ void PolaritonicRTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
         myjk->initialize();
 
         jk_ = myjk;
-
     }
-
-
-
 }
 
 double PolaritonicRTDDFT::compute_energy() {
@@ -318,8 +209,6 @@ double PolaritonicRTDDFT::compute_energy() {
 
     int o = nalpha_;
     int v = nso_ - nalpha_;
-
-    double * ea = epsilon_a_->pointer();
 
     double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
     double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
@@ -382,10 +271,10 @@ double PolaritonicRTDDFT::compute_energy() {
         outfile->Printf("        setting MAXDIM = N\n");
         maxdim = N;
     }
-    outfile->Printf("    No. states:                     %5i\n",N);
-    outfile->Printf("    No. roots:                      %5i\n",M);
-    outfile->Printf("    Max subspace dim:               %5i\n",maxdim);
-    outfile->Printf("    Initial subspace dim:           %5i\n",init_dim);
+    outfile->Printf("    No. requested roots:            %5i\n",M);
+    outfile->Printf("    Problem dimension:              %5i\n",N);
+    outfile->Printf("    Max subspace dimension:         %5i\n",maxdim);
+    outfile->Printf("    Initial subspace dimension:     %5i\n",init_dim);
 
     // (approximate) diagonal of Hamiltonian
     double * Hdiag = build_hamiltonian_diagonals();
@@ -403,15 +292,6 @@ double PolaritonicRTDDFT::compute_energy() {
     double residual_norm = options_.get_double("RESIDUAL_NORM");
 
     // call eigensolver
-    //david->solve(Hdiag,
-    //             N,
-    //             M,
-    //             revalp,
-    //             rerp,
-    //             relp,
-    //             [&](int N, int maxdim, int L, double **Q, double **sigmar, double **sigmal) {
-    //                    build_sigma(N,maxdim,L, Q,sigmar,sigmal);
-    //             }, maxdim, init_dim, residual_norm, use_residual_norm);
     david->real_generalized_eigenvalue_problem(Hdiag,
                                                Sdiag,
                                                N,
@@ -425,13 +305,13 @@ double PolaritonicRTDDFT::compute_energy() {
     free(Hdiag);
 
     outfile->Printf("\n");
-    outfile->Printf("    cQED-TDDFT energies:\n");
+    outfile->Printf("    ==> QED-TDDFT energies <==\n");
     outfile->Printf("\n");
     outfile->Printf("    ");
     outfile->Printf("%5s","state");
     outfile->Printf(" %5s","type");
-    outfile->Printf(" %20s","energy (Eh)");
     outfile->Printf(" %20s","ex energy (Eh)");
+    outfile->Printf(" %20s","energy (Eh)");
     outfile->Printf(" %20s","photon weight");
     outfile->Printf(" %10s","mu_x");
     outfile->Printf(" %10s","mu_y");
@@ -481,47 +361,72 @@ double PolaritonicRTDDFT::compute_energy() {
                 mu_z_r += dz[j][b+o] * cr;
             }
         }
-        double w = revalp[state];//sqrt(revalp[state]);
+        double w = revalp[state];
         double f = 2.0 * 2.0/3.0*w*(mu_x_r * mu_x_r + mu_y_r * mu_y_r + mu_z_r * mu_z_r);
 
         outfile->Printf("    %5i %5s %20.12lf %20.12lf %20.12lf %10.6lf %10.6lf %10.6lf %10.6lf\n", state, type.c_str(),w,energy_ + w,photon_weight,mu_x_r,mu_y_r,mu_z_r,f);
     }
-    outfile->Printf("%d %d %d\n",o,v,N);
+
+    
+    outfile->Printf("\n");
+    outfile->Printf("    ==> QED-TDDFT significant amplitudes <==\n");
     for (int state = 0; state < M; state++) {
 
-        double w = revalp[state];//sqrt(revalp[state]);
-        outfile->Printf("state =%5i eig = %20.12lf eV\n", state,w* 27.21138);
+        double w = revalp[state];
+        outfile->Printf("\n");
+        outfile->Printf("    %5s","state");
+        outfile->Printf(" %20s","ex energy (eV)");
+        outfile->Printf(" %4s","id");
+        outfile->Printf(" %12s","value");
+        outfile->Printf(" %12s","transition");
+        outfile->Printf(" %5s","type");
+        outfile->Printf("\n");
 
+        bool print = true;
         for (size_t  p = 0; p < N; p++) {
              double dum = rerp[state][p];
              //print only transitions' contribution with amplitude larger than 0.1
              if (fabs(dum)  > 0.1) {
-             outfile->Printf("%4d %20.12lf\t", p, dum);
-             if (p<o*v) {
-                outfile->Printf("electron    excitation");
-                size_t a =p%v;
-                size_t i = (p-a)/v;
-                outfile->Printf("%4d   ->%4d\n",i+1,a+o+1);
-             }
-             else if ((o*v-1< p) && (p < 2*o*v)) {
-                outfile->Printf("electron de-excitation");
-                size_t a =p%v;
-                size_t i = (p-a)/v;
-                outfile->Printf("%4d   ->%4d\n",i+1,a+o+1);
-             }
-             else if (p==2*o*v) {outfile->Printf("photon excitation\n");
-             }
-             else {outfile->Printf("photon de-excitation\n");
-             }
+                 if (print) {
+                     outfile->Printf("    %5i", state);
+                     outfile->Printf(" %20.12lf", w * pc_hartree2ev);
+                     print = false;
+                 }else {
+                     outfile->Printf("         ");
+                     outfile->Printf("                     ");
+                 }
+                 outfile->Printf(" %4i", p);
+                 outfile->Printf(" %12.8lf", dum);
+                 if (p < o*v) {
+                    size_t a = p % v;
+                    size_t i = (p-a) / v;
+                    outfile->Printf(" %4d -> %4d",i + 1, a + o + 1);
+                    outfile->Printf(" %5s\n", "X");
+                 }else if ( ( o*v - 1 < p) && ( p < 2*o*v )) {
+                    size_t a = p % v;
+                    size_t i = (p-a) / v;
+                    outfile->Printf(" %4d -> %4d",i + 1, a + o + 1);
+                    outfile->Printf(" %5s\n", "Y");
+                 }else if (p == 2*o*v) {
+                     outfile->Printf("             ");
+                     outfile->Printf(" %5s\n", "M");
+                 }else {
+                     outfile->Printf("             ");
+                     outfile->Printf(" %5s\n", "N");
+                 }
              }
         }
     }
 
+    // add excitation energies to psi variables
+    for (int state = 0; state < M; state++) {
+        Process::environment.globals["QED-TDDFT ROOT 0 -> ROOT " + std::to_string(state+1) + " EXCITATION ENERGY"] = revalp[state];
+    }
 
     return 0.0;
 }
 
-// cQED-TDDFT:
+// QED-TDDFT:
 // 
 // |  A  B  g*  g* | ( X )     |  1  0  0  0 | ( X )
 // |  B  A  g*  g* | ( Y ) = W |  0 -1  0  0 | ( Y )
@@ -625,289 +530,7 @@ void PolaritonicRTDDFT::build_sigma_generalized(int N, int maxdim, int L, double
     free(gm);
     free(n);
     free(gn);
-
 }
-
-// cQED-TDDFT:
-// 
-// |  A  B  g*  g* | ( X )     ( X )
-// | -B -A -g* -g* | ( Y ) = W ( Y )
-// |  g  g  w   0  | ( M )     ( M )
-// | -g -g  0  -w  | ( N )     ( N )
-// 
-// 
-// 
-// ( X Y M N ) |  A  B  g*  g* |     W ( X Y M N )
-//             | -B -A -g* -g* |  =  
-//             |  g  g  w   0  |     
-//             | -g -g  0  -w  |     
-//           
-// this function actually solves the square of the RPA problem
-void PolaritonicRTDDFT::build_sigma(int N, int maxdim, int L, double **Q, double **sigmar, double **sigmal){
-
-    for (int i = 0; i < N; i++) {
-        for (int I = 0; I < maxdim; I++) {
-            sigmar[i][I] = 0.0;
-            sigmal[i][I] = 0.0;
-        }
-    }
-
-    // TDDFT-PF:
-
-    // sigmar_x =  Ax + By + g*m + g*n
-    // sigmar_y = -Bx - Ay - g*m - g*n
-    // sigmar_m =  gx + gy +  wm
-    // sigmar_n = -gx - gy       -  wn
-
-    // sigmal_x =  Ax - By + g*m - g*n
-    // sigmal_y =  Bx - Ay + g*m - g*n
-    // sigmal_m =  gx - gy +  wm
-    // sigmal_n =  gx - gy       -  wn
-
-    int o = nalpha_;
-    int v = nso_ - nalpha_;
-
-    double * Ax = (double*)malloc(N*L*sizeof(double));
-    double * Bx = (double*)malloc(N*L*sizeof(double));
-    double * Ay = (double*)malloc(N*L*sizeof(double));
-    double * By = (double*)malloc(N*L*sizeof(double));
-    double * x  = (double*)malloc(N*L*sizeof(double));
-    double * y  = (double*)malloc(N*L*sizeof(double));
-
-    memset((void*)Ax,'\0',N*L*sizeof(double));
-    memset((void*)Bx,'\0',N*L*sizeof(double));
-    memset((void*)Ay,'\0',N*L*sizeof(double));
-    memset((void*)By,'\0',N*L*sizeof(double));
-    memset((void*)x, '\0',N*L*sizeof(double));
-    memset((void*)y, '\0',N*L*sizeof(double));
-
-    double *m = (double*)malloc(L*sizeof(double));
-    double *gm = (double*)malloc(N*L*sizeof(double));
-    double *sigma_m_r = (double*)malloc(L*sizeof(double));
-    double *sigma_m_l = (double*)malloc(L*sizeof(double));
-    double *n = (double*)malloc(L*sizeof(double));
-    double *gn = (double*)malloc(N*L*sizeof(double));
-    //double *sigma_n_r = (double*)malloc(L*sizeof(double));
-    //double *sigma_n_l = (double*)malloc(L*sizeof(double));
-
-    memset((void*)m,'\0',L*sizeof(double));
-    memset((void*)gm,'\0',N*L*sizeof(double));
-    memset((void*)sigma_m_r,'\0',L*sizeof(double));
-    memset((void*)sigma_m_l,'\0',L*sizeof(double));
-    memset((void*)n,'\0',L*sizeof(double));
-    memset((void*)gn,'\0',N*L*sizeof(double));
-    //memset((void*)sigma_n_r,'\0',L*sizeof(double));
-    //memset((void*)sigma_n_l,'\0',L*sizeof(double));
-
-    // unpack input vectors
-    for (int I = 0; I < L; I++) {
-        for (int j = 0; j < o*v; j++) {
-            x[I*N+j] = Q[I][j];
-            y[I*N+j] = Q[I][j + o*v];
-        }
-        m[I] = Q[I][2*o*v];
-        n[I] = Q[I][2*o*v+1];
-    }
-
-    build_Au_Bu(N, L, x, Ax, Bx);
-    build_Au_Bu(N, L, y, Ay, By);
-    build_gm(N, L, m, gm);
-    build_gm(N, L, n, gn);
-    build_sigma_m(N, L, x, y, m, sigma_m_r, sigma_m_l);
-    //build_sigma_m(N, L, x, y, n, sigma_n_r, sigma_n_l);
-
-    // sigmar_x =  Ax + By + g*m + g*n
-    // sigmar_y = -Bx - Ay - g*m - g*n
-    // sigmar_m =  gx + gy +  wm
-    // sigmar_n = -gx - gy       -  wn
-
-    // sigmal_x =  Ax - By + g*m - g*n
-    // sigmal_y =  Bx - Ay + g*m - g*n
-    // sigmal_m =  gx - gy +  wm
-    // sigmal_n =  gx - gy       -  wn
-
-    // x, y
-    for (int i = 0; i < o*v; i++) {
-        for (int I = 0; I < L; I++) {
-            sigmar[i      ][I] =  Ax[I*N+i] + By[I*N+i] + gm[I*N+i] + gn[I*N+i];
-            sigmar[i + o*v][I] = -Bx[I*N+i] - Ay[I*N+i] - gm[I*N+i] - gn[I*N+i];
-
-            sigmal[i      ][I] =  Ax[I*N+i] - By[I*N+i] + gm[I*N+i] - gn[I*N+i];
-            sigmal[i + o*v][I] =  Bx[I*N+i] - Ay[I*N+i] + gm[I*N+i] - gn[I*N+i];
-        }
-    }
-    // m, n
-    for (int I = 0; I < L; I++) {
-        sigmar[2*o*v  ][I] =  sigma_m_r[I] + cavity_frequency_[2] * m[I];
-        sigmal[2*o*v  ][I] =  sigma_m_l[I] + cavity_frequency_[2] * m[I];
-        sigmar[2*o*v+1][I] = -sigma_m_r[I] - cavity_frequency_[2] * n[I]; // note sign
-        sigmal[2*o*v+1][I] =  sigma_m_l[I] - cavity_frequency_[2] * n[I];
-    }
-
-    // ok ... now square of the problem
-
-    // unpack input vectors (right)
-    for (int I = 0; I < L; I++) {
-        for (int j = 0; j < o*v; j++) {
-            x[I*N+j] = sigmar[j][I];
-            y[I*N+j] = sigmar[j + o*v][I];
-        }
-        m[I] = sigmar[2*o*v  ][I];
-        n[I] = sigmar[2*o*v+1][I];
-    }
-
-    build_Au_Bu(N, L, x, Ax, Bx);
-    build_Au_Bu(N, L, y, Ay, By);
-    build_gm(N, L, m, gm);
-    build_gm(N, L, n, gn);
-    build_sigma_m(N, L, x, y, m, sigma_m_r, sigma_m_l);
-    //build_sigma_m(N, L, x, y, n, sigma_n_r, sigma_n_l);
-
-    // x, y
-    for (int i = 0; i < o*v; i++) {
-        for (int I = 0; I < L; I++) {
-            sigmar[i      ][I] =  Ax[I*N+i] + By[I*N+i] + gm[I*N+i] + gn[I*N+i];
-            sigmar[i + o*v][I] = -Bx[I*N+i] - Ay[I*N+i] - gm[I*N+i] - gn[I*N+i];
-        }
-    }
-    // m, n
-    for (int I = 0; I < L; I++) {
-        sigmar[2*o*v  ][I] =  sigma_m_r[I] + cavity_frequency_[2] * m[I];
-        sigmar[2*o*v+1][I] = -sigma_m_r[I] - cavity_frequency_[2] * n[I]; // note sign
-    }
-
-    // unpack input vectors (left)
-    for (int I = 0; I < L; I++) {
-        for (int j = 0; j < o*v; j++) {
-            x[I*N+j] = sigmal[j      ][I];
-            y[I*N+j] = sigmal[j + o*v][I];
-        }
-        m[I] = sigmal[2*o*v  ][I];
-        n[I] = sigmal[2*o*v+1][I];
-    }
-    
-    build_Au_Bu(N, L, x, Ax, Bx);
-    build_Au_Bu(N, L, y, Ay, By);
-    build_gm(N, L, m, gm);
-    build_gm(N, L, n, gn);
-    build_sigma_m(N, L, x, y, m, sigma_m_r, sigma_m_l);
-    //build_sigma_m(N, L, x, y, n, sigma_n_r, sigma_n_l);
-
-    // x, y
-    for (int i = 0; i < o*v; i++) {
-        for (int I = 0; I < L; I++) {
-            sigmal[i      ][I] =  Ax[I*N+i] - By[I*N+i] + gm[I*N+i] - gn[I*N+i];
-            sigmal[i + o*v][I] =  Bx[I*N+i] - Ay[I*N+i] + gm[I*N+i] - gn[I*N+i];
-        }
-    }
-    // m, n
-    for (int I = 0; I < L; I++) {
-        sigmal[2*o*v  ][I] =  sigma_m_l[I] + cavity_frequency_[2] * m[I];
-        sigmal[2*o*v+1][I] =  sigma_m_l[I] - cavity_frequency_[2] * n[I];
-    }
-
-    free(x);
-    free(y);
-    free(Ax);
-    free(Bx);
-    free(Ay);
-    free(By);
-    free(m);
-    free(sigma_m_r);
-    free(sigma_m_l);
-    free(gm);
-    free(n);
-    //free(sigma_n_r);
-    //free(sigma_n_l);
-    free(gn);
-
-}
-
-/*
-// square of TDDFT problem
-void PolaritonicRTDDFT::build_sigma(int N, int maxdim, int L, double **Q, double **sigmar, double **sigmal){
-
-    for (int i = 0; i < N; i++) {
-        for (int I = 0; I < maxdim; I++) {
-            sigmar[i][I] = 0.0;
-            sigmal[i][I] = 0.0;
-        }
-    }
-
-    // TDA: 
-    // sigmar = Au
-    // sigmal = Au
-
-    // RPA: 
-    // sigmar = AAu + ABu - BAu - BBu
-    // sigmal = AAu - ABu + BAu - BBu
-
-    double * Au = (double*)malloc(N*L*sizeof(double));
-    double * Bu = (double*)malloc(N*L*sizeof(double));
-    double * u  = (double*)malloc(N*L*sizeof(double));
-
-    memset((void*)Au,'\0',N*L*sizeof(double));
-    memset((void*)Bu,'\0',N*L*sizeof(double));
-    memset((void*)u, '\0',N*L*sizeof(double));
-
-    // unpack input vectors
-    for (int I = 0; I < L; I++) {
-        for (int j = 0; j < N; j++) {
-            u[I*N+j] = Q[I][j];
-        }
-    }
-
-    double *AAu, *ABu, *BAu, *BBu;
-    if ( !options_.get_bool("TDSCF_TDA") ) {
-        AAu = (double*)malloc(N*L*sizeof(double));
-        ABu = (double*)malloc(N*L*sizeof(double));
-        BAu = (double*)malloc(N*L*sizeof(double));
-        BBu = (double*)malloc(N*L*sizeof(double));
-        memset((void*)AAu,'\0',N*L*sizeof(double));
-        memset((void*)ABu,'\0',N*L*sizeof(double));
-        memset((void*)BAu,'\0',N*L*sizeof(double));
-        memset((void*)BBu,'\0',N*L*sizeof(double));
-    }
-
-    // TDA or RPA?
-    if ( options_.get_bool("TDSCF_TDA") ) {
-
-        build_Au_Bu(N, L, u, Au, Bu);
-
-        for (int i = 0; i < N; i++) {
-            for (int I = 0; I < L; I++) {
-                sigmar[i][I] = Au[I*N+i];
-                sigmal[i][I] = Au[I*N+i];
-            }
-        }
-
-    }else {
-
-        build_Au_Bu(N, L,  u,  Au,  Bu);
-        build_Au_Bu(N, L, Au, AAu, BAu);
-        build_Au_Bu(N, L, Bu, ABu, BBu);
-
-        for (int i = 0; i < N; i++) {
-            for (int I = 0; I < L; I++) {
-                sigmar[i][I] = AAu[I*N+i] + ABu[I*N+i] - BAu[I*N+i] - BBu[I*N+i] ;
-                sigmal[i][I] = AAu[I*N+i] - ABu[I*N+i] + BAu[I*N+i] - BBu[I*N+i] ;
-            }
-        }
-
-    }
-
-    free(u);
-    free(Au);
-    free(Bu);
-    if ( !options_.get_bool("TDSCF_TDA") ) {
-        free(AAu);
-        free(ABu);
-        free(BAu);
-        free(BBu);
-    }
-
-}
-*/
 
 // build Au and Bu according to Yihan's formalism that includes only (1) single 
 // excitations and de-excitations and (2) photon excitations and de-excitations, 
@@ -920,7 +543,7 @@ void PolaritonicRTDDFT::build_sigma(int N, int maxdim, int L, double **Q, double
 void PolaritonicRTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double *Bu){
 
     if ( n_photon_states_ > 2 ) {
-        throw PsiException("plugin cqed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+        throw PsiException("qed-rtddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
 
     int o = nalpha_;
@@ -1163,17 +786,15 @@ void PolaritonicRTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
         }
 
     }
-
     free(tmp_a);
     free(tmp_b);
     free(c);
-
 }
 
 void PolaritonicRTDDFT::build_gm(int N, int L, double *m, double *gm) {
 
     if ( n_photon_states_ > 2 ) {
-        throw PsiException("plugin cqed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+        throw PsiException("qed-rtddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
 
     int o = nalpha_;
@@ -1202,15 +823,13 @@ void PolaritonicRTDDFT::build_gm(int N, int L, double *m, double *gm) {
                 gm[I*N+ia] = -sqrt(2.0) * coupling_factor_z * dz[i][a+o] * m[I];
             }
         }
-
     }
-
 }
 
 void PolaritonicRTDDFT::build_sigma_m(int N, int L, double *x, double *y, double *m, double *sigma_m_r, double *sigma_m_l) {
 
     if ( n_photon_states_ > 2 ) {
-        throw PsiException("plugin cqed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+        throw PsiException("qed-rtddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
 
     int o = nalpha_;
@@ -1249,386 +868,7 @@ void PolaritonicRTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
             }
         }
     }
-
 }
-
-// build Au and Bu, where u includes |0,0> and no de-excitation |0,-n>
-/*
-void PolaritonicRTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double *Bu){
-
-    int o = nalpha_;
-    int v = nso_ - nalpha_;
-
-    double * c = (double*)malloc(N*sizeof(double));
-
-    double ** cap = Ca_->pointer();
-
-    std::vector<SharedMatrix>& C_left  = jk_->C_left();
-    std::vector<SharedMatrix>& C_right = jk_->C_right();
-    C_left.clear();
-    C_right.clear();
-
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
-
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
-
-    double ** dx = dipole_[0]->pointer();
-    double ** dy = dipole_[1]->pointer();
-    double ** dz = dipole_[2]->pointer();
-
-    std::vector<std::shared_ptr<Matrix> > Vx;
-    std::vector<std::shared_ptr<Matrix> > Dx;
-
-    // J/K-like contributions
-    for (int I = 0; I < L; I++) {
-
-        // unpack a vector
-        for (int j = 0; j < N; j++) {
-            c[j] = u[I*N+j];
-        }
-
-        // push density matrices on JK object
-        // we need density matrices for alpha as well as
-        // alpha plus a photon
-
-        // Da(mu,nu) = ca(j,b) Ca(mu,j) Ca(nu,b) = Ca(mu,j) Ca'(nu,j)
-        // Ca'(nu,j) = ca(j,b) Ca(nu,b)
-
-        // etc.
-
-        // loop over photon states
-        for (int n = 0; n < n_photon_states_; n++) {
-
-            // alpha
-            std::shared_ptr<Matrix> cra (new Matrix(Ca_) );
-            std::shared_ptr<Matrix> cla (new Matrix(Ca_) );
-
-            double ** clp = cla->pointer();
-            double ** crp = cra->pointer();
-
-            cra->zero();
-            cla->zero();
-
-            for (int mu = 0; mu < nso_; mu++) {
-                for (int i = 0; i < o; i++) {
-
-                    // left is plain orbitals
-                    clp[mu][i] = cap[mu][i];
-
-                    // right is modified orbitals
-                    double dum = 0.0;
-                    for (int a = 0; a < v; a++) {
-                        int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                        dum += cap[mu][a+o] * c[ian_a];
-                    }
-                    crp[mu][i] = dum;
-
-                }
-            }
-
-            // push alpha orbitals onto JK object
-            C_left.push_back(cla);
-            C_right.push_back(cra);
-
-            // build pseudo densities for xc contribution
-            if (needs_xc_) {
-
-                auto Dx_a = linalg::doublet(cla, cra, false, true);
-
-                Vx.push_back(std::make_shared<Matrix>("Vax temp", Dx_a->rowspi(), Dx_a->colspi(), Dx_a->symmetry()));
-
-                Dx.push_back(Dx_a);
-            }    
-
-        }
-    }
-
-    // form J/K
-    jk_->compute();
-
-    // form xc contributions
-    if ( needs_xc_ ) {
-        potential_->compute_Vx(Dx, Vx);
-    }
-
-    // now, accumulate sigma vectors
-
-    // offset for j/k matrices
-    int count = 0;
-
-    double * ea = epsilon_a_->pointer();
-
-    double * tmp_a = (double*)malloc(o*v*sizeof(double));
-
-    for (int I = 0; I < L; I++) {
-
-        // unpack a vector
-        for (int j = 0; j < N; j++) {
-            c[j] = u[I*N+j];
-        }
-
-        for (int n = 0; n < n_photon_states_; n++) {
-
-            // a <- a coulomb
-            std::shared_ptr<Matrix> sa (new Matrix(jk_->J()[count]));
-
-            // b <- b coulomb
-            sa->scale(2.0);
-
-            // xc?
-            // a <- a
-            if ( needs_xc_ ) {
-                sa->axpy(2.0,Vx[count]);
-                //sb->axpy(1.0,Vx[count]);
-
-                //sa->axpy(1.0,Vx[count+1]);
-                //sb->axpy(1.0,Vx[count+1]);
-            }
-
-            // exact exchange?
-            // a <- a
-            // b <- b
-            if (is_x_hybrid_) {
-                sa->axpy(-x_alpha_,jk_->K()[count]);
-            }
-
-            // LRC functional?
-            // a <- a
-            // b <- b
-            if (is_x_lrc_) {
-                double beta = 1.0 - x_alpha_;
-                sa->axpy(-beta,jk_->wK()[count]);
-            }
-
-            // update counter
-            count += 1;
-
-            // transform jk, e.g., j(a,i) = j(mu,nu) c(mu,a) c(nu,i)
-
-            sa->transform(Ca_);
-
-            double ** sap = sa->pointer();
-
-            for (int i = 0; i < o; i++) {
-                for (int a = 0; a < v; a++) {
-                    int ian_a = (i * v + a      ) * n_photon_states_ + n;
-
-                    Au[I*N+ian_a] = sap[i][a+o];
-                    Bu[I*N+ian_a] = sap[a+o][i];
-                }
-            }
-        }
-
-        // singles diagonals
-        for (int i = 0; i < o; i++) {
-            for (int a = 0; a < v; a++) {
-                for (int n = 0; n < n_photon_states_; n++) {
-                    int ian_a = (i * v + a      ) * n_photon_states_ + n;
-
-                    Au[I*N+ian_a] += c[ian_a] * (ea[a+o] - ea[i] + n * cavity_frequency_[2]);
-                }
-            }
-        }
-
-        // now, |0,n> diagonals
-        int off = o * v * n_photon_states_;
-        for (int n = 0; n < n_photon_states_; n++) {
-            Au[I*N+off+n] += n * cavity_frequency_[2] * c[off+n];
-        }
-
-        // dipole self energy
-        for (int n = 0; n < n_photon_states_; n++) {
-
-            // J-like contribution from dipole self energy
-            double dipole_Ja = 0.0;
-            for (int i = 0; i < o; i++) {
-                for (int a = 0; a < v; a++) {
-                    int ian_a = (i * v + a      ) * n_photon_states_ + n;
-
-                    dipole_Ja += c[ian_a] * dz[i][a+o];
-                }
-            }
-
-            // intermediate for K-like contribution from dipole self energy
-            memset((void*)tmp_a,'\0',o*v*sizeof(double));
-            for (int i = 0; i < o; i++) {
-                for (int a = 0; a < v; a++) {
-                    double dum_a = 0.0;
-                    double dum_b = 0.0;
-                    for (int j = 0; j < o; j++) {
-                        int jan_a = (j * v + a      ) * n_photon_states_ + n;
-
-                        dum_a += c[jan_a] * dz[i][j];
-                    }
-
-                    tmp_a[a*o+i] = dum_a;
-                }
-            }
-
-            for (int i = 0; i < o; i++) {
-                for (int a = 0; a < v; a++) {
-
-                    double dipole_Ja_ia = dipole_Ja * dz[i][a+o];
-
-                    double dipole_Ka = 0.0;
-                    for (int b = 0; b < v; b++) {
-                        dipole_Ka += tmp_a[b*o+i] * dz[a+o][b+o];
-                    }
-
-                    int ian_a = (i * v + a      ) * n_photon_states_ + n;
-
-                    Au[I*N+ian_a] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia - dipole_Ka);
-                    Bu[I*N+ian_a] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia - dipole_Ka);
-                }
-            }
-        }
-
-        // coupling terms
-        for (int n = 0; n < n_photon_states_; n++) {
-
-            double sqrt_n = sqrt(n);
-
-            for (int i = 0; i < o; i++) {
-                for (int a = 0; a < v; a++) {
-
-                    int ian_a = (i * v + a      ) * n_photon_states_ + n;
-
-                    double dum_a = 0.0;
-
-                    // d(n,m+1)
-                    int m = n - 1;
-                    if ( m > -1 ) {
-                        // d(i,j)
-                        for (int b = 0; b < v; b++) {
-                            int ibm_a = (i * v + b      ) * n_photon_states_ + m;
-                            dum_a -= sqrt_n * c[ibm_a] * dz[a+o][b+o];
-                        }
-                        // d(a,b)
-                        for (int j = 0; j < o; j++) {
-                            int jam_a = (j * v + a      ) * n_photon_states_ + m;
-                            dum_a += sqrt_n * c[jam_a] * dz[i][j];
-                        }
-                        // d(i,j) d(a,b)
-                        int iam_a = (i * v + a      ) * n_photon_states_ + m;
-                        for (int k = 0; k < o; k++) {
-                            dum_a -= sqrt_n * c[iam_a] * dz[k][k];
-                        }
-                        // more coherent-state terms ... these affect diagonals in the electronic basis
-                        dum_a += sqrt_n * tot_dip_z_ * c[iam_a];
-                    }
-
-                    // d(n,m-1)
-                    m = n + 1;
-                    if ( m < n_photon_states_ ) {
-                        double sqrt_m = sqrt(m);
-                        // d(i,j)
-                        for (int b = 0; b < v; b++) {
-                            int ibm_a = (i * v + b      ) * n_photon_states_ + m;
-                            dum_a -= sqrt_m * c[ibm_a] * dz[a+o][b+o];
-                        }
-                        // d(a,b)
-                        for (int j = 0; j < o; j++) {
-                            int jam_a = (j * v + a      ) * n_photon_states_ + m;
-                            dum_a += sqrt_m * c[jam_a] * dz[i][j];
-                        }
-                        // d(i,j) d(a,b)
-                        int iam_a = (i * v + a      ) * n_photon_states_ + m;
-                        int iam_b = (i * v + a + o*v) * n_photon_states_ + m;
-                        for (int k = 0; k < o; k++) {
-                            dum_a -= sqrt_m * c[iam_a] * dz[k][k];
-                        }
-                        // more coherent-state terms ... these affect diagonals in the electronic basis
-                        dum_a += sqrt_m * tot_dip_z_ * c[iam_a];
-                    }
-
-                    Au[I*N+ian_a] += coupling_factor_z * dum_a;
-
-                }
-            }
-
-        }
-
-        // lastly, couple |0,n+1> and |0,n-1> to |ia,n>
-        for (int i = 0; i < o; i++) {
-            for (int a = 0; a < v; a++) {
-                for (int n = 0; n < n_photon_states_; n++) {
-                    int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                    // case 1
-                    if ( n < n_photon_states_ - 1 ) {
-                        double factor = -sqrt(2.0)*coupling_factor_z * sqrt(n+1) * dz[i][a+o];
-
-                        double val_a   = factor * c[ian_a];
-                        double val_np1 = factor * c[off+n+1];
-
-                        Au[I*N+ian_a]   += val_np1;
-                        Au[I*N+off+n+1] += val_a;
-
-                    }
-
-                    // case 2
-                    if ( n > 0 ) {
-                        double factor = -sqrt(2.0)*coupling_factor_z * sqrt(n) * dz[i][a+o];
-
-                        double val_a   = factor * c[ian_a];
-                        double val_nm1 = factor * c[off+n-1];
-
-                        Au[I*N+ian_a]   += val_nm1;
-                        Au[I*N+off+n-1] += val_a;
-
-                    }
-                }
-            }
-        }
-
-    }
-
-    free(tmp_a);
-    free(c);
-
-}
-*/
-
-/*
-// build approximation to diagonal of A matrix in basis that includes |0,0> and no de-excitation |0,-n>
-double * PolaritonicRTDDFT::build_hamiltonian_diagonals(){
-
-    int o = nalpha_;
-    int v = nso_ - nalpha_;
-
-    double * H = (double*)malloc((o*v+1)*n_photon_states_*sizeof(double));; 
-    memset((void*)H,'\0',(o*v+1)*n_photon_states_*sizeof(double));
-
-    double * ea = epsilon_a_->pointer();
-
-    for (int i = 0; i < o; i++) {
-        for (int a = 0; a < v; a++) {
-            for (int n = 0; n < n_photon_states_; n++) {
-                int ian_a = (i * v + a      ) * n_photon_states_ + n;
-                H[ian_a] = ea[a+o] - ea[i] + n * cavity_frequency_[2];
-            }
-        }
-    }
-
-    // now, |0,n> diagonals
-    int off = o * v * n_photon_states_;
-    for (int n = 0; n < n_photon_states_; n++) {
-        H[off+n] = n * cavity_frequency_[2];
-    }
-
-    // square diagonals for TDDFT
-    if ( !options_.get_bool("TDSCF_TDA") ) {
-        for (int i = 0; i < (o*v+1)*n_photon_states_; i++) {
-            H[i] *= H[i];
-        }
-    }
-
-    return H;
-}
-*/
 
 // build approximation to diagonal of A matrix in basis that excludes |0,0> and de-excitation |0,-n>
 double * PolaritonicRTDDFT::build_hamiltonian_diagonals(){
@@ -1653,7 +893,7 @@ double * PolaritonicRTDDFT::build_hamiltonian_diagonals(){
 
     // now, |0,1> diagonals
     if ( n_photon_states_ > 2 ) {
-        throw PsiException("plugin cqed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+        throw PsiException("qed-rtddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
     int off = 2 * o * v;
     H[off  ] = cavity_frequency_[2];
@@ -1665,6 +905,7 @@ double * PolaritonicRTDDFT::build_hamiltonian_diagonals(){
 
     return H;
 }
+
 double * PolaritonicRTDDFT::build_overlap_diagonals(){
 
     int o = nalpha_;
@@ -1687,7 +928,7 @@ double * PolaritonicRTDDFT::build_overlap_diagonals(){
 
     // now, |0,1> diagonals
     if ( n_photon_states_ > 2 ) {
-        throw PsiException("plugin cqed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+        throw PsiException("qed-rtddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
     int off = 2 * o * v;
     S[off  ] =  1.0;
@@ -1695,8 +936,6 @@ double * PolaritonicRTDDFT::build_overlap_diagonals(){
 
     return S;
 }
-
-
 
 } // End namespaces
 

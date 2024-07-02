@@ -1,9 +1,9 @@
 
     -----------------------------------------------------------------------
           Psi4: An Open-Source Ab Initio Electronic Structure Package
-                               Psi4 1.4rc3.dev3 
+                               Psi4 1.9.1 
 
-                         Git: Rev {master} 10a2019 
+                         Git: Rev {HEAD} f53cdd7 dirty
 
 
     D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
@@ -19,7 +19,8 @@
                             Additional Code Authors
     E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
     J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
-    P. Verma, and M. H. Lechner
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, and D. L. Poole
 
              Previous Authors, Complete List of Code Contributors,
                        and Citations for Specific Modules
@@ -30,11 +31,11 @@
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Wednesday, 11 August 2021 04:06PM
+    Psi4 started on: Monday, 01 July 2024 01:31PM
 
-    Process ID: 594484
-    Host:       ed11
-    PSIDATADIR: /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4
+    Process ID: 65440
+    Host:       wc-dhcp35d189.employee-secure.wireless.fsu.edu
+    PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
     Memory:     500.0 MiB
     Threads:    1
     
@@ -46,7 +47,7 @@
 sys.path.insert(0, '../../..')
 import hilbert 
 
-molecule h2 {
+molecule {
 
 0 1
          O            0.000000000000     0.000000000000    -0.068516219320
@@ -64,20 +65,18 @@ set {
   d_convergence 1e-12 
 } 
 
+# frequency: 2.0 eV
+w = 0.07349864501573
 
-# w = 2.0 eV
 # lambda: 0.05
 # coupling g = 0.05 / sqrt(2*w)
+g = 0.05 / np.sqrt(2.0 * w)
 
 set hilbert {
   maxiter 500
   n_photon_states          2
-  cavity_frequency         [0.0, 0.0, 0.07349864501573]
-  cavity_coupling_strength [0.0, 0.0, 0.130411334821786]
-
-  #n_photon_states          1
-  #cavity_frequency         [0.0, 0.0, 0.0]
-  #cavity_coupling_strength [0.0, 0.0, 0.0]
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
 
   polaritonic_cc_include_u0 true
   polaritonic_cc_include_u1 true
@@ -86,28 +85,31 @@ set hilbert {
   r_convergence 1e-12
 }
 
-activate(h2)
-
 set reference uhf
-en = energy('polaritonic-uccsd') 
+en = energy('qed-ccsd') 
 
 ref = -76.234654403463 #-76.234654392333 #-76.234653553147
 compare_values(ref, en, 8, "UCCSD total energy") # TEST
 --------------------------------------------------------------------------
-Warning: As of v1.5, the ~/.psi4rc file will no longer be read into Psi4 input.
 
-Scratch directory: /scratch/deprince/scratch/
+Scratch directory: /tmp/
+   => Libint2 <=
 
-*** tstart() called on ed11
-*** at Wed Aug 11 16:06:18 2021
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
+*** at Mon Jul  1 13:31:04 2024
 
    => Loading Basis Set <=
 
     Name: CC-PVDZ
     Role: ORBITAL
     Keyword: BASIS
-    atoms 1   entry O          line   198 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz.gbs 
-    atoms 2-3 entry H          line    22 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz.gbs 
+    atoms 1   entry O          line   198 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/cc-pvdz.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/cc-pvdz.gbs 
 
 
          ---------------------------------------------------------
@@ -169,8 +171,8 @@ Scratch directory: /scratch/deprince/scratch/
     Name: (CC-PVDZ AUX)
     Role: JKFIT
     Keyword: DF_BASIS_SCF
-    atoms 1   entry O          line   221 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
-    atoms 2-3 entry H          line    51 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 1   entry O          line   221 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 2-3 entry H          line    51 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/cc-pvdz-jkfit.gbs 
 
   ==> Integral Setup <==
 
@@ -217,29 +219,29 @@ Scratch directory: /scratch/deprince/scratch/
 
                            Total Energy        Delta E     RMS |[F,P]|
 
-   @DF-UHF iter SAD:   -75.45137243475145   -7.54514e+01   0.00000e+00 
-   @DF-UHF iter   1:   -75.94580099112633   -4.94429e-01   1.74038e-02 DIIS
-   @DF-UHF iter   2:   -75.99964867099754   -5.38477e-02   1.04495e-02 DIIS
-   @DF-UHF iter   3:   -76.02091630759899   -2.12676e-02   9.59211e-04 DIIS
-   @DF-UHF iter   4:   -76.02136941091635   -4.53103e-04   2.41284e-04 DIIS
-   @DF-UHF iter   5:   -76.02139623764207   -2.68267e-05   4.32356e-05 DIIS
-   @DF-UHF iter   6:   -76.02139743202757   -1.19439e-06   6.70672e-06 DIIS
-   @DF-UHF iter   7:   -76.02139746368633   -3.16588e-08   1.07122e-06 DIIS
-   @DF-UHF iter   8:   -76.02139746459389   -9.07562e-10   2.63034e-07 DIIS
-   @DF-UHF iter   9:   -76.02139746465596   -6.20730e-11   4.16358e-08 DIIS
-   @DF-UHF iter  10:   -76.02139746465728   -1.32161e-12   3.60702e-09 DIIS
-   @DF-UHF iter  11:   -76.02139746465727    1.42109e-14   5.95158e-10 DIIS
-   @DF-UHF iter  12:   -76.02139746465735   -8.52651e-14   3.13159e-11 DIIS
-   @DF-UHF iter  13:   -76.02139746465727    8.52651e-14   4.90814e-12 DIIS
-   @DF-UHF iter  14:   -76.02139746465727    0.00000e+00   4.55572e-13 DIIS
+   @DF-UHF iter SAD:   -75.45137243475121   -7.54514e+01   0.00000e+00 
+   @DF-UHF iter   1:   -75.94580099112615   -4.94429e-01   1.74038e-02 ADIIS/DIIS
+   @DF-UHF iter   2:   -75.99964867099737   -5.38477e-02   1.04495e-02 ADIIS/DIIS
+   @DF-UHF iter   3:   -76.02083772184739   -2.11891e-02   1.12232e-03 ADIIS/DIIS
+   @DF-UHF iter   4:   -76.02136951183130   -5.31790e-04   2.41500e-04 ADIIS/DIIS
+   @DF-UHF iter   5:   -76.02139624005200   -2.67282e-05   4.33249e-05 DIIS
+   @DF-UHF iter   6:   -76.02139743251378   -1.19246e-06   6.66789e-06 DIIS
+   @DF-UHF iter   7:   -76.02139746371807   -3.12043e-08   1.05393e-06 DIIS
+   @DF-UHF iter   8:   -76.02139746459484   -8.76767e-10   2.60374e-07 DIIS
+   @DF-UHF iter   9:   -76.02139746465569   -6.08509e-11   4.12522e-08 DIIS
+   @DF-UHF iter  10:   -76.02139746465701   -1.32161e-12   3.57122e-09 DIIS
+   @DF-UHF iter  11:   -76.02139746465704   -2.84217e-14   5.86954e-10 DIIS
+   @DF-UHF iter  12:   -76.02139746465711   -7.10543e-14   3.15637e-11 DIIS
+   @DF-UHF iter  13:   -76.02139746465700    1.13687e-13   4.64538e-12 DIIS
+   @DF-UHF iter  14:   -76.02139746465693    7.10543e-14   4.42780e-13 DIIS
   Energy and wave function converged.
 
 
   ==> Post-Iterations <==
 
-   @Spin Contamination Metric:  -5.329070518E-15
+   @Spin Contamination Metric:   0.000000000E+00
    @S^2 Expected:                0.000000000E+00
-   @S^2 Observed:               -5.329070518E-15
+   @S^2 Observed:                0.000000000E+00
    @S   Expected:                0.000000000E+00
    @S   Observed:                0.000000000E+00
 
@@ -280,15 +282,17 @@ Scratch directory: /scratch/deprince/scratch/
               A 
     DOCC [     5 ]
     SOCC [     0 ]
+    NA   [     5 ]
+    NB   [     5 ]
 
-  @DF-UHF Final Energy:   -76.02139746465727
+  @DF-UHF Final Energy:   -76.02139746465693
 
    => Energetics <=
 
     Nuclear Repulsion Energy =              8.8014655645634061
-    One-Electron Energy =                -122.4453031356085830
-    Two-Electron Energy =                  37.6224401063879199
-    Total Energy =                        -76.0213974646572694
+    One-Electron Energy =                -122.4453031356089525
+    Two-Electron Energy =                  37.6224401063886162
+    Total Energy =                        -76.0213974646569284
 
   UHF NO Occupations:
   HONO-2 :    3  A 2.0000000
@@ -307,50 +311,52 @@ Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
 
 Properties computed using the SCF density matrix
 
-  Nuclear Dipole Moment: [e a0]
-     X:     0.0000      Y:     0.0000      Z:     1.0191
 
-  Electronic Dipole Moment: [e a0]
-     X:     0.0000      Y:    -0.0000      Z:    -0.1945
+ Multipole Moments:
 
-  Dipole Moment: [e a0]
-     X:     0.0000      Y:    -0.0000      Z:     0.8246     Total:     0.8246
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
 
-  Dipole Moment: [D]
-     X:     0.0000      Y:    -0.0000      Z:     2.0958     Total:     2.0958
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Y            :          0.0000000            0.0000000            0.0000000
+ Dipole Z            :         -0.1945178            1.0190771            0.8245593
+ Magnitude           :                                                    0.8245593
 
+ ------------------------------------------------------------------------------------
 
-*** tstop() called on ed11 at Wed Aug 11 16:06:19 2021
+*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:05 2024
 Module time:
-	user time   =       0.31 seconds =       0.01 minutes
-	system time =       0.01 seconds =       0.00 minutes
+	user time   =       0.22 seconds =       0.00 minutes
+	system time =       0.02 seconds =       0.00 minutes
 	total time  =          1 seconds =       0.02 minutes
 Total time:
-	user time   =       0.31 seconds =       0.01 minutes
-	system time =       0.01 seconds =       0.00 minutes
+	user time   =       0.22 seconds =       0.00 minutes
+	system time =       0.02 seconds =       0.00 minutes
 	total time  =          1 seconds =       0.02 minutes
    => Loading Basis Set <=
 
     Name: (CC-PVDZ AUX)
     Role: JKFIT
     Keyword: DF_BASIS_SCF
-    atoms 1   entry O          line   221 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
-    atoms 2-3 entry H          line    51 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 1   entry O          line   221 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/cc-pvdz-jkfit.gbs 
+    atoms 2-3 entry H          line    51 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/cc-pvdz-jkfit.gbs 
 
    => Loading Basis Set <=
 
     Name: (CC-PVDZ AUX)
     Role: RIFIT
     Keyword: DF_BASIS_CC
-    atoms 1   entry O          line   235 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-ri.gbs 
-    atoms 2-3 entry H          line    19 file /edfs/users/deprince/edeprince3/psi4/install/master/share/psi4/basis/cc-pvdz-ri.gbs 
+    atoms 1   entry O          line   235 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/cc-pvdz-ri.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/cc-pvdz-ri.gbs 
 
 
 Reading options from the HILBERT block
 Calling plugin hilbert.so.
 
 
-    Molecular point group: c1
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
     Full point group: C2v
 
     Geometry (in Angstrom), charge = 0, multiplicity = 1:
@@ -538,13 +544,13 @@ Calling plugin hilbert.so.
 
 
 
-    Guess energy:      -76.021397464653
+    Guess energy:      -76.021350168196
 
     ==>  Begin SCF Iterations <==
 
      Iter               energy                   dE          RMS |[F,P]| 
-        0     -76.016328206231       0.005069258421       0.000115424894
-        1     -76.016332483502      -0.000004277271       0.000054731310
+        0     -76.016328206231       0.005021961965       0.000115424894
+        1     -76.016332483503      -0.000004277272       0.000054731310
         2     -76.016333211006      -0.000000727504       0.000026134522
         3     -76.016334297780      -0.000001086774       0.000007219095
         4     -76.016334128451       0.000000169329       0.000001209742
@@ -553,73 +559,104 @@ Calling plugin hilbert.so.
         7     -76.016334290727       0.000000000052       0.000000004835
         8     -76.016334290633       0.000000000094       0.000000000819
         9     -76.016334290627       0.000000000005       0.000000000827
-       10     -76.016334290633      -0.000000000005       0.000000000150
+       10     -76.016334290633      -0.000000000006       0.000000000150
        11     -76.016334290630       0.000000000002       0.000000000031
        12     -76.016334290632      -0.000000000002       0.000000000007
        13     -76.016334290632       0.000000000000       0.000000000001
 
     SCF iterations converged!
 
-    * Polaritonic UHF total energy:     -76.016334290632
+
+    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
+
+    one-electron part;        0.008069630989
+    two-electron part:       -0.003012506141
+    total:                    0.005057124848
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       5.297940211404
+    one electron (xy):       0.000000000000
+    one electron (xz):       0.000000000000
+    one electron (yy):       7.455228715806
+    one electron (yz):      -0.000000000000
+    one electron (zz):       6.455704791155
+
+    two electron (xx):      -1.754754073023
+    two electron (xy):      -0.000000000000
+    two electron (xz):      -0.000000000000
+    two electron (yy):      -2.943487876901
+    two electron (yz):       0.000000000000
+    two electron (zz):      -2.410004912496
+
+    total (xx):              3.543186138380
+    total (xy):              0.000000000000
+    total (xz):              0.000000000000
+    total (yy):              4.511740838905
+    total (yz):              0.000000000000
+    total (zz):              4.045699878659
+
 
     <S^2> Expected:       0.000000000000
     <S^2> Observed:       0.000000000000
 
+    * Polaritonic UHF total energy:     -76.016334290632
 
  #  #
  Irrep: 1
-      1: -20.5561448
-      2: -1.3158935
-      3: -0.6758515
-      4: -0.5578631
-      5: -0.4890480
-      6:  0.1830010
-      7:  0.2540151
-      8:  0.7623123
-      9:  0.8192427
-     10:  1.1696445
-     11:  1.2003339
-     12:  1.2590564
-     13:  1.4550956
-     14:  1.4684301
-     15:  1.6701359
-     16:  1.8794248
-     17:  1.8932183
-     18:  2.3574361
-     19:  2.3908878
-     20:  3.2508752
-     21:  3.2996907
-     22:  3.4565360
-     23:  3.8236815
-     24:  4.1013916
+      1:  -20.556144768764643
+      2:   -1.315893504351612
+      3:   -0.675851460326692
+      4:   -0.557863116881915
+      5:   -0.489047954313557
+      6:    0.183001030606117
+      7:    0.254015066669562
+      8:    0.762312329962506
+      9:    0.819242657620358
+     10:    1.169644490069911
+     11:    1.200333946565953
+     12:    1.259056399882435
+     13:    1.455095619739372
+     14:    1.468430127430924
+     15:    1.670135905324052
+     16:    1.879424757115351
+     17:    1.893218325344033
+     18:    2.357436059624239
+     19:    2.390887757413251
+     20:    3.250875239543816
+     21:    3.299690691706032
+     22:    3.456536047932671
+     23:    3.823681546161045
+     24:    4.101391565369557
 
 
  #  #
  Irrep: 1
-      1: -20.5561448
-      2: -1.3158935
-      3: -0.6758515
-      4: -0.5578631
-      5: -0.4890480
-      6:  0.1830010
-      7:  0.2540151
-      8:  0.7623123
-      9:  0.8192427
-     10:  1.1696445
-     11:  1.2003339
-     12:  1.2590564
-     13:  1.4550956
-     14:  1.4684301
-     15:  1.6701359
-     16:  1.8794248
-     17:  1.8932183
-     18:  2.3574361
-     19:  2.3908878
-     20:  3.2508752
-     21:  3.2996907
-     22:  3.4565360
-     23:  3.8236815
-     24:  4.1013916
+      1:  -20.556144768764643
+      2:   -1.315893504351612
+      3:   -0.675851460326692
+      4:   -0.557863116881915
+      5:   -0.489047954313557
+      6:    0.183001030606117
+      7:    0.254015066669562
+      8:    0.762312329962506
+      9:    0.819242657620358
+     10:    1.169644490069911
+     11:    1.200333946565953
+     12:    1.259056399882435
+     13:    1.455095619739372
+     14:    1.468430127430924
+     15:    1.670135905324052
+     16:    1.879424757115351
+     17:    1.893218325344033
+     18:    2.357436059624239
+     19:    2.390887757413251
+     20:    3.250875239543816
+     21:    3.299690691706032
+     22:    3.456536047932671
+     23:    3.823681546161045
+     24:    4.101391565369557
 
     Molecular point group: c1
     Full point group: C2v
@@ -744,6 +781,7 @@ Calling plugin hilbert.so.
     Spherical Harmonics?: true
     Max angular momentum: 3
 
+  DFTensor Memory: Qso construction needs 0.001 GiB; user supplied 0.464 GiB. 
 
     No. basis functions:               24
     No. auxiliary basis functions:     84
@@ -758,34 +796,34 @@ Calling plugin hilbert.so.
     ==>  Begin CCSD Iterations <==
 
      Iter               energy                   dE                 |dT| 
-        0      -0.208719510989      -0.208719510989       0.459092285158
-        1      -0.213328526254      -0.004609015266       0.062395988267
-        2      -0.217683074071      -0.004354547816       0.022042760054
-        3      -0.218304562033      -0.000621487962       0.006397027076
-        4      -0.218322402052      -0.000017840019       0.001627818372
-        5      -0.218319451121       0.000002950931       0.000476122982
-        6      -0.218319772291      -0.000000321170       0.000168890392
-        7      -0.218320241328      -0.000000469037       0.000045566188
-        8      -0.218320132217       0.000000109111       0.000010300760
-        9      -0.218320124444       0.000000007774       0.000005010876
-       10      -0.218320114209       0.000000010235       0.000002928168
-       11      -0.218320112394       0.000000001815       0.000000261708
-       12      -0.218320112798      -0.000000000404       0.000000056257
-       13      -0.218320112800      -0.000000000003       0.000000015528
-       14      -0.218320112822      -0.000000000022       0.000000005131
-       15      -0.218320112827      -0.000000000005       0.000000001574
-       16      -0.218320112828      -0.000000000000       0.000000000374
-       17      -0.218320112830      -0.000000000003       0.000000000040
-       18      -0.218320112831      -0.000000000001       0.000000000012
-       19      -0.218320112831      -0.000000000000       0.000000000003
-       20      -0.218320112831      -0.000000000000       0.000000000001
+        0      -0.208719510990      -0.208719510990       0.459092285158
+        1      -0.213328526256      -0.004609015266       0.062395988267
+        2      -0.217683074073      -0.004354547817       0.022042760054
+        3      -0.218304562035      -0.000621487963       0.006397027076
+        4      -0.218322402054      -0.000017840019       0.001627818372
+        5      -0.218319451123       0.000002950931       0.000476122982
+        6      -0.218319772293      -0.000000321170       0.000168890392
+        7      -0.218320241330      -0.000000469037       0.000045566188
+        8      -0.218320132219       0.000000109111       0.000010300760
+        9      -0.218320124446       0.000000007774       0.000005010876
+       10      -0.218320114210       0.000000010235       0.000002928168
+       11      -0.218320112395       0.000000001815       0.000000261708
+       12      -0.218320112799      -0.000000000404       0.000000056257
+       13      -0.218320112802      -0.000000000003       0.000000015528
+       14      -0.218320112824      -0.000000000022       0.000000005131
+       15      -0.218320112829      -0.000000000005       0.000000001574
+       16      -0.218320112829      -0.000000000000       0.000000000374
+       17      -0.218320112832      -0.000000000003       0.000000000040
+       18      -0.218320112833      -0.000000000000       0.000000000012
+       19      -0.218320112833      -0.000000000000       0.000000000003
+       20      -0.218320112833       0.000000000000       0.000000000001
 
     CCSD iterations converged!
 
-    * Polaritonic UCCSD total energy:     -76.234654403463
+    * Polaritonic UCCSD total energy:     -76.234654403465
     UCCSD total energy....................................................................PASSED
 
-    Psi4 stopped on: Wednesday, 11 August 2021 04:06PM
-    Psi4 wall time for execution: 0:00:07.26
+    Psi4 stopped on: Monday, 01 July 2024 01:31PM
+    Psi4 wall time for execution: 0:00:03.32
 
 *** Psi4 exiting successfully. Buy a developer a beer!

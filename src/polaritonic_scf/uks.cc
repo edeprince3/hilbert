@@ -366,7 +366,6 @@ double PolaritonicUKS::compute_energy() {
             // form Fa/b = h + Ja + Jb + Va/b
             Fa_->add(Va_);
             Fb_->add(Vb_);
-
         }
 
         // exact exchange?

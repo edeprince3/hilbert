@@ -13,27 +13,37 @@ symmetry c1
 }
 
 set {
-  basis sto-3g #cc-pvdz #def2-tzvppd #d-aug-cc-pv5z
+  basis sto-3g 
   scf_type df 
   e_convergence 1e-10
   d_convergence 1e-10 
 } 
 
+# frequency: 2.0 eV
+w = 0.07349864501573
+
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+g = 0.05 / np.sqrt(2.0 * w)
+
 set { 
   maxiter 500
   n_photon_states          2
-  cavity_frequency         [0.0, 0.0, 0.495589583372]
-  cavity_coupling_strength [0.0, 0.0, 0.150221990521748]
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
 }
 
-set points 5
+set points 3
 set reference uks
-#set dft_spherical_points 5810
+set dft_spherical_points 590
 set {
-    cavity_qed_dft_functional 'pbe'
+    qed_dft_functional 'pbe'
 }
-g1 = np.asarray(gradient('polaritonic-uks',dertype=0))
-g2 = np.asarray(gradient('polaritonic-uks',dertype=1))
+g1 = np.asarray(gradient('qed-dft',dertype=0))
+g2 = np.asarray(gradient('qed-dft',dertype=1))
 diff = g2 - g1
-print('||g-g||',np.linalg.norm(diff))
+
+
+#print('||g-g||',np.linalg.norm(diff))
+compare_values(0.0, np.linalg.norm(diff), 5, "QED-DFT numerical versus analytic energy gradient") # TEST
 
