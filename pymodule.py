@@ -704,6 +704,61 @@ def density_analysis(**kwargs):
 
     return real_space_density
 
+def run_mcpdft(name, **kwargs):
+    r"""Function encoding sequence of PSI module and plugin calls so that
+    mcpdft can be called via :py:func:`~driver.energy`. For post-scf plugins.
+
+    >>> energy('mcpdft')
+
+    """
+    lowername = name.lower()
+    kwargs = p4util.kwargs_lower(kwargs)
+
+    optstash = p4util.OptionsState(
+        ['SCF', 'DF_INTS_IO'])
+
+    psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
+
+    v2rdm_wfn = kwargs.get('ref_wfn', None)
+    if v2rdm_wfn is None:
+        raise ValidationError("""Error: %s requires a reference wave function (v2rdm-casscf).""" % name)
+
+    psi4.core.set_variable("V2RDM TOTAL ENERGY",v2rdm_wfn.energy())
+   
+    if ( (psi4.core.get_option('HILBERT', 'MCPDFT_METHOD') == '1DH_MCPDFT')
+    or (psi4.core.get_option('HILBERT', 'MCPDFT_METHOD') == 'LS1DH_MCPDFT') ): 
+        proc.run_dfmp2('mp2',**kwargs)
+
+    if ('WBLYP' == psi4.core.get_option('HILBERT','MCPDFT_FUNCTIONAL')):
+       func = 'BLYP'
+    else:
+       func = psi4.core.get_option('HILBERT','MCPDFT_FUNCTIONAL')
+    ref_molecule = kwargs.get('molecule', psi4.core.get_active_molecule())
+    base_wfn = psi4.core.Wavefunction.build(ref_molecule, psi4.core.get_global_option('BASIS'))
+    ref_wfn = proc.scf_wavefunction_factory(func, base_wfn, psi4.core.get_global_option('REFERENCE'))
+
+    # push v2rdm-casscf orbitals onto reference 
+    for irrep in range (0,v2rdm_wfn.Ca().nirrep()): 
+        ref_wfn.Ca().nph[irrep][:,:] = v2rdm_wfn.Ca().nph[irrep][:,:]
+        ref_wfn.Cb().nph[irrep][:,:] = v2rdm_wfn.Cb().nph[irrep][:,:]
+
+    # push v2rdm-casscf energies onto reference
+    for irrep in range (0,v2rdm_wfn.epsilon_a().nirrep()): 
+        ref_wfn.epsilon_a().nph[irrep][:] = v2rdm_wfn.epsilon_a().nph[irrep][:]
+        ref_wfn.epsilon_b().nph[irrep][:] = v2rdm_wfn.epsilon_b().nph[irrep][:]
+
+    # set the hilbert method
+    psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'MCPDFT')
+
+    # Call the Psi4 plugin
+    # Please note that setting the reference wavefunction in this way is ONLY for plugins
+    mcpdft_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
+
+    optstash.restore()
+
+    return mcpdft_wfn
+
+
 # Integration with driver routines
 
 # jellium-scf
@@ -739,4 +794,7 @@ psi4.driver.procedures['energy']['qed-ccsd'] = run_qed_scf
 
 psi4.driver.procedures['gradient']['qed-scf'] = run_qed_scf_gradient
 psi4.driver.procedures['gradient']['qed-dft'] = run_qed_scf_gradient
+
+# mcpdft
+psi4.driver.procedures['energy']['mcpdft'] = run_mcpdft
 

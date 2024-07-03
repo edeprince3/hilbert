@@ -46,6 +46,7 @@
 #include <polaritonic_scf/rcis.h>
 #include <polaritonic_scf/rtddft.h>
 #include <polaritonic_scf/utddft.h>
+#include <mcpdft/mcpdft_solver.h>
 
 #include <misc/backtransform_tpdm.h>
 
@@ -61,7 +62,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_RTDDFT POLARITONIC_UTDDFT POLARITONIC_RPA");
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_RTDDFT POLARITONIC_UTDDFT POLARITONIC_RPA MCPDFT");
 
         /*- Do DIIS? -*/
         options.add_bool("DIIS", true);
@@ -379,6 +380,40 @@ int read_options(std::string name, Options& options)
 
         /*- number of roots -*/
         options.add_int("NUMBER_ROOTS", 5);
+
+        /*- SUBSECTION MCPDFT -*/
+
+       /*- MCPDFT type -*/
+        options.add_str("MCPDFT_METHOD", "MCPDFT",
+                        "MCPDFT \
+                         1H_MCPDFT \
+                         1DH_MCPDFT \
+                         RS1H_MCPDFT \
+                         RS1DH_MCPDFT \
+                         LS1DH_MCPDFT \
+                         LH_MCPDFT");
+        /*- The range-separation parameter -*/
+        options.add_double("MCPDFT_OMEGA", 0.0);
+        /*- Coupling parameter Lambda for hybrid MCPDFT functionals -*/
+        options.add_double("MCPDFT_LAMBDA", 0.00);
+        /*- MCPDFT functional -*/
+        options.add_str("MCPDFT_FUNCTIONAL", "SVWN",
+                        "SVWN \
+                         PBE \
+                         REVPBE \
+                         BOP \
+                         BLYP \
+                         WPBE \
+                         LRC_WPBE \
+                         WBLYP");
+        /*- type of density and density gradient translation:
+        REGULAR = The gradients of on-top density are not considered in the polarization factor zeta
+        FULL = The gradients of on-top density is included in the polarization factor zeta       -*/
+        options.add_str("MCPDFT_TRANSLATION_TYPE", "REGULAR", "REGULAR FULL");
+        /*- JK object type can be DF or PK -*/
+        options.add_str("MCPDFT_TYPE", "DF", "DF PK");
+        /*- reference type -*/
+        options.add_str("MCPDFT_REFERENCE", "V2RDM", "V2RDM CI");
     }
 
     return true;
@@ -541,6 +576,12 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
             throw PsiException("unknown REFERENCE for polaritonic UHF",__FILE__,__LINE__);
 
         }
+
+    }else if ( options.get_str("HILBERT_METHOD") == "MCPDFT") {
+
+        std::shared_ptr<MCPDFTSolver> pdft (new MCPDFTSolver(ref_wfn,options));
+        double energy = pdft->compute_energy();
+        return (std::shared_ptr<Wavefunction>)pdft;
 
     }else {
 

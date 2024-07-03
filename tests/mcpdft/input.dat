@@ -1,0 +1,61 @@
+
+memory 1gb
+
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule mol {
+0 1
+o
+h 1 0.9
+h 1 0.9 2 104.5
+symmetry c1
+}
+
+set {
+  basis sto-3g 
+  scf_type df
+  d_convergence 1e-8
+  reference rhf
+}
+
+set hilbert {
+
+  positivity dqg
+  opdm_write_full true
+  tpdm_write_full true
+  constrain_spin true
+  nat_orbs true
+  r_convergence  1e-5
+  e_convergence  1e-5
+  cg_convergence 1e-6
+  maxiter 1000000
+
+  optimize_orbitals true
+
+  mu_update_frequency 500
+
+  #restricted_docc  [ 1, 0, 0, 0 ]
+  #active           [ 3, 0, 1, 2 ]
+  restricted_docc  [ 0 ]
+  active           [ 6 ]
+
+  #restricted_docc  [ 0 ]
+  #active           [ 2 ]
+
+  mcpdft_reference v2rdm
+  mcpdft_type df
+  mcpdft_functional blyp
+  mcpdft_method mcpdft
+}
+
+
+# run v2rdm-casscf
+en,wfn = energy('v2rdm-casscf',return_wfn=True)
+
+# it is important that the reference is set to uks for mcpdft
+set  reference uks
+
+# pass v2rdm-casscf wavefunction object into mcpdft
+energy('mcpdft',ref_wfn=wfn)
+
