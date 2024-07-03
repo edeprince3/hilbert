@@ -339,7 +339,7 @@ int read_options(std::string name, Options& options)
         options.add_str("QED_DFT_FUNCTIONAL", "B3LYP");
 
         /*- number of photon number states -*/
-        options.add_int("N_PHOTON_STATES", 1);
+        options.add_int("N_PHOTON_STATES", 2);
 
         /*- do use coherent-state basis? !expert -*/
         options.add_bool("USE_COHERENT_STATE_BASIS", true);

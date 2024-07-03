@@ -31,10 +31,10 @@
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Monday, 01 July 2024 01:31PM
+    Psi4 started on: Tuesday, 02 July 2024 09:58PM
 
-    Process ID: 65448
-    Host:       wc-dhcp35d189.employee-secure.wireless.fsu.edu
+    Process ID: 80658
+    Host:       Alberts-MacBook-Pro.local
     PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
     Memory:     500.0 MiB
     Threads:    1
@@ -88,7 +88,6 @@ g = 0.05 / np.sqrt(2.0 * w)
 
 set {
   maxiter 500
-  n_photon_states          2
   cavity_frequency         [0.0, 0.0, $w]
   cavity_coupling_strength [0.0, 0.0, $g]
   qed_dft_functional tpssh
@@ -134,8 +133,8 @@ Scratch directory: /tmp/
     Onebody   basis highest AM E, G, H:  6, 5, 4
     Solid Harmonics ordering:            Gaussian
 
-*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
-*** at Mon Jul  1 13:31:08 2024
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:58:44 2024
 
    => Loading Basis Set <=
 
@@ -451,14 +450,14 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:11 2024
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:58:47 2024
 Module time:
-	user time   =       2.56 seconds =       0.04 minutes
-	system time =       0.22 seconds =       0.00 minutes
+	user time   =       2.54 seconds =       0.04 minutes
+	system time =       0.15 seconds =       0.00 minutes
 	total time  =          3 seconds =       0.05 minutes
 Total time:
-	user time   =       2.56 seconds =       0.04 minutes
-	system time =       0.22 seconds =       0.00 minutes
+	user time   =       2.54 seconds =       0.04 minutes
+	system time =       0.15 seconds =       0.00 minutes
 	total time  =          3 seconds =       0.05 minutes
    => Loading Basis Set <=
 
@@ -790,13 +789,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     SCF iterations converged!
 
 
-    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
-
-    one-electron part;        0.008573777086
-    two-electron part:       -0.002911692830
-    total:                    0.005662084256
-
-
     ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
     one electron (xx):       5.822321531223
@@ -989,8 +981,8 @@ Scratch directory: /tmp/
     Onebody   basis highest AM E, G, H:  6, 5, 4
     Solid Harmonics ordering:            Gaussian
 
-*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
-*** at Mon Jul  1 13:31:14 2024
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:58:50 2024
 
    => Loading Basis Set <=
 
@@ -1306,14 +1298,14 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:16 2024
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:58:52 2024
 Module time:
 	user time   =       2.49 seconds =       0.04 minutes
 	system time =       0.09 seconds =       0.00 minutes
 	total time  =          2 seconds =       0.03 minutes
 Total time:
-	user time   =       8.10 seconds =       0.13 minutes
-	system time =       0.35 seconds =       0.01 minutes
+	user time   =       8.08 seconds =       0.13 minutes
+	system time =       0.30 seconds =       0.01 minutes
 	total time  =          8 seconds =       0.13 minutes
    => Loading Basis Set <=
 
@@ -1645,13 +1637,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     SCF iterations converged!
 
 
-    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
-
-    one-electron part;        0.008573777086
-    two-electron part:       -0.002911692830
-    total:                    0.005662084256
-
-
     ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
     one electron (xx):       5.822321531225
@@ -1844,8 +1829,8 @@ Scratch directory: /tmp/
     Onebody   basis highest AM E, G, H:  6, 5, 4
     Solid Harmonics ordering:            Gaussian
 
-*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
-*** at Mon Jul  1 13:31:20 2024
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:58:55 2024
 
    => Loading Basis Set <=
 
@@ -2161,14 +2146,14 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:22 2024
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:58:58 2024
 Module time:
-	user time   =       2.50 seconds =       0.04 minutes
-	system time =       0.07 seconds =       0.00 minutes
-	total time  =          2 seconds =       0.03 minutes
+	user time   =       2.52 seconds =       0.04 minutes
+	system time =       0.08 seconds =       0.00 minutes
+	total time  =          3 seconds =       0.05 minutes
 Total time:
 	user time   =      13.68 seconds =       0.23 minutes
-	system time =       0.47 seconds =       0.01 minutes
+	system time =       0.43 seconds =       0.01 minutes
 	total time  =         14 seconds =       0.23 minutes
    => Loading Basis Set <=
 
@@ -2500,13 +2485,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     SCF iterations converged!
 
 
-    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
-
-    one-electron part;        0.008573777086
-    two-electron part:       -0.002911692830
-    total:                    0.005662084256
-
-
     ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
     one electron (xx):       5.822321531222
@@ -2689,7 +2667,7 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
 
     QED-DFT total energy (yzx)............................................................PASSED
 
-    Psi4 stopped on: Monday, 01 July 2024 01:31PM
-    Psi4 wall time for execution: 0:00:17.10
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
+    Psi4 wall time for execution: 0:00:17.18
 
 *** Psi4 exiting successfully. Buy a developer a beer!

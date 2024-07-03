@@ -7,4 +7,5 @@ src/psi4numpy)polaritonic_scf/.DS_Store
 src/psi4numpy_polaritonic_scf/.ipynb_checkpoints/*
 .ipynb_checkpoints/*
 *.dat
+*.log
 src/psi4numpy_polaritonic_scf/nax_forjay/*

@@ -41,7 +41,6 @@ g = 0.05 / np.sqrt(2.0 * w)
 
 set hilbert {
   maxiter 500
-  n_photon_states          2
   cavity_frequency         [0.0, 0.0, $w]
   cavity_coupling_strength [0.0, 0.0, $g]
   maxdim                   15

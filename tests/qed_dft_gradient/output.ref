@@ -31,10 +31,10 @@
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Monday, 01 July 2024 01:31PM
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
 
-    Process ID: 65459
-    Host:       wc-dhcp35d189.employee-secure.wireless.fsu.edu
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
     PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
     Memory:     500.0 MiB
     Threads:    1
@@ -72,7 +72,6 @@ g = 0.05 / np.sqrt(2.0 * w)
 
 set { 
   maxiter 500
-  n_photon_states          2
   cavity_frequency         [0.0, 0.0, $w]
   cavity_coupling_strength [0.0, 0.0, $g]
 }
@@ -146,10 +145,10 @@ Scratch directory: /tmp/
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Monday, 01 July 2024 01:31PM
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
 
-    Process ID: 65459
-    Host:       wc-dhcp35d189.employee-secure.wireless.fsu.edu
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
     PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
     Memory:     500.0 MiB
     Threads:    1
@@ -166,7 +165,6 @@ Scratch directory: /tmp/
               'D_CONVERGENCE': 1e-10,
               'E_CONVERGENCE': 1e-10,
               'MAXITER': 500,
-              'N_PHOTON_STATES': 2,
               'PARENT_SYMMETRY': 'C1',
               'POINTS': 3,
               'QED_DFT_FUNCTIONAL': 'PBE',
@@ -214,8 +212,8 @@ Scratch directory: /tmp/
     Onebody   basis highest AM E, G, H:  6, 5, 4
     Solid Harmonics ordering:            Gaussian
 
-*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
-*** at Mon Jul  1 13:31:26 2024
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:02 2024
 
    => Loading Basis Set <=
 
@@ -480,7 +478,7 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:27 2024
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:03 2024
 Module time:
 	user time   =       0.72 seconds =       0.01 minutes
 	system time =       0.05 seconds =       0.00 minutes
@@ -716,13 +714,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     SCF iterations converged!
 
 
-    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
-
-    one-electron part;        0.007660100703
-    two-electron part:       -0.003028410415
-    total:                    0.004631690288
-
-
     ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
     one electron (xx):       4.562898930282
@@ -770,7 +761,7 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
       7:    0.377916341854913
 
 
-    Psi4 stopped on: Monday, 01 July 2024 01:31PM
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
     Psi4 wall time for execution: 0:00:01.40
 
 
@@ -806,10 +797,10 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Monday, 01 July 2024 01:31PM
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
 
-    Process ID: 65459
-    Host:       wc-dhcp35d189.employee-secure.wireless.fsu.edu
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
     PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
     Memory:     500.0 MiB
     Threads:    1
@@ -826,7 +817,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
               'D_CONVERGENCE': 1e-10,
               'E_CONVERGENCE': 1e-10,
               'MAXITER': 500,
-              'N_PHOTON_STATES': 2,
               'PARENT_SYMMETRY': 'C1',
               'POINTS': 3,
               'QED_DFT_FUNCTIONAL': 'PBE',
@@ -874,8 +864,8 @@ Scratch directory: /tmp/
     Onebody   basis highest AM E, G, H:  6, 5, 4
     Solid Harmonics ordering:            Gaussian
 
-*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
-*** at Mon Jul  1 13:31:27 2024
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:04 2024
 
    => Loading Basis Set <=
 
@@ -1142,13 +1132,13 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:28 2024
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:04 2024
 Module time:
-	user time   =       0.81 seconds =       0.01 minutes
+	user time   =       0.80 seconds =       0.01 minutes
 	system time =       0.03 seconds =       0.00 minutes
-	total time  =          1 seconds =       0.02 minutes
+	total time  =          0 seconds =       0.00 minutes
 Total time:
-	user time   =       2.15 seconds =       0.04 minutes
+	user time   =       2.14 seconds =       0.04 minutes
 	system time =       0.10 seconds =       0.00 minutes
 	total time  =          2 seconds =       0.03 minutes
    => Loading Basis Set <=
@@ -1379,13 +1369,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     SCF iterations converged!
 
 
-    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
-
-    one-electron part;        0.007660109218
-    two-electron part:       -0.003028415237
-    total:                    0.004631693982
-
-
     ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
     one electron (xx):       4.562896968725
@@ -1433,8 +1416,8 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
       7:    0.377947732870182
 
 
-    Psi4 stopped on: Monday, 01 July 2024 01:31PM
-    Psi4 wall time for execution: 0:00:01.55
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
+    Psi4 wall time for execution: 0:00:01.54
 
 
     -----------------------------------------------------------------------
@@ -1469,10 +1452,10 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Monday, 01 July 2024 01:31PM
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
 
-    Process ID: 65459
-    Host:       wc-dhcp35d189.employee-secure.wireless.fsu.edu
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
     PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
     Memory:     500.0 MiB
     Threads:    1
@@ -1489,7 +1472,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
               'D_CONVERGENCE': 1e-10,
               'E_CONVERGENCE': 1e-10,
               'MAXITER': 500,
-              'N_PHOTON_STATES': 2,
               'PARENT_SYMMETRY': 'C1',
               'POINTS': 3,
               'QED_DFT_FUNCTIONAL': 'PBE',
@@ -1537,8 +1519,8 @@ Scratch directory: /tmp/
     Onebody   basis highest AM E, G, H:  6, 5, 4
     Solid Harmonics ordering:            Gaussian
 
-*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
-*** at Mon Jul  1 13:31:29 2024
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:05 2024
 
    => Loading Basis Set <=
 
@@ -1805,13 +1787,13 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:30 2024
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:06 2024
 Module time:
 	user time   =       0.81 seconds =       0.01 minutes
 	system time =       0.03 seconds =       0.00 minutes
 	total time  =          1 seconds =       0.02 minutes
 Total time:
-	user time   =       3.66 seconds =       0.06 minutes
+	user time   =       3.65 seconds =       0.06 minutes
 	system time =       0.15 seconds =       0.00 minutes
 	total time  =          4 seconds =       0.07 minutes
    => Loading Basis Set <=
@@ -2042,13 +2024,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     SCF iterations converged!
 
 
-    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
-
-    one-electron part;        0.007660109218
-    two-electron part:       -0.003028415237
-    total:                    0.004631693982
-
-
     ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
     one electron (xx):       4.562896968724
@@ -2096,8 +2071,8 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
       7:    0.377947732868030
 
 
-    Psi4 stopped on: Monday, 01 July 2024 01:31PM
-    Psi4 wall time for execution: 0:00:01.56
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
+    Psi4 wall time for execution: 0:00:01.55
 
 
     -----------------------------------------------------------------------
@@ -2132,10 +2107,10 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Monday, 01 July 2024 01:31PM
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
 
-    Process ID: 65459
-    Host:       wc-dhcp35d189.employee-secure.wireless.fsu.edu
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
     PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
     Memory:     500.0 MiB
     Threads:    1
@@ -2152,7 +2127,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
               'D_CONVERGENCE': 1e-10,
               'E_CONVERGENCE': 1e-10,
               'MAXITER': 500,
-              'N_PHOTON_STATES': 2,
               'PARENT_SYMMETRY': 'C1',
               'POINTS': 3,
               'QED_DFT_FUNCTIONAL': 'PBE',
@@ -2200,8 +2174,8 @@ Scratch directory: /tmp/
     Onebody   basis highest AM E, G, H:  6, 5, 4
     Solid Harmonics ordering:            Gaussian
 
-*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
-*** at Mon Jul  1 13:31:31 2024
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:07 2024
 
    => Loading Basis Set <=
 
@@ -2466,14 +2440,14 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:31 2024
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:07 2024
 Module time:
-	user time   =       0.68 seconds =       0.01 minutes
-	system time =       0.03 seconds =       0.00 minutes
+	user time   =       0.67 seconds =       0.01 minutes
+	system time =       0.02 seconds =       0.00 minutes
 	total time  =          0 seconds =       0.00 minutes
 Total time:
-	user time   =       5.03 seconds =       0.08 minutes
-	system time =       0.20 seconds =       0.00 minutes
+	user time   =       5.02 seconds =       0.08 minutes
+	system time =       0.19 seconds =       0.00 minutes
 	total time  =          5 seconds =       0.08 minutes
    => Loading Basis Set <=
 
@@ -2702,13 +2676,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     SCF iterations converged!
 
 
-    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
-
-    one-electron part;        0.007675506797
-    two-electron part:       -0.003033319676
-    total:                    0.004642187121
-
-
     ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
     one electron (xx):       4.563764811546
@@ -2756,7 +2723,7 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
       7:    0.376376359045129
 
 
-    Psi4 stopped on: Monday, 01 July 2024 01:31PM
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
     Psi4 wall time for execution: 0:00:01.33
 
 
@@ -2792,10 +2759,10 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Monday, 01 July 2024 01:31PM
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
 
-    Process ID: 65459
-    Host:       wc-dhcp35d189.employee-secure.wireless.fsu.edu
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
     PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
     Memory:     500.0 MiB
     Threads:    1
@@ -2812,7 +2779,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
               'D_CONVERGENCE': 1e-10,
               'E_CONVERGENCE': 1e-10,
               'MAXITER': 500,
-              'N_PHOTON_STATES': 2,
               'PARENT_SYMMETRY': 'C1',
               'POINTS': 3,
               'QED_DFT_FUNCTIONAL': 'PBE',
@@ -2860,8 +2826,8 @@ Scratch directory: /tmp/
     Onebody   basis highest AM E, G, H:  6, 5, 4
     Solid Harmonics ordering:            Gaussian
 
-*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
-*** at Mon Jul  1 13:31:32 2024
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:08 2024
 
    => Loading Basis Set <=
 
@@ -3126,14 +3092,14 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:33 2024
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:09 2024
 Module time:
 	user time   =       0.68 seconds =       0.01 minutes
 	system time =       0.02 seconds =       0.00 minutes
 	total time  =          1 seconds =       0.02 minutes
 Total time:
 	user time   =       6.32 seconds =       0.11 minutes
-	system time =       0.24 seconds =       0.00 minutes
+	system time =       0.23 seconds =       0.00 minutes
 	total time  =          7 seconds =       0.12 minutes
    => Loading Basis Set <=
 
@@ -3362,13 +3328,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     SCF iterations converged!
 
 
-    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
-
-    one-electron part;        0.007644752214
-    two-electron part:       -0.003023518856
-    total:                    0.004621233358
-
-
     ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
     one electron (xx):       4.562031531072
@@ -3416,7 +3375,7 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
       7:    0.379460021175469
 
 
-    Psi4 stopped on: Monday, 01 July 2024 01:31PM
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
     Psi4 wall time for execution: 0:00:01.33
 
 
@@ -3452,10 +3411,10 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Monday, 01 July 2024 01:31PM
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
 
-    Process ID: 65459
-    Host:       wc-dhcp35d189.employee-secure.wireless.fsu.edu
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
     PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
     Memory:     500.0 MiB
     Threads:    1
@@ -3472,7 +3431,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
               'D_CONVERGENCE': 1e-10,
               'E_CONVERGENCE': 1e-10,
               'MAXITER': 500,
-              'N_PHOTON_STATES': 2,
               'PARENT_SYMMETRY': 'C1',
               'POINTS': 3,
               'QED_DFT_FUNCTIONAL': 'PBE',
@@ -3520,8 +3478,8 @@ Scratch directory: /tmp/
     Onebody   basis highest AM E, G, H:  6, 5, 4
     Solid Harmonics ordering:            Gaussian
 
-*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
-*** at Mon Jul  1 13:31:33 2024
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:09 2024
 
    => Loading Basis Set <=
 
@@ -3786,10 +3744,10 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:34 2024
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:10 2024
 Module time:
-	user time   =       0.67 seconds =       0.01 minutes
-	system time =       0.02 seconds =       0.00 minutes
+	user time   =       0.68 seconds =       0.01 minutes
+	system time =       0.03 seconds =       0.00 minutes
 	total time  =          1 seconds =       0.02 minutes
 Total time:
 	user time   =       7.61 seconds =       0.13 minutes
@@ -4022,13 +3980,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     SCF iterations converged!
 
 
-    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
-
-    one-electron part;        0.007662160087
-    two-electron part:       -0.003028262660
-    total:                    0.004633897426
-
-
     ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
     one electron (xx):       4.563752881433
@@ -4076,7 +4027,7 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
       7:    0.376742251191343
 
 
-    Psi4 stopped on: Monday, 01 July 2024 01:31PM
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
     Psi4 wall time for execution: 0:00:01.33
 
 
@@ -4112,10 +4063,10 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Monday, 01 July 2024 01:31PM
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
 
-    Process ID: 65459
-    Host:       wc-dhcp35d189.employee-secure.wireless.fsu.edu
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
     PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
     Memory:     500.0 MiB
     Threads:    1
@@ -4132,7 +4083,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
               'D_CONVERGENCE': 1e-10,
               'E_CONVERGENCE': 1e-10,
               'MAXITER': 500,
-              'N_PHOTON_STATES': 2,
               'PARENT_SYMMETRY': 'C1',
               'POINTS': 3,
               'QED_DFT_FUNCTIONAL': 'PBE',
@@ -4180,8 +4130,8 @@ Scratch directory: /tmp/
     Onebody   basis highest AM E, G, H:  6, 5, 4
     Solid Harmonics ordering:            Gaussian
 
-*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
-*** at Mon Jul  1 13:31:35 2024
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:11 2024
 
    => Loading Basis Set <=
 
@@ -4446,14 +4396,14 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:35 2024
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:11 2024
 Module time:
 	user time   =       0.68 seconds =       0.01 minutes
-	system time =       0.03 seconds =       0.00 minutes
+	system time =       0.02 seconds =       0.00 minutes
 	total time  =          0 seconds =       0.00 minutes
 Total time:
-	user time   =       8.91 seconds =       0.15 minutes
-	system time =       0.33 seconds =       0.01 minutes
+	user time   =       8.90 seconds =       0.15 minutes
+	system time =       0.32 seconds =       0.01 minutes
 	total time  =          9 seconds =       0.15 minutes
    => Loading Basis Set <=
 
@@ -4682,13 +4632,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     SCF iterations converged!
 
 
-    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
-
-    one-electron part;        0.007658033246
-    two-electron part:       -0.003028545643
-    total:                    0.004629487602
-
-
     ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
     one electron (xx):       4.562043646836
@@ -4736,7 +4679,7 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
       7:    0.379091806358458
 
 
-    Psi4 stopped on: Monday, 01 July 2024 01:31PM
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
     Psi4 wall time for execution: 0:00:01.33
 
 
@@ -4767,8 +4710,8 @@ Scratch directory: /tmp/
     Onebody   basis highest AM E, G, H:  6, 5, 4
     Solid Harmonics ordering:            Gaussian
 
-*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
-*** at Mon Jul  1 13:31:36 2024
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:12 2024
 
    => Loading Basis Set <=
 
@@ -5033,14 +4976,14 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:37 2024
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:13 2024
 Module time:
 	user time   =       0.67 seconds =       0.01 minutes
 	system time =       0.02 seconds =       0.00 minutes
 	total time  =          1 seconds =       0.02 minutes
 Total time:
-	user time   =      10.21 seconds =       0.17 minutes
-	system time =       0.37 seconds =       0.01 minutes
+	user time   =      10.20 seconds =       0.17 minutes
+	system time =       0.36 seconds =       0.01 minutes
 	total time  =         11 seconds =       0.18 minutes
    => Loading Basis Set <=
 
@@ -5269,13 +5212,6 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     SCF iterations converged!
 
 
-    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
-
-    one-electron part;        0.007660100703
-    two-electron part:       -0.003028410415
-    total:                    0.004631690288
-
-
     ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
 
     one electron (xx):       4.562898930282
@@ -5323,8 +5259,8 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
       7:    0.377916341854913
 
 
-*** tstart() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu
-*** at Mon Jul  1 13:31:37 2024
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:13 2024
 
 
          ------------------------------------------------------------
@@ -5440,14 +5376,14 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
        3        0.000000000000    -0.012701620547    -0.031922777480
 
 
-*** tstop() called on wc-dhcp35d189.employee-secure.wireless.fsu.edu at Mon Jul  1 13:31:37 2024
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:13 2024
 Module time:
-	user time   =       0.13 seconds =       0.00 minutes
+	user time   =       0.12 seconds =       0.00 minutes
 	system time =       0.00 seconds =       0.00 minutes
 	total time  =          0 seconds =       0.00 minutes
 Total time:
-	user time   =      10.91 seconds =       0.18 minutes
-	system time =       0.39 seconds =       0.01 minutes
+	user time   =      10.90 seconds =       0.18 minutes
+	system time =       0.38 seconds =       0.01 minutes
 	total time  =         11 seconds =       0.18 minutes
 
 Electronic Gradient: norm =       0.080231403504
@@ -5501,7 +5437,7 @@ Gradient Difference: norm =      -0.002500839586
 
     QED-DFT numerical versus analytic energy gradient.....................................PASSED
 
-    Psi4 stopped on: Monday, 01 July 2024 01:31PM
-    Psi4 wall time for execution: 0:00:11.79
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
+    Psi4 wall time for execution: 0:00:11.91
 
 *** Psi4 exiting successfully. Buy a developer a beer!
