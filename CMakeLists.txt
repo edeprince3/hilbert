@@ -140,8 +140,6 @@ add_psi4_plugin(hilbert
     src/mcpdft/read_opdm.cc
     src/mcpdft/read_tpdm.cc
     src/mcpdft/lsda_gga_functionals.cc
-    src/mcpdft/rs_functionals.cc
-    src/mcpdft/read_range_separated_integrals.cc
 
     src/misc/real_space_density.cc
     src/misc/backtransform_tpdm.cc

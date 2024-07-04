@@ -384,28 +384,9 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION MCPDFT -*/
 
        /*- MCPDFT type -*/
-        options.add_str("MCPDFT_METHOD", "MCPDFT",
-                        "MCPDFT \
-                         1H_MCPDFT \
-                         1DH_MCPDFT \
-                         RS1H_MCPDFT \
-                         RS1DH_MCPDFT \
-                         LS1DH_MCPDFT \
-                         LH_MCPDFT");
-        /*- The range-separation parameter -*/
-        options.add_double("MCPDFT_OMEGA", 0.0);
-        /*- Coupling parameter Lambda for hybrid MCPDFT functionals -*/
-        options.add_double("MCPDFT_LAMBDA", 0.00);
+        options.add_str("MCPDFT_METHOD", "MCPDFT", "MCPDFT");
         /*- MCPDFT functional -*/
-        options.add_str("MCPDFT_FUNCTIONAL", "SVWN",
-                        "SVWN \
-                         PBE \
-                         REVPBE \
-                         BOP \
-                         BLYP \
-                         WPBE \
-                         LRC_WPBE \
-                         WBLYP");
+        options.add_str("MCPDFT_FUNCTIONAL", "SVWN", "SVWN PBE REVPBE BOP BLYP");
         /*- type of density and density gradient translation:
         REGULAR = The gradients of on-top density are not considered in the polarization factor zeta
         FULL = The gradients of on-top density is included in the polarization factor zeta       -*/

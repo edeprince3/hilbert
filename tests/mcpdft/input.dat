@@ -1,3 +1,4 @@
+#! MCPDFT
 
 memory 1gb
 
@@ -35,13 +36,8 @@ set hilbert {
 
   mu_update_frequency 500
 
-  #restricted_docc  [ 1, 0, 0, 0 ]
-  #active           [ 3, 0, 1, 2 ]
   restricted_docc  [ 0 ]
   active           [ 6 ]
-
-  #restricted_docc  [ 0 ]
-  #active           [ 2 ]
 
   mcpdft_reference v2rdm
   mcpdft_type df
@@ -53,9 +49,11 @@ set hilbert {
 # run v2rdm-casscf
 en,wfn = energy('v2rdm-casscf',return_wfn=True)
 
-# it is important that the reference is set to uks for mcpdft
+# reference should be uks in mcpdft
 set  reference uks
 
 # pass v2rdm-casscf wavefunction object into mcpdft
 energy('mcpdft',ref_wfn=wfn)
 
+refmcpdft = -75.251339068269
+compare_values(refmcpdft, variable("CURRENT ENERGY"), 5, "MCPDFT total energy") # TEST
