@@ -767,25 +767,11 @@ double MCPDFTSolver::compute_energy() {
 
     }
 
-    // Build the local mixing function (LMF) f(r)
-/*
-    if (options_.get_str("MCPDFT_METHOD") == "LH_MCPDFT") {
-
-    outfile->Printf("    ==> Build the local mixing function f(r) ...");
-    BuildLMF();
-    outfile->Printf(" Done. <==\n\n");
-       
-    }
-*/
     // calculate the on-top energy
 
     outfile->Printf("    ==> Evaluate the on-top energy contribution <==\n");
     outfile->Printf("\n");
 
-    // writing the QTAIM wfn file
-    //if ( options_.get_bool("WRITE_QTAIM_WFN") )
-    //   WriteQTAIM(Ca_,Cb_,epsilon_a_,epsilon_b_,occupation_a_,occupation_b_,"aimpac.txt");
-       
     /* ===================================================================================================
        calculate the complement short-range MCPDFT XC functional energy:
        E = min(Psi->N) { <Psi| T + Wee_LR(w) + lambda * Wee_SR(w) + Vne |Psi> + E_HXC_(w,lambda)[rho,pi] }
@@ -811,7 +797,6 @@ double MCPDFTSolver::compute_energy() {
           sr_Vee_energy_ = RangeSeparatedTEE("SR");
           lr_hartree_energy_ = RangeSeparated_HF_TEE("LR");
           sr_hartree_energy_ = RangeSeparated_HF_TEE("SR");
-
        }
        // extracting the lambda value from input file (default lambda=0.0)
        mcpdft_lambda = options_.get_double("MCPDFT_LAMBDA");
@@ -913,26 +898,10 @@ double MCPDFTSolver::compute_energy() {
     SharedMatrix Vb (new Matrix(mints->so_potential()));
     Vb->transform(Cb_);
     
-    double nuclear_attraction_energy = Da_->vector_dot(Va) 
-                                     + Db_->vector_dot(Vb);
+    double en_potential_energy = Da_->vector_dot(Va) 
+                               + Db_->vector_dot(Vb);
     
-    one_electron_energy  = nuclear_attraction_energy + kinetic_energy;
-
-//printf("yay!\n\n"); fflush(stdout);
-//    // Coulomb energy computed using J object
-//    // std::vector < std::shared_ptr<Matrix> > JK = BuildJK();
-//
-//printf("yay!\n\n"); fflush(stdout);
-//    double caa = Da_->vector_dot(JK[0]);
-//printf("yay!\n\n"); fflush(stdout);
-//    double cab = Da_->vector_dot(JK[1]);
-//printf("yay!\n\n"); fflush(stdout);
-//    double cba = Db_->vector_dot(JK[0]);
-//printf("yay!\n\n"); fflush(stdout);
-//    double cbb = Db_->vector_dot(JK[1]);
-//printf("yay!\n\n"); fflush(stdout);
-//
-//    double coulomb_energy = 0.5 * ( caa + cab + cba + cbb );
+    one_electron_energy  = en_potential_energy + kinetic_energy;
 
     // classical nuclear repulsion energy
     double nuclear_repulsion_energy = molecule_->nuclear_repulsion_energy({0.0,0.0,0.0});
@@ -940,44 +909,13 @@ double MCPDFTSolver::compute_energy() {
     // two-electron energy from reference wavefunction:  < Psi|  r12^-1 | Psi >
     two_electron_energy_ = reference_energy_ - nuclear_repulsion_energy - one_electron_energy;
 
-
-//     double hf_ex_energy = 0.0;
-//     double lr_ex_energy = 0.0;
-//     if ( (options_.get_str("MCPDFT_METHOD") != "MCPDFT") ) {
-// 
-//        // HF exchange energy should be computed using K object
-//        double kaa = Da_->vector_dot(JK[2]);
-//        double kbb = Db_->vector_dot(JK[3]);
-//  
-//        hf_ex_energy = -0.5 * (kaa + kbb);
-//     
-//        if (  (options_.get_str("MCPDFT_METHOD") != "1H_MCPDFT") 
-//           && (options_.get_str("MCPDFT_METHOD") != "1DH_MCPDFT") ) {
-// 
-//           // long range (LR) exchange energy calculated using JK object
-//           double wkaa = Da_->vector_dot(JK[4]);
-//           double wkbb = Db_->vector_dot(JK[5]);
-//  
-//           lr_ex_energy = -0.5 * (wkaa + wkbb);
-//        }
-//     }
-    // printf("Coulomb_energy    %20.12lf \n", coulomb_energy);
-    // printf("hartree_ex_energy %20.12lf \n", hf_ex_energy);
-    // printf("lr_ex_energy      %20.12lf \n", lr_ex_energy);
-    // printf("J-K               %20.12lf \n",coulomb_energy+ 0.25* hf_ex_energy);
-    // printf("J-wK              %20.12lf \n",coulomb_energy+ 0.75* lr_ex_energy);
-    // printf("J-K-wk            %20.12lf \n",coulomb_energy+ 0.25* hf_ex_energy + 0.75* lr_ex_energy);
-    // printf("two electron energies (ref, total, sr, lr) = %20.12lf %20.12lf %20.12lf %20.12lf \n\n",two_electron_energy_,sr_Vee_energy_+lr_Vee_energy_,sr_Vee_energy_,lr_Vee_energy_);
-
     // print total energy and its components
     outfile->Printf("    ==> Energetics <==\n");
     outfile->Printf("\n");
 
-    // outfile->Printf("        nuclear repulsion energy =    %20.12lf\n",molecule_->nuclear_repulsion_energy());
-    outfile->Printf("        nuclear repulsion energy  =         %20.12lf\n",nuclear_repulsion_energy);
-    outfile->Printf("        nuclear attraction energy =         %20.12lf\n",nuclear_attraction_energy);
-    outfile->Printf("        kinetic energy            =         %20.12lf\n",kinetic_energy);
-    outfile->Printf("        one-electron energy       =         %20.12lf\n",one_electron_energy);
+    outfile->Printf("        nuclear repulsion energy =          %20.12lf\n",nuclear_repulsion_energy);
+    outfile->Printf("        electron-nucleus potential energy = %20.12lf\n",en_potential_energy);
+    outfile->Printf("        electron kinetic energy =           %20.12lf\n",kinetic_energy);
     if ( (options_.get_str("MCPDFT_METHOD") == "1H_MCPDFT")
       || (options_.get_str("MCPDFT_METHOD") == "1DH_MCPDFT") 
       || (options_.get_str("MCPDFT_METHOD") == "LS1DH_MCPDFT") ) {
@@ -997,20 +935,10 @@ double MCPDFTSolver::compute_energy() {
        }
     }
     outfile->Printf("        classical coulomb energy  =         %20.12lf\n",coulomb_energy_);
-    if ( options_.get_str("MCPDFT_REFERENCE") == "V2RDM") {
-       outfile->Printf("        v2RDM-CASSCF energy contribution =  %20.12lf\n",
-                      nuclear_repulsion_energy + one_electron_energy + coulomb_energy_);
-    }else{
-         outfile->Printf("        CASSCF energy contribution =        %20.12lf\n",
-                        nuclear_repulsion_energy + one_electron_energy + coulomb_energy_);
-    }
     outfile->Printf("        Ex                        =         %20.12lf\n",mcpdft_ex);
     outfile->Printf("        Ec                        =         %20.12lf\n",mcpdft_ec);
-    outfile->Printf("        On-top energy             =         %20.12lf\n",mcpdft_ex + mcpdft_ec);
     outfile->Printf("\n");
 
-    // double total_energy = nuclear_repulsion_energy + one_electron_energy + lmbd * two_electron_energy_ + (1.0 - lmbd) * (coulomb_energy + hartree_ex_energy + lrc_ex_energy) + mcpdft_xc_energy;
-    // double wf_contribution  = one_electron_energy + lr_Vee_energy_ + mcpdft_lambda * sr_Vee_energy_;
     double wf_contribution  = one_electron_energy + mcpdft_lambda * two_electron_energy_;
     double dft_contribution = (1.0 - mcpdft_lambda) * (coulomb_energy_ + mcpdft_ex) + (1.0 - mcpdft_lambda * mcpdft_lambda) * mcpdft_ec;
     double total_energy = wf_contribution + dft_contribution + nuclear_repulsion_energy;
@@ -2293,27 +2221,6 @@ double MCPDFTSolver::RangeSeparatedTEE(std::string range_separation_type) {
     }
     psio->close(PSIF_V2RDM_D2BB,1);
 
-/*
-    SharedMatrix eri (new Matrix(mints->mo_erfc_eri(options_.get_double("MCPDFT_OMEGA"),Ca_,Cb_,Ca_,Cb_)));
-    double ** eri_p = eri->pointer();
-
-    // (11|22)
-    // (ij|kl) = erf_eri->pointer()[i*nmo_+j][k*nmo_+l]
-    double e2 = 0.0;
-    for (int i = 0; i < nmo_; i++) {
-        for (int j = 0; j < nmo_; j++) {
-            int ij = i*nmo_+j;
-            for (int k = 0; k < nmo_; k++) {
-                for (int l = 0; l < nmo_; l++) {
-                    int kl = k*nmo_+l;
-                    e2 += 0.5 * eri_p[ij][kl] * D2aa[i*nmo_*nmo_*nmo_+k*nmo_*nmo_+j*nmo_+l];
-                    e2 += 0.5 * eri_p[ij][kl] * D2bb[i*nmo_*nmo_*nmo_+k*nmo_*nmo_+j*nmo_+l];
-                    e2 += eri_p[ij][kl] * D2ab[i*nmo_*nmo_*nmo_+k*nmo_*nmo_+j*nmo_+l];
-                }
-            }
-        }
-    }
-*/
     std::shared_ptr<MintsHelper> mints(new MintsHelper(reference_wavefunction_));
     if (range_separation_type == "LR") {
        outfile->Printf("    ==> Transform ERF integrals <==\n");
@@ -3300,192 +3207,6 @@ void MCPDFTSolver::Fully_Translate(){
 
         }
     }
-}
-
-void MCPDFTSolver::polyradical_analysis() {
-
-        GetGridInfo();
-
-        std::shared_ptr<PSIO> psio (new PSIO());
-
-        // psio->set_pid("18332");
-
-        if ( !psio->exists(PSIF_V2RDM_D1A) ) throw PsiException("No D1a on disk",__FILE__,__LINE__);
-        if ( !psio->exists(PSIF_V2RDM_D1B) ) throw PsiException("No D1b on disk",__FILE__,__LINE__);
-
-        // D1a
-
-        psio->open(PSIF_V2RDM_D1A,PSIO_OPEN_OLD);
-
-        long int na;
-        psio->read_entry(PSIF_V2RDM_D1A,"length",(char*)&na,sizeof(long int));
-
-        opdm_a_ = (opdm *)malloc(na * sizeof(opdm));
-        psio->read_entry(PSIF_V2RDM_D1A,"D1a",(char*)opdm_a_,na * sizeof(opdm));
-        psio->close(PSIF_V2RDM_D1A,1);
-
-        for (int n = 0; n < na; n++) {
-
-            int i = opdm_a_[n].i;
-            int j = opdm_a_[n].j;
-
-            int hi = symmetry_[i];
-            int hj = symmetry_[j];
-
-            if ( hi != hj ) {
-                throw PsiException("error: something is wrong with the symmetry of the alpha OPDM",__FILE__,__LINE__);
-            }
-
-            int ii = i - pitzer_offset_[hi];
-            int jj = j - pitzer_offset_[hj];
-
-            Da_->pointer(hi)[ii][jj] = opdm_a_[n].value;
-
-        }
-
-        // D1b
-
-        psio->open(PSIF_V2RDM_D1B,PSIO_OPEN_OLD);
-
-        long int nb;
-        psio->read_entry(PSIF_V2RDM_D1B,"length",(char*)&nb,sizeof(long int));
-
-        opdm_b_ = (opdm *)malloc(nb * sizeof(opdm));
-        psio->read_entry(PSIF_V2RDM_D1B,"D1b",(char*)opdm_b_,nb * sizeof(opdm));
-        psio->close(PSIF_V2RDM_D1B,1);
-
-        for (int n = 0; n < nb; n++) {
-
-            int i = opdm_b_[n].i;
-            int j = opdm_b_[n].j;
-
-            int hi = symmetry_[i];
-            int hj = symmetry_[j];
-
-            if ( hi != hj ) {
-                throw PsiException("error: something is wrong with the symmetry of the beta OPDM",__FILE__,__LINE__);
-            }
-
-            int ii = i - pitzer_offset_[hi];
-            int jj = j - pitzer_offset_[hj];
-
-            Db_->pointer(hi)[ii][jj] = opdm_b_[n].value;
-
-        }
-
-        std::shared_ptr<Matrix> Dtot; 
-        Dtot = std::shared_ptr<Matrix>(new Matrix(Da_));
-        Dtot->add(Db_);
-        // Dtot->print();
-
-        std::shared_ptr<Matrix> Dmat (new Matrix(Dtot));
-        std::shared_ptr<Matrix> Umat (new Matrix(Dtot));
-        Umat->zero();
-        Dmat->zero();
-        for (int n = 0; n < na; n++) {
-
-            int i = opdm_a_[n].i;
-            int j = opdm_a_[n].j;
-
-            int hi = symmetry_[i];
-            int hj = symmetry_[j];
-
-            if ( hi != hj ) {
-                throw PsiException("error: something is wrong with the symmetry of the beta OPDM",__FILE__,__LINE__);
-            }
-
-            int ii = i - pitzer_offset_[hi];
-            int jj = j - pitzer_offset_[hj];
-            double popval = Dtot->pointer(hi)[ii][jj];
-
-            Umat->pointer(hi)[ii][jj] = 1.0 - abs(1.0 - popval);
-            Dmat->pointer(hi)[ii][jj] = 2.0 * popval - popval * popval;
-
-        }
-        // Ur_->print();
-        // Dr_->print();
-
-        rho_  = (std::shared_ptr<Vector>)(new Vector(phi_points_));
-        Ur_   = (std::shared_ptr<Vector>)(new Vector(phi_points_));
-        Dr_   = (std::shared_ptr<Vector>)(new Vector(phi_points_));
-        double tempr = 0.0;
-        double tempu = 0.0;
-        double tempd = 0.0;
-        for (int p = 0; p < phi_points_; p++) {
-            double dumr = 0.0;
-            double dumu = 0.0;
-            double dumd = 0.0;
-            for (int n = 0; n < na; n++) {
-
-                int i = opdm_a_[n].i;
-                int j = opdm_a_[n].j;
-
-                int hi = symmetry_[i];
-                int hj = symmetry_[j];
-
-                int ii = i - pitzer_offset_[hi];
-                int jj = j - pitzer_offset_[hj];
-
-                dumr += super_phi_->pointer(hi)[p][ii] *
-                        super_phi_->pointer(hj)[p][jj] * opdm_a_[n].value;
-
-                dumu += super_phi_->pointer(hi)[p][ii] *
-                        super_phi_->pointer(hj)[p][jj] * Umat->pointer(hi)[ii][jj];
-
-                dumd += super_phi_->pointer(hi)[p][ii] *
-                        super_phi_->pointer(hj)[p][jj] * Dmat->pointer(hi)[ii][jj];
-            }
-            Ur_ ->pointer()[p] = dumu;
-            Dr_ ->pointer()[p] = dumd;
-
-            for (int n = 0; n < nb; n++) {
-
-                int i = opdm_b_[n].i;
-                int j = opdm_a_[n].j;
-
-                int hi = symmetry_[i];
-                int hj = symmetry_[j];
-
-                int ii = i - pitzer_offset_[hi];
-                int jj = j - pitzer_offset_[hj];
-
-                dumr += super_phi_->pointer(hi)[p][ii] *
-                        super_phi_->pointer(hj)[p][jj] * opdm_b_[n].value;
-            }
-            rho_->pointer()[p] += dumr;
-
-            tempr += grid_w_->pointer()[p] * dumr;
-            tempu += grid_w_->pointer()[p] * dumu;
-            tempd += grid_w_->pointer()[p] * dumd;
-        }
-        outfile->Printf("\n\n");
-        outfile->Printf("    Trace[ rho(r) ]:     %-20.12lf\n",tempr);
-        outfile->Printf("    Trace[ U(r)   ]:     %-20.12lf\n",tempu);
-        outfile->Printf("    Trace[ D(r)   ]:     %-20.12lf\n",tempd);
-
-        double * w_p   = grid_w_->pointer();
-        double * x_p   = grid_x_->pointer();
-        double * y_p   = grid_y_->pointer();
-        double * z_p   = grid_z_->pointer();
-        double * rho_p = rho_   ->pointer();
-        double * Ur_p  = Ur_    ->pointer();
-        double * Dr_p  = Dr_    ->pointer();
-
-        FILE *pfile;
-        pfile = fopen("mygrids.txt","w");
-        std::fprintf(pfile,"w                    x                   y                  z                  rho(r)                  U(r)                  D(r)\n");
-        for (int p = 0; p < phi_points_; p++) {
-            // if(abs(z_p[p] == 0))
-            if(abs(x_p[p]) == 0.0 && abs(y_p[p]) == 0.0)
-              std::fprintf(pfile,"%-16.12lf             %-16.12lf            %-16.12lf            %-16.12lf             %-16.12lf             %-16.12lf             %-16.12lf\n"
-              ,w_p[p],x_p[p],y_p[p],z_p[p],rho_p[p],Ur_p[p],Dr_p[p]);
-        }
-        fclose(pfile);
-//   printf("HERE!\n");  
-
-        free(opdm_a_);
-        free(opdm_b_);
-
 }
 
 } // end of namespaces

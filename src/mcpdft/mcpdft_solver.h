@@ -81,7 +81,6 @@ class MCPDFTSolver: public Wavefunction{
     ~MCPDFTSolver();
     void common_init();
     double compute_energy();
-    void polyradical_analysis();
     virtual bool same_a_b_orbs() const { return same_a_b_orbs_; }
     virtual bool same_a_b_dens() const { return same_a_b_dens_; }
 
