@@ -1981,20 +1981,11 @@ void MCPDFTSolver::BuildRhoFast(int na, int nb) {
     rho_a_   = (std::shared_ptr<Vector>)(new Vector(phi_points_));
     rho_b_   = (std::shared_ptr<Vector>)(new Vector(phi_points_));
     rho_   = (std::shared_ptr<Vector>)(new Vector(phi_points_));
-    // m_   = (std::shared_ptr<Vector>)(new Vector(phi_points_));
-
-    // zeta_ = (std::shared_ptr<Vector>)(new Vector(phi_points_));
-    // rs_ = (std::shared_ptr<Vector>)(new Vector(phi_points_));
-
-    // double ** phi   = super_phi_->pointer();
 
     double * rho_ap = rho_a_->pointer();
     double * rho_bp = rho_b_->pointer();
     double * rho_p = rho_->pointer();
-    // double * m_p = m_->pointer();
-    // 
-    // double * zeta_p = zeta_->pointer();
-    // double * rs_p = rs_->pointer();
+
     double temp_tot = 0.0;
     double temp_a = 0.0;
     double temp_b = 0.0;
@@ -2044,11 +2035,6 @@ void MCPDFTSolver::BuildRhoFast(int na, int nb) {
         temp_a   += rho_ap[p] * grid_w_->pointer()[p];
         temp_b   += rho_bp[p] * grid_w_->pointer()[p];
 
-        // rho_p[p] = rho_ap[p] + rho_bp[p];
-        // m_p[p] =  rho_ap[p] - rho_bp[p];
-
-        // zeta_p[p] =  m_p[p]  / rho_p[p];
-        // rs_p[p] = pow( 3.0 / ( 4.0 * M_PI * rho_p[p] ) , 1.0/3.0 );
     }
     outfile->Printf("\n");
     outfile->Printf("      Integrated total density = %20.12lf\n",temp_tot);
@@ -2184,6 +2170,7 @@ void MCPDFTSolver::BuildRhoFast(int na, int nb) {
         }
     }
 
+/*
     double * w_p   = grid_w_->pointer();
     double * x_p   = grid_x_->pointer();
     double * y_p   = grid_y_->pointer();
@@ -2225,6 +2212,9 @@ void MCPDFTSolver::BuildRhoFast(int na, int nb) {
        }
        fclose(pfile);
     }
+
+*/
+
 }
 
 double MCPDFTSolver::RangeSeparatedTEE(std::string range_separation_type) {
