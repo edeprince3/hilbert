@@ -677,7 +677,7 @@ def density_analysis(**kwargs):
     func = 'M06-2X'
     ref_molecule = kwargs.get('molecule', psi4.core.get_active_molecule())
     base_wfn = psi4.core.Wavefunction.build(ref_molecule, psi4.core.get_global_option('BASIS'))
-    new_wfn = proc.scf_wavefunction_factory('M06-2X', base_wfn, 'UKS')
+    new_wfn = proc.scf_wavefunction_factory(func, base_wfn, 'UKS')
 
     # push reference orbitals onto new wave function 
     for irrep in range (0,ref_wfn.Ca().nirrep()):
@@ -723,7 +723,7 @@ def run_mcpdft(name, **kwargs):
     func = 'M06-2X'
     ref_molecule = kwargs.get('molecule', psi4.core.get_active_molecule())
     base_wfn = psi4.core.Wavefunction.build(ref_molecule, psi4.core.get_global_option('BASIS'))
-    new_wfn = proc.scf_wavefunction_factory('M06-2X', base_wfn, 'UKS')
+    new_wfn = proc.scf_wavefunction_factory(func, base_wfn, 'UKS')
 
     # push reference orbitals onto new wave function 
     for irrep in range (0,ref_wfn.Ca().nirrep()):
@@ -856,7 +856,7 @@ def run_mcpdft(name, **kwargs):
 
     # with translated rho_a, rho_b, etc. evaluate xc contribution to the energy
 
-    # try LSDA with pylibxc
+    # pylibxc
     import pylibxc
 
     functional_name_dict = {
@@ -867,6 +867,7 @@ def run_mcpdft(name, **kwargs):
     }
     libxc_functional_name = functional_name_dict[psi4.core.get_option('HILBERT','MCPDFT_FUNCTIONAL').lower()]
 
+    # we need grids for ex/ec
     grid_w = np.asarray(rho_helper.grid_w())
 
     # combined rho as rho_a[0], rho_b[0], rho_a[1], rho_b[1], etc.
@@ -874,12 +875,16 @@ def run_mcpdft(name, **kwargs):
     combined_rho[::2] = rho_a
     combined_rho[1::2] = rho_b
 
-    # contracted gradient as drho.drho / aa, ab, bb
+    # contracted gradient as drho.drho / aa[0], ab[0], bb[0], aa[1], ab[1], bb[1], etc.
     contracted_gradient = np.zeros([3 * len(rho)])
 
-    contracted_gradient[0*len(rho):1*len(rho)] = rho_a_x * rho_a_x +  rho_a_y * rho_a_y +  rho_a_z * rho_a_z
-    contracted_gradient[1*len(rho):2*len(rho)] = rho_a_x * rho_b_x +  rho_a_y * rho_b_y +  rho_a_z * rho_b_z
-    contracted_gradient[2*len(rho):3*len(rho)] = rho_b_x * rho_b_x +  rho_b_y * rho_b_y +  rho_b_z * rho_b_z
+    aa = rho_a_x * rho_a_x +  rho_a_y * rho_a_y +  rho_a_z * rho_a_z
+    ab = rho_a_x * rho_b_x +  rho_a_y * rho_b_y +  rho_a_z * rho_b_z
+    bb = rho_b_x * rho_b_x +  rho_b_y * rho_b_y +  rho_b_z * rho_b_z
+
+    contracted_gradient[::3] = aa
+    contracted_gradient[1::3] = ab
+    contracted_gradient[2::3] = bb
 
     inp = {
         "rho" : combined_rho,
@@ -910,6 +915,7 @@ def run_mcpdft(name, **kwargs):
     print('classical coulomb energy', coulomb_energy)
     print('exchange energy', ex)
     print('corrrelation energy', ec)
+    print('total energy', kinetic_energy + en_potential_energy + coulomb_energy + ex + ec)
 
     optstash = p4util.OptionsState(
         ['SCF', 'DF_INTS_IO'])
