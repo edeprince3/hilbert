@@ -714,6 +714,119 @@ def run_mcpdft(name, **kwargs):
     lowername = name.lower()
     kwargs = p4util.kwargs_lower(kwargs)
 
+    psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
+
+    ref_wfn = kwargs.get('ref_wfn', None)
+    if ref_wfn is None:
+        raise ValidationError("""Error: mcpdft requires a reference wave function.""" )
+
+    func = 'M06-2X'
+    ref_molecule = kwargs.get('molecule', psi4.core.get_active_molecule())
+    base_wfn = psi4.core.Wavefunction.build(ref_molecule, psi4.core.get_global_option('BASIS'))
+    new_wfn = proc.scf_wavefunction_factory('M06-2X', base_wfn, 'UKS')
+
+    # push reference orbitals onto new wave function 
+    for irrep in range (0,ref_wfn.Ca().nirrep()):
+        new_wfn.Ca().nph[irrep][:,:] = ref_wfn.Ca().nph[irrep][:,:]
+        new_wfn.Cb().nph[irrep][:,:] = ref_wfn.Cb().nph[irrep][:,:]
+
+    # push reference energies onto new wave function
+    for irrep in range (0,ref_wfn.epsilon_a().nirrep()):
+        new_wfn.epsilon_a().nph[irrep][:] = ref_wfn.epsilon_a().nph[irrep][:]
+        new_wfn.epsilon_b().nph[irrep][:] = ref_wfn.epsilon_b().nph[irrep][:]
+
+    # grab options object
+    options = psi4.core.get_options()
+    options.set_current_module('HILBERT')
+
+    import hilbert
+    rho_helper = hilbert.RealSpaceDensityHelper(new_wfn,options)
+
+    # need Da and Db to build T+V+J
+    Da = rho_helper.Da() 
+    Db = rho_helper.Db() 
+
+    # T + V
+    mints = psi4.core.MintsHelper(new_wfn.basisset())
+
+    V = np.asarray(mints.so_potential())
+    T = np.asarray(mints.so_kinetic())
+
+    Ta = psi4.core.Matrix.from_array(T)
+    Tb = psi4.core.Matrix.from_array(T)
+
+    Ta.transform(new_wfn.Ca())
+    Tb.transform(new_wfn.Cb())
+
+    kinetic_energy = Da.vector_dot(Ta)
+    kinetic_energy += Db.vector_dot(Tb)
+
+    Va = psi4.core.Matrix.from_array(V)
+    Vb = psi4.core.Matrix.from_array(V)
+
+    Va.transform(new_wfn.Ca())
+    Vb.transform(new_wfn.Cb())
+
+    en_potential_energy = Da.vector_dot(Va)
+    en_potential_energy += Db.vector_dot(Vb)
+
+
+    # classical coulomb energy
+    jk = psi4.core.JK.build(new_wfn.get_basisset("ORBITAL"),
+                           aux=new_wfn.get_basisset("DF_BASIS_SCF"))
+
+    jk.set_do_K(False)
+    jk.set_do_wK(False)
+    jk.initialize()
+
+    Ca = np.asarray(new_wfn.Ca())
+    Cb = np.asarray(new_wfn.Cb())
+
+    Cra = psi4.core.Matrix.from_array(Ca)
+    Crb = psi4.core.Matrix.from_array(Cb)
+
+    Cla = psi4.core.Matrix.from_array(Ca)
+    Clb = psi4.core.Matrix.from_array(Cb)
+
+    Cla.zero();
+    Cla.gemm(False, True, 1.0, Cra, Da, 0.0);
+    jk.C_left_add(Cla)
+    jk.C_right_add(Cra)
+
+    Clb.zero();
+    Clb.gemm(False, True, 1.0, Crb, Db, 0.0);
+    jk.C_left_add(Clb)
+    jk.C_right_add(Crb)
+
+    jk.compute()
+
+    Ja = psi4.core.Matrix.from_array(np.asarray(jk.J()[0]))
+    Jb = psi4.core.Matrix.from_array(np.asarray(jk.J()[1]))
+
+    Ja.transform(new_wfn.Ca())
+    Jb.transform(new_wfn.Cb())
+
+    coulomb_energy = Da.vector_dot(Ja)
+    coulomb_energy += Db.vector_dot(Jb)
+
+    # exchange-correlation contribution:
+
+    rho_a = rho_helper.rho_a();
+    rho_b = rho_helper.rho_b() 
+    pi = rho_helper.pi();
+
+    # on-top ratio
+    R = 4.0 * pi / (rho_a + rho_b)
+
+    # translated densities
+    translated_rho_a = np.zeros_like(rho_a)
+    translated_rho_b = np.zeros_like(rho_b)
+
+    #print('kinetic energy', kinetic_energy)
+    #print('electron-nucleus potential energy', en_potential_energy)
+    #print('classical coulomb energy', coulomb_energy)
+    #exit()
+
     optstash = p4util.OptionsState(
         ['SCF', 'DF_INTS_IO'])
 
