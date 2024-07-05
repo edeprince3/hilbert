@@ -91,6 +91,12 @@ class RealSpaceDensity: public Wavefunction{
     // return xc hole on grid 
     std::shared_ptr<Vector> xc_hole(double x, double y, double z);
 
+    // return on-top pair density (pi) on grid 
+    std::shared_ptr<Vector> pi() { 
+        BuildPiFromDisk();
+        return pi_; 
+    }
+
     // return density (rho_a + rho_b) on grid 
     std::shared_ptr<Vector> rho() { return rho_; }
 
@@ -99,6 +105,12 @@ class RealSpaceDensity: public Wavefunction{
 
     // return density (rho_b) on grid 
     std::shared_ptr<Vector> rho_b() { return rho_b_; }
+
+    /// return the alpha opdm
+    std::shared_ptr<Matrix> Da() { return Da_; }
+
+    /// return the beta opdm
+    std::shared_ptr<Matrix> Db() { return Db_; }
 
     void common_init();
     void build_density();

@@ -732,20 +732,6 @@ void RealSpaceDensity::BuildPiFast(tpdm * D2ab, int nab) {
         pi_xp[p] = dum_x;
         pi_yp[p] = dum_y;
         pi_zp[p] = dum_z;
-
-        // outfile->Printf("pi_x %15.15lf\n",pi_xp[p]);
-        // outfile->Printf("pi_y %15.15lf\n",pi_yp[p]);
-        // outfile->Printf("pi_z %15.15lf\n",pi_zp[p]);
-        // outfile->Printf("\n    p");
-        // outfile->Printf("    x[p]");
-        // outfile->Printf("    y[p]");
-        // outfile->Printf("    z[p]");
-        // outfile->Printf("    pi\n\n");
-
-        // for (int p = 0; p < phi_points_; p++) {
-
-        //     outfile->Printf("    %d %20.5lf %20.5lf %20.5lf %20.15lf\n",p, grid_x_->pointer()[p], grid_y_->pointer()[p], grid_z_->pointer()[p], pi_p[p]);
-        // }
     }
 }
 
@@ -1071,7 +1057,6 @@ std::shared_ptr<Vector> RealSpaceDensity::xc_hole(double x, double y, double z) 
             p = myp;
         }
     }
-    //printf("closest point: %20.12lf %20.12lf %20.12lf\n",x_p[p],y_p[p],z_p[p]);
     BuildExchangeCorrelationHole(p);
     return xc_hole_;
 }

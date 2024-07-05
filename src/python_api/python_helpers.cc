@@ -53,10 +53,13 @@ void export_HilbertHelper(py::module& m) {
         .def("grid_y", &RealSpaceDensityHelper::grid_y)
         .def("grid_z", &RealSpaceDensityHelper::grid_z)
         .def("grid_w", &RealSpaceDensityHelper::grid_w)
+        .def("pi", &RealSpaceDensityHelper::pi)
         .def("rho", &RealSpaceDensityHelper::rho)
         .def("rho_a", &RealSpaceDensityHelper::rho_a)
         .def("rho_b", &RealSpaceDensityHelper::rho_b)
-        .def("xc_hole", &RealSpaceDensityHelper::xc_hole);
+        .def("xc_hole", &RealSpaceDensityHelper::xc_hole)
+        .def("Da", &RealSpaceDensityHelper::Da)
+        .def("Db", &RealSpaceDensityHelper::Db);
 
     // doci
     py::class_<DOCIHelper, std::shared_ptr<DOCIHelper> >(m, "DOCIHelper")
@@ -146,7 +149,7 @@ std::vector<double> RealSpaceDensityHelper::grid_w() {
     return return_val;
 }
 std::vector<double> RealSpaceDensityHelper::rho() {
-    std::shared_ptr<Vector> vec = real_space_density->rho();
+    std::shared_ptr<Vector> vec = real_space_density->pi();
     double * vec_p = vec->pointer();
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;
@@ -163,8 +166,20 @@ std::vector<double> RealSpaceDensityHelper::rho_b() {
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;
 }
+std::shared_ptr<Matrix> RealSpaceDensityHelper::Da() {
+    return real_space_density->Da();
+}
+std::shared_ptr<Matrix> RealSpaceDensityHelper::Db() {
+    return real_space_density->Db();
+}
 std::vector<double> RealSpaceDensityHelper::xc_hole(double x, double y, double z) {
     std::shared_ptr<Vector> vec = real_space_density->xc_hole(x,y,z);
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::pi() {
+    std::shared_ptr<Vector> vec = real_space_density->pi();
     double * vec_p = vec->pointer();
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;

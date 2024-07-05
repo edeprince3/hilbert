@@ -46,9 +46,12 @@ class RealSpaceDensityHelper{
     std::vector<double> grid_y();
     std::vector<double> grid_z();
     std::vector<double> grid_w();
+    std::vector<double> pi();
     std::vector<double> rho();
     std::vector<double> rho_a();
     std::vector<double> rho_b();
+    std::shared_ptr<Matrix> Da();
+    std::shared_ptr<Matrix> Db();
     std::vector<double> xc_hole(double x, double y, double z);
 
   protected:
