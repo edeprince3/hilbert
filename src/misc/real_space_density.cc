@@ -904,32 +904,6 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
         rho_b_zp[p] = dumb_z;
 
     }
-
-    double * w_p   = grid_w_->pointer();
-    double * x_p   = grid_x_->pointer();
-    double * y_p   = grid_y_->pointer();
-    double * z_p   = grid_z_->pointer();
-
-    double ** phi   = super_phi_->pointer();
-
-    FILE *pfile;
-    pfile = fopen("grids.txt","w");
-    std::fprintf(pfile,"     w                              x                             y                            z\n");
-    for (int p = 0; p < phi_points_; p++) {
-        std::fprintf(pfile,"%-16.12lf             %-16.12lf            %-16.12lf            %-16.12lf\n"
-        ,w_p[p],x_p[p],y_p[p],z_p[p]);
-    }
-    fclose(pfile);
-
-    pfile = fopen("orbitals.txt","w");
-    for (int p = 0; p < phi_points_; p++) {
-        for (int mu =  0; mu < nso_; mu++) {
-            std::fprintf(pfile,"       %-16.12lf",phi[p][mu]);
-        }
-        std::fprintf(pfile,"\n");
-    }
-    fclose(pfile);
-
 }
 
 void RealSpaceDensity::ReadOPDM() {

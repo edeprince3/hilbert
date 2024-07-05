@@ -740,7 +740,7 @@ def run_mcpdft(name, **kwargs):
     options.set_current_module('HILBERT')
 
     import hilbert
-    rho_helper = hilbert.RealSpaceDensityHelper(new_wfn,options)
+    rho_helper = hilbert.RealSpaceDensityHelper(new_wfn, options)
 
     # need Da and Db to build T+V+J
     Da = rho_helper.Da() 
@@ -769,7 +769,6 @@ def run_mcpdft(name, **kwargs):
 
     en_potential_energy = Da.vector_dot(Va)
     en_potential_energy += Db.vector_dot(Vb)
-
 
     # classical coulomb energy
     jk = psi4.core.JK.build(new_wfn.get_basisset("ORBITAL"),
@@ -816,47 +815,101 @@ def run_mcpdft(name, **kwargs):
     rho_b = np.asarray(rho_helper.rho_b())
     rho = rho_a + rho_b
 
+    # gradient of density in real space
+    rho_a_x = np.asarray(rho_helper.rho_a_x())
+    rho_a_y = np.asarray(rho_helper.rho_a_y())
+    rho_a_z = np.asarray(rho_helper.rho_a_z())
+    
+    rho_b_x = np.asarray(rho_helper.rho_b_x())
+    rho_b_y = np.asarray(rho_helper.rho_b_y())
+    rho_b_z = np.asarray(rho_helper.rho_b_z())
+
+    rho_x = rho_a_x + rho_b_x
+    rho_y = rho_a_y + rho_b_y
+    rho_z = rho_a_z + rho_b_z
+
     # on-top pair density in real space
     pi = np.asarray(rho_helper.pi())
 
     # on-top ratio
     R = 4.0 * np.divide(pi, rho * rho)
 
-    # translated densities
-    translated_rho_a = np.zeros_like(rho)
-    translated_rho_b = np.zeros_like(rho)
+    # translated densities and gradients of densities
 
     # rhoa = [1 + zeta] * rho / 2
     # rhob = [1 - zeta] * rho / 2
     # zeta = sqrt(1-R), where 1-R > 0, 0 otherwise
     zeta = np.sqrt( 1.0 - R, out = np.zeros_like(R), where = 1.0 - R > 0 )
 
-    translated_rho_a =  0.5 * rho * (1.0 + zeta)
-    translated_rho_b =  0.5 * rho * (1.0 - zeta)
+    rho_a =  0.5 * rho * (1.0 + zeta)
+    rho_b =  0.5 * rho * (1.0 - zeta)
+    rho = rho_a + rho_b
 
-    # with translated rho_a, rho_b, evaluate xc contribution to the energy
+    # translated gradients
+    rho_a_x =  0.5 * rho_x * (1.0 + zeta)
+    rho_a_y =  0.5 * rho_y * (1.0 + zeta)
+    rho_a_z =  0.5 * rho_z * (1.0 + zeta)
 
-    # LSDA:
-    grid_w = rho_helper.grid_w()
+    rho_b_x =  0.5 * rho_x * (1.0 - zeta)
+    rho_b_y =  0.5 * rho_y * (1.0 - zeta)
+    rho_b_z =  0.5 * rho_z * (1.0 - zeta)
+
+    # with translated rho_a, rho_b, etc. evaluate xc contribution to the energy
+
+    # try LSDA with pylibxc
+    import pylibxc
+
+    functional_name_dict = {
+        'svwn' : ['lda_x', 'lda_c_vwn_rpa'],
+        'lda' : ['lda_x', None],
+        'blyp' : ['gga_x_b88', 'gga_c_lyp'],
+        'pbe' : ['gga_x_pbe', 'gga_c_pbe']
+    }
+    libxc_functional_name = functional_name_dict[psi4.core.get_option('HILBERT','MCPDFT_FUNCTIONAL').lower()]
+
+    grid_w = np.asarray(rho_helper.grid_w())
+
+    # combined rho as rho_a[0], rho_b[0], rho_a[1], rho_b[1], etc.
+    combined_rho = np.zeros([2 * len(rho)])
+    combined_rho[::2] = rho_a
+    combined_rho[1::2] = rho_b
+
+    # contracted gradient as drho.drho / aa, ab, bb
+    contracted_gradient = np.zeros([3 * len(rho)])
+
+    contracted_gradient[0*len(rho):1*len(rho)] = rho_a_x * rho_a_x +  rho_a_y * rho_a_y +  rho_a_z * rho_a_z
+    contracted_gradient[1*len(rho):2*len(rho)] = rho_a_x * rho_b_x +  rho_a_y * rho_b_y +  rho_a_z * rho_b_z
+    contracted_gradient[2*len(rho):3*len(rho)] = rho_b_x * rho_b_x +  rho_b_y * rho_b_y +  rho_b_z * rho_b_z
+
+    inp = {
+        "rho" : combined_rho,
+        "sigma" : contracted_gradient,
+        "lapl" : None,
+        "tau" : None
+    }
 
     ex = 0.0
     ec = 0.0
 
-    ex += np.sum(translated_rho_a**(4.0/3.0) * grid_w)
-    ex += np.sum(translated_rho_b**(4.0/3.0) * grid_w)
-    ex *= -2.0 ** (1.0 / 3.0 ) * 2.0 / 3.0 * 9.0 / 8.0 * (3.0 / np.pi)**(1.0 / 3.0)
+    if libxc_functional_name[0] is not None:
 
-    #na = np.sum(translated_rho_a * grid_w)
-    #nb = np.sum(translated_rho_b * grid_w)
+        functional = pylibxc.LibXCFunctional(libxc_functional_name[0], "polarized")
+        ret = functional.compute( inp, do_vxc = False )
+        zk = ret['zk'].flatten()
+        ex = np.sum( zk * rho * grid_w )
 
-    #print('integrated number of electrons', na)
-    #print('integrated number of electrons', nb)
-    #print('kinetic energy', kinetic_energy)
-    #print('electron-nucleus potential energy', en_potential_energy)
-    #print('classical coulomb energy', coulomb_energy)
-    #print('exchange energy', ex)
-    #print('corrrelation energy', ec)
-    #exit()
+    if libxc_functional_name[1] is not None:
+
+        functional = pylibxc.LibXCFunctional(libxc_functional_name[1], "polarized")
+        ret = functional.compute( inp, do_vxc = False )
+        zk = ret['zk'].flatten()
+        ec = np.sum( zk * rho * grid_w )
+
+    print('kinetic energy', kinetic_energy)
+    print('electron-nucleus potential energy', en_potential_energy)
+    print('classical coulomb energy', coulomb_energy)
+    print('exchange energy', ex)
+    print('corrrelation energy', ec)
 
     optstash = p4util.OptionsState(
         ['SCF', 'DF_INTS_IO'])

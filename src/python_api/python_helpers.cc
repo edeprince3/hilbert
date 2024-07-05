@@ -57,6 +57,12 @@ void export_HilbertHelper(py::module& m) {
         .def("rho", &RealSpaceDensityHelper::rho)
         .def("rho_a", &RealSpaceDensityHelper::rho_a)
         .def("rho_b", &RealSpaceDensityHelper::rho_b)
+        .def("rho_a_x", &RealSpaceDensityHelper::rho_a_x)
+        .def("rho_a_y", &RealSpaceDensityHelper::rho_a_y)
+        .def("rho_a_z", &RealSpaceDensityHelper::rho_a_z)
+        .def("rho_b_x", &RealSpaceDensityHelper::rho_b_x)
+        .def("rho_b_y", &RealSpaceDensityHelper::rho_b_y)
+        .def("rho_b_z", &RealSpaceDensityHelper::rho_b_z)
         .def("xc_hole", &RealSpaceDensityHelper::xc_hole)
         .def("Da", &RealSpaceDensityHelper::Da)
         .def("Db", &RealSpaceDensityHelper::Db);
@@ -162,6 +168,42 @@ std::vector<double> RealSpaceDensityHelper::rho_a() {
 }
 std::vector<double> RealSpaceDensityHelper::rho_b() {
     std::shared_ptr<Vector> vec = real_space_density->rho_b();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_a_x() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_a_x();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_a_y() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_a_y();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_a_z() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_a_z();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_b_x() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_b_x();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_b_y() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_b_y();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_b_z() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_b_z();
     double * vec_p = vec->pointer();
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;

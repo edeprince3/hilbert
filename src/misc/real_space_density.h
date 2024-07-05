@@ -76,35 +76,53 @@ class RealSpaceDensity: public Wavefunction{
     RealSpaceDensity(std::shared_ptr<psi::Wavefunction> reference_wavefunction,Options & options);
     ~RealSpaceDensity();
 
-    // return grid points (x)
+    /// return grid points (x)
     std::shared_ptr<Vector> grid_x() { return grid_x_; }
 
-    // return grid points (y)
+    /// return grid points (y)
     std::shared_ptr<Vector> grid_y() { return grid_y_; }
 
-    // return grid points (z)
+    /// return grid points (z)
     std::shared_ptr<Vector> grid_z() { return grid_z_; }
 
-    // return grid weights (w)
+    /// return grid weights (w)
     std::shared_ptr<Vector> grid_w() { return grid_w_; }
 
-    // return xc hole on grid 
+    /// return xc hole on grid 
     std::shared_ptr<Vector> xc_hole(double x, double y, double z);
 
-    // return on-top pair density (pi) on grid 
+    /// return on-top pair density (pi) on grid 
     std::shared_ptr<Vector> pi() { 
         BuildPiFromDisk();
         return pi_; 
     }
 
-    // return density (rho_a + rho_b) on grid 
+    /// return density (rho_a + rho_b) on grid 
     std::shared_ptr<Vector> rho() { return rho_; }
 
-    // return density (rho_a) on grid 
+    /// return density (rho_a) on grid 
     std::shared_ptr<Vector> rho_a() { return rho_a_; }
 
-    // return density (rho_b) on grid 
+    /// return density (rho_b) on grid 
     std::shared_ptr<Vector> rho_b() { return rho_b_; }
+
+    /// return derivative of alpha-spin density with respect to x on grid 
+    std::shared_ptr<Vector> rho_a_x() { return rho_a_x_; }
+
+    /// return derivative of alpha-spin density with respect to y on grid 
+    std::shared_ptr<Vector> rho_a_y() { return rho_a_y_; }
+
+    /// return derivative of alpha-spin density with respect to z on grid 
+    std::shared_ptr<Vector> rho_a_z() { return rho_a_z_; }
+
+    /// return derivative of beta-spin density with respect to x on grid 
+    std::shared_ptr<Vector> rho_b_x() { return rho_b_x_; }
+
+    /// return derivative of beta-spin density with respect to y on grid 
+    std::shared_ptr<Vector> rho_b_y() { return rho_b_y_; }
+
+    /// return derivative of beta-spin density with respect to z on grid 
+    std::shared_ptr<Vector> rho_b_z() { return rho_b_z_; }
 
     /// return the alpha opdm
     std::shared_ptr<Matrix> Da() { return Da_; }
