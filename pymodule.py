@@ -809,22 +809,53 @@ def run_mcpdft(name, **kwargs):
     coulomb_energy = Da.vector_dot(Ja)
     coulomb_energy += Db.vector_dot(Jb)
 
-    # exchange-correlation contribution:
+    # xc contribution to the energy
 
-    rho_a = rho_helper.rho_a();
-    rho_b = rho_helper.rho_b() 
-    pi = rho_helper.pi();
+    # density in real space
+    rho_a = np.asarray(rho_helper.rho_a())
+    rho_b = np.asarray(rho_helper.rho_b())
+    rho = rho_a + rho_b
+
+    # on-top pair density in real space
+    pi = np.asarray(rho_helper.pi())
 
     # on-top ratio
-    R = 4.0 * pi / (rho_a + rho_b)
+    R = 4.0 * np.divide(pi, rho * rho)
 
     # translated densities
-    translated_rho_a = np.zeros_like(rho_a)
-    translated_rho_b = np.zeros_like(rho_b)
+    translated_rho_a = np.zeros_like(rho)
+    translated_rho_b = np.zeros_like(rho)
 
+    # rhoa = [1 + zeta] * rho / 2
+    # rhob = [1 - zeta] * rho / 2
+    # zeta = sqrt(1-R), where 1-R > 0, 0 otherwise
+    zeta = np.sqrt( 1.0 - R, out = np.zeros_like(R), where = 1.0 - R > 0 )
+
+    translated_rho_a =  0.5 * rho * (1.0 + zeta)
+    translated_rho_b =  0.5 * rho * (1.0 - zeta)
+
+    # with translated rho_a, rho_b, evaluate xc contribution to the energy
+
+    # LSDA:
+    grid_w = rho_helper.grid_w()
+
+    ex = 0.0
+    ec = 0.0
+
+    ex += np.sum(translated_rho_a**(4.0/3.0) * grid_w)
+    ex += np.sum(translated_rho_b**(4.0/3.0) * grid_w)
+    ex *= -2.0 ** (1.0 / 3.0 ) * 2.0 / 3.0 * 9.0 / 8.0 * (3.0 / np.pi)**(1.0 / 3.0)
+
+    #na = np.sum(translated_rho_a * grid_w)
+    #nb = np.sum(translated_rho_b * grid_w)
+
+    #print('integrated number of electrons', na)
+    #print('integrated number of electrons', nb)
     #print('kinetic energy', kinetic_energy)
     #print('electron-nucleus potential energy', en_potential_energy)
     #print('classical coulomb energy', coulomb_energy)
+    #print('exchange energy', ex)
+    #print('corrrelation energy', ec)
     #exit()
 
     optstash = p4util.OptionsState(
