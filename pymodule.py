@@ -34,11 +34,7 @@ import psi4
 import psi4.driver.p4util as p4util
 from psi4.driver.procrouting import proc_util
 from psi4.driver.procrouting import proc
-#from psi4.driver.qcdb import molecule
-
-# to build a fake molecule
-import qcelemental as qcel
-from psi4.driver import qcdb
+from psi4.driver.p4util.exceptions import ValidationError
 
 def run_qed_scf(name, **kwargs):
     r"""Function encoding sequence of PSI module and plugin calls so that
@@ -714,12 +710,31 @@ def run_mcpdft(name, **kwargs):
     lowername = name.lower()
     kwargs = p4util.kwargs_lower(kwargs)
 
+    # pylibxc
+    import pylibxc
+
+    functional_name_dict = {
+        'svwn' : ['lda_x', 'lda_c_vwn_rpa'],
+        'lda' : ['lda_x', None],
+        'blyp' : ['gga_x_b88', 'gga_c_lyp'],
+        'bop' : ['gga_x_b88', 'gga_c_op_b88'],
+        'pbe' : ['gga_x_pbe', 'gga_c_pbe'],
+        'revpbe' : ['gga_x_pbe_r', 'gga_c_pbe']
+    }
+    functional = psi4.core.get_option('HILBERT','MCPDFT_FUNCTIONAL').lower()
+
+    if functional not in functional_name_dict.keys():
+        raise ValidationError(f"Invalid functional choice {name} for MC-PDFT. try {functional_name_dict.keys()}")
+
+    libxc_functional_name = functional_name_dict[functional]
+
     psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
 
     ref_wfn = kwargs.get('ref_wfn', None)
     if ref_wfn is None:
         raise ValidationError("""Error: mcpdft requires a reference wave function.""" )
 
+    # pick fake functional that requires second derivatives for new_wfn
     func = 'M06-2X'
     ref_molecule = kwargs.get('molecule', psi4.core.get_active_molecule())
     base_wfn = psi4.core.Wavefunction.build(ref_molecule, psi4.core.get_global_option('BASIS'))
@@ -738,6 +753,17 @@ def run_mcpdft(name, **kwargs):
     # grab options object
     options = psi4.core.get_options()
     options.set_current_module('HILBERT')
+
+    psi4.core.flush_outfile()
+    psi4.core.print_out('\n\n')
+    psi4.core.print_out('        ********************************************************************\n')
+    psi4.core.print_out('        *                                                                  *\n')
+    psi4.core.print_out('        *    MC-PDFT:                                                       *\n')
+    psi4.core.print_out('        *                                                                  *\n')
+    psi4.core.print_out('        *    Multiconfigurational Pair Density Functional Theory           *\n')
+    psi4.core.print_out('        *                                                                  *\n')
+    psi4.core.print_out('        ********************************************************************\n')
+    psi4.core.print_out('\n')
 
     import hilbert
     rho_helper = hilbert.RealSpaceDensityHelper(new_wfn, options)
@@ -856,17 +882,6 @@ def run_mcpdft(name, **kwargs):
 
     # with translated rho_a, rho_b, etc. evaluate xc contribution to the energy
 
-    # pylibxc
-    import pylibxc
-
-    functional_name_dict = {
-        'svwn' : ['lda_x', 'lda_c_vwn_rpa'],
-        'lda' : ['lda_x', None],
-        'blyp' : ['gga_x_b88', 'gga_c_lyp'],
-        'pbe' : ['gga_x_pbe', 'gga_c_pbe']
-    }
-    libxc_functional_name = functional_name_dict[psi4.core.get_option('HILBERT','MCPDFT_FUNCTIONAL').lower()]
-
     # we need grids for ex/ec
     grid_w = np.asarray(rho_helper.grid_w())
 
@@ -910,57 +925,26 @@ def run_mcpdft(name, **kwargs):
         zk = ret['zk'].flatten()
         ec = np.sum( zk * rho * grid_w )
 
-    print('kinetic energy', kinetic_energy)
-    print('electron-nucleus potential energy', en_potential_energy)
-    print('classical coulomb energy', coulomb_energy)
-    print('exchange energy', ex)
-    print('corrrelation energy', ec)
-    print('total energy', kinetic_energy + en_potential_energy + coulomb_energy + ex + ec)
+    nuclear_repulsion_energy = new_wfn.molecule().nuclear_repulsion_energy()
 
-    optstash = p4util.OptionsState(
-        ['SCF', 'DF_INTS_IO'])
+    total_energy = kinetic_energy + en_potential_energy + coulomb_energy + ex + ec + nuclear_repulsion_energy
 
-    psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
+    psi4.core.flush_outfile()
+    psi4.core.print_out('    ==> MC-PDFT energy by component <==\n')
+    psi4.core.print_out('\n')
 
-    v2rdm_wfn = kwargs.get('ref_wfn', None)
-    if v2rdm_wfn is None:
-        raise ValidationError("""Error: %s requires a reference wave function (v2rdm-casscf).""" % name)
+    psi4.core.print_out('        nuclear repulsion energy =          %20.12f\n' % (nuclear_repulsion_energy) )
+    psi4.core.print_out('        electron-nucleus potential energy = %20.12f\n' % (en_potential_energy) )
+    psi4.core.print_out('        electron kinetic energy =           %20.12f\n' % (kinetic_energy) )
+    psi4.core.print_out('        classical coulomb energy  =         %20.12f\n' % (coulomb_energy) )
+    psi4.core.print_out('        exchange energy =                   %20.12f\n' % (ex) )
+    psi4.core.print_out('        correlation energy =                %20.12f\n' % (ec) )
+    psi4.core.print_out('\n')
+    psi4.core.print_out('    * MC-PDFT total energy   =        %20.12f\n\n' % (total_energy));
 
-    psi4.core.set_variable("V2RDM TOTAL ENERGY",v2rdm_wfn.energy())
-   
-    if ( (psi4.core.get_option('HILBERT', 'MCPDFT_METHOD') == '1DH_MCPDFT')
-    or (psi4.core.get_option('HILBERT', 'MCPDFT_METHOD') == 'LS1DH_MCPDFT') ): 
-        proc.run_dfmp2('mp2',**kwargs)
+    psi4.core.set_variable('CURRENT ENERGY', total_energy)
 
-    if ('WBLYP' == psi4.core.get_option('HILBERT','MCPDFT_FUNCTIONAL')):
-       func = 'BLYP'
-    else:
-       func = psi4.core.get_option('HILBERT','MCPDFT_FUNCTIONAL')
-    ref_molecule = kwargs.get('molecule', psi4.core.get_active_molecule())
-    base_wfn = psi4.core.Wavefunction.build(ref_molecule, psi4.core.get_global_option('BASIS'))
-    ref_wfn = proc.scf_wavefunction_factory(func, base_wfn, psi4.core.get_global_option('REFERENCE'))
-
-    # push v2rdm-casscf orbitals onto reference 
-    for irrep in range (0,v2rdm_wfn.Ca().nirrep()): 
-        ref_wfn.Ca().nph[irrep][:,:] = v2rdm_wfn.Ca().nph[irrep][:,:]
-        ref_wfn.Cb().nph[irrep][:,:] = v2rdm_wfn.Cb().nph[irrep][:,:]
-
-    # push v2rdm-casscf energies onto reference
-    for irrep in range (0,v2rdm_wfn.epsilon_a().nirrep()): 
-        ref_wfn.epsilon_a().nph[irrep][:] = v2rdm_wfn.epsilon_a().nph[irrep][:]
-        ref_wfn.epsilon_b().nph[irrep][:] = v2rdm_wfn.epsilon_b().nph[irrep][:]
-
-    # set the hilbert method
-    psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'MCPDFT')
-
-    # Call the Psi4 plugin
-    # Please note that setting the reference wavefunction in this way is ONLY for plugins
-    mcpdft_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
-
-    optstash.restore()
-
-    return mcpdft_wfn
-
+    return total_energy
 
 # Integration with driver routines
 

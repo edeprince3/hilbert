@@ -135,12 +135,6 @@ add_psi4_plugin(hilbert
     src/v2rdm_casscf/write_opdm.cc
     src/v2rdm_casscf/write_tpdm.cc
     src/v2rdm_casscf/write_tpdm_iwl.cc
-
-    src/mcpdft/mcpdft_solver.cc
-    src/mcpdft/read_opdm.cc
-    src/mcpdft/read_tpdm.cc
-    src/mcpdft/lsda_gga_functionals.cc
-
     src/misc/real_space_density.cc
     src/misc/backtransform_tpdm.cc
     src/misc/diis.cc

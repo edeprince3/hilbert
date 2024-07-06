@@ -26,7 +26,6 @@ set hilbert {
   opdm_write_full true
   tpdm_write_full true
   constrain_spin true
-  nat_orbs true
   r_convergence  1e-5
   e_convergence  1e-5
   cg_convergence 1e-6
@@ -45,9 +44,8 @@ set hilbert {
   mcpdft_method mcpdft
 }
 
-
 # run v2rdm-casscf
-en,wfn = energy('v2rdm-casscf',return_wfn=True)
+en,wfn = energy('v2rdm-casscf', return_wfn=True)
 
 # reference should be uks in mcpdft
 set  reference uks

@@ -238,9 +238,9 @@ void RealSpaceDensity::common_init() {
 
     // estimate memory requirements
 
-    outfile->Printf("\n"); 
-    outfile->Printf("    ==> Memory requirements <==\n");
-    outfile->Printf("\n");
+    //outfile->Printf("\n"); 
+    //outfile->Printf("    ==> Memory requirements <==\n");
+    //outfile->Printf("\n");
     
     // memory is from process::environment
     memory_ = Process::environment.get_memory();
@@ -974,9 +974,10 @@ void RealSpaceDensity::ReadOPDM() {
     }
 
     outfile->Printf("\n");
-    outfile->Printf("    ==> Build Rho's ...\n");
+    outfile->Printf("    ==> Build Rho ...\n");
     BuildRhoFast(na,nb);
-    outfile->Printf("    ... Done. <==\n\n");
+    outfile->Printf("    ... Done. <==\n");
+    outfile->Printf("\n");
 
     free(opdm_a_);
     free(opdm_b_);
@@ -1007,7 +1008,7 @@ void RealSpaceDensity::BuildPiFromDisk() {
     outfile->Printf("\n");
     outfile->Printf("    ==> Build Pi ...");
     BuildPiFast(d2,nab);
-    outfile->Printf(" Done. <==\n");
+    outfile->Printf(" Done. <==\n\n");
 
     free(d2);
 }

@@ -386,7 +386,7 @@ int read_options(std::string name, Options& options)
        /*- MCPDFT type -*/
         options.add_str("MCPDFT_METHOD", "MCPDFT", "MCPDFT");
         /*- MCPDFT functional -*/
-        options.add_str("MCPDFT_FUNCTIONAL", "SVWN", "SVWN PBE REVPBE BOP BLYP");
+        options.add_str("MCPDFT_FUNCTIONAL", "PBE");
         /*- type of density and density gradient translation:
         REGULAR = The gradients of on-top density are not considered in the polarization factor zeta
         FULL = The gradients of on-top density is included in the polarization factor zeta       -*/
