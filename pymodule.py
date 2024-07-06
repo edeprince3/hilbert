@@ -775,20 +775,17 @@ def run_mcpdft(name, **kwargs):
     # T + V
     mints = psi4.core.MintsHelper(new_wfn.basisset())
 
-    V = np.asarray(mints.so_potential())
-    T = np.asarray(mints.so_kinetic())
+    Va = mints.so_potential()
+    Ta = mints.so_kinetic()
 
-    Ta = psi4.core.Matrix.from_array(T)
-    Tb = psi4.core.Matrix.from_array(T)
+    Vb = Va.clone()
+    Tb = Ta.clone()
 
     Ta.transform(new_wfn.Ca())
     Tb.transform(new_wfn.Cb())
 
     kinetic_energy = Da.vector_dot(Ta)
     kinetic_energy += Db.vector_dot(Tb)
-
-    Va = psi4.core.Matrix.from_array(V)
-    Vb = psi4.core.Matrix.from_array(V)
 
     Va.transform(new_wfn.Ca())
     Vb.transform(new_wfn.Cb())
@@ -804,14 +801,11 @@ def run_mcpdft(name, **kwargs):
     jk.set_do_wK(False)
     jk.initialize()
 
-    Ca = np.asarray(new_wfn.Ca())
-    Cb = np.asarray(new_wfn.Cb())
+    Cra = new_wfn.Ca().clone()
+    Crb = new_wfn.Cb().clone()
 
-    Cra = psi4.core.Matrix.from_array(Ca)
-    Crb = psi4.core.Matrix.from_array(Cb)
-
-    Cla = psi4.core.Matrix.from_array(Ca)
-    Clb = psi4.core.Matrix.from_array(Cb)
+    Cla = Cra.clone()
+    Clb = Crb.clone()
 
     Cla.zero();
     Cla.gemm(False, True, 1.0, Cra, Da, 0.0);
@@ -825,8 +819,8 @@ def run_mcpdft(name, **kwargs):
 
     jk.compute()
 
-    Ja = psi4.core.Matrix.from_array(np.asarray(jk.J()[0]))
-    Jb = psi4.core.Matrix.from_array(np.asarray(jk.J()[1]))
+    Ja = jk.J()[0]
+    Jb = jk.J()[1]
 
     Ja.transform(new_wfn.Ca())
     Jb.transform(new_wfn.Cb())
