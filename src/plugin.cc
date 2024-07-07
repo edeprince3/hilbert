@@ -46,7 +46,6 @@
 #include <polaritonic_scf/rcis.h>
 #include <polaritonic_scf/rtddft.h>
 #include <polaritonic_scf/utddft.h>
-#include <mcpdft/mcpdft_solver.h>
 
 #include <misc/backtransform_tpdm.h>
 
@@ -387,14 +386,10 @@ int read_options(std::string name, Options& options)
         options.add_str("MCPDFT_METHOD", "MCPDFT", "MCPDFT");
         /*- MCPDFT functional -*/
         options.add_str("MCPDFT_FUNCTIONAL", "PBE");
-        /*- type of density and density gradient translation:
-        REGULAR = The gradients of on-top density are not considered in the polarization factor zeta
-        FULL = The gradients of on-top density is included in the polarization factor zeta       -*/
-        options.add_str("MCPDFT_TRANSLATION_TYPE", "REGULAR", "REGULAR FULL");
         /*- JK object type can be DF or PK -*/
         options.add_str("MCPDFT_TYPE", "DF", "DF PK");
         /*- reference type -*/
-        options.add_str("MCPDFT_REFERENCE", "V2RDM", "V2RDM CI");
+        options.add_str("MCPDFT_REFERENCE", "V2RDM");
     }
 
     return true;
@@ -557,12 +552,6 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
             throw PsiException("unknown REFERENCE for polaritonic UHF",__FILE__,__LINE__);
 
         }
-
-    }else if ( options.get_str("HILBERT_METHOD") == "MCPDFT") {
-
-        std::shared_ptr<MCPDFTSolver> pdft (new MCPDFTSolver(ref_wfn,options));
-        double energy = pdft->compute_energy();
-        return (std::shared_ptr<Wavefunction>)pdft;
 
     }else {
 
