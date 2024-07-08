@@ -48,6 +48,7 @@ class RealSpaceDensityHelper{
     std::vector<double> grid_w();
     std::vector<double> pi();
     std::vector<double> rho();
+    void build_rho_from_disk();
     std::vector<double> rho_a();
     std::vector<double> rho_b();
     std::vector<double> rho_a_x();

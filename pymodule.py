@@ -1,32 +1,28 @@
 #
 # @BEGIN LICENSE
 #
-# hilbert by Psi4 Developer, a plugin to:
+# Hilbert: a space for quantum chemistry plugins to Psi4 
 #
-# Psi4: an open-source quantum chemistry software package
-#
-# Copyright (c) 2007-2019 The Psi4 Developers.
+# Copyright (c) 2020 by its authors (LICENSE).
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
 #
-# This file is part of Psi4.
-#
-# Psi4 is free software; you can redistribute it and/or modify
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, version 3.
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Psi4 is distributed in the hope that it will be useful,
+# This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Psi4; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see http://www.gnu.org/licenses/.
 #
 # @END LICENSE
-#
+# 
 
 import numpy as np
 
@@ -689,14 +685,10 @@ def density_analysis(**kwargs):
     options = psi4.core.get_options()
     options.set_current_module('HILBERT')
 
-    # evaluate doci energy
     # build real-space density
     import hilbert
     real_space_density = hilbert.RealSpaceDensityHelper(new_wfn,options)
-
-    # Call the Psi4 plugin
-    # Please note that setting the reference wavefunction in this way is ONLY for plugins
-    #mcpdft_wfn = psi4.core.plugin('mcpdft.so', ref_wfn)
+    real_space_density.build_rho_from_disk()
 
     return real_space_density
 
@@ -758,7 +750,7 @@ def run_mcpdft(name, **kwargs):
     psi4.core.print_out('\n\n')
     psi4.core.print_out('        ********************************************************************\n')
     psi4.core.print_out('        *                                                                  *\n')
-    psi4.core.print_out('        *    MC-PDFT:                                                       *\n')
+    psi4.core.print_out('        *    MC-PDFT:                                                      *\n')
     psi4.core.print_out('        *                                                                  *\n')
     psi4.core.print_out('        *    Multiconfigurational Pair Density Functional Theory           *\n')
     psi4.core.print_out('        *                                                                  *\n')
@@ -768,17 +760,24 @@ def run_mcpdft(name, **kwargs):
     import hilbert
     rho_helper = hilbert.RealSpaceDensityHelper(new_wfn, options)
 
-    # need Da and Db to build T+V+J
+    # build real-space density from OPDM stored on disk
+    #d1a = kwargs.get('d1a', None)
+    #d1b = kwargs.get('d1b', None)
+    #if d1a is None or d1b is None: 
+    rho_helper.build_rho_from_disk()
+    #else 
+    #    rho_helper.build_rho(d1a, d1b)
+
+
+    # need Da and Db to build T+V+J. rho_helper has them in the MO basis
     Da = rho_helper.Da() 
     Db = rho_helper.Db() 
 
     # T + V
     mints = psi4.core.MintsHelper(new_wfn.basisset())
 
-    Va = mints.so_potential()
+    # T
     Ta = mints.so_kinetic()
-
-    Vb = Va.clone()
     Tb = Ta.clone()
 
     Ta.transform(new_wfn.Ca())
@@ -787,13 +786,17 @@ def run_mcpdft(name, **kwargs):
     kinetic_energy = Da.vector_dot(Ta)
     kinetic_energy += Db.vector_dot(Tb)
 
+    # V
+    Va = mints.so_potential()
+    Vb = Va.clone()
+
     Va.transform(new_wfn.Ca())
     Vb.transform(new_wfn.Cb())
 
     en_potential_energy = Da.vector_dot(Va)
     en_potential_energy += Db.vector_dot(Vb)
 
-    # classical coulomb energy
+    # classical coulomb energy, J
     jk = psi4.core.JK.build(new_wfn.get_basisset("ORBITAL"),
                            aux=new_wfn.get_basisset("DF_BASIS_SCF"))
 
@@ -859,11 +862,10 @@ def run_mcpdft(name, **kwargs):
     # rhoa = [1 + zeta] * rho / 2
     # rhob = [1 - zeta] * rho / 2
     # zeta = sqrt(1-R), where 1-R > 0, 0 otherwise
-    zeta = np.sqrt( 1.0 - R, out = np.zeros_like(R), where = 1.0 - R > 0 )
+    zeta = np.sqrt(1.0 - R, out = np.zeros_like(R), where = 1.0 - R > 0 )
 
     rho_a =  0.5 * rho * (1.0 + zeta)
     rho_b =  0.5 * rho * (1.0 - zeta)
-    rho = rho_a + rho_b
 
     # translated gradients
     rho_a_x =  0.5 * rho_x * (1.0 + zeta)
@@ -885,19 +887,19 @@ def run_mcpdft(name, **kwargs):
     combined_rho[1::2] = rho_b
 
     # contracted gradient as drho.drho / aa[0], ab[0], bb[0], aa[1], ab[1], bb[1], etc.
-    contracted_gradient = np.zeros([3 * len(rho)])
+    sigma = np.zeros([3 * len(rho)])
 
-    aa = rho_a_x * rho_a_x +  rho_a_y * rho_a_y +  rho_a_z * rho_a_z
-    ab = rho_a_x * rho_b_x +  rho_a_y * rho_b_y +  rho_a_z * rho_b_z
-    bb = rho_b_x * rho_b_x +  rho_b_y * rho_b_y +  rho_b_z * rho_b_z
+    sigma_aa = rho_a_x * rho_a_x +  rho_a_y * rho_a_y +  rho_a_z * rho_a_z
+    sigma_ab = rho_a_x * rho_b_x +  rho_a_y * rho_b_y +  rho_a_z * rho_b_z
+    sigma_bb = rho_b_x * rho_b_x +  rho_b_y * rho_b_y +  rho_b_z * rho_b_z
 
-    contracted_gradient[::3] = aa
-    contracted_gradient[1::3] = ab
-    contracted_gradient[2::3] = bb
+    sigma[::3] = sigma_aa
+    sigma[1::3] = sigma_ab
+    sigma[2::3] = sigma_bb
 
     inp = {
         "rho" : combined_rho,
-        "sigma" : contracted_gradient,
+        "sigma" : sigma,
         "lapl" : None,
         "tau" : None
     }

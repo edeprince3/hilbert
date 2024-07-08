@@ -105,7 +105,7 @@ RealSpaceDensity::RealSpaceDensity(std::shared_ptr<Wavefunction> reference_wavef
 
     reference_wavefunction_ = reference_wavefunction;
     common_init();
-    build_density();
+    BuildRhoFromDisk();
 }
 
 RealSpaceDensity::~RealSpaceDensity() {
@@ -437,11 +437,17 @@ void RealSpaceDensity::TransformPhiMatrixAOMO(std::shared_ptr<Matrix> phi_in, st
     }
 }
 
-void RealSpaceDensity::build_density() {
+void RealSpaceDensity::BuildRhoFromDisk() {
     
-    // read 1- and 2-RDM from disk and build rho(r), rho'(r), pi(r), and pi'(r)
+    // read 1-RDM from disk and build rho(r) and rho'(r)
     ReadOPDM();
 
+    // build rho
+    outfile->Printf("\n");
+    outfile->Printf("    ==> Build Rho ...\n");
+    BuildRhoFast();
+    outfile->Printf("    ... Done. <==\n");
+    outfile->Printf("\n");
 }
 
 void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
@@ -593,7 +599,7 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
 
 // build pi. note that there is a low-memory version of this
 // function in edeprince3/real_space_density.git, should we ever need it
-void RealSpaceDensity::BuildPiFast(tpdm * D2ab, int nab) {
+void RealSpaceDensity::BuildPiFast(std::vector<tpdm> D2ab, int nab) {
 
     pi_ = (std::shared_ptr<Vector>)(new Vector(phi_points_));
 
@@ -735,7 +741,7 @@ void RealSpaceDensity::BuildPiFast(tpdm * D2ab, int nab) {
     }
 }
 
-void RealSpaceDensity::BuildRhoFast(int na, int nb) {
+void RealSpaceDensity::BuildRhoFast(){
 
     rho_a_   = (std::shared_ptr<Vector>)(new Vector(phi_points_));
     rho_b_   = (std::shared_ptr<Vector>)(new Vector(phi_points_));
@@ -752,7 +758,7 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
 
         // rho_a(r)
         double duma = 0.0;
-        for (int n = 0; n < na; n++) {
+        for (size_t n = 0; n < opdm_a_.size(); n++) {
 
             int i = opdm_a_[n].i;
             int j = opdm_a_[n].j;
@@ -771,7 +777,7 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
 
         // rho_b(r)
         double dumb = 0.0;
-        for (int n = 0; n < nb; n++) {
+        for (size_t n = 0; n < opdm_b_.size(); n++) {
 
             int i = opdm_b_[n].i;
             int j = opdm_b_[n].j;
@@ -793,13 +799,8 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
         temp_tot += rho_p[p]  * grid_w_->pointer()[p];
         temp_a   += rho_ap[p] * grid_w_->pointer()[p];
         temp_b   += rho_bp[p] * grid_w_->pointer()[p];
-
-        // rho_p[p] = rho_ap[p] + rho_bp[p];
-        // m_p[p] =  rho_ap[p] - rho_bp[p];
-
-        // zeta_p[p] =  m_p[p]  / rho_p[p];
-        // rs_p[p] = pow( 3.0 / ( 4.0 * M_PI * rho_p[p] ) , 1.0/3.0 );
     }
+
     outfile->Printf("\n");
     outfile->Printf("      Integrated total density = %20.12lf\n",temp_tot);
     outfile->Printf("      Integrated alpha density = %20.12lf\n",temp_a);
@@ -837,7 +838,7 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
         double duma_z = 0.0;
         double dumta = 0.0;
 
-        for (int n = 0; n < na; n++) {
+        for (size_t n = 0; n < opdm_a_.size(); n++) {
 
             int i = opdm_a_[n].i;
             int j = opdm_a_[n].j;
@@ -869,7 +870,7 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
         double dumb_z = 0.0;
         double dumtb = 0.0;
 
-        for (int n = 0; n < nb; n++) {
+        for (size_t n = 0; n < opdm_b_.size(); n++) {
             
             int i = opdm_b_[n].i;
             int j = opdm_b_[n].j;
@@ -902,7 +903,6 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
 
         rho_a_zp[p] = duma_z;
         rho_b_zp[p] = dumb_z;
-
     }
 }
 
@@ -920,8 +920,8 @@ void RealSpaceDensity::ReadOPDM() {
     long int na;
     psio->read_entry(PSIF_V2RDM_D1A,"length",(char*)&na,sizeof(long int));
 
-    opdm_a_ = (opdm *)malloc(na * sizeof(opdm));
-    psio->read_entry(PSIF_V2RDM_D1A,"D1a",(char*)opdm_a_,na * sizeof(opdm));
+    opdm_a_.resize(na);
+    psio->read_entry(PSIF_V2RDM_D1A,"D1a",(char*)&opdm_a_[0],na * sizeof(opdm));
     psio->close(PSIF_V2RDM_D1A,1);
 
     for (int n = 0; n < na; n++) {
@@ -950,11 +950,12 @@ void RealSpaceDensity::ReadOPDM() {
     long int nb;
     psio->read_entry(PSIF_V2RDM_D1B,"length",(char*)&nb,sizeof(long int));
 
-    opdm_b_ = (opdm *)malloc(nb * sizeof(opdm));
-    psio->read_entry(PSIF_V2RDM_D1B,"D1b",(char*)opdm_b_,nb * sizeof(opdm));
+    //opdm_b_ = (opdm *)malloc(nb * sizeof(opdm));
+    opdm_b_.resize(nb);
+    psio->read_entry(PSIF_V2RDM_D1B,"D1b",(char*)&opdm_b_[0],nb * sizeof(opdm));
     psio->close(PSIF_V2RDM_D1B,1);
 
-   for (int n = 0; n < nb; n++) {
+    for (int n = 0; n < nb; n++) {
 
         int i = opdm_b_[n].i;
         int j = opdm_b_[n].j;
@@ -973,14 +974,6 @@ void RealSpaceDensity::ReadOPDM() {
 
     }
 
-    outfile->Printf("\n");
-    outfile->Printf("    ==> Build Rho ...\n");
-    BuildRhoFast(na,nb);
-    outfile->Printf("    ... Done. <==\n");
-    outfile->Printf("\n");
-
-    free(opdm_a_);
-    free(opdm_b_);
 }
 
 void RealSpaceDensity::BuildPiFromDisk() {
@@ -997,20 +990,19 @@ void RealSpaceDensity::BuildPiFromDisk() {
     long int nab;
     psio->read_entry(PSIF_V2RDM_D2AB,"length",(char*)&nab,sizeof(long int));
 
-    tpdm * d2 = (tpdm *)malloc(nab * sizeof(tpdm));
-    memset((void*)d2,'\0',nab * sizeof(tpdm));
+    std::vector<tpdm> d2(nab);
+    memset((void*)&d2[0],'\0',nab * sizeof(tpdm));
 
-    psio->read_entry(PSIF_V2RDM_D2AB,"D2ab",(char*)d2,nab * sizeof(tpdm));
+    psio->read_entry(PSIF_V2RDM_D2AB,"D2ab",(char*)&d2[0],nab * sizeof(tpdm));
 
     psio->close(PSIF_V2RDM_D2AB,1);
 
     // build on-top pair density (already built of REFERENCE_TPDM = V2RDM)
     outfile->Printf("\n");
     outfile->Printf("    ==> Build Pi ...");
-    BuildPiFast(d2,nab);
+    BuildPiFast(d2, nab);
     outfile->Printf(" Done. <==\n\n");
 
-    free(d2);
 }
 
 std::shared_ptr<Vector> RealSpaceDensity::xc_hole(double x, double y, double z) {

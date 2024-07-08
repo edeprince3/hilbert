@@ -54,6 +54,7 @@ void export_HilbertHelper(py::module& m) {
         .def("grid_z", &RealSpaceDensityHelper::grid_z)
         .def("grid_w", &RealSpaceDensityHelper::grid_w)
         .def("pi", &RealSpaceDensityHelper::pi)
+        .def("build_rho_from_disk", &RealSpaceDensityHelper::build_rho_from_disk)
         .def("rho", &RealSpaceDensityHelper::rho)
         .def("rho_a", &RealSpaceDensityHelper::rho_a)
         .def("rho_b", &RealSpaceDensityHelper::rho_b)
@@ -153,6 +154,9 @@ std::vector<double> RealSpaceDensityHelper::grid_w() {
     double * vec_p = vec->pointer();
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;
+}
+void RealSpaceDensityHelper::build_rho_from_disk() {
+    real_space_density->BuildRhoFromDisk();
 }
 std::vector<double> RealSpaceDensityHelper::rho() {
     std::shared_ptr<Vector> vec = real_space_density->pi();

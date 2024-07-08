@@ -131,7 +131,9 @@ class RealSpaceDensity: public Wavefunction{
     std::shared_ptr<Matrix> Db() { return Db_; }
 
     void common_init();
-    void build_density();
+
+    /// build real-space density (rho) on grid, from 1RDM on disk
+    void BuildRhoFromDisk();
 
     virtual bool same_a_b_orbs() const { return same_a_b_orbs_; }
     virtual bool same_a_b_dens() const { return same_a_b_dens_; }
@@ -139,10 +141,10 @@ class RealSpaceDensity: public Wavefunction{
   protected:
 
     /// nonzero elements of alpha opdm
-    opdm * opdm_a_;
+    std::vector<opdm> opdm_a_;
 
     /// nonzero elements of beta opdm
-    opdm * opdm_b_;
+    std::vector<opdm> opdm_b_;
 
     /// dft potential object
     std::shared_ptr<VBase> potential_;
@@ -256,10 +258,10 @@ class RealSpaceDensity: public Wavefunction{
     std::shared_ptr<Vector> pi_z_;
 
     /// build spin densities and gradients using only non-zero elements of OPDM
-    void BuildRhoFast(int na, int nb);
+    void BuildRhoFast();
 
     /// build on-top pair density using only non-zero elements of TPDM
-    void BuildPiFast(tpdm * D2ab, int nab);
+    void BuildPiFast(std::vector<tpdm> D2ab, int nab);
 
     /// build exchange correlation hole
     void BuildExchangeCorrelationHole(size_t p);
