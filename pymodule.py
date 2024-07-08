@@ -688,7 +688,8 @@ def density_analysis(**kwargs):
     # build real-space density
     import hilbert
     real_space_density = hilbert.RealSpaceDensityHelper(new_wfn,options)
-    real_space_density.build_rho_from_disk()
+    real_space_density.read_opdm()
+    real_space_density.build_rho()
 
     return real_space_density
 
@@ -760,14 +761,17 @@ def run_mcpdft(name, **kwargs):
     import hilbert
     rho_helper = hilbert.RealSpaceDensityHelper(new_wfn, options)
 
-    # build real-space density from OPDM stored on disk
-    #d1a = kwargs.get('d1a', None)
-    #d1b = kwargs.get('d1b', None)
-    #if d1a is None or d1b is None: 
-    rho_helper.build_rho_from_disk()
-    #else 
-    #    rho_helper.build_rho(d1a, d1b)
+    # get MO-basis opdm from disk or user input
 
+    opdm_a = kwargs.get('opdm_a', None)
+    opdm_b = kwargs.get('opdm_b', None)
+    if opdm_a is None or opdm_b is None: 
+        rho_helper.read_opdm()
+    else:
+        rho_helper.set_opdm(opdm_a, opdm_b)
+
+    # build real-space density from OPDM
+    rho_helper.build_rho()
 
     # need Da and Db to build T+V+J. rho_helper has them in the MO basis
     Da = rho_helper.Da() 

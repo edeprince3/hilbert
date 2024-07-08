@@ -54,7 +54,9 @@ void export_HilbertHelper(py::module& m) {
         .def("grid_z", &RealSpaceDensityHelper::grid_z)
         .def("grid_w", &RealSpaceDensityHelper::grid_w)
         .def("pi", &RealSpaceDensityHelper::pi)
-        .def("build_rho_from_disk", &RealSpaceDensityHelper::build_rho_from_disk)
+        .def("build_rho", &RealSpaceDensityHelper::build_rho)
+        .def("set_opdm", &RealSpaceDensityHelper::set_opdm)
+        .def("read_opdm", &RealSpaceDensityHelper::read_opdm)
         .def("rho", &RealSpaceDensityHelper::rho)
         .def("rho_a", &RealSpaceDensityHelper::rho_a)
         .def("rho_b", &RealSpaceDensityHelper::rho_b)
@@ -155,8 +157,14 @@ std::vector<double> RealSpaceDensityHelper::grid_w() {
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;
 }
-void RealSpaceDensityHelper::build_rho_from_disk() {
-    real_space_density->BuildRhoFromDisk();
+void RealSpaceDensityHelper::build_rho() {
+    real_space_density->BuildRhoFast();
+}
+void RealSpaceDensityHelper::read_opdm() {
+    real_space_density->ReadOPDM();
+}
+void RealSpaceDensityHelper::set_opdm(std::vector<opdm> opdm_a, std::vector<opdm> opdm_b) {
+    real_space_density->SetOPDM(opdm_a, opdm_b);
 }
 std::vector<double> RealSpaceDensityHelper::rho() {
     std::shared_ptr<Vector> vec = real_space_density->pi();

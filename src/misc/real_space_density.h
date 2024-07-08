@@ -132,8 +132,17 @@ class RealSpaceDensity: public Wavefunction{
 
     void common_init();
 
-    /// build real-space density (rho) on grid, from 1RDM on disk
-    void BuildRhoFromDisk();
+    /// read opdm elements from disk
+    void ReadOPDM();
+
+    /// set opdm elements from input
+    void SetOPDM(std::vector<opdm> opdm_a, std::vector<opdm> opdm_b);
+
+    /// set the MO-basis density matrix values from std::vector<opdm>
+    void SetD1(std::vector<opdm> my_opdm, std::shared_ptr<Matrix> D1);
+
+    /// build real-space spin densities and gradients using only non-zero elements of OPDM
+    void BuildRhoFast();
 
     virtual bool same_a_b_orbs() const { return same_a_b_orbs_; }
     virtual bool same_a_b_dens() const { return same_a_b_dens_; }
@@ -253,9 +262,6 @@ class RealSpaceDensity: public Wavefunction{
 
     /// z-component of the gradient of the on-top pair density
     std::shared_ptr<Vector> pi_z_;
-
-    /// build spin densities and gradients using only non-zero elements of OPDM
-    void BuildRhoFast();
 
     /// build on-top pair density using only non-zero elements of TPDM
     void BuildPiFast(std::vector<tpdm> D2ab, int nab);

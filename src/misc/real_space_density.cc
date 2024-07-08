@@ -105,7 +105,6 @@ RealSpaceDensity::RealSpaceDensity(std::shared_ptr<Wavefunction> reference_wavef
 
     reference_wavefunction_ = reference_wavefunction;
     common_init();
-    BuildRhoFromDisk();
 }
 
 RealSpaceDensity::~RealSpaceDensity() {
@@ -437,9 +436,40 @@ void RealSpaceDensity::TransformPhiMatrixAOMO(std::shared_ptr<Matrix> phi_in, st
     }
 }
 
-void RealSpaceDensity::BuildRhoFromDisk() {
+void RealSpaceDensity::SetD1(std::vector<opdm> my_opdm, std::shared_ptr<Matrix> D1) {
+
+    for (size_t n = 0; n < my_opdm.size(); n++) {
+
+        int i = my_opdm[n].i;
+        int j = my_opdm[n].j;
+
+        int hi = symmetry_[i];
+        int hj = symmetry_[j];
+
+        if ( hi != hj ) {
+            throw PsiException("error: something is wrong with the symmetry of the OPDM",__FILE__,__LINE__);
+        }
+
+        int ii = i - pitzer_offset_[hi];
+        int jj = j - pitzer_offset_[hi];
+
+        D1->pointer(hi)[ii][jj] = my_opdm[n].value;
+    }
+}
+
+void RealSpaceDensity::SetOPDM(std::vector<opdm> opdm_a, std::vector<opdm> opdm_b) {
+
+    opdm_a_ = opdm_a;
+    opdm_b_ = opdm_b;
+
+    SetD1(opdm_a_, Da_);
+    SetD1(opdm_b_, Db_);
+}
+
+void RealSpaceDensity::ReadOPDM() {
     
-    // read 1-RDM from disk and build rho(r) and rho'(r)
+    // read opdm from disk 
+
     std::shared_ptr<PSIO> psio (new PSIO());
 
     if ( !psio->exists(PSIF_V2RDM_D1A) ) throw PsiException("No D1a on disk",__FILE__,__LINE__);
@@ -456,24 +486,7 @@ void RealSpaceDensity::BuildRhoFromDisk() {
     psio->read_entry(PSIF_V2RDM_D1A,"D1a",(char*)&opdm_a_[0],na * sizeof(opdm));
     psio->close(PSIF_V2RDM_D1A,1);
 
-    for (int n = 0; n < na; n++) {
-
-        int i = opdm_a_[n].i;
-        int j = opdm_a_[n].j;
-
-        int hi = symmetry_[i];
-        int hj = symmetry_[j];
-
-        if ( hi != hj ) {
-            throw PsiException("error: something is wrong with the symmetry of the alpha OPDM",__FILE__,__LINE__);
-        }
-
-        int ii = i - pitzer_offset_[hi];
-        int jj = j - pitzer_offset_[hi];
-
-        Da_->pointer(hi)[ii][jj] = opdm_a_[n].value;
-
-    }
+    SetD1(opdm_a_, Da_);
 
     // D1b
 
@@ -487,30 +500,8 @@ void RealSpaceDensity::BuildRhoFromDisk() {
     psio->read_entry(PSIF_V2RDM_D1B,"D1b",(char*)&opdm_b_[0],nb * sizeof(opdm));
     psio->close(PSIF_V2RDM_D1B,1);
 
-    for (int n = 0; n < nb; n++) {
+    SetD1(opdm_b_, Db_);
 
-        int i = opdm_b_[n].i;
-        int j = opdm_b_[n].j;
-
-        int hi = symmetry_[i];
-        int hj = symmetry_[j];
-
-        if ( hi != hj ) {
-            throw PsiException("error: something is wrong with the symmetry of the beta OPDM",__FILE__,__LINE__);
-        }
-
-        int ii = i - pitzer_offset_[hi];
-        int jj = j - pitzer_offset_[hi];
-
-        Db_->pointer(hi)[ii][jj] = opdm_b_[n].value;
-    }
-
-    // build rho
-    outfile->Printf("\n");
-    outfile->Printf("    ==> Build Rho ...\n");
-    BuildRhoFast();
-    outfile->Printf("    ... Done. <==\n");
-    outfile->Printf("\n");
 }
 
 void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
@@ -657,7 +648,6 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
     free(D2ab);
     free(D2aa);
     free(D2bb);
-
 }
 
 // build pi. note that there is a low-memory version of this
@@ -805,6 +795,9 @@ void RealSpaceDensity::BuildPiFast(std::vector<tpdm> D2ab, int nab) {
 }
 
 void RealSpaceDensity::BuildRhoFast(){
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> Build Rho ...\n");
 
     rho_a_   = (std::shared_ptr<Vector>)(new Vector(phi_points_));
     rho_b_   = (std::shared_ptr<Vector>)(new Vector(phi_points_));
@@ -967,6 +960,9 @@ void RealSpaceDensity::BuildRhoFast(){
         rho_a_zp[p] = duma_z;
         rho_b_zp[p] = dumb_z;
     }
+
+    outfile->Printf("    ... Done. <==\n");
+    outfile->Printf("\n");
 }
 
 void RealSpaceDensity::BuildPiFromDisk() {
@@ -995,7 +991,6 @@ void RealSpaceDensity::BuildPiFromDisk() {
     outfile->Printf("    ==> Build Pi ...");
     BuildPiFast(d2, nab);
     outfile->Printf(" Done. <==\n\n");
-
 }
 
 std::shared_ptr<Vector> RealSpaceDensity::xc_hole(double x, double y, double z) {
