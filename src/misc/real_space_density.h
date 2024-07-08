@@ -39,28 +39,10 @@
 #define PSIF_V2RDM_D1A        277
 #define PSIF_V2RDM_D1B        278
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<math.h>
-#include<string>
-
-#include "psi4/libmints/wavefunction.h"
-
-// for reading integrals from disk
-#include <psi4/libiwl/iwl.h>
-
-// for dft
+// psi4 stuff
 #include "psi4/libfock/v.h"
-#include "psi4/libfunctional/superfunctional.h"
-
-// for grid
 #include "psi4/libfock/points.h"
 #include "psi4/libfock/cubature.h"
-
-#include "psi4/psi4-dec.h"
-#include <psi4/psifiles.h>
-#include <psi4/libpsio/psio.hpp>
-#include <psi4/libpsi4util/PsiOutStream.h>
 
 // tpdm and opdm structs live here
 #include <v2rdm_casscf/v2rdm_solver.h>

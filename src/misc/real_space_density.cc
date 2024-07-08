@@ -24,62 +24,10 @@
  *  @END LICENSE
  */
 
-
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <algorithm>
-#include <vector>
-#include <utility>
-#include <tuple>
-#include <fstream>
-#include <iostream>
-#include <iomanip>
-#include <string>
-
-#include "psi4/libpsi4util/libpsi4util.h"
-
-#include "psi4/libqt/qt.h"
-
-// jk object
-#include "psi4/libfock/jk.h"
-
-// for dft
-#include "psi4/libfock/v.h"
-#include "psi4/libfunctional/superfunctional.h"
-
-// for grid
-#include "psi4/libfock/points.h"
-#include "psi4/libfock/cubature.h"
-
-#include "psi4/psi4-dec.h"
-#include "psi4/liboptions/liboptions.h"
-#include "psi4/libpsio/psio.hpp"
-
-#include "psi4/libmints/wavefunction.h"
-#include "psi4/libmints/mintshelper.h"
-#include "psi4/libmints/matrix.h"
-#include "psi4/libmints/vector.h"
+// psi4 stuff
+#include "psi4/libpsi4util/process.h"
 #include "psi4/libmints/basisset.h"
-#include "psi4/libmints/gshell.h"
-#include "psi4/libmints/molecule.h"
-#include "psi4/lib3index/dftensor.h"
-#include "psi4/libqt/qt.h"
-
-// for potential object
-#include "psi4/libfock/v.h"
-#include "psi4/libfunctional/superfunctional.h"
 #include "psi4/libscf_solver/hf.h"
-
-// for reading 2RDM
-#include "psi4/psi4-dec.h"
-#include <psi4/psifiles.h>
-#include <psi4/libiwl/iwl.h>
-#include <psi4/libpsio/psio.hpp>
-#include <psi4/libtrans/integraltransform.h>
-
-#include <psi4/libpsi4util/PsiOutStream.h>
 
 // real_space_density 
 #include "real_space_density.h"
@@ -92,7 +40,6 @@
 
 // tpdm and opdm structs live here
 #include <v2rdm_casscf/v2rdm_solver.h>
-
 
 using namespace psi;
 using namespace fnocc;
@@ -114,7 +61,6 @@ RealSpaceDensity::~RealSpaceDensity() {
 void RealSpaceDensity::common_init() {
 
     reference_energy_ = Process::environment.globals["V2RDM TOTAL ENERGY"];
-
     
     shallow_copy(reference_wavefunction_);
 
@@ -374,34 +320,6 @@ void RealSpaceDensity::BuildPhiMatrixAO(std::string phi_type, std::shared_ptr<Ma
         double * z = block->z();
         double * w = block->w();
 
-        // Doing some test to see everything including Pi etc is correct on 
-        // Molcas' grid points through comparison.
-
-        // std::ifstream dataIn;
-       
-        // dataIn.open("H2.grids_test");
-        // 
-        // if (!dataIn)
-        //    std::cout << "Error opening file.\n";
-        // else { 
-        //      int p = 0;        
-        //      while (!dataIn.eof()){
-        //    
-        //            dataIn >> x[p];
-        //            dataIn >> y[p];    
-        //            dataIn >> z[p];
-        //            p++;
-        //      }        
-        // }
-        // dataIn.close(); 
-
-        // for (int p = 0; p < npoints; p++) {
-
-        //     outfile->Printf("\n     y[");
-        //     outfile->Printf("%d",p);
-        //     outfile->Printf("] = %20.7lf\n",y[p]);
-        // }
-
         for (int p = 0; p < npoints; p++) {
 
             grid_x_->pointer()[phi_points_ + p] = x[p];
@@ -499,7 +417,6 @@ void RealSpaceDensity::ReadOPDM() {
     long int nb;
     psio->read_entry(PSIF_V2RDM_D1B,"length",(char*)&nb,sizeof(long int));
 
-    //opdm_b_ = (opdm *)malloc(nb * sizeof(opdm));
     opdm_b_.resize(nb);
     psio->read_entry(PSIF_V2RDM_D1B,"D1b",(char*)&opdm_b_[0],nb * sizeof(opdm));
     psio->close(PSIF_V2RDM_D1B,1);
