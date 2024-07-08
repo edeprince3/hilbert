@@ -212,9 +212,6 @@ class RealSpaceDensity: public Wavefunction{
     /// read 2-RDM from disk and build on-top pair density
     void BuildPiFromDisk();
 
-    /// read 1-RDM from disk
-    void ReadOPDM();
-
     /// exchange-correlation hole
     std::shared_ptr<Vector> xc_hole_;
 
