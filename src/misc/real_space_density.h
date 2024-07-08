@@ -93,7 +93,7 @@ class RealSpaceDensity: public Wavefunction{
 
     /// return on-top pair density (pi) on grid 
     std::shared_ptr<Vector> pi() { 
-        BuildPiFromDisk();
+        BuildPiFast(tpdm_ab_);
         return pi_; 
     }
 
@@ -138,6 +138,12 @@ class RealSpaceDensity: public Wavefunction{
     /// set opdm elements from input
     void SetOPDM(std::vector<opdm> opdm_a, std::vector<opdm> opdm_b);
 
+    /// read alpha-beta tpdm elements from disk
+    void ReadTPDM();
+
+    /// set alpha-beta tpdm elements from input
+    void SetTPDM(std::vector<tpdm> tpdm_ab);
+
     /// set the MO-basis density matrix values from std::vector<opdm>
     void SetD1(std::vector<opdm> my_opdm, std::shared_ptr<Matrix> D1);
 
@@ -154,6 +160,9 @@ class RealSpaceDensity: public Wavefunction{
 
     /// nonzero elements of beta opdm
     std::vector<opdm> opdm_b_;
+
+    /// nonzero elements of alpha-beta block of tpdm
+    std::vector<tpdm> tpdm_ab_;
 
     /// dft potential object
     std::shared_ptr<VBase> potential_;
@@ -218,9 +227,6 @@ class RealSpaceDensity: public Wavefunction{
     /// transform the orbital labels in phi/phi_x/... from the AO to the MO basis
     void TransformPhiMatrixAOMO(std::shared_ptr<Matrix> phi_in, std::shared_ptr<Matrix> phi_out);
 
-    /// read 2-RDM from disk and build on-top pair density
-    void BuildPiFromDisk();
-
     /// exchange-correlation hole
     std::shared_ptr<Vector> xc_hole_;
 
@@ -264,7 +270,7 @@ class RealSpaceDensity: public Wavefunction{
     std::shared_ptr<Vector> pi_z_;
 
     /// build on-top pair density using only non-zero elements of TPDM
-    void BuildPiFast(std::vector<tpdm> D2ab, int nab);
+    void BuildPiFast(std::vector<tpdm> D2ab);
 
     /// build exchange correlation hole
     void BuildExchangeCorrelationHole(size_t p);

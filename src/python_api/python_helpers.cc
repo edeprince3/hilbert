@@ -56,7 +56,9 @@ void export_HilbertHelper(py::module& m) {
         .def("pi", &RealSpaceDensityHelper::pi)
         .def("build_rho", &RealSpaceDensityHelper::build_rho)
         .def("set_opdm", &RealSpaceDensityHelper::set_opdm)
+        .def("set_tpdm", &RealSpaceDensityHelper::set_tpdm)
         .def("read_opdm", &RealSpaceDensityHelper::read_opdm)
+        .def("read_tpdm", &RealSpaceDensityHelper::read_tpdm)
         .def("rho", &RealSpaceDensityHelper::rho)
         .def("rho_a", &RealSpaceDensityHelper::rho_a)
         .def("rho_b", &RealSpaceDensityHelper::rho_b)
@@ -163,8 +165,14 @@ void RealSpaceDensityHelper::build_rho() {
 void RealSpaceDensityHelper::read_opdm() {
     real_space_density->ReadOPDM();
 }
+void RealSpaceDensityHelper::read_tpdm() {
+    real_space_density->ReadTPDM();
+}
 void RealSpaceDensityHelper::set_opdm(std::vector<opdm> opdm_a, std::vector<opdm> opdm_b) {
     real_space_density->SetOPDM(opdm_a, opdm_b);
+}
+void RealSpaceDensityHelper::set_tpdm(std::vector<tpdm> tpdm_ab) {
+    real_space_density->SetTPDM(tpdm_ab);
 }
 std::vector<double> RealSpaceDensityHelper::rho() {
     std::shared_ptr<Vector> vec = real_space_density->pi();

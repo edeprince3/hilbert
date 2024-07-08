@@ -855,6 +855,14 @@ def run_mcpdft(name, **kwargs):
     rho_y = rho_a_y + rho_b_y
     rho_z = rho_a_z + rho_b_z
 
+    # get MO-basis alpha-beta block of tpdm from disk or user input
+
+    tpdm_ab = kwargs.get('tpdm_ab', None)
+    if tpdm_ab is None:
+        rho_helper.read_tpdm()
+    else:
+        rho_helper.set_tpdm(tpdm_ab)
+
     # on-top pair density in real space
     pi = np.asarray(rho_helper.pi())
 

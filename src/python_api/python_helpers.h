@@ -43,7 +43,9 @@ class RealSpaceDensityHelper{
     RealSpaceDensityHelper(SharedWavefunction reference_wavefunction,Options & options);
     ~RealSpaceDensityHelper();
     void read_opdm();
+    void read_tpdm();
     void set_opdm(std::vector<opdm> opdm_a, std::vector<opdm> opdm_b);
+    void set_tpdm(std::vector<tpdm> tpdm_ab);
     void build_rho();
     std::vector<double> grid_x();
     std::vector<double> grid_y();

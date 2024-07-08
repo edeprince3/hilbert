@@ -466,6 +466,10 @@ void RealSpaceDensity::SetOPDM(std::vector<opdm> opdm_a, std::vector<opdm> opdm_
     SetD1(opdm_b_, Db_);
 }
 
+void RealSpaceDensity::SetTPDM(std::vector<tpdm> tpdm_ab) {
+    tpdm_ab_ = tpdm_ab;
+}
+
 void RealSpaceDensity::ReadOPDM() {
     
     // read opdm from disk 
@@ -652,7 +656,10 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
 
 // build pi. note that there is a low-memory version of this
 // function in edeprince3/real_space_density.git, should we ever need it
-void RealSpaceDensity::BuildPiFast(std::vector<tpdm> D2ab, int nab) {
+void RealSpaceDensity::BuildPiFast(std::vector<tpdm> D2ab) {
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> Build Pi ...");
 
     pi_ = (std::shared_ptr<Vector>)(new Vector(phi_points_));
 
@@ -663,7 +670,7 @@ void RealSpaceDensity::BuildPiFast(std::vector<tpdm> D2ab, int nab) {
         double dum = 0.0;
 
         // pi(r) = D(mu,nu; lambda,sigma) * phi(r,mu) * phi(r,nu) * phi(r,lambda) * phi(r,sigma)
-        for (int n = 0; n < nab; n++) {
+        for (size_t n = 0; n < D2ab.size(); n++) {
 
             int i = D2ab[n].i;
             int j = D2ab[n].j;
@@ -709,7 +716,7 @@ void RealSpaceDensity::BuildPiFast(std::vector<tpdm> D2ab, int nab) {
         double dum_z = 0.0;
 
         // pi(r) = D(mu,nu; lambda,sigma) * phi(r,mu) * phi(r,nu) * phi(r,lambda) * phi(r,sigma)
-        for (int n = 0; n < nab; n++) {
+        for (size_t n = 0; n < D2ab.size(); n++) {
 
             int i = D2ab[n].i;
             int j = D2ab[n].j;
@@ -792,6 +799,7 @@ void RealSpaceDensity::BuildPiFast(std::vector<tpdm> D2ab, int nab) {
         pi_yp[p] = dum_y;
         pi_zp[p] = dum_z;
     }
+    outfile->Printf(" Done. <==\n\n");
 }
 
 void RealSpaceDensity::BuildRhoFast(){
@@ -965,7 +973,7 @@ void RealSpaceDensity::BuildRhoFast(){
     outfile->Printf("\n");
 }
 
-void RealSpaceDensity::BuildPiFromDisk() {
+void RealSpaceDensity::ReadTPDM() {
 
     std::shared_ptr<PSIO> psio (new PSIO());
 
@@ -979,18 +987,12 @@ void RealSpaceDensity::BuildPiFromDisk() {
     long int nab;
     psio->read_entry(PSIF_V2RDM_D2AB,"length",(char*)&nab,sizeof(long int));
 
-    std::vector<tpdm> d2(nab);
-    memset((void*)&d2[0],'\0',nab * sizeof(tpdm));
+    tpdm_ab_.resize(nab);
+    memset((void*)&tpdm_ab_[0],'\0',nab * sizeof(tpdm));
 
-    psio->read_entry(PSIF_V2RDM_D2AB,"D2ab",(char*)&d2[0],nab * sizeof(tpdm));
+    psio->read_entry(PSIF_V2RDM_D2AB,"D2ab",(char*)&tpdm_ab_[0],nab * sizeof(tpdm));
 
     psio->close(PSIF_V2RDM_D2AB,1);
-
-    // build on-top pair density (already built of REFERENCE_TPDM = V2RDM)
-    outfile->Printf("\n");
-    outfile->Printf("    ==> Build Pi ...");
-    BuildPiFast(d2, nab);
-    outfile->Printf(" Done. <==\n\n");
 }
 
 std::shared_ptr<Vector> RealSpaceDensity::xc_hole(double x, double y, double z) {
