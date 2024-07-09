@@ -704,7 +704,14 @@ def run_mcpdft(name, **kwargs):
     kwargs = p4util.kwargs_lower(kwargs)
 
     # pylibxc
-    import pylibxc
+    try:
+        import pylibxc
+    except ImportError:
+        print('')
+        print('    error: mc-pdft requires the python interface to libxc. see https://gitlab.com/libxc/libxc/-/tree/devel#python-library')
+        print('')
+        exit()
+        
 
     functional_name_dict = {
         'svwn' : ['lda_x', 'lda_c_vwn_rpa'],
