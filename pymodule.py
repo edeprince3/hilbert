@@ -1,32 +1,28 @@
 #
 # @BEGIN LICENSE
 #
-# hilbert by Psi4 Developer, a plugin to:
+# Hilbert: a space for quantum chemistry plugins to Psi4 
 #
-# Psi4: an open-source quantum chemistry software package
-#
-# Copyright (c) 2007-2019 The Psi4 Developers.
+# Copyright (c) 2020 by its authors (LICENSE).
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
 #
-# This file is part of Psi4.
-#
-# Psi4 is free software; you can redistribute it and/or modify
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, version 3.
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Psi4 is distributed in the hope that it will be useful,
+# This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Psi4; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see http://www.gnu.org/licenses/.
 #
 # @END LICENSE
-#
+# 
 
 import numpy as np
 
@@ -34,11 +30,7 @@ import psi4
 import psi4.driver.p4util as p4util
 from psi4.driver.procrouting import proc_util
 from psi4.driver.procrouting import proc
-#from psi4.driver.qcdb import molecule
-
-# to build a fake molecule
-import qcelemental as qcel
-from psi4.driver import qcdb
+from psi4.driver.p4util.exceptions import ValidationError
 
 def run_qed_scf(name, **kwargs):
     r"""Function encoding sequence of PSI module and plugin calls so that
@@ -677,7 +669,7 @@ def density_analysis(**kwargs):
     func = 'M06-2X'
     ref_molecule = kwargs.get('molecule', psi4.core.get_active_molecule())
     base_wfn = psi4.core.Wavefunction.build(ref_molecule, psi4.core.get_global_option('BASIS'))
-    new_wfn = proc.scf_wavefunction_factory('M06-2X', base_wfn, 'UKS')
+    new_wfn = proc.scf_wavefunction_factory(func, base_wfn, 'UKS')
 
     # push reference orbitals onto new wave function 
     for irrep in range (0,ref_wfn.Ca().nirrep()):
@@ -693,16 +685,281 @@ def density_analysis(**kwargs):
     options = psi4.core.get_options()
     options.set_current_module('HILBERT')
 
-    # evaluate doci energy
     # build real-space density
     import hilbert
     real_space_density = hilbert.RealSpaceDensityHelper(new_wfn,options)
-
-    # Call the Psi4 plugin
-    # Please note that setting the reference wavefunction in this way is ONLY for plugins
-    #mcpdft_wfn = psi4.core.plugin('mcpdft.so', ref_wfn)
+    real_space_density.read_opdm()
+    real_space_density.build_rho()
 
     return real_space_density
+
+def run_mcpdft(name, **kwargs):
+    r"""Function encoding sequence of PSI module and plugin calls so that
+    mcpdft can be called via :py:func:`~driver.energy`. For post-scf plugins.
+
+    >>> energy('mcpdft')
+
+    """
+    lowername = name.lower()
+    kwargs = p4util.kwargs_lower(kwargs)
+
+    # pylibxc
+    try:
+        import pylibxc
+    except ImportError:
+        print('')
+        print('    error: mc-pdft requires the python interface to libxc. see https://gitlab.com/libxc/libxc/-/tree/devel#python-library')
+        print('')
+        exit()
+        
+
+    functional_name_dict = {
+        'svwn' : ['lda_x', 'lda_c_vwn_rpa'],
+        'lda' : ['lda_x', None],
+        'blyp' : ['gga_x_b88', 'gga_c_lyp'],
+        'bop' : ['gga_x_b88', 'gga_c_op_b88'],
+        'pbe' : ['gga_x_pbe', 'gga_c_pbe'],
+        'revpbe' : ['gga_x_pbe_r', 'gga_c_pbe']
+    }
+    functional = psi4.core.get_option('HILBERT','MCPDFT_FUNCTIONAL').lower()
+
+    if functional not in functional_name_dict.keys():
+        raise ValidationError(f"Invalid functional choice {name} for MC-PDFT. try {functional_name_dict.keys()}")
+
+    libxc_functional_name = functional_name_dict[functional]
+
+    psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
+
+    ref_wfn = kwargs.get('ref_wfn', None)
+    if ref_wfn is None:
+        raise ValidationError("""Error: mcpdft requires a reference wave function.""" )
+
+    # pick fake functional that requires second derivatives for new_wfn
+    func = 'M06-2X'
+    ref_molecule = kwargs.get('molecule', psi4.core.get_active_molecule())
+    base_wfn = psi4.core.Wavefunction.build(ref_molecule, psi4.core.get_global_option('BASIS'))
+    new_wfn = proc.scf_wavefunction_factory(func, base_wfn, 'UKS')
+
+    # push reference orbitals onto new wave function 
+    for irrep in range (0,ref_wfn.Ca().nirrep()):
+        new_wfn.Ca().nph[irrep][:,:] = ref_wfn.Ca().nph[irrep][:,:]
+        new_wfn.Cb().nph[irrep][:,:] = ref_wfn.Cb().nph[irrep][:,:]
+
+    # push reference energies onto new wave function
+    for irrep in range (0,ref_wfn.epsilon_a().nirrep()):
+        new_wfn.epsilon_a().nph[irrep][:] = ref_wfn.epsilon_a().nph[irrep][:]
+        new_wfn.epsilon_b().nph[irrep][:] = ref_wfn.epsilon_b().nph[irrep][:]
+
+    # grab options object
+    options = psi4.core.get_options()
+    options.set_current_module('HILBERT')
+
+    psi4.core.flush_outfile()
+    psi4.core.print_out('\n\n')
+    psi4.core.print_out('        ********************************************************************\n')
+    psi4.core.print_out('        *                                                                  *\n')
+    psi4.core.print_out('        *    MC-PDFT:                                                      *\n')
+    psi4.core.print_out('        *                                                                  *\n')
+    psi4.core.print_out('        *    Multiconfigurational Pair Density Functional Theory           *\n')
+    psi4.core.print_out('        *                                                                  *\n')
+    psi4.core.print_out('        ********************************************************************\n')
+    psi4.core.print_out('\n')
+
+    import hilbert
+    rho_helper = hilbert.RealSpaceDensityHelper(new_wfn, options)
+
+    # get MO-basis opdm from disk or user input
+
+    opdm_a = kwargs.get('opdm_a', None)
+    opdm_b = kwargs.get('opdm_b', None)
+    if opdm_a is None or opdm_b is None: 
+        rho_helper.read_opdm()
+    else:
+        rho_helper.set_opdm(opdm_a, opdm_b)
+
+    # build real-space density from OPDM
+    rho_helper.build_rho()
+
+    # need Da and Db to build T+V+J. rho_helper has them in the MO basis
+    Da = rho_helper.Da() 
+    Db = rho_helper.Db() 
+
+    # T + V
+    mints = psi4.core.MintsHelper(new_wfn.basisset())
+
+    # T
+    Ta = mints.so_kinetic()
+    Tb = Ta.clone()
+
+    Ta.transform(new_wfn.Ca())
+    Tb.transform(new_wfn.Cb())
+
+    kinetic_energy = Da.vector_dot(Ta)
+    kinetic_energy += Db.vector_dot(Tb)
+
+    # V
+    Va = mints.so_potential()
+    Vb = Va.clone()
+
+    Va.transform(new_wfn.Ca())
+    Vb.transform(new_wfn.Cb())
+
+    en_potential_energy = Da.vector_dot(Va)
+    en_potential_energy += Db.vector_dot(Vb)
+
+    # classical coulomb energy, J
+    jk = psi4.core.JK.build(new_wfn.get_basisset("ORBITAL"),
+                           aux=new_wfn.get_basisset("DF_BASIS_SCF"))
+
+    jk.set_do_K(False)
+    jk.set_do_wK(False)
+    jk.initialize()
+
+    Cra = new_wfn.Ca().clone()
+    Crb = new_wfn.Cb().clone()
+
+    Cla = Cra.clone()
+    Clb = Crb.clone()
+
+    Cla.zero();
+    Cla.gemm(False, True, 1.0, Cra, Da, 0.0);
+    jk.C_left_add(Cla)
+    jk.C_right_add(Cra)
+
+    Clb.zero();
+    Clb.gemm(False, True, 1.0, Crb, Db, 0.0);
+    jk.C_left_add(Clb)
+    jk.C_right_add(Crb)
+
+    jk.compute()
+
+    Ja = jk.J()[0]
+    Jb = jk.J()[1]
+
+    Ja.transform(new_wfn.Ca())
+    Jb.transform(new_wfn.Cb())
+
+    coulomb_energy = Da.vector_dot(Ja)
+    coulomb_energy += Db.vector_dot(Jb)
+
+    # xc contribution to the energy
+
+    # density in real space
+    rho_a = np.asarray(rho_helper.rho_a())
+    rho_b = np.asarray(rho_helper.rho_b())
+    rho = rho_a + rho_b
+
+    # gradient of density in real space
+    rho_a_x = np.asarray(rho_helper.rho_a_x())
+    rho_a_y = np.asarray(rho_helper.rho_a_y())
+    rho_a_z = np.asarray(rho_helper.rho_a_z())
+    
+    rho_b_x = np.asarray(rho_helper.rho_b_x())
+    rho_b_y = np.asarray(rho_helper.rho_b_y())
+    rho_b_z = np.asarray(rho_helper.rho_b_z())
+
+    rho_x = rho_a_x + rho_b_x
+    rho_y = rho_a_y + rho_b_y
+    rho_z = rho_a_z + rho_b_z
+
+    # get MO-basis alpha-beta block of tpdm from disk or user input
+
+    tpdm_ab = kwargs.get('tpdm_ab', None)
+    if tpdm_ab is None:
+        rho_helper.read_tpdm()
+    else:
+        rho_helper.set_tpdm(tpdm_ab)
+
+    # on-top pair density in real space
+    pi = np.asarray(rho_helper.pi())
+
+    # on-top ratio
+    R = 4.0 * np.divide(pi, rho * rho)
+
+    # translated densities and gradients of densities
+
+    # rhoa = [1 + zeta] * rho / 2
+    # rhob = [1 - zeta] * rho / 2
+    # zeta = sqrt(1-R), where 1-R > 0, 0 otherwise
+    zeta = np.sqrt(1.0 - R, out = np.zeros_like(R), where = 1.0 - R > 0 )
+
+    rho_a =  0.5 * rho * (1.0 + zeta)
+    rho_b =  0.5 * rho * (1.0 - zeta)
+
+    # translated gradients
+    rho_a_x =  0.5 * rho_x * (1.0 + zeta)
+    rho_a_y =  0.5 * rho_y * (1.0 + zeta)
+    rho_a_z =  0.5 * rho_z * (1.0 + zeta)
+
+    rho_b_x =  0.5 * rho_x * (1.0 - zeta)
+    rho_b_y =  0.5 * rho_y * (1.0 - zeta)
+    rho_b_z =  0.5 * rho_z * (1.0 - zeta)
+
+    # with translated rho_a, rho_b, etc. evaluate xc contribution to the energy
+
+    # we need grids for ex/ec
+    grid_w = np.asarray(rho_helper.grid_w())
+
+    # combined rho as rho_a[0], rho_b[0], rho_a[1], rho_b[1], etc.
+    combined_rho = np.zeros([2 * len(rho)])
+    combined_rho[::2] = rho_a
+    combined_rho[1::2] = rho_b
+
+    # contracted gradient as drho.drho / aa[0], ab[0], bb[0], aa[1], ab[1], bb[1], etc.
+    sigma = np.zeros([3 * len(rho)])
+
+    sigma_aa = rho_a_x * rho_a_x +  rho_a_y * rho_a_y +  rho_a_z * rho_a_z
+    sigma_ab = rho_a_x * rho_b_x +  rho_a_y * rho_b_y +  rho_a_z * rho_b_z
+    sigma_bb = rho_b_x * rho_b_x +  rho_b_y * rho_b_y +  rho_b_z * rho_b_z
+
+    sigma[::3] = sigma_aa
+    sigma[1::3] = sigma_ab
+    sigma[2::3] = sigma_bb
+
+    inp = {
+        "rho" : combined_rho,
+        "sigma" : sigma,
+        "lapl" : None,
+        "tau" : None
+    }
+
+    ex = 0.0
+    ec = 0.0
+
+    if libxc_functional_name[0] is not None:
+
+        functional = pylibxc.LibXCFunctional(libxc_functional_name[0], "polarized")
+        ret = functional.compute( inp, do_vxc = False )
+        zk = ret['zk'].flatten()
+        ex = np.sum( zk * rho * grid_w )
+
+    if libxc_functional_name[1] is not None:
+
+        functional = pylibxc.LibXCFunctional(libxc_functional_name[1], "polarized")
+        ret = functional.compute( inp, do_vxc = False )
+        zk = ret['zk'].flatten()
+        ec = np.sum( zk * rho * grid_w )
+
+    nuclear_repulsion_energy = new_wfn.molecule().nuclear_repulsion_energy()
+
+    total_energy = kinetic_energy + en_potential_energy + coulomb_energy + ex + ec + nuclear_repulsion_energy
+
+    psi4.core.flush_outfile()
+    psi4.core.print_out('    ==> MC-PDFT energy by component <==\n')
+    psi4.core.print_out('\n')
+
+    psi4.core.print_out('        nuclear repulsion energy =          %20.12f\n' % (nuclear_repulsion_energy) )
+    psi4.core.print_out('        electron-nucleus potential energy = %20.12f\n' % (en_potential_energy) )
+    psi4.core.print_out('        electron kinetic energy =           %20.12f\n' % (kinetic_energy) )
+    psi4.core.print_out('        classical coulomb energy  =         %20.12f\n' % (coulomb_energy) )
+    psi4.core.print_out('        exchange energy =                   %20.12f\n' % (ex) )
+    psi4.core.print_out('        correlation energy =                %20.12f\n' % (ec) )
+    psi4.core.print_out('\n')
+    psi4.core.print_out('    * MC-PDFT total energy   =        %20.12f\n\n' % (total_energy));
+
+    psi4.core.set_variable('CURRENT ENERGY', total_energy)
+
+    return total_energy
 
 # Integration with driver routines
 
@@ -739,4 +996,7 @@ psi4.driver.procedures['energy']['qed-ccsd'] = run_qed_scf
 
 psi4.driver.procedures['gradient']['qed-scf'] = run_qed_scf_gradient
 psi4.driver.procedures['gradient']['qed-dft'] = run_qed_scf_gradient
+
+# mcpdft
+psi4.driver.procedures['energy']['mcpdft'] = run_mcpdft
 

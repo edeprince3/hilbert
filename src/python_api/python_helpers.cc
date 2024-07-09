@@ -53,10 +53,24 @@ void export_HilbertHelper(py::module& m) {
         .def("grid_y", &RealSpaceDensityHelper::grid_y)
         .def("grid_z", &RealSpaceDensityHelper::grid_z)
         .def("grid_w", &RealSpaceDensityHelper::grid_w)
+        .def("pi", &RealSpaceDensityHelper::pi)
+        .def("build_rho", &RealSpaceDensityHelper::build_rho)
+        .def("set_opdm", &RealSpaceDensityHelper::set_opdm)
+        .def("set_tpdm", &RealSpaceDensityHelper::set_tpdm)
+        .def("read_opdm", &RealSpaceDensityHelper::read_opdm)
+        .def("read_tpdm", &RealSpaceDensityHelper::read_tpdm)
         .def("rho", &RealSpaceDensityHelper::rho)
         .def("rho_a", &RealSpaceDensityHelper::rho_a)
         .def("rho_b", &RealSpaceDensityHelper::rho_b)
-        .def("xc_hole", &RealSpaceDensityHelper::xc_hole);
+        .def("rho_a_x", &RealSpaceDensityHelper::rho_a_x)
+        .def("rho_a_y", &RealSpaceDensityHelper::rho_a_y)
+        .def("rho_a_z", &RealSpaceDensityHelper::rho_a_z)
+        .def("rho_b_x", &RealSpaceDensityHelper::rho_b_x)
+        .def("rho_b_y", &RealSpaceDensityHelper::rho_b_y)
+        .def("rho_b_z", &RealSpaceDensityHelper::rho_b_z)
+        .def("xc_hole", &RealSpaceDensityHelper::xc_hole)
+        .def("Da", &RealSpaceDensityHelper::Da)
+        .def("Db", &RealSpaceDensityHelper::Db);
 
     // doci
     py::class_<DOCIHelper, std::shared_ptr<DOCIHelper> >(m, "DOCIHelper")
@@ -145,8 +159,23 @@ std::vector<double> RealSpaceDensityHelper::grid_w() {
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;
 }
+void RealSpaceDensityHelper::build_rho() {
+    real_space_density->BuildRhoFast();
+}
+void RealSpaceDensityHelper::read_opdm() {
+    real_space_density->ReadOPDM();
+}
+void RealSpaceDensityHelper::read_tpdm() {
+    real_space_density->ReadTPDM();
+}
+void RealSpaceDensityHelper::set_opdm(std::vector<opdm> opdm_a, std::vector<opdm> opdm_b) {
+    real_space_density->SetOPDM(opdm_a, opdm_b);
+}
+void RealSpaceDensityHelper::set_tpdm(std::vector<tpdm> tpdm_ab) {
+    real_space_density->SetTPDM(tpdm_ab);
+}
 std::vector<double> RealSpaceDensityHelper::rho() {
-    std::shared_ptr<Vector> vec = real_space_density->rho();
+    std::shared_ptr<Vector> vec = real_space_density->pi();
     double * vec_p = vec->pointer();
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;
@@ -163,8 +192,56 @@ std::vector<double> RealSpaceDensityHelper::rho_b() {
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;
 }
+std::vector<double> RealSpaceDensityHelper::rho_a_x() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_a_x();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_a_y() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_a_y();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_a_z() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_a_z();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_b_x() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_b_x();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_b_y() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_b_y();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::rho_b_z() {
+    std::shared_ptr<Vector> vec = real_space_density->rho_b_z();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::shared_ptr<Matrix> RealSpaceDensityHelper::Da() {
+    return real_space_density->Da();
+}
+std::shared_ptr<Matrix> RealSpaceDensityHelper::Db() {
+    return real_space_density->Db();
+}
 std::vector<double> RealSpaceDensityHelper::xc_hole(double x, double y, double z) {
     std::shared_ptr<Vector> vec = real_space_density->xc_hole(x,y,z);
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
+}
+std::vector<double> RealSpaceDensityHelper::pi() {
+    std::shared_ptr<Vector> vec = real_space_density->pi();
     double * vec_p = vec->pointer();
     std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
     return return_val;

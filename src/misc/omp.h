@@ -24,17 +24,14 @@
  *  @END LICENSE
  */
 
-#ifndef MY_OMP_H
-#define MY_OMP_H
-
-#include<time.h>
+#ifndef OMP_H
+#define OMP_H
 
 #ifdef _OPENMP
     #include<omp.h>
 #else
     #define omp_get_wtime() ( (double)clock() / CLOCKS_PER_SEC )
     #define omp_get_max_threads() 1
-    #define omp_get_thread_num() 0
 #endif
 
 #endif

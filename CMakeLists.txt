@@ -135,7 +135,6 @@ add_psi4_plugin(hilbert
     src/v2rdm_casscf/write_opdm.cc
     src/v2rdm_casscf/write_tpdm.cc
     src/v2rdm_casscf/write_tpdm_iwl.cc
-
     src/misc/real_space_density.cc
     src/misc/backtransform_tpdm.cc
     src/misc/diis.cc

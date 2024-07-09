@@ -39,28 +39,10 @@
 #define PSIF_V2RDM_D1A        277
 #define PSIF_V2RDM_D1B        278
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<math.h>
-#include<string>
-
-#include "psi4/libmints/wavefunction.h"
-
-// for reading integrals from disk
-#include <psi4/libiwl/iwl.h>
-
-// for dft
+// psi4 stuff
 #include "psi4/libfock/v.h"
-#include "psi4/libfunctional/superfunctional.h"
-
-// for grid
 #include "psi4/libfock/points.h"
 #include "psi4/libfock/cubature.h"
-
-#include "psi4/psi4-dec.h"
-#include <psi4/psifiles.h>
-#include <psi4/libpsio/psio.hpp>
-#include <psi4/libpsi4util/PsiOutStream.h>
 
 // tpdm and opdm structs live here
 #include <v2rdm_casscf/v2rdm_solver.h>
@@ -76,32 +58,79 @@ class RealSpaceDensity: public Wavefunction{
     RealSpaceDensity(std::shared_ptr<psi::Wavefunction> reference_wavefunction,Options & options);
     ~RealSpaceDensity();
 
-    // return grid points (x)
+    /// return grid points (x)
     std::shared_ptr<Vector> grid_x() { return grid_x_; }
 
-    // return grid points (y)
+    /// return grid points (y)
     std::shared_ptr<Vector> grid_y() { return grid_y_; }
 
-    // return grid points (z)
+    /// return grid points (z)
     std::shared_ptr<Vector> grid_z() { return grid_z_; }
 
-    // return grid weights (w)
+    /// return grid weights (w)
     std::shared_ptr<Vector> grid_w() { return grid_w_; }
 
-    // return xc hole on grid 
+    /// return xc hole on grid 
     std::shared_ptr<Vector> xc_hole(double x, double y, double z);
 
-    // return density (rho_a + rho_b) on grid 
+    /// return on-top pair density (pi) on grid 
+    std::shared_ptr<Vector> pi() { 
+        BuildPiFast(tpdm_ab_);
+        return pi_; 
+    }
+
+    /// return density (rho_a + rho_b) on grid 
     std::shared_ptr<Vector> rho() { return rho_; }
 
-    // return density (rho_a) on grid 
+    /// return density (rho_a) on grid 
     std::shared_ptr<Vector> rho_a() { return rho_a_; }
 
-    // return density (rho_b) on grid 
+    /// return density (rho_b) on grid 
     std::shared_ptr<Vector> rho_b() { return rho_b_; }
 
+    /// return derivative of alpha-spin density with respect to x on grid 
+    std::shared_ptr<Vector> rho_a_x() { return rho_a_x_; }
+
+    /// return derivative of alpha-spin density with respect to y on grid 
+    std::shared_ptr<Vector> rho_a_y() { return rho_a_y_; }
+
+    /// return derivative of alpha-spin density with respect to z on grid 
+    std::shared_ptr<Vector> rho_a_z() { return rho_a_z_; }
+
+    /// return derivative of beta-spin density with respect to x on grid 
+    std::shared_ptr<Vector> rho_b_x() { return rho_b_x_; }
+
+    /// return derivative of beta-spin density with respect to y on grid 
+    std::shared_ptr<Vector> rho_b_y() { return rho_b_y_; }
+
+    /// return derivative of beta-spin density with respect to z on grid 
+    std::shared_ptr<Vector> rho_b_z() { return rho_b_z_; }
+
+    /// return the alpha opdm
+    std::shared_ptr<Matrix> Da() { return Da_; }
+
+    /// return the beta opdm
+    std::shared_ptr<Matrix> Db() { return Db_; }
+
     void common_init();
-    void build_density();
+
+    /// read opdm elements from disk
+    void ReadOPDM();
+
+    /// set opdm elements from input
+    void SetOPDM(std::vector<opdm> opdm_a, std::vector<opdm> opdm_b);
+
+    /// read alpha-beta tpdm elements from disk
+    void ReadTPDM();
+
+    /// set alpha-beta tpdm elements from input
+    void SetTPDM(std::vector<tpdm> tpdm_ab);
+
+    /// set the MO-basis density matrix values from std::vector<opdm>
+    void SetD1(std::vector<opdm> my_opdm, std::shared_ptr<Matrix> D1);
+
+    /// build real-space spin densities and gradients using only non-zero elements of OPDM
+    void BuildRhoFast();
 
     virtual bool same_a_b_orbs() const { return same_a_b_orbs_; }
     virtual bool same_a_b_dens() const { return same_a_b_dens_; }
@@ -109,10 +138,13 @@ class RealSpaceDensity: public Wavefunction{
   protected:
 
     /// nonzero elements of alpha opdm
-    opdm * opdm_a_;
+    std::vector<opdm> opdm_a_;
 
     /// nonzero elements of beta opdm
-    opdm * opdm_b_;
+    std::vector<opdm> opdm_b_;
+
+    /// nonzero elements of alpha-beta block of tpdm
+    std::vector<tpdm> tpdm_ab_;
 
     /// dft potential object
     std::shared_ptr<VBase> potential_;
@@ -177,12 +209,6 @@ class RealSpaceDensity: public Wavefunction{
     /// transform the orbital labels in phi/phi_x/... from the AO to the MO basis
     void TransformPhiMatrixAOMO(std::shared_ptr<Matrix> phi_in, std::shared_ptr<Matrix> phi_out);
 
-    /// read 2-RDM from disk and build on-top pair density
-    void BuildPiFromDisk();
-
-    /// read 1-RDM from disk
-    void ReadOPDM();
-
     /// exchange-correlation hole
     std::shared_ptr<Vector> xc_hole_;
 
@@ -225,11 +251,8 @@ class RealSpaceDensity: public Wavefunction{
     /// z-component of the gradient of the on-top pair density
     std::shared_ptr<Vector> pi_z_;
 
-    /// build spin densities and gradients using only non-zero elements of OPDM
-    void BuildRhoFast(int na, int nb);
-
     /// build on-top pair density using only non-zero elements of TPDM
-    void BuildPiFast(tpdm * D2ab, int nab);
+    void BuildPiFast(std::vector<tpdm> D2ab);
 
     /// build exchange correlation hole
     void BuildExchangeCorrelationHole(size_t p);

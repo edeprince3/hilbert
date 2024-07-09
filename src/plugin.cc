@@ -61,7 +61,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_RTDDFT POLARITONIC_UTDDFT POLARITONIC_RPA");
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_RTDDFT POLARITONIC_UTDDFT POLARITONIC_RPA MCPDFT");
 
         /*- Do DIIS? -*/
         options.add_bool("DIIS", true);
@@ -379,6 +379,17 @@ int read_options(std::string name, Options& options)
 
         /*- number of roots -*/
         options.add_int("NUMBER_ROOTS", 5);
+
+        /*- SUBSECTION MCPDFT -*/
+
+       /*- MCPDFT type -*/
+        options.add_str("MCPDFT_METHOD", "MCPDFT", "MCPDFT");
+        /*- MCPDFT functional -*/
+        options.add_str("MCPDFT_FUNCTIONAL", "PBE");
+        /*- JK object type can be DF or PK -*/
+        options.add_str("MCPDFT_TYPE", "DF", "DF PK");
+        /*- reference type -*/
+        options.add_str("MCPDFT_REFERENCE", "V2RDM");
     }
 
     return true;
