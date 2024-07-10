@@ -1,0 +1,64 @@
+# PYTHONPATH must include directory above plugin directory.
+#     Define either externally or here, then import plugin.
+sys.path.insert(0, '../../..')
+import hilbert
+import numpy as np
+
+UKS_B3LYP_cc_pvdz = [0.088387057847,
+                     0.224598943209,
+                     0.456209454820,
+                     0.491713320060,
+                     0.495298608049,
+                     0.514524995610,
+                     0.516231358249,
+                     0.566750005620,
+                     0.572723393996,
+                     0.583652461684]
+
+molecule {
+1 2
+         O            0.000000000000     0.000000000000    -0.068516219320 
+         H            0.000000000000    -0.790689573744     0.543701060715 
+         H            0.000000000000     0.790689573744     0.543701060715 
+no_reorient
+nocom
+symmetry c1
+}
+
+set {
+  basis cc-pvdz
+  scf_type cd 
+  e_convergence 1e-8
+  d_convergence 1e-8
+  cholesky_tolerance 1e-12
+} 
+
+# freq: w
+w = 0.503155850815
+
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+g = 0.05 / np.sqrt(2.0 * w)
+
+set hilbert {
+  maxiter 500
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
+  maxdim                   15
+  indim                    5
+  qed_dft_functional b3lyp
+}
+
+set num_roots 10
+set TDSCF_TDA false
+set TDSCF_STATES 10
+set df_ints_io save
+
+# unrestricted tddft
+set reference uks 
+energy('qed-tddft')
+
+for n, ref in enumerate(UKS_B3LYP_cc_pvdz):
+    ex_en = psi4.variable(f"QED-TDDFT ROOT 0 -> ROOT {n+1} EXCITATION ENERGY")
+    compare_values(ref,ex_en, 4, f"Unrestricted QED-TDDFT excitation energy {n+1}")
+

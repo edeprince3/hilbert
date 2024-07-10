@@ -37,6 +37,8 @@
 #include <psi4/libpsio/psio.hpp>
 
 #include "davidson_solver.h"
+#include "schmidt_add.h"
+#include "sq_rsp.h"
 
 using namespace psi;
 

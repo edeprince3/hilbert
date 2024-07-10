@@ -1,0 +1,5443 @@
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.9.1 
+
+                         Git: Rev {HEAD} f53cdd7 dirty
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, and D. L. Poole
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
+
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
+    PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input File <==
+
+--------------------------------------------------------------------------
+# PYTHONPATH must include directory above plugin directory.
+#     Define either externally or here, then import plugin.
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule h2 {
+         O            0.000000000000     0.000000000000    -0.068516219320    
+         H            0.000000000000    -0.790689573744     0.543701060715    
+         H            0.000000000000     0.790689573744     0.543701060715    
+no_reorient
+nocom
+symmetry c1
+}
+
+set {
+  basis sto-3g 
+  scf_type df 
+  e_convergence 1e-10
+  d_convergence 1e-10 
+} 
+
+# frequency: 2.0 eV
+w = 0.07349864501573
+
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+g = 0.05 / np.sqrt(2.0 * w)
+
+set { 
+  maxiter 500
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
+}
+
+set points 3
+set reference uks
+set dft_spherical_points 590
+set {
+    qed_dft_functional 'pbe'
+}
+g1 = np.asarray(gradient('qed-dft',dertype=0))
+g2 = np.asarray(gradient('qed-dft',dertype=1))
+diff = g2 - g1
+
+
+#print('||g-g||',np.linalg.norm(diff))
+compare_values(0.0, np.linalg.norm(diff), 5, "QED-DFT numerical versus analytic energy gradient") # TEST
+
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+         ----------------------------------------------------------
+                                   FINDIF
+                     R. A. King and Jonathon Misiewicz
+         ----------------------------------------------------------
+
+  Using finite-differences of energies to determine gradients.
+    Generating geometries for use with 3-point formula.
+    Displacement size will be 5.00e-03.
+    Number of atoms is 3.
+    Number of symmetric SALCs is 3.
+    Translations projected? 1. Rotations projected? 1.
+    Number of geometries (including reference) is 7.
+ 7 displacements needed ...
+
+  //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
+  //    FiniteDifference Computations  //
+  //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<//
+
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.9.1 
+
+                         Git: Rev {HEAD} f53cdd7 dirty
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, and D. L. Poole
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
+
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
+    PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input QCSchema <==
+
+--------------------------------------------------------------------------
+{'driver': 'energy',
+ 'extras': {'psiapi': True, 'wfn_qcvars_only': True},
+ 'id': None,
+ 'keywords': {'CAVITY_COUPLING_STRENGTH': [0.0, 0.0, 0.13041133482178593],
+              'CAVITY_FREQUENCY': [0.0, 0.0, 0.07349864501573],
+              'DFT_SPHERICAL_POINTS': 590,
+              'D_CONVERGENCE': 1e-10,
+              'E_CONVERGENCE': 1e-10,
+              'MAXITER': 500,
+              'PARENT_SYMMETRY': 'C1',
+              'POINTS': 3,
+              'QED_DFT_FUNCTIONAL': 'PBE',
+              'REFERENCE': 'UKS',
+              'SCF_TYPE': 'DF',
+              'function_kwargs': {}},
+ 'model': {'basis': 'sto-3g', 'method': 'qed-dft'},
+ 'molecule': {'atom_labels': ['', '', ''],
+              'atomic_numbers': [8, 1, 1],
+              'extras': {},
+              'fix_com': True,
+              'fix_orientation': True,
+              'fix_symmetry': 'c1',
+              'fragment_charges': [0.0],
+              'fragment_multiplicities': [1],
+              'fragments': [[0, 1, 2]],
+              'geometry': [0.0, 0.0, -0.1294768896666024, 0.0, -1.4941867446311508, 1.0274460988722685, 0.0,
+                           1.4941867446311508, 1.0274460988722685],
+              'mass_numbers': [16, 1, 1],
+              'masses': [15.99491461957, 1.00782503223, 1.00782503223],
+              'molecular_charge': 0.0,
+              'molecular_multiplicity': 1,
+              'name': 'h2',
+              'provenance': {'creator': 'QCElemental',
+                             'routine': 'qcelemental.molparse.from_string',
+                             'version': '0.27.1'},
+              'real': [True, True, True],
+              'schema_name': 'qcschema_molecule',
+              'schema_version': 2,
+              'symbols': ['O', 'H', 'H'],
+              'validated': True},
+ 'protocols': {'stdout': True},
+ 'provenance': {'creator': 'QCElemental', 'routine': 'qcelemental.models.results', 'version': '0.27.1'},
+ 'schema_name': 'qcschema_input',
+ 'schema_version': 1}
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+Scratch directory: /tmp/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:02 2024
+
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line    81 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UKS Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.494186744631     1.027446098872     1.007825032230
+         H            0.000000000000     1.494186744631     1.027446098872     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.12555  B =     13.37733  C =      8.72955 [cm^-1]
+  Rotational constants: A = 753245.07149  B = 401042.16706  C = 261705.25473 [MHz]
+  Nuclear repulsion =    8.801465564563406
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-10
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis functions: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128485
+    Total Blocks           =           1016
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+  ==> Integral Setup <==
+
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                   No
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:              348
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (STO-3G AUX)
+    Blend: DEF2-UNIVERSAL-JKFIT
+    Number of shells: 37
+    Number of basis functions: 113
+    Number of Cartesian functions: 133
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  Cached 100.0% of DFT collocation blocks in 0.026 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 3.7028400386E-01.
+  Reciprocal condition number of the overlap matrix is 1.9726983142E-01.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A          7       7 
+   -------------------------
+    Total       7       7
+   -------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UKS iter SAD:   -74.82736076004011   -7.48274e+01   0.00000e+00 
+   @DF-UKS iter   1:   -75.21663658264096   -3.89276e-01   2.19423e-02 DIIS/ADIIS
+   @DF-UKS iter   2:   -75.21261015063153    4.02643e-03   2.55210e-02 DIIS/ADIIS
+   @DF-UKS iter   3:   -75.23445557318303   -2.18454e-02   3.41395e-04 DIIS/ADIIS
+   @DF-UKS iter   4:   -75.23445986207614   -4.28889e-06   1.86086e-05 DIIS
+   @DF-UKS iter   5:   -75.23445987751371   -1.54376e-08   4.51912e-07 DIIS
+   @DF-UKS iter   6:   -75.23445987752157   -7.85860e-12   9.54653e-10 DIIS
+   @DF-UKS iter   7:   -75.23445987752154    2.84217e-14   1.23387e-12 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Nalpha   =    4.9999999892 ; deviation = -1.082e-08
+      Nbeta    =    4.9999999892 ; deviation = -1.082e-08
+      Ntotal   =    9.9999999784 ; deviation = -2.163e-08 
+
+   @Spin Contamination Metric:   7.105427358E-15
+   @S^2 Expected:                0.000000000E+00
+   @S^2 Observed:                7.105427358E-15
+   @S   Expected:                0.000000000E+00
+   @S   Observed:                0.000000000E+00
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A    -18.449577     2A     -0.823944     3A     -0.373373  
+       4A     -0.166443     5A     -0.063691  
+
+    Alpha Virtual:                                                        
+
+       6A      0.273448     7A      0.377222  
+
+    Beta Occupied:                                                        
+
+       1A    -18.449577     2A     -0.823944     3A     -0.373373  
+       4A     -0.166443     5A     -0.063691  
+
+    Beta Virtual:                                                         
+
+       6A      0.273448     7A      0.377222  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+    SOCC [     0 ]
+    NA   [     5 ]
+    NB   [     5 ]
+
+  @DF-UKS Final Energy:   -75.23445987752154
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.8014655645634061
+    One-Electron Energy =                -121.6599724527298747
+    Two-Electron Energy =                  46.9576381731632253
+    DFT Exchange-Correlation Energy =      -9.3335911625182959
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -75.2344598775215445
+
+  UHF NO Occupations:
+  HONO-2 :    3  A 2.0000000
+  HONO-1 :    4  A 2.0000000
+  HONO-0 :    5  A 2.0000000
+  LUNO+0 :    6  A -0.0000000
+  LUNO+1 :    7  A -0.0000000
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :          0.0000000            0.0000000            0.0000000
+ Dipole Y            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Z            :         -0.3962941            1.0190771            0.6227830
+ Magnitude           :                                                    0.6227830
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:03 2024
+Module time:
+	user time   =       0.72 seconds =       0.01 minutes
+	system time =       0.05 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
+Total time:
+	user time   =       0.72 seconds =       0.01 minutes
+	system time =       0.05 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   233 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.494186744631     1.027446098872     1.007825032230
+         H            0.000000000000     1.494186744631     1.027446098872     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic UKS                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.494186744631     1.027446098872     1.007825032230
+         H            0.000000000000     1.494186744631     1.027446098872     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128485
+    Total Blocks           =           1016
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+
+    No. basis functions:                7
+    No. auxiliary basis functions:    113
+    No. alpha electrons:                5
+    No. beta electrons:                 5
+    e_convergence:              1.000e-10
+    d_convergence:              1.000e-10
+    maxiter:                          500
+
+
+
+    Guess energy:      -71.905353227232
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -75.229824675109      -3.324471447877       0.000159277368
+        1     -75.229825688449      -0.000001013340       0.000145763492
+        2     -75.229825470653       0.000000217796       0.000170573899
+        3     -75.229826432683      -0.000000962030       0.000001947655
+        4     -75.229826432848      -0.000000000165       0.000000043666
+        5     -75.229826432848      -0.000000000000       0.000000000022
+
+    SCF iterations converged!
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       4.562898930282
+    one electron (xy):       0.000000000000
+    one electron (xz):      -0.000000000000
+    one electron (yy):       7.716846890333
+    one electron (yz):       0.000000000000
+    one electron (zz):       6.128080562108
+
+    two electron (xx):      -1.672234233762
+    two electron (xy):       0.000000000000
+    two electron (xz):       0.000000000000
+    two electron (yy):      -3.328195742400
+    two electron (yz):       0.000000000000
+    two electron (zz):      -2.422728331723
+
+    total (xx):              2.890664696520
+    total (xy):              0.000000000000
+    total (xz):             -0.000000000000
+    total (yy):              4.388651147933
+    total (yz):              0.000000000000
+    total (zz):              3.705352230385
+
+    * Polaritonic UKS total energy:     -75.229826432848
+
+ #  #
+ Irrep: 1
+      1:  -18.448921040821958
+      2:   -0.824201709224714
+      3:   -0.372582289435579
+      4:   -0.165714119941416
+      5:   -0.062972969893162
+      6:    0.274797602791080
+      7:    0.377916341854913
+
+
+ #  #
+ Irrep: 1
+      1:  -18.448921040821958
+      2:   -0.824201709224714
+      3:   -0.372582289435579
+      4:   -0.165714119941416
+      5:   -0.062972969893162
+      6:    0.274797602791080
+      7:    0.377916341854913
+
+
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
+    Psi4 wall time for execution: 0:00:01.40
+
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.9.1 
+
+                         Git: Rev {HEAD} f53cdd7 dirty
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, and D. L. Poole
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
+
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
+    PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input QCSchema <==
+
+--------------------------------------------------------------------------
+{'driver': 'energy',
+ 'extras': {'psiapi': True, 'wfn_qcvars_only': True},
+ 'id': None,
+ 'keywords': {'CAVITY_COUPLING_STRENGTH': [0.0, 0.0, 0.13041133482178593],
+              'CAVITY_FREQUENCY': [0.0, 0.0, 0.07349864501573],
+              'DFT_SPHERICAL_POINTS': 590,
+              'D_CONVERGENCE': 1e-10,
+              'E_CONVERGENCE': 1e-10,
+              'MAXITER': 500,
+              'PARENT_SYMMETRY': 'C1',
+              'POINTS': 3,
+              'QED_DFT_FUNCTIONAL': 'PBE',
+              'REFERENCE': 'UKS',
+              'SCF_TYPE': 'DF',
+              'function_kwargs': {'write_orbitals': False}},
+ 'model': {'basis': 'sto-3g', 'method': 'qed-dft'},
+ 'molecule': {'atom_labels': ['', '', ''],
+              'atomic_numbers': [8, 1, 1],
+              'extras': {},
+              'fix_com': True,
+              'fix_orientation': True,
+              'fix_symmetry': 'c1',
+              'fragment_charges': [0.0],
+              'fragment_multiplicities': [1],
+              'fragments': [[0, 1, 2]],
+              'geometry': [0.0, -0.00033785795355509936, -0.1294768896666024, 0.0, -1.4915057191813765,
+                           1.0253702271736025, 0.0, 1.496867770080925, 1.0295219705709344],
+              'mass_numbers': [16, 1, 1],
+              'masses': [15.99491461957, 1.00782503223, 1.00782503223],
+              'molecular_charge': 0.0,
+              'molecular_multiplicity': 1,
+              'name': 'h2',
+              'provenance': {'creator': 'QCElemental',
+                             'routine': 'qcelemental.molparse.from_string',
+                             'version': '0.27.1'},
+              'real': [True, True, True],
+              'schema_name': 'qcschema_molecule',
+              'schema_version': 2,
+              'symbols': ['O', 'H', 'H'],
+              'validated': True},
+ 'protocols': {'stdout': True},
+ 'provenance': {'creator': 'QCElemental', 'routine': 'qcelemental.models.results', 'version': '0.27.1'},
+ 'schema_name': 'qcschema_input',
+ 'schema_version': 1}
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+Scratch directory: /tmp/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:04 2024
+
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line    81 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UKS Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: Cs
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000    -0.000337857954    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.491505719181     1.025370227174     1.007825032230
+         H            0.000000000000     1.496867770081     1.029521970571     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.12624  B =     13.37706  C =      8.72952 [cm^-1]
+  Rotational constants: A = 753265.70068  B = 401034.09167  C = 261704.30599 [MHz]
+  Nuclear repulsion =    8.801496914678173
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-10
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis functions: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128481
+    Total Blocks           =           1014
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+  ==> Integral Setup <==
+
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                   No
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:              348
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (STO-3G AUX)
+    Blend: DEF2-UNIVERSAL-JKFIT
+    Number of shells: 37
+    Number of basis functions: 113
+    Number of Cartesian functions: 133
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  Cached 100.0% of DFT collocation blocks in 0.026 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 3.7025904010E-01.
+  Reciprocal condition number of the overlap matrix is 1.9725612383E-01.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A          7       7 
+   -------------------------
+    Total       7       7
+   -------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UKS iter SAD:   -74.82736536164126   -7.48274e+01   0.00000e+00 
+   @DF-UKS iter   1:   -75.21662815119709   -3.89263e-01   2.19425e-02 DIIS/ADIIS
+   @DF-UKS iter   2:   -75.21260061919453    4.02753e-03   2.55216e-02 DIIS/ADIIS
+   @DF-UKS iter   3:   -75.23444744085734   -2.18468e-02   3.41749e-04 DIIS/ADIIS
+   @DF-UKS iter   4:   -75.23445174133005   -4.30047e-06   1.95167e-05 DIIS
+   @DF-UKS iter   5:   -75.23445175826075   -1.69307e-08   2.68080e-06 DIIS
+   @DF-UKS iter   6:   -75.23445175864467   -3.83920e-10   1.62969e-07 DIIS
+   @DF-UKS iter   7:   -75.23445175864578   -1.10845e-12   1.43682e-09 DIIS
+   @DF-UKS iter   8:   -75.23445175864580   -2.84217e-14   1.20523e-10 DIIS
+   @DF-UKS iter   9:   -75.23445175864576    4.26326e-14   8.27746e-14 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Nalpha   =    4.9999999892 ; deviation = -1.077e-08
+      Nbeta    =    4.9999999892 ; deviation = -1.077e-08
+      Ntotal   =    9.9999999785 ; deviation = -2.154e-08 
+
+   @Spin Contamination Metric:  -2.664535259E-15
+   @S^2 Expected:                0.000000000E+00
+   @S^2 Observed:               -2.664535259E-15
+   @S   Expected:                0.000000000E+00
+   @S   Observed:                0.000000000E+00
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A    -18.449578     2A     -0.823949     3A     -0.373372  
+       4A     -0.166443     5A     -0.063691  
+
+    Alpha Virtual:                                                        
+
+       6A      0.273422     7A      0.377253  
+
+    Beta Occupied:                                                        
+
+       1A    -18.449578     2A     -0.823949     3A     -0.373372  
+       4A     -0.166443     5A     -0.063691  
+
+    Beta Virtual:                                                         
+
+       6A      0.273422     7A      0.377253  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+    SOCC [     0 ]
+    NA   [     5 ]
+    NB   [     5 ]
+
+  @DF-UKS Final Energy:   -75.23445175864576
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.8014969146781734
+    One-Electron Energy =                -121.6600098578588813
+    Two-Electron Energy =                  46.9576547346262032
+    DFT Exchange-Correlation Energy =      -9.3335935500912512
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -75.2344517586457613
+
+  UHF NO Occupations:
+  HONO-2 :    3  A 2.0000000
+  HONO-1 :    4  A 2.0000000
+  HONO-0 :    5  A 2.0000000
+  LUNO+0 :    6  A 0.0000000
+  LUNO+1 :    7  A -0.0000000
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Y            :         -0.0036704            0.0026592           -0.0010112
+ Dipole Z            :         -0.3962919            1.0190771            0.6227852
+ Magnitude           :                                                    0.6227860
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:04 2024
+Module time:
+	user time   =       0.80 seconds =       0.01 minutes
+	system time =       0.03 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+Total time:
+	user time   =       2.14 seconds =       0.04 minutes
+	system time =       0.10 seconds =       0.00 minutes
+	total time  =          2 seconds =       0.03 minutes
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   233 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
+    Full point group: Cs
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000    -0.000337857954    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.491505719181     1.025370227174     1.007825032230
+         H            0.000000000000     1.496867770081     1.029521970571     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic UKS                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: Cs
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000    -0.000337857954    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.491505719181     1.025370227174     1.007825032230
+         H            0.000000000000     1.496867770081     1.029521970571     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128481
+    Total Blocks           =           1014
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+
+    No. basis functions:                7
+    No. auxiliary basis functions:    113
+    No. alpha electrons:                5
+    No. beta electrons:                 5
+    e_convergence:              1.000e-10
+    d_convergence:              1.000e-10
+    maxiter:                          500
+
+
+
+    Guess energy:      -71.905344275288
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -75.229816552548      -3.324472277260       0.000159277212
+        1     -75.229817565843      -0.000001013295       0.000145766303
+        2     -75.229817347974       0.000000217869       0.000170581964
+        3     -75.229818310118      -0.000000962143       0.000001947688
+        4     -75.229818310282      -0.000000000165       0.000000044167
+        5     -75.229818310282      -0.000000000000       0.000000002499
+        6     -75.229818310282      -0.000000000000       0.000000000075
+
+    SCF iterations converged!
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       4.562896968725
+    one electron (xy):       0.000000000000
+    one electron (xz):       0.000000000000
+    one electron (yy):       7.716858014230
+    one electron (yz):       0.020837379550
+    one electron (zz):       6.128087374718
+
+    two electron (xx):      -1.672234278877
+    two electron (xy):      -0.000000000000
+    two electron (xz):      -0.000000000000
+    two electron (yy):      -3.328199544479
+    two electron (yz):      -0.004472274987
+    two electron (zz):      -2.422732189412
+
+    total (xx):              2.890662689848
+    total (xy):              0.000000000000
+    total (xz):              0.000000000000
+    total (yy):              4.388658469752
+    total (yz):              0.016365104562
+    total (zz):              3.705355185306
+
+    * Polaritonic UKS total energy:     -75.229818310282
+
+ #  #
+ Irrep: 1
+      1:  -18.448921289119298
+      2:   -0.824206003409960
+      3:   -0.372580805308147
+      4:   -0.165714039309701
+      5:   -0.062973683295844
+      6:    0.274771801604068
+      7:    0.377947732870182
+
+
+ #  #
+ Irrep: 1
+      1:  -18.448921289119298
+      2:   -0.824206003409960
+      3:   -0.372580805308147
+      4:   -0.165714039309701
+      5:   -0.062973683295844
+      6:    0.274771801604068
+      7:    0.377947732870182
+
+
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
+    Psi4 wall time for execution: 0:00:01.54
+
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.9.1 
+
+                         Git: Rev {HEAD} f53cdd7 dirty
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, and D. L. Poole
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
+
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
+    PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input QCSchema <==
+
+--------------------------------------------------------------------------
+{'driver': 'energy',
+ 'extras': {'psiapi': True, 'wfn_qcvars_only': True},
+ 'id': None,
+ 'keywords': {'CAVITY_COUPLING_STRENGTH': [0.0, 0.0, 0.13041133482178593],
+              'CAVITY_FREQUENCY': [0.0, 0.0, 0.07349864501573],
+              'DFT_SPHERICAL_POINTS': 590,
+              'D_CONVERGENCE': 1e-10,
+              'E_CONVERGENCE': 1e-10,
+              'MAXITER': 500,
+              'PARENT_SYMMETRY': 'C1',
+              'POINTS': 3,
+              'QED_DFT_FUNCTIONAL': 'PBE',
+              'REFERENCE': 'UKS',
+              'SCF_TYPE': 'DF',
+              'function_kwargs': {'write_orbitals': False}},
+ 'model': {'basis': 'sto-3g', 'method': 'qed-dft'},
+ 'molecule': {'atom_labels': ['', '', ''],
+              'atomic_numbers': [8, 1, 1],
+              'extras': {},
+              'fix_com': True,
+              'fix_orientation': True,
+              'fix_symmetry': 'c1',
+              'fragment_charges': [0.0],
+              'fragment_multiplicities': [1],
+              'fragments': [[0, 1, 2]],
+              'geometry': [0.0, 0.00033785795355509936, -0.1294768896666024, 0.0, -1.496867770080925,
+                           1.0295219705709344, 0.0, 1.4915057191813765, 1.0253702271736025],
+              'mass_numbers': [16, 1, 1],
+              'masses': [15.99491461957, 1.00782503223, 1.00782503223],
+              'molecular_charge': 0.0,
+              'molecular_multiplicity': 1,
+              'name': 'h2',
+              'provenance': {'creator': 'QCElemental',
+                             'routine': 'qcelemental.molparse.from_string',
+                             'version': '0.27.1'},
+              'real': [True, True, True],
+              'schema_name': 'qcschema_molecule',
+              'schema_version': 2,
+              'symbols': ['O', 'H', 'H'],
+              'validated': True},
+ 'protocols': {'stdout': True},
+ 'provenance': {'creator': 'QCElemental', 'routine': 'qcelemental.models.results', 'version': '0.27.1'},
+ 'schema_name': 'qcschema_input',
+ 'schema_version': 1}
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+Scratch directory: /tmp/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:05 2024
+
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line    81 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UKS Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: Cs
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000337857954    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.496867770081     1.029521970571     1.007825032230
+         H            0.000000000000     1.491505719181     1.025370227174     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.12624  B =     13.37706  C =      8.72952 [cm^-1]
+  Rotational constants: A = 753265.70068  B = 401034.09167  C = 261704.30599 [MHz]
+  Nuclear repulsion =    8.801496914678173
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-10
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis functions: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128481
+    Total Blocks           =           1014
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+  ==> Integral Setup <==
+
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                   No
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:              348
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (STO-3G AUX)
+    Blend: DEF2-UNIVERSAL-JKFIT
+    Number of shells: 37
+    Number of basis functions: 113
+    Number of Cartesian functions: 133
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  Cached 100.0% of DFT collocation blocks in 0.026 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 3.7025904010E-01.
+  Reciprocal condition number of the overlap matrix is 1.9725612383E-01.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A          7       7 
+   -------------------------
+    Total       7       7
+   -------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UKS iter SAD:   -74.82736536165851   -7.48274e+01   0.00000e+00 
+   @DF-UKS iter   1:   -75.21662815121417   -3.89263e-01   2.19425e-02 DIIS/ADIIS
+   @DF-UKS iter   2:   -75.21260061921154    4.02753e-03   2.55216e-02 DIIS/ADIIS
+   @DF-UKS iter   3:   -75.23444744087482   -2.18468e-02   3.41749e-04 DIIS/ADIIS
+   @DF-UKS iter   4:   -75.23445174134746   -4.30047e-06   1.95167e-05 DIIS
+   @DF-UKS iter   5:   -75.23445175827817   -1.69307e-08   2.68080e-06 DIIS
+   @DF-UKS iter   6:   -75.23445175866217   -3.84006e-10   1.62969e-07 DIIS
+   @DF-UKS iter   7:   -75.23445175866320   -1.02318e-12   1.43682e-09 DIIS
+   @DF-UKS iter   8:   -75.23445175866321   -1.42109e-14   1.20522e-10 DIIS
+   @DF-UKS iter   9:   -75.23445175866318    2.84217e-14   8.28245e-14 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Nalpha   =    4.9999999892 ; deviation = -1.077e-08
+      Nbeta    =    4.9999999892 ; deviation = -1.077e-08
+      Ntotal   =    9.9999999785 ; deviation = -2.154e-08 
+
+   @Spin Contamination Metric:   7.105427358E-15
+   @S^2 Expected:                0.000000000E+00
+   @S^2 Observed:                7.105427358E-15
+   @S   Expected:                0.000000000E+00
+   @S   Observed:                0.000000000E+00
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A    -18.449578     2A     -0.823949     3A     -0.373372  
+       4A     -0.166443     5A     -0.063691  
+
+    Alpha Virtual:                                                        
+
+       6A      0.273422     7A      0.377253  
+
+    Beta Occupied:                                                        
+
+       1A    -18.449578     2A     -0.823949     3A     -0.373372  
+       4A     -0.166443     5A     -0.063691  
+
+    Beta Virtual:                                                         
+
+       6A      0.273422     7A      0.377253  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+    SOCC [     0 ]
+    NA   [     5 ]
+    NB   [     5 ]
+
+  @DF-UKS Final Energy:   -75.23445175866318
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.8014969146781734
+    One-Electron Energy =                -121.6600098578671805
+    Two-Electron Energy =                  46.9576547346179112
+    DFT Exchange-Correlation Energy =      -9.3335935500920915
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -75.2344517586631838
+
+  UHF NO Occupations:
+  HONO-2 :    3  A 2.0000000
+  HONO-1 :    4  A 2.0000000
+  HONO-0 :    5  A 2.0000000
+  LUNO+0 :    6  A 0.0000000
+  LUNO+1 :    7  A -0.0000000
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :          0.0000000            0.0000000            0.0000000
+ Dipole Y            :          0.0036704           -0.0026592            0.0010112
+ Dipole Z            :         -0.3962919            1.0190771            0.6227852
+ Magnitude           :                                                    0.6227860
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:06 2024
+Module time:
+	user time   =       0.81 seconds =       0.01 minutes
+	system time =       0.03 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
+Total time:
+	user time   =       3.65 seconds =       0.06 minutes
+	system time =       0.15 seconds =       0.00 minutes
+	total time  =          4 seconds =       0.07 minutes
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   233 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
+    Full point group: Cs
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000337857954    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.496867770081     1.029521970571     1.007825032230
+         H            0.000000000000     1.491505719181     1.025370227174     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic UKS                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: Cs
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000337857954    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.496867770081     1.029521970571     1.007825032230
+         H            0.000000000000     1.491505719181     1.025370227174     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128481
+    Total Blocks           =           1014
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+
+    No. basis functions:                7
+    No. auxiliary basis functions:    113
+    No. alpha electrons:                5
+    No. beta electrons:                 5
+    e_convergence:              1.000e-10
+    d_convergence:              1.000e-10
+    maxiter:                          500
+
+
+
+    Guess energy:      -71.905344275305
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -75.229816552566      -3.324472277261       0.000159277212
+        1     -75.229817565860      -0.000001013295       0.000145766303
+        2     -75.229817347991       0.000000217869       0.000170581964
+        3     -75.229818310135      -0.000000962144       0.000001947688
+        4     -75.229818310300      -0.000000000165       0.000000044167
+        5     -75.229818310300       0.000000000000       0.000000002499
+        6     -75.229818310300       0.000000000000       0.000000000075
+
+    SCF iterations converged!
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       4.562896968724
+    one electron (xy):       0.000000000000
+    one electron (xz):       0.000000000000
+    one electron (yy):       7.716858014223
+    one electron (yz):      -0.020837379550
+    one electron (zz):       6.128087374714
+
+    two electron (xx):      -1.672234278877
+    two electron (xy):      -0.000000000000
+    two electron (xz):      -0.000000000000
+    two electron (yy):      -3.328199544473
+    two electron (yz):       0.004472274987
+    two electron (zz):      -2.422732189410
+
+    total (xx):              2.890662689847
+    total (xy):              0.000000000000
+    total (xz):              0.000000000000
+    total (yy):              4.388658469750
+    total (yz):             -0.016365104562
+    total (zz):              3.705355185304
+
+    * Polaritonic UKS total energy:     -75.229818310300
+
+ #  #
+ Irrep: 1
+      1:  -18.448921289122730
+      2:   -0.824206003412471
+      3:   -0.372580805310264
+      4:   -0.165714039312226
+      5:   -0.062973683298293
+      6:    0.274771801601717
+      7:    0.377947732868030
+
+
+ #  #
+ Irrep: 1
+      1:  -18.448921289122730
+      2:   -0.824206003412471
+      3:   -0.372580805310264
+      4:   -0.165714039312226
+      5:   -0.062973683298293
+      6:    0.274771801601717
+      7:    0.377947732868030
+
+
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
+    Psi4 wall time for execution: 0:00:01.55
+
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.9.1 
+
+                         Git: Rev {HEAD} f53cdd7 dirty
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, and D. L. Poole
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
+
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
+    PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input QCSchema <==
+
+--------------------------------------------------------------------------
+{'driver': 'energy',
+ 'extras': {'psiapi': True, 'wfn_qcvars_only': True},
+ 'id': None,
+ 'keywords': {'CAVITY_COUPLING_STRENGTH': [0.0, 0.0, 0.13041133482178593],
+              'CAVITY_FREQUENCY': [0.0, 0.0, 0.07349864501573],
+              'DFT_SPHERICAL_POINTS': 590,
+              'D_CONVERGENCE': 1e-10,
+              'E_CONVERGENCE': 1e-10,
+              'MAXITER': 500,
+              'PARENT_SYMMETRY': 'C1',
+              'POINTS': 3,
+              'QED_DFT_FUNCTIONAL': 'PBE',
+              'REFERENCE': 'UKS',
+              'SCF_TYPE': 'DF',
+              'function_kwargs': {'write_orbitals': False}},
+ 'model': {'basis': 'sto-3g', 'method': 'qed-dft'},
+ 'molecule': {'atom_labels': ['', '', ''],
+              'atomic_numbers': [8, 1, 1],
+              'extras': {},
+              'fix_com': True,
+              'fix_orientation': True,
+              'fix_symmetry': 'c1',
+              'fragment_charges': [0.0],
+              'fragment_multiplicities': [1],
+              'fragments': [[0, 1, 2]],
+              'geometry': [0.0, 0.0, -0.12989512714251314, 0.0, -1.4941867446311508, 1.0307649649968251, 0.0,
+                           1.4941867446311508, 1.0307649649968251],
+              'mass_numbers': [16, 1, 1],
+              'masses': [15.99491461957, 1.00782503223, 1.00782503223],
+              'molecular_charge': 0.0,
+              'molecular_multiplicity': 1,
+              'name': 'h2',
+              'provenance': {'creator': 'QCElemental',
+                             'routine': 'qcelemental.molparse.from_string',
+                             'version': '0.27.1'},
+              'real': [True, True, True],
+              'schema_name': 'qcschema_molecule',
+              'schema_version': 2,
+              'symbols': ['O', 'H', 'H'],
+              'validated': True},
+ 'protocols': {'stdout': True},
+ 'provenance': {'creator': 'QCElemental', 'routine': 'qcelemental.models.results', 'version': '0.27.1'},
+ 'schema_name': 'qcschema_input',
+ 'schema_version': 1}
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+Scratch directory: /tmp/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:07 2024
+
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line    81 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UKS Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129895127143    15.994914619570
+         H            0.000000000000    -1.494186744631     1.030764964997     1.007825032230
+         H            0.000000000000     1.494186744631     1.030764964997     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     24.96401  B =     13.37733  C =      8.70997 [cm^-1]
+  Rotational constants: A = 748402.27026  B = 401042.16706  C = 261118.20507 [MHz]
+  Nuclear repulsion =    8.791216724228573
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-10
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis functions: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128485
+    Total Blocks           =           1016
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+  ==> Integral Setup <==
+
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                   No
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:              348
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (STO-3G AUX)
+    Blend: DEF2-UNIVERSAL-JKFIT
+    Number of shells: 37
+    Number of basis functions: 113
+    Number of Cartesian functions: 133
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  Cached 100.0% of DFT collocation blocks in 0.026 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 3.7105727720E-01.
+  Reciprocal condition number of the overlap matrix is 1.9777513686E-01.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A          7       7 
+   -------------------------
+    Total       7       7
+   -------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UKS iter SAD:   -74.82582999236560   -7.48258e+01   0.00000e+00 
+   @DF-UKS iter   1:   -75.21686395096107   -3.91034e-01   2.19338e-02 DIIS/ADIIS
+   @DF-UKS iter   2:   -75.21265097401523    4.21298e-03   2.56254e-02 DIIS/ADIIS
+   @DF-UKS iter   3:   -75.23469359113673   -2.20426e-02   3.38624e-04 DIIS/ADIIS
+   @DF-UKS iter   4:   -75.23469787229813   -4.28116e-06   1.86438e-05 DIIS
+   @DF-UKS iter   5:   -75.23469788782207   -1.55239e-08   4.54839e-07 DIIS
+   @DF-UKS iter   6:   -75.23469788783005   -7.98650e-12   1.04320e-09 DIIS
+   @DF-UKS iter   7:   -75.23469788782998    7.10543e-14   1.56056e-12 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Nalpha   =    4.9999999890 ; deviation = -1.095e-08
+      Nbeta    =    4.9999999890 ; deviation = -1.095e-08
+      Ntotal   =    9.9999999781 ; deviation = -2.190e-08 
+
+   @Spin Contamination Metric:  -3.552713679E-15
+   @S^2 Expected:                0.000000000E+00
+   @S^2 Observed:               -3.552713679E-15
+   @S   Expected:                0.000000000E+00
+   @S   Observed:                0.000000000E+00
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A    -18.449954     2A     -0.823617     3A     -0.372651  
+       4A     -0.167108     5A     -0.063763  
+
+    Alpha Virtual:                                                        
+
+       6A      0.272689     7A      0.375682  
+
+    Beta Occupied:                                                        
+
+       1A    -18.449954     2A     -0.823617     3A     -0.372651  
+       4A     -0.167108     5A     -0.063763  
+
+    Beta Virtual:                                                         
+
+       6A      0.272689     7A      0.375682  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+    SOCC [     0 ]
+    NA   [     5 ]
+    NB   [     5 ]
+
+  @DF-UKS Final Energy:   -75.23469788782998
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.7912167242285726
+    One-Electron Energy =                -121.6404556856324604
+    Two-Electron Energy =                  46.9471877706847849
+    DFT Exchange-Correlation Energy =      -9.3326466971108815
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -75.2346978878299808
+
+  UHF NO Occupations:
+  HONO-2 :    3  A 2.0000000
+  HONO-1 :    4  A 2.0000000
+  HONO-0 :    5  A 2.0000000
+  LUNO+0 :    6  A 0.0000000
+  LUNO+1 :    7  A -0.0000000
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :          0.0000000            0.0000000            0.0000000
+ Dipole Y            :          0.0000000            0.0000000            0.0000000
+ Dipole Z            :         -0.4001088            1.0223689            0.6222601
+ Magnitude           :                                                    0.6222601
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:07 2024
+Module time:
+	user time   =       0.67 seconds =       0.01 minutes
+	system time =       0.02 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+Total time:
+	user time   =       5.02 seconds =       0.08 minutes
+	system time =       0.19 seconds =       0.00 minutes
+	total time  =          5 seconds =       0.08 minutes
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   233 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129895127143    15.994914619570
+         H            0.000000000000    -1.494186744631     1.030764964997     1.007825032230
+         H            0.000000000000     1.494186744631     1.030764964997     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic UKS                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129895127143    15.994914619570
+         H            0.000000000000    -1.494186744631     1.030764964997     1.007825032230
+         H            0.000000000000     1.494186744631     1.030764964997     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128485
+    Total Blocks           =           1016
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+
+    No. basis functions:                7
+    No. auxiliary basis functions:    113
+    No. alpha electrons:                5
+    No. beta electrons:                 5
+    e_convergence:              1.000e-10
+    d_convergence:              1.000e-10
+    maxiter:                          500
+
+
+
+    Guess energy:      -71.905903517915
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -75.230052159606      -3.324148641691       0.000160039308
+        1     -75.230053175830      -0.000001016224       0.000146818490
+        2     -75.230052946698       0.000000229133       0.000172528763
+        3     -75.230053931658      -0.000000984960       0.000001980831
+        4     -75.230053931828      -0.000000000171       0.000000044146
+        5     -75.230053931828      -0.000000000000       0.000000000023
+
+    SCF iterations converged!
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       4.563764811546
+    one electron (xy):       0.000000000000
+    one electron (xz):      -0.000000000000
+    one electron (yy):       7.720805310025
+    one electron (yz):      -0.000000000000
+    one electron (zz):       6.140405437434
+
+    two electron (xx):      -1.672347383273
+    two electron (xy):      -0.000000000000
+    two electron (xz):       0.000000000000
+    two electron (yy):      -3.329111376684
+    two electron (yz):       0.000000000000
+    two electron (zz):      -2.426655740705
+
+    total (xx):              2.891417428272
+    total (xy):              0.000000000000
+    total (xz):             -0.000000000000
+    total (yy):              4.391693933341
+    total (yz):             -0.000000000000
+    total (zz):              3.713749696729
+
+    * Polaritonic UKS total energy:     -75.230053931828
+
+ #  #
+ Irrep: 1
+      1:  -18.449295766828001
+      2:   -0.823875313483721
+      3:   -0.371858852052834
+      4:   -0.166374119652714
+      5:   -0.063044494264423
+      6:    0.274036522224364
+      7:    0.376376359045129
+
+
+ #  #
+ Irrep: 1
+      1:  -18.449295766828001
+      2:   -0.823875313483721
+      3:   -0.371858852052834
+      4:   -0.166374119652714
+      5:   -0.063044494264423
+      6:    0.274036522224364
+      7:    0.376376359045129
+
+
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
+    Psi4 wall time for execution: 0:00:01.33
+
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.9.1 
+
+                         Git: Rev {HEAD} f53cdd7 dirty
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, and D. L. Poole
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
+
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
+    PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input QCSchema <==
+
+--------------------------------------------------------------------------
+{'driver': 'energy',
+ 'extras': {'psiapi': True, 'wfn_qcvars_only': True},
+ 'id': None,
+ 'keywords': {'CAVITY_COUPLING_STRENGTH': [0.0, 0.0, 0.13041133482178593],
+              'CAVITY_FREQUENCY': [0.0, 0.0, 0.07349864501573],
+              'DFT_SPHERICAL_POINTS': 590,
+              'D_CONVERGENCE': 1e-10,
+              'E_CONVERGENCE': 1e-10,
+              'MAXITER': 500,
+              'PARENT_SYMMETRY': 'C1',
+              'POINTS': 3,
+              'QED_DFT_FUNCTIONAL': 'PBE',
+              'REFERENCE': 'UKS',
+              'SCF_TYPE': 'DF',
+              'function_kwargs': {'write_orbitals': False}},
+ 'model': {'basis': 'sto-3g', 'method': 'qed-dft'},
+ 'molecule': {'atom_labels': ['', '', ''],
+              'atomic_numbers': [8, 1, 1],
+              'extras': {},
+              'fix_com': True,
+              'fix_orientation': True,
+              'fix_symmetry': 'c1',
+              'fragment_charges': [0.0],
+              'fragment_multiplicities': [1],
+              'fragments': [[0, 1, 2]],
+              'geometry': [0.0, 0.0, -0.12905865219069165, 0.0, -1.4941867446311508, 1.0241272327477118, 0.0,
+                           1.4941867446311508, 1.0241272327477118],
+              'mass_numbers': [16, 1, 1],
+              'masses': [15.99491461957, 1.00782503223, 1.00782503223],
+              'molecular_charge': 0.0,
+              'molecular_multiplicity': 1,
+              'name': 'h2',
+              'provenance': {'creator': 'QCElemental',
+                             'routine': 'qcelemental.molparse.from_string',
+                             'version': '0.27.1'},
+              'real': [True, True, True],
+              'schema_name': 'qcschema_molecule',
+              'schema_version': 2,
+              'symbols': ['O', 'H', 'H'],
+              'validated': True},
+ 'protocols': {'stdout': True},
+ 'provenance': {'creator': 'QCElemental', 'routine': 'qcelemental.models.results', 'version': '0.27.1'},
+ 'schema_name': 'qcschema_input',
+ 'schema_version': 1}
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+Scratch directory: /tmp/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:08 2024
+
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line    81 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UKS Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129058652191    15.994914619570
+         H            0.000000000000    -1.494186744631     1.024127232748     1.007825032230
+         H            0.000000000000     1.494186744631     1.024127232748     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.28866  B =     13.37733  C =      8.74915 [cm^-1]
+  Rotational constants: A = 758135.03084  B = 401042.16706  C = 262293.04393 [MHz]
+  Nuclear repulsion =    8.811718524994673
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-10
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis functions: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128485
+    Total Blocks           =           1020
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+  ==> Integral Setup <==
+
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                   No
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:              348
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (STO-3G AUX)
+    Blend: DEF2-UNIVERSAL-JKFIT
+    Number of shells: 37
+    Number of basis functions: 113
+    Number of Cartesian functions: 133
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  Cached 100.0% of DFT collocation blocks in 0.026 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 3.6951299931E-01.
+  Reciprocal condition number of the overlap matrix is 1.9676645944E-01.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A          7       7 
+   -------------------------
+    Total       7       7
+   -------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UKS iter SAD:   -74.82889206343842   -7.48289e+01   0.00000e+00 
+   @DF-UKS iter   1:   -75.21640239606688   -3.87510e-01   2.19508e-02 DIIS/ADIIS
+   @DF-UKS iter   2:   -75.21256073277223    3.84166e-03   2.54169e-02 DIIS/ADIIS
+   @DF-UKS iter   3:   -75.23421051621924   -2.16498e-02   3.44895e-04 DIIS/ADIIS
+   @DF-UKS iter   4:   -75.23421483132799   -4.31511e-06   1.85701e-05 DIIS
+   @DF-UKS iter   5:   -75.23421484667460   -1.53466e-08   4.49052e-07 DIIS
+   @DF-UKS iter   6:   -75.23421484668231   -7.70228e-12   8.68852e-10 DIIS
+   @DF-UKS iter   7:   -75.23421484668233   -2.84217e-14   9.38036e-13 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Nalpha   =    4.9999999893 ; deviation = -1.067e-08
+      Nbeta    =    4.9999999893 ; deviation = -1.067e-08
+      Ntotal   =    9.9999999787 ; deviation = -2.134e-08 
+
+   @Spin Contamination Metric:   9.769962617E-15
+   @S^2 Expected:                0.000000000E+00
+   @S^2 Observed:                9.769962617E-15
+   @S   Expected:                0.000000000E+00
+   @S   Observed:                0.000000000E+00
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A    -18.449200     2A     -0.824271     3A     -0.374096  
+       4A     -0.165777     5A     -0.063618  
+
+    Alpha Virtual:                                                        
+
+       6A      0.274205     7A      0.378765  
+
+    Beta Occupied:                                                        
+
+       1A    -18.449200     2A     -0.824271     3A     -0.374096  
+       4A     -0.165777     5A     -0.063618  
+
+    Beta Virtual:                                                         
+
+       6A      0.274205     7A      0.378765  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+    SOCC [     0 ]
+    NA   [     5 ]
+    NB   [     5 ]
+
+  @DF-UKS Final Energy:   -75.23421484668233
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.8117185249946726
+    One-Electron Energy =                -121.6794924199956256
+    Two-Electron Energy =                  46.9680954384817397
+    DFT Exchange-Correlation Energy =      -9.3345363901631213
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -75.2342148466823346
+
+  UHF NO Occupations:
+  HONO-2 :    3  A 2.0000000
+  HONO-1 :    4  A 2.0000000
+  HONO-0 :    5  A 2.0000000
+  LUNO+0 :    6  A 0.0000000
+  LUNO+1 :    7  A -0.0000000
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Y            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Z            :         -0.3924844            1.0157852            0.6233009
+ Magnitude           :                                                    0.6233009
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:09 2024
+Module time:
+	user time   =       0.68 seconds =       0.01 minutes
+	system time =       0.02 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
+Total time:
+	user time   =       6.32 seconds =       0.11 minutes
+	system time =       0.23 seconds =       0.00 minutes
+	total time  =          7 seconds =       0.12 minutes
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   233 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129058652191    15.994914619570
+         H            0.000000000000    -1.494186744631     1.024127232748     1.007825032230
+         H            0.000000000000     1.494186744631     1.024127232748     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic UKS                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129058652191    15.994914619570
+         H            0.000000000000    -1.494186744631     1.024127232748     1.007825032230
+         H            0.000000000000     1.494186744631     1.024127232748     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128485
+    Total Blocks           =           1020
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+
+    No. basis functions:                7
+    No. auxiliary basis functions:    113
+    No. alpha electrons:                5
+    No. beta electrons:                 5
+    e_convergence:              1.000e-10
+    d_convergence:              1.000e-10
+    maxiter:                          500
+
+
+
+    Guess energy:      -71.904795618285
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -75.229590130238      -3.324794511953       0.000158513569
+        1     -75.229591140522      -0.000001010284       0.000144713388
+        2     -75.229590933711       0.000000206810       0.000168637975
+        3     -75.229591873304      -0.000000939592       0.000001914795
+        4     -75.229591873462      -0.000000000159       0.000000043183
+        5     -75.229591873462      -0.000000000000       0.000000000022
+
+    SCF iterations converged!
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       4.562031531072
+    one electron (xy):      -0.000000000000
+    one electron (xz):      -0.000000000000
+    one electron (yy):       7.712875300540
+    one electron (yz):       0.000000000000
+    one electron (zz):       6.115801770936
+
+    two electron (xx):      -1.672119994340
+    two electron (xy):       0.000000000000
+    two electron (xz):      -0.000000000000
+    two electron (yy):      -3.327278646377
+    two electron (yz):      -0.000000000000
+    two electron (zz):      -2.418815084506
+
+    total (xx):              2.889911536732
+    total (xy):             -0.000000000000
+    total (xz):             -0.000000000000
+    total (yy):              4.385596654163
+    total (yz):              0.000000000000
+    total (zz):              3.696986686430
+
+    * Polaritonic UKS total energy:     -75.229591873462
+
+ #  #
+ Irrep: 1
+      1:  -18.448544929223036
+      2:   -0.824526762942238
+      3:   -0.373305740492605
+      4:   -0.165052451080358
+      5:   -0.062901100180654
+      6:    0.275556566687367
+      7:    0.379460021175469
+
+
+ #  #
+ Irrep: 1
+      1:  -18.448544929223036
+      2:   -0.824526762942238
+      3:   -0.373305740492605
+      4:   -0.165052451080358
+      5:   -0.062901100180654
+      6:    0.275556566687367
+      7:    0.379460021175469
+
+
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
+    Psi4 wall time for execution: 0:00:01.33
+
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.9.1 
+
+                         Git: Rev {HEAD} f53cdd7 dirty
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, and D. L. Poole
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
+
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
+    PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input QCSchema <==
+
+--------------------------------------------------------------------------
+{'driver': 'energy',
+ 'extras': {'psiapi': True, 'wfn_qcvars_only': True},
+ 'id': None,
+ 'keywords': {'CAVITY_COUPLING_STRENGTH': [0.0, 0.0, 0.13041133482178593],
+              'CAVITY_FREQUENCY': [0.0, 0.0, 0.07349864501573],
+              'DFT_SPHERICAL_POINTS': 590,
+              'D_CONVERGENCE': 1e-10,
+              'E_CONVERGENCE': 1e-10,
+              'MAXITER': 500,
+              'PARENT_SYMMETRY': 'C1',
+              'POINTS': 3,
+              'QED_DFT_FUNCTIONAL': 'PBE',
+              'REFERENCE': 'UKS',
+              'SCF_TYPE': 'DF',
+              'function_kwargs': {'write_orbitals': False}},
+ 'model': {'basis': 'sto-3g', 'method': 'qed-dft'},
+ 'molecule': {'atom_labels': ['', '', ''],
+              'atomic_numbers': [8, 1, 1],
+              'extras': {},
+              'fix_com': True,
+              'fix_orientation': True,
+              'fix_symmetry': 'c1',
+              'fragment_charges': [0.0],
+              'fragment_multiplicities': [1],
+              'fragments': [[0, 1, 2]],
+              'geometry': [0.0, 0.0, -0.1294768896666024, 0.0, -1.497708526359701, 1.0274460988722685, 0.0,
+                           1.497708526359701, 1.0274460988722685],
+              'mass_numbers': [16, 1, 1],
+              'masses': [15.99491461957, 1.00782503223, 1.00782503223],
+              'molecular_charge': 0.0,
+              'molecular_multiplicity': 1,
+              'name': 'h2',
+              'provenance': {'creator': 'QCElemental',
+                             'routine': 'qcelemental.molparse.from_string',
+                             'version': '0.27.1'},
+              'real': [True, True, True],
+              'schema_name': 'qcschema_molecule',
+              'schema_version': 2,
+              'symbols': ['O', 'H', 'H'],
+              'validated': True},
+ 'protocols': {'stdout': True},
+ 'provenance': {'creator': 'QCElemental', 'routine': 'qcelemental.models.results', 'version': '0.27.1'},
+ 'schema_name': 'qcschema_input',
+ 'schema_version': 1}
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+Scratch directory: /tmp/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:09 2024
+
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line    81 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UKS Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.497708526360     1.027446098872     1.007825032230
+         H            0.000000000000     1.497708526360     1.027446098872     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.12555  B =     13.31449  C =      8.70275 [cm^-1]
+  Rotational constants: A = 753245.07149  B = 399158.32601  C = 260901.73151 [MHz]
+  Nuclear repulsion =    8.788215130224904
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-10
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis functions: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128489
+    Total Blocks           =           1019
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+  ==> Integral Setup <==
+
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                   No
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:              348
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (STO-3G AUX)
+    Blend: DEF2-UNIVERSAL-JKFIT
+    Number of shells: 37
+    Number of basis functions: 113
+    Number of Cartesian functions: 133
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  Cached 100.0% of DFT collocation blocks in 0.026 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 3.7125954061E-01.
+  Reciprocal condition number of the overlap matrix is 1.9802762904E-01.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A          7       7 
+   -------------------------
+    Total       7       7
+   -------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UKS iter SAD:   -74.82542163972104   -7.48254e+01   0.00000e+00 
+   @DF-UKS iter   1:   -75.21673778057274   -3.91316e-01   2.19182e-02 DIIS/ADIIS
+   @DF-UKS iter   2:   -75.21253808656596    4.19969e-03   2.55966e-02 DIIS/ADIIS
+   @DF-UKS iter   3:   -75.23454040768287   -2.20023e-02   3.38279e-04 DIIS/ADIIS
+   @DF-UKS iter   4:   -75.23454467493970   -4.26726e-06   1.85987e-05 DIIS
+   @DF-UKS iter   5:   -75.23454469039308   -1.54534e-08   4.61069e-07 DIIS
+   @DF-UKS iter   6:   -75.23454469040119   -8.11440e-12   1.03603e-09 DIIS
+   @DF-UKS iter   7:   -75.23454469040122   -2.84217e-14   1.58603e-12 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Nalpha   =    4.9999999887 ; deviation = -1.129e-08
+      Nbeta    =    4.9999999887 ; deviation = -1.129e-08
+      Ntotal   =    9.9999999774 ; deviation = -2.258e-08 
+
+   @Spin Contamination Metric:  -1.776356839E-15
+   @S^2 Expected:                0.000000000E+00
+   @S^2 Observed:               -1.776356839E-15
+   @S   Expected:                0.000000000E+00
+   @S   Observed:                0.000000000E+00
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A    -18.449620     2A     -0.823200     3A     -0.373069  
+       4A     -0.166253     5A     -0.063562  
+
+    Alpha Virtual:                                                        
+
+       6A      0.272041     7A      0.376048  
+
+    Beta Occupied:                                                        
+
+       1A    -18.449620     2A     -0.823200     3A     -0.373069  
+       4A     -0.166253     5A     -0.063562  
+
+    Beta Virtual:                                                         
+
+       6A      0.272041     7A      0.376048  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+    SOCC [     0 ]
+    NA   [     5 ]
+    NB   [     5 ]
+
+  @DF-UKS Final Energy:   -75.23454469040122
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.7882151302249039
+    One-Electron Energy =                -121.6369802712399633
+    Two-Electron Energy =                  46.9467850009794958
+    DFT Exchange-Correlation Energy =      -9.3325645503656549
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -75.2345446904012221
+
+  UHF NO Occupations:
+  HONO-2 :    3  A 2.0000000
+  HONO-1 :    4  A 2.0000000
+  HONO-0 :    5  A 2.0000000
+  LUNO+0 :    6  A 0.0000000
+  LUNO+1 :    7  A -0.0000000
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :          0.0000000            0.0000000            0.0000000
+ Dipole Y            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Z            :         -0.3975650            1.0190771            0.6215121
+ Magnitude           :                                                    0.6215121
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:10 2024
+Module time:
+	user time   =       0.68 seconds =       0.01 minutes
+	system time =       0.03 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
+Total time:
+	user time   =       7.61 seconds =       0.13 minutes
+	system time =       0.28 seconds =       0.00 minutes
+	total time  =          8 seconds =       0.13 minutes
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   233 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.497708526360     1.027446098872     1.007825032230
+         H            0.000000000000     1.497708526360     1.027446098872     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic UKS                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.497708526360     1.027446098872     1.007825032230
+         H            0.000000000000     1.497708526360     1.027446098872     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128489
+    Total Blocks           =           1019
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+
+    No. basis functions:                7
+    No. auxiliary basis functions:    113
+    No. alpha electrons:                5
+    No. beta electrons:                 5
+    e_convergence:              1.000e-10
+    d_convergence:              1.000e-10
+    maxiter:                          500
+
+
+
+    Guess energy:      -71.905781805131
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -75.229907273159      -3.324125468028       0.000159294074
+        1     -75.229908283045      -0.000001009886       0.000146388320
+        2     -75.229908055522       0.000000227523       0.000171977548
+        3     -75.229909034573      -0.000000979052       0.000001969451
+        4     -75.229909034742      -0.000000000168       0.000000044298
+        5     -75.229909034742      -0.000000000000       0.000000000023
+
+    SCF iterations converged!
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       4.563752881433
+    one electron (xy):      -0.000000000000
+    one electron (xz):      -0.000000000000
+    one electron (yy):       7.734649477268
+    one electron (yz):       0.000000000001
+    one electron (zz):       6.129728069289
+
+    two electron (xx):      -1.672227280716
+    two electron (xy):       0.000000000000
+    two electron (xz):       0.000000000000
+    two electron (yy):      -3.336532305149
+    two electron (yz):      -0.000000000000
+    two electron (zz):      -2.422610128217
+
+    total (xx):              2.891525600717
+    total (xy):             -0.000000000000
+    total (xz):              0.000000000000
+    total (yy):              4.398117172119
+    total (yz):              0.000000000000
+    total (zz):              3.707117941072
+
+    * Polaritonic UKS total energy:     -75.229909034742
+
+ #  #
+ Irrep: 1
+      1:  -18.448963124799480
+      2:   -0.823456498580932
+      3:   -0.372277760649908
+      4:   -0.165522470296230
+      5:   -0.062843334189816
+      6:    0.273388903499368
+      7:    0.376742251191343
+
+
+ #  #
+ Irrep: 1
+      1:  -18.448963124799480
+      2:   -0.823456498580932
+      3:   -0.372277760649908
+      4:   -0.165522470296230
+      5:   -0.062843334189816
+      6:    0.273388903499368
+      7:    0.376742251191343
+
+
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
+    Psi4 wall time for execution: 0:00:01.33
+
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.9.1 
+
+                         Git: Rev {HEAD} f53cdd7 dirty
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, and D. L. Poole
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    http://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Tuesday, 02 July 2024 09:59PM
+
+    Process ID: 80667
+    Host:       Alberts-MacBook-Pro.local
+    PSIDATADIR: /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input QCSchema <==
+
+--------------------------------------------------------------------------
+{'driver': 'energy',
+ 'extras': {'psiapi': True, 'wfn_qcvars_only': True},
+ 'id': None,
+ 'keywords': {'CAVITY_COUPLING_STRENGTH': [0.0, 0.0, 0.13041133482178593],
+              'CAVITY_FREQUENCY': [0.0, 0.0, 0.07349864501573],
+              'DFT_SPHERICAL_POINTS': 590,
+              'D_CONVERGENCE': 1e-10,
+              'E_CONVERGENCE': 1e-10,
+              'MAXITER': 500,
+              'PARENT_SYMMETRY': 'C1',
+              'POINTS': 3,
+              'QED_DFT_FUNCTIONAL': 'PBE',
+              'REFERENCE': 'UKS',
+              'SCF_TYPE': 'DF',
+              'function_kwargs': {'write_orbitals': False}},
+ 'model': {'basis': 'sto-3g', 'method': 'qed-dft'},
+ 'molecule': {'atom_labels': ['', '', ''],
+              'atomic_numbers': [8, 1, 1],
+              'extras': {},
+              'fix_com': True,
+              'fix_orientation': True,
+              'fix_symmetry': 'c1',
+              'fragment_charges': [0.0],
+              'fragment_multiplicities': [1],
+              'fragments': [[0, 1, 2]],
+              'geometry': [0.0, 0.0, -0.1294768896666024, 0.0, -1.4906649629026005, 1.0274460988722685, 0.0,
+                           1.4906649629026005, 1.0274460988722685],
+              'mass_numbers': [16, 1, 1],
+              'masses': [15.99491461957, 1.00782503223, 1.00782503223],
+              'molecular_charge': 0.0,
+              'molecular_multiplicity': 1,
+              'name': 'h2',
+              'provenance': {'creator': 'QCElemental',
+                             'routine': 'qcelemental.molparse.from_string',
+                             'version': '0.27.1'},
+              'real': [True, True, True],
+              'schema_name': 'qcschema_molecule',
+              'schema_version': 2,
+              'symbols': ['O', 'H', 'H'],
+              'validated': True},
+ 'protocols': {'stdout': True},
+ 'provenance': {'creator': 'QCElemental', 'routine': 'qcelemental.models.results', 'version': '0.27.1'},
+ 'schema_name': 'qcschema_input',
+ 'schema_version': 1}
+--------------------------------------------------------------------------
+
+Scratch directory: /tmp/
+
+Scratch directory: /tmp/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:11 2024
+
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line    81 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UKS Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.490664962903     1.027446098872     1.007825032230
+         H            0.000000000000     1.490664962903     1.027446098872     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.12555  B =     13.44061  C =      8.75645 [cm^-1]
+  Rotational constants: A = 753245.07149  B = 402939.37593  C = 262511.83339 [MHz]
+  Nuclear repulsion =    8.814745464617637
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-10
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis functions: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128485
+    Total Blocks           =           1015
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+  ==> Integral Setup <==
+
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                   No
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:              348
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (STO-3G AUX)
+    Blend: DEF2-UNIVERSAL-JKFIT
+    Number of shells: 37
+    Number of basis functions: 113
+    Number of Cartesian functions: 133
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  Cached 100.0% of DFT collocation blocks in 0.026 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 3.6930928678E-01.
+  Reciprocal condition number of the overlap matrix is 1.9651379973E-01.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A          7       7 
+   -------------------------
+    Total       7       7
+   -------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UKS iter SAD:   -74.82930438809136   -7.48293e+01   0.00000e+00 
+   @DF-UKS iter   1:   -75.21652489997979   -3.87221e-01   2.19667e-02 DIIS/ADIIS
+   @DF-UKS iter   2:   -75.21266983392812    3.85507e-03   2.54463e-02 DIIS/ADIIS
+   @DF-UKS iter   3:   -75.23436069932161   -2.16909e-02   3.44882e-04 DIIS/ADIIS
+   @DF-UKS iter   4:   -75.23436501950118   -4.32018e-06   1.86145e-05 DIIS
+   @DF-UKS iter   5:   -75.23436503491705   -1.54159e-08   4.42891e-07 DIIS
+   @DF-UKS iter   6:   -75.23436503492455   -7.50333e-12   8.76327e-10 DIIS
+   @DF-UKS iter   7:   -75.23436503492448    7.10543e-14   9.26594e-13 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Nalpha   =    4.9999999897 ; deviation = -1.034e-08
+      Nbeta    =    4.9999999897 ; deviation = -1.034e-08
+      Ntotal   =    9.9999999793 ; deviation = -2.068e-08 
+
+   @Spin Contamination Metric:  -8.881784197E-16
+   @S^2 Expected:                0.000000000E+00
+   @S^2 Observed:               -8.881784197E-16
+   @S   Expected:                0.000000000E+00
+   @S   Observed:                0.000000000E+00
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A    -18.449535     2A     -0.824692     3A     -0.373676  
+       4A     -0.166635     5A     -0.063821  
+
+    Alpha Virtual:                                                        
+
+       6A      0.274856     7A      0.378397  
+
+    Beta Occupied:                                                        
+
+       1A    -18.449535     2A     -0.824692     3A     -0.373676  
+       4A     -0.166635     5A     -0.063821  
+
+    Beta Virtual:                                                         
+
+       6A      0.274856     7A      0.378397  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+    SOCC [     0 ]
+    NA   [     5 ]
+    NB   [     5 ]
+
+  @DF-UKS Final Energy:   -75.23436503492448
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.8147454646176371
+    One-Electron Energy =                -121.6829897474385831
+    Two-Electron Energy =                  46.9684990609323307
+    DFT Exchange-Correlation Energy =      -9.3346198130358697
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -75.2343650349244797
+
+  UHF NO Occupations:
+  HONO-2 :    3  A 2.0000000
+  HONO-1 :    4  A 2.0000000
+  HONO-0 :    5  A 2.0000000
+  LUNO+0 :    6  A -0.0000000
+  LUNO+1 :    7  A -0.0000000
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :          0.0000000            0.0000000            0.0000000
+ Dipole Y            :          0.0000000            0.0000000            0.0000000
+ Dipole Z            :         -0.3950230            1.0190771            0.6240541
+ Magnitude           :                                                    0.6240541
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:11 2024
+Module time:
+	user time   =       0.68 seconds =       0.01 minutes
+	system time =       0.02 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+Total time:
+	user time   =       8.90 seconds =       0.15 minutes
+	system time =       0.32 seconds =       0.01 minutes
+	total time  =          9 seconds =       0.15 minutes
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   233 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.490664962903     1.027446098872     1.007825032230
+         H            0.000000000000     1.490664962903     1.027446098872     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic UKS                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Bohr), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.129476889667    15.994914619570
+         H            0.000000000000    -1.490664962903     1.027446098872     1.007825032230
+         H            0.000000000000     1.490664962903     1.027446098872     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128485
+    Total Blocks           =           1015
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+
+    No. basis functions:                7
+    No. auxiliary basis functions:    113
+    No. alpha electrons:                5
+    No. beta electrons:                 5
+    e_convergence:              1.000e-10
+    d_convergence:              1.000e-10
+    maxiter:                          500
+
+
+
+    Guess energy:      -71.904913877538
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -75.229732042844      -3.324818165307       0.000159261800
+        1     -75.229733059559      -0.000001016715       0.000145144342
+        2     -75.229732851232       0.000000208327       0.000169187373
+        3     -75.229733796600      -0.000000945367       0.000001926175
+        4     -75.229733796761      -0.000000000161       0.000000043044
+        5     -75.229733796761      -0.000000000000       0.000000000022
+
+    SCF iterations converged!
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       4.562043646836
+    one electron (xy):       0.000000000000
+    one electron (xz):      -0.000000000000
+    one electron (yy):       7.699101109609
+    one electron (yz):      -0.000000000000
+    one electron (zz):       6.126426596524
+
+    two electron (xx):      -1.672241878627
+    two electron (xy):      -0.000000000000
+    two electron (xz):       0.000000000000
+    two electron (yy):      -3.319882788053
+    two electron (yz):       0.000000000000
+    two electron (zz):      -2.422836514765
+
+    total (xx):              2.889801768209
+    total (xy):              0.000000000000
+    total (xz):             -0.000000000000
+    total (yy):              4.379218321557
+    total (yz):             -0.000000000000
+    total (zz):              3.703590081759
+
+    * Polaritonic UKS total energy:     -75.229733796761
+
+ #  #
+ Irrep: 1
+      1:  -18.448880067988860
+      2:   -0.824950546375454
+      3:   -0.372885543793879
+      4:   -0.165907230840316
+      5:   -0.063103801082937
+      6:    0.276207489785435
+      7:    0.379091806358458
+
+
+ #  #
+ Irrep: 1
+      1:  -18.448880067988860
+      2:   -0.824950546375454
+      3:   -0.372885543793879
+      4:   -0.165907230840316
+      5:   -0.063103801082937
+      6:    0.276207489785435
+      7:    0.379091806358458
+
+
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
+    Psi4 wall time for execution: 0:00:01.33
+
+
+  //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
+  //      FiniteDifference Results     //
+  //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<//
+
+  Computing gradient from energies.
+    Using 3-point formula.
+    Energy without displacement:  -75.2298264328
+    Check energies below for precision!
+    Forces are for mass-weighted, symmetry-adapted cartesians [a0].
+
+     Coord      Energy(-1)        Energy(+1)            Force
+        0    -75.2298183103    -75.2298183103     -0.0000000017
+        1    -75.2300539318    -75.2295918735      0.0462058366
+        2    -75.2299090347    -75.2297337968      0.0175237981
+         -------------------------------------------------------------
+
+Scratch directory: /tmp/
+gradient() will perform analytic gradient computation.
+
+Scratch directory: /tmp/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:12 2024
+
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line    81 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/sto-3g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              UKS Reference
+                        1 Threads,    500 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     25.12555  B =     13.37733  C =      8.72955 [cm^-1]
+  Rotational constants: A = 753245.07149  B = 401042.16706  C = 261705.25473 [MHz]
+  Nuclear repulsion =    8.801465564563406
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-10
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis functions: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128485
+    Total Blocks           =           1016
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+  ==> Integral Setup <==
+
+  ==> DiskDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                   No
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:              348
+    Algorithm:                Core
+    Integral Cache:           SAVE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (STO-3G AUX)
+    Blend: DEF2-UNIVERSAL-JKFIT
+    Number of shells: 37
+    Number of basis functions: 113
+    Number of Cartesian functions: 133
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  Cached 100.0% of DFT collocation blocks in 0.026 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 3.7028400386E-01.
+  Reciprocal condition number of the overlap matrix is 1.9726983142E-01.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A          7       7 
+   -------------------------
+    Total       7       7
+   -------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-UKS iter SAD:   -74.82736076004011   -7.48274e+01   0.00000e+00 
+   @DF-UKS iter   1:   -75.21663658264096   -3.89276e-01   2.19423e-02 DIIS/ADIIS
+   @DF-UKS iter   2:   -75.21261015063153    4.02643e-03   2.55210e-02 DIIS/ADIIS
+   @DF-UKS iter   3:   -75.23445557318303   -2.18454e-02   3.41395e-04 DIIS/ADIIS
+   @DF-UKS iter   4:   -75.23445986207614   -4.28889e-06   1.86086e-05 DIIS
+   @DF-UKS iter   5:   -75.23445987751371   -1.54376e-08   4.51912e-07 DIIS
+   @DF-UKS iter   6:   -75.23445987752157   -7.85860e-12   9.54653e-10 DIIS
+   @DF-UKS iter   7:   -75.23445987752154    2.84217e-14   1.23387e-12 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Nalpha   =    4.9999999892 ; deviation = -1.082e-08
+      Nbeta    =    4.9999999892 ; deviation = -1.082e-08
+      Ntotal   =    9.9999999784 ; deviation = -2.163e-08 
+
+   @Spin Contamination Metric:   7.105427358E-15
+   @S^2 Expected:                0.000000000E+00
+   @S^2 Observed:                7.105427358E-15
+   @S   Expected:                0.000000000E+00
+   @S   Observed:                0.000000000E+00
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Alpha Occupied:                                                       
+
+       1A    -18.449577     2A     -0.823944     3A     -0.373373  
+       4A     -0.166443     5A     -0.063691  
+
+    Alpha Virtual:                                                        
+
+       6A      0.273448     7A      0.377222  
+
+    Beta Occupied:                                                        
+
+       1A    -18.449577     2A     -0.823944     3A     -0.373373  
+       4A     -0.166443     5A     -0.063691  
+
+    Beta Virtual:                                                         
+
+       6A      0.273448     7A      0.377222  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+    SOCC [     0 ]
+    NA   [     5 ]
+    NB   [     5 ]
+
+  @DF-UKS Final Energy:   -75.23445987752154
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.8014655645634061
+    One-Electron Energy =                -121.6599724527298747
+    Two-Electron Energy =                  46.9576381731632253
+    DFT Exchange-Correlation Energy =      -9.3335911625182959
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -75.2344598775215445
+
+  UHF NO Occupations:
+  HONO-2 :    3  A 2.0000000
+  HONO-1 :    4  A 2.0000000
+  HONO-0 :    5  A 2.0000000
+  LUNO+0 :    6  A -0.0000000
+  LUNO+1 :    7  A -0.0000000
+
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :          0.0000000            0.0000000            0.0000000
+ Dipole Y            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Z            :         -0.3962941            1.0190771            0.6227830
+ Magnitude           :                                                    0.6227830
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:13 2024
+Module time:
+	user time   =       0.67 seconds =       0.01 minutes
+	system time =       0.02 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
+Total time:
+	user time   =      10.20 seconds =       0.17 minutes
+	system time =       0.36 seconds =       0.01 minutes
+	total time  =         11 seconds =       0.18 minutes
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   233 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.9.1/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic UKS                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128485
+    Total Blocks           =           1016
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+
+    No. basis functions:                7
+    No. auxiliary basis functions:    113
+    No. alpha electrons:                5
+    No. beta electrons:                 5
+    e_convergence:              1.000e-10
+    d_convergence:              1.000e-10
+    maxiter:                          500
+
+
+
+    Guess energy:      -71.905353227232
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -75.229824675109      -3.324471447877       0.000159277368
+        1     -75.229825688449      -0.000001013340       0.000145763492
+        2     -75.229825470653       0.000000217796       0.000170573899
+        3     -75.229826432683      -0.000000962030       0.000001947655
+        4     -75.229826432848      -0.000000000165       0.000000043666
+        5     -75.229826432848      -0.000000000000       0.000000000022
+
+    SCF iterations converged!
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       4.562898930282
+    one electron (xy):       0.000000000000
+    one electron (xz):      -0.000000000000
+    one electron (yy):       7.716846890333
+    one electron (yz):       0.000000000000
+    one electron (zz):       6.128080562108
+
+    two electron (xx):      -1.672234233762
+    two electron (xy):       0.000000000000
+    two electron (xz):       0.000000000000
+    two electron (yy):      -3.328195742400
+    two electron (yz):       0.000000000000
+    two electron (zz):      -2.422728331723
+
+    total (xx):              2.890664696520
+    total (xy):              0.000000000000
+    total (xz):             -0.000000000000
+    total (yy):              4.388651147933
+    total (yz):              0.000000000000
+    total (zz):              3.705352230385
+
+    * Polaritonic UKS total energy:     -75.229826432848
+
+ #  #
+ Irrep: 1
+      1:  -18.448921040821958
+      2:   -0.824201709224714
+      3:   -0.372582289435579
+      4:   -0.165714119941416
+      5:   -0.062972969893162
+      6:    0.274797602791080
+      7:    0.377916341854913
+
+
+ #  #
+ Irrep: 1
+      1:  -18.448921040821958
+      2:   -0.824201709224714
+      3:   -0.372582289435579
+      4:   -0.165714119941416
+      5:   -0.062972969893162
+      6:    0.274797602791080
+      7:    0.377916341854913
+
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Tue Jul  2 21:59:13 2024
+
+
+         ------------------------------------------------------------
+                                   SCF GRAD                          
+                          Rob Parrish, Justin Turney,                
+                       Andy Simmonett, and Alex Sokolov              
+         ------------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.068516219320    15.994914619570
+         H            0.000000000000    -0.790689573744     0.543701060715     1.007825032230
+         H            0.000000000000     0.790689573744     0.543701060715     1.007825032230
+
+  Nuclear repulsion =    8.801465564563406
+
+  ==> Basis Set <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis functions: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> DFJKGrad: Density-Fitted SCF Gradients <==
+
+    Gradient:                    1
+    J tasked:                  Yes
+    K tasked:                   No
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory [MiB]:              375
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (STO-3G AUX)
+    Blend: DEF2-UNIVERSAL-JKFIT
+    Number of shells: 37
+    Number of basis functions: 113
+    Number of Cartesian functions: 133
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  ==> DFT Potential <==
+
+   => LibXC <=
+
+    Version 6.2.2
+    S. Lehtola, C. Steigemann, M. J.T. Oliveira, and M. A.L. Marques.,  SoftwareX 7, 1–5 (2018) (10.1016/j.softx.2017.11.002)
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    Blocking Scheme        =         OCTREE
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =             75
+    Spherical Points       =            590
+    Total Points           =         128485
+    Total Blocks           =           1016
+    Max Points             =            256
+    Max Functions          =              7
+    Weights Tolerance      =       1.00E-15
+
+
+  -Total Gradient:
+     Atom            X                  Y                   Z
+    ------   -----------------  -----------------  -----------------
+       1        0.000000000000     0.000000000001     0.063845816897
+       2       -0.000000000000     0.012701620546    -0.031922777479
+       3        0.000000000000    -0.012701620547    -0.031922777480
+
+
+*** tstop() called on Alberts-MacBook-Pro.local at Tue Jul  2 21:59:13 2024
+Module time:
+	user time   =       0.12 seconds =       0.00 minutes
+	system time =       0.00 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+Total time:
+	user time   =      10.90 seconds =       0.18 minutes
+	system time =       0.38 seconds =       0.01 minutes
+	total time  =         11 seconds =       0.18 minutes
+
+Electronic Gradient: norm =       0.080231403504
+
+  ## Total Gradient (Symmetry 0) ##
+  Irrep: 1 Size: 3 x 3
+
+                 1                   2                   3
+
+    1     0.00000000000004     0.00000000000094     0.06384581689724
+    2    -0.00000000000000     0.01270162054574    -0.03192277747891
+    3     0.00000000000000    -0.01270162054661    -0.03192277747964
+
+
+
+
+ # Electronic Gradient |xyz| #
+ Irrep: 1
+      1:    0.000000000000035
+      2:    0.017962804040519
+      3:    0.078194729868826
+
+
+Polaritonic Gradient: norm =       0.077730563918
+
+  ## Total Gradient (Symmetry 0) ##
+  Irrep: 1 Size: 3 x 3
+
+                 1                   2                   3
+
+    1     0.00000000000004     0.00000000000094     0.06182045841283
+    2    -0.00000000000000     0.01243790863930    -0.03091009823670
+    3     0.00000000000000    -0.01243790864018    -0.03091009823744
+
+
+
+
+ # Polaritonic Gradient |xyz| #
+ Irrep: 1
+      1:    0.000000000000035
+      2:    0.017589859085873
+      3:    0.075714182452319
+
+Gradient Difference: norm =      -0.002500839586
+
+ # Gradient Difference |xyz| #
+ Irrep: 1
+      1:   -0.000000000000000
+      2:   -0.000372944954645
+      3:   -0.002480547416507
+
+    QED-DFT numerical versus analytic energy gradient.....................................PASSED
+
+    Psi4 stopped on: Tuesday, 02 July 2024 09:59PM
+    Psi4 wall time for execution: 0:00:11.91
+
+*** Psi4 exiting successfully. Buy a developer a beer!

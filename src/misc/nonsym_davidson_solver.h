@@ -52,8 +52,8 @@ class Nonsym_DavidsonSolver{
   public:
       Nonsym_DavidsonSolver();
       ~Nonsym_DavidsonSolver();
-      int solve(double *Adiag, int N, int M, double *reval, double **rer, double **rel, BuildSigma build_sigma, int maxdim, size_t init_dim, double residual_norm, bool use_residual_norm);
-      size_t real_generalized_eigenvalue_problem(double *Hdiag, double *Sdiag, size_t N, size_t M, double *reval, double **rer, BuildSigma2 build_sigma2, size_t maxdim,size_t init_dim, double residual_norm, bool use_residual_norm);
+      void solve(double *Adiag, int N, int M, double *reval, double **rer, double **rel, BuildSigma build_sigma, int maxdim, size_t init_dim, double residual_norm, bool use_residual_norm);
+      void real_generalized_eigenvalue_problem(double *Hdiag, double *Sdiag, size_t N, size_t M, double *reval, double **rer, BuildSigma2 build_sigma2, size_t maxdim,size_t init_dim, double residual_norm, bool use_residual_norm);
       void eigenvectors_swap(double **L, double **R, int l, int n, int m);
       void schmidt_biorthogonal(double **A, double **B, size_t m, size_t n); 
   protected:

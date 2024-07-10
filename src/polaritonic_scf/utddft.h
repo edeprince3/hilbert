@@ -53,17 +53,21 @@ class PolaritonicUTDDFT: public PolaritonicHF {
 
     double compute_energy();
 
-    void build_sigma(int N, int maxdim, int L, double **Q, double **sigmar, double **sigmal);
+    void build_sigma_generalized(int N, int maxdim, int L, double **Q, double **sigmah, double **sigmas);
 
   protected:
 
+    void build_Au_Bu(int N, int L, double *u, double *Au, double *Bu);
+
+    void build_sigma_m(int N, int L, double *x, double *y, double *m, double *sigma_m_r, double *sigma_m_l);
+
+    void build_gm(int N, int L, double *m, double *gm);
+
     std::shared_ptr<VBase> potential_;
 
-    double * int1_;
-    double * int2_;
-    long int nQ_;
-
     double * build_hamiltonian_diagonals();
+
+    double * build_overlap_diagonals();
 
     // jk object
     std::shared_ptr<JK> jk_;
@@ -82,6 +86,18 @@ class PolaritonicUTDDFT: public PolaritonicHF {
 
     // hybrid alpha?
     double x_alpha_;
+
+    /// alpha + beta dipole x
+    std::shared_ptr<Matrix> Dipole_x_;
+
+    /// alpha + beta dipole y
+    std::shared_ptr<Matrix> Dipole_y_;
+
+    /// alpha + beta dipole z
+    std::shared_ptr<Matrix> Dipole_z_;
+
+    /// alpha + beta MO transformation matrix
+    std::shared_ptr<Matrix> C_;
 
 };
 

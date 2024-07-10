@@ -293,7 +293,7 @@ Nonsym_DavidsonSolver::Nonsym_DavidsonSolver(){
 Nonsym_DavidsonSolver::~Nonsym_DavidsonSolver(){
 }
 
-int Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, double **rer, double **rel, BuildSigma build_sigma, int maxdim, size_t init_dim, double residual_norm, bool use_residual_norm) {
+void Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, double **rer, double **rel, BuildSigma build_sigma, int maxdim, size_t init_dim, double residual_norm, bool use_residual_norm) {
     int min_pos;
     double minimum;
     //int N = o*v;
@@ -891,7 +891,8 @@ int Nonsym_DavidsonSolver::solve(double *Adiag, int N, int M, double *reval, dou
         }
     }
 }
-size_t Nonsym_DavidsonSolver::real_generalized_eigenvalue_problem(double *Hdiag, double *Sdiag, size_t N, size_t M, double *reval, double **rer, BuildSigma2 build_sigma2, size_t maxdim,size_t init_dim, double residual_norm, bool use_residual_norm) {
+
+void Nonsym_DavidsonSolver::real_generalized_eigenvalue_problem(double *Hdiag, double *Sdiag, size_t N, size_t M, double *reval, double **rer, BuildSigma2 build_sigma2, size_t maxdim,size_t init_dim, double residual_norm, bool use_residual_norm) {
     double minimum;
     int min_pos;
     std::shared_ptr<Matrix> mh ( new Matrix(maxdim,maxdim) );//Q^T*H* Q

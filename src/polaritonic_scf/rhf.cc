@@ -123,7 +123,7 @@ double PolaritonicRHF::compute_energy() {
         // total number of auxiliary basis functions
         nQ = auxiliary->nbf();
 
-        std::shared_ptr<DiskDFJK> myjk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary));
+        std::shared_ptr<DiskDFJK> myjk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary,options_));
 
         // memory for jk (say, 80% of what is available)
         myjk->set_memory(0.8 * memory_);
@@ -142,7 +142,7 @@ double PolaritonicRHF::compute_energy() {
 
     }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
 
-        std::shared_ptr<CDJK> myjk = (std::shared_ptr<CDJK>)(new CDJK(primary,options_.get_double("CHOLESKY_TOLERANCE")));
+        std::shared_ptr<CDJK> myjk = (std::shared_ptr<CDJK>)(new CDJK(primary,options_,options_.get_double("CHOLESKY_TOLERANCE")));
 
         // memory for jk (say, 80% of what is available)
         myjk->set_memory(0.8 * memory_);
@@ -401,7 +401,7 @@ double PolaritonicRHF::compute_energy() {
     epsilon_a_->print();
 
     // copy alpha to beta 
-    epsilon_b_->copy(epsilon_a_.get());
+    epsilon_b_->copy(*reference_wavefunction_->epsilon_b().get());
     Cb_->copy(Ca_);
     Fb_->copy(Fa_);
     Db_->copy(Da_);

@@ -24,62 +24,10 @@
  *  @END LICENSE
  */
 
-
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <algorithm>
-#include <vector>
-#include <utility>
-#include <tuple>
-#include <fstream>
-#include <iostream>
-#include <iomanip>
-#include <string>
-
-#include "psi4/libpsi4util/libpsi4util.h"
-
-#include "psi4/libqt/qt.h"
-
-// jk object
-#include "psi4/libfock/jk.h"
-
-// for dft
-#include "psi4/libfock/v.h"
-#include "psi4/libfunctional/superfunctional.h"
-
-// for grid
-#include "psi4/libfock/points.h"
-#include "psi4/libfock/cubature.h"
-
-#include "psi4/psi4-dec.h"
-#include "psi4/liboptions/liboptions.h"
-#include "psi4/libpsio/psio.hpp"
-
-#include "psi4/libmints/wavefunction.h"
-#include "psi4/libmints/mintshelper.h"
-#include "psi4/libmints/matrix.h"
-#include "psi4/libmints/vector.h"
+// psi4 stuff
+#include "psi4/libpsi4util/process.h"
 #include "psi4/libmints/basisset.h"
-#include "psi4/libmints/gshell.h"
-#include "psi4/libmints/molecule.h"
-#include "psi4/lib3index/dftensor.h"
-#include "psi4/libqt/qt.h"
-
-// for potential object
-#include "psi4/libfock/v.h"
-#include "psi4/libfunctional/superfunctional.h"
 #include "psi4/libscf_solver/hf.h"
-
-// for reading 2RDM
-#include "psi4/psi4-dec.h"
-#include <psi4/psifiles.h>
-#include <psi4/libiwl/iwl.h>
-#include <psi4/libpsio/psio.hpp>
-#include <psi4/libtrans/integraltransform.h>
-
-#include <psi4/libpsi4util/PsiOutStream.h>
 
 // real_space_density 
 #include "real_space_density.h"
@@ -93,7 +41,6 @@
 // tpdm and opdm structs live here
 #include <v2rdm_casscf/v2rdm_solver.h>
 
-
 using namespace psi;
 using namespace fnocc;
 
@@ -105,7 +52,6 @@ RealSpaceDensity::RealSpaceDensity(std::shared_ptr<Wavefunction> reference_wavef
 
     reference_wavefunction_ = reference_wavefunction;
     common_init();
-    build_density();
 }
 
 RealSpaceDensity::~RealSpaceDensity() {
@@ -115,7 +61,6 @@ RealSpaceDensity::~RealSpaceDensity() {
 void RealSpaceDensity::common_init() {
 
     reference_energy_ = Process::environment.globals["V2RDM TOTAL ENERGY"];
-
     
     shallow_copy(reference_wavefunction_);
 
@@ -130,12 +75,6 @@ void RealSpaceDensity::common_init() {
 
     // number of beta electrons per irrep
     nbetapi_  = reference_wavefunction_->nbetapi();
-
-    // number of doubly occupied orbitals per irrep
-    doccpi_   = reference_wavefunction_->doccpi();
-
-    // number of singly occupied orbitals per irrep
-    soccpi_   = reference_wavefunction_->soccpi();
 
     // number of frozen core orbitals per irrep
     frzcpi_   = reference_wavefunction_->frzcpi();
@@ -177,10 +116,10 @@ void RealSpaceDensity::common_init() {
     Db_ = std::shared_ptr<Matrix>(reference_wavefunction_->Db());
 
     // orbital energies
-    epsilon_a_= std::shared_ptr<Vector>(new Vector(nirrep_, nmopi_));
-    epsilon_a_->copy(reference_wavefunction_->epsilon_a().get());
-    epsilon_b_= std::shared_ptr<Vector>(new Vector(nirrep_, nmopi_));
-    epsilon_b_->copy(reference_wavefunction_->epsilon_b().get());
+    epsilon_a_ = std::make_shared<Vector>(nmopi_);
+    epsilon_a_->copy(*reference_wavefunction_->epsilon_a().get());
+    epsilon_b_ = std::make_shared<Vector>(nmopi_);
+    epsilon_b_->copy(*reference_wavefunction_->epsilon_b().get());
 
     // set the wavefunction name
     name_ = "WHOKNOWS";
@@ -244,9 +183,9 @@ void RealSpaceDensity::common_init() {
 
     // estimate memory requirements
 
-    outfile->Printf("\n"); 
-    outfile->Printf("    ==> Memory requirements <==\n");
-    outfile->Printf("\n");
+    //outfile->Printf("\n"); 
+    //outfile->Printf("    ==> Memory requirements <==\n");
+    //outfile->Printf("\n");
     
     // memory is from process::environment
     memory_ = Process::environment.get_memory();
@@ -381,34 +320,6 @@ void RealSpaceDensity::BuildPhiMatrixAO(std::string phi_type, std::shared_ptr<Ma
         double * z = block->z();
         double * w = block->w();
 
-        // Doing some test to see everything including Pi etc is correct on 
-        // Molcas' grid points through comparison.
-
-        // std::ifstream dataIn;
-       
-        // dataIn.open("H2.grids_test");
-        // 
-        // if (!dataIn)
-        //    std::cout << "Error opening file.\n";
-        // else { 
-        //      int p = 0;        
-        //      while (!dataIn.eof()){
-        //    
-        //            dataIn >> x[p];
-        //            dataIn >> y[p];    
-        //            dataIn >> z[p];
-        //            p++;
-        //      }        
-        // }
-        // dataIn.close(); 
-
-        // for (int p = 0; p < npoints; p++) {
-
-        //     outfile->Printf("\n     y[");
-        //     outfile->Printf("%d",p);
-        //     outfile->Printf("] = %20.7lf\n",y[p]);
-        // }
-
         for (int p = 0; p < npoints; p++) {
 
             grid_x_->pointer()[phi_points_ + p] = x[p];
@@ -443,10 +354,74 @@ void RealSpaceDensity::TransformPhiMatrixAOMO(std::shared_ptr<Matrix> phi_in, st
     }
 }
 
-void RealSpaceDensity::build_density() {
+void RealSpaceDensity::SetD1(std::vector<opdm> my_opdm, std::shared_ptr<Matrix> D1) {
+
+    for (size_t n = 0; n < my_opdm.size(); n++) {
+
+        int i = my_opdm[n].i;
+        int j = my_opdm[n].j;
+
+        int hi = symmetry_[i];
+        int hj = symmetry_[j];
+
+        if ( hi != hj ) {
+            throw PsiException("error: something is wrong with the symmetry of the OPDM",__FILE__,__LINE__);
+        }
+
+        int ii = i - pitzer_offset_[hi];
+        int jj = j - pitzer_offset_[hi];
+
+        D1->pointer(hi)[ii][jj] = my_opdm[n].value;
+    }
+}
+
+void RealSpaceDensity::SetOPDM(std::vector<opdm> opdm_a, std::vector<opdm> opdm_b) {
+
+    opdm_a_ = opdm_a;
+    opdm_b_ = opdm_b;
+
+    SetD1(opdm_a_, Da_);
+    SetD1(opdm_b_, Db_);
+}
+
+void RealSpaceDensity::SetTPDM(std::vector<tpdm> tpdm_ab) {
+    tpdm_ab_ = tpdm_ab;
+}
+
+void RealSpaceDensity::ReadOPDM() {
     
-    // read 1- and 2-RDM from disk and build rho(r), rho'(r), pi(r), and pi'(r)
-    ReadOPDM();
+    // read opdm from disk 
+
+    std::shared_ptr<PSIO> psio (new PSIO());
+
+    if ( !psio->exists(PSIF_V2RDM_D1A) ) throw PsiException("No D1a on disk",__FILE__,__LINE__);
+    if ( !psio->exists(PSIF_V2RDM_D1B) ) throw PsiException("No D1b on disk",__FILE__,__LINE__);
+
+    // D1a
+
+    psio->open(PSIF_V2RDM_D1A,PSIO_OPEN_OLD);
+
+    long int na;
+    psio->read_entry(PSIF_V2RDM_D1A,"length",(char*)&na,sizeof(long int));
+
+    opdm_a_.resize(na);
+    psio->read_entry(PSIF_V2RDM_D1A,"D1a",(char*)&opdm_a_[0],na * sizeof(opdm));
+    psio->close(PSIF_V2RDM_D1A,1);
+
+    SetD1(opdm_a_, Da_);
+
+    // D1b
+
+    psio->open(PSIF_V2RDM_D1B,PSIO_OPEN_OLD);
+
+    long int nb;
+    psio->read_entry(PSIF_V2RDM_D1B,"length",(char*)&nb,sizeof(long int));
+
+    opdm_b_.resize(nb);
+    psio->read_entry(PSIF_V2RDM_D1B,"D1b",(char*)&opdm_b_[0],nb * sizeof(opdm));
+    psio->close(PSIF_V2RDM_D1B,1);
+
+    SetD1(opdm_b_, Db_);
 
 }
 
@@ -594,12 +569,14 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
     free(D2ab);
     free(D2aa);
     free(D2bb);
-
 }
 
 // build pi. note that there is a low-memory version of this
 // function in edeprince3/real_space_density.git, should we ever need it
-void RealSpaceDensity::BuildPiFast(tpdm * D2ab, int nab) {
+void RealSpaceDensity::BuildPiFast(std::vector<tpdm> D2ab) {
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> Build Pi ...");
 
     pi_ = (std::shared_ptr<Vector>)(new Vector(phi_points_));
 
@@ -610,7 +587,7 @@ void RealSpaceDensity::BuildPiFast(tpdm * D2ab, int nab) {
         double dum = 0.0;
 
         // pi(r) = D(mu,nu; lambda,sigma) * phi(r,mu) * phi(r,nu) * phi(r,lambda) * phi(r,sigma)
-        for (int n = 0; n < nab; n++) {
+        for (size_t n = 0; n < D2ab.size(); n++) {
 
             int i = D2ab[n].i;
             int j = D2ab[n].j;
@@ -656,7 +633,7 @@ void RealSpaceDensity::BuildPiFast(tpdm * D2ab, int nab) {
         double dum_z = 0.0;
 
         // pi(r) = D(mu,nu; lambda,sigma) * phi(r,mu) * phi(r,nu) * phi(r,lambda) * phi(r,sigma)
-        for (int n = 0; n < nab; n++) {
+        for (size_t n = 0; n < D2ab.size(); n++) {
 
             int i = D2ab[n].i;
             int j = D2ab[n].j;
@@ -738,24 +715,14 @@ void RealSpaceDensity::BuildPiFast(tpdm * D2ab, int nab) {
         pi_xp[p] = dum_x;
         pi_yp[p] = dum_y;
         pi_zp[p] = dum_z;
-
-        // outfile->Printf("pi_x %15.15lf\n",pi_xp[p]);
-        // outfile->Printf("pi_y %15.15lf\n",pi_yp[p]);
-        // outfile->Printf("pi_z %15.15lf\n",pi_zp[p]);
-        // outfile->Printf("\n    p");
-        // outfile->Printf("    x[p]");
-        // outfile->Printf("    y[p]");
-        // outfile->Printf("    z[p]");
-        // outfile->Printf("    pi\n\n");
-
-        // for (int p = 0; p < phi_points_; p++) {
-
-        //     outfile->Printf("    %d %20.5lf %20.5lf %20.5lf %20.15lf\n",p, grid_x_->pointer()[p], grid_y_->pointer()[p], grid_z_->pointer()[p], pi_p[p]);
-        // }
     }
+    outfile->Printf(" Done. <==\n\n");
 }
 
-void RealSpaceDensity::BuildRhoFast(int na, int nb) {
+void RealSpaceDensity::BuildRhoFast(){
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> Build Rho ...\n");
 
     rho_a_   = (std::shared_ptr<Vector>)(new Vector(phi_points_));
     rho_b_   = (std::shared_ptr<Vector>)(new Vector(phi_points_));
@@ -772,7 +739,7 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
 
         // rho_a(r)
         double duma = 0.0;
-        for (int n = 0; n < na; n++) {
+        for (size_t n = 0; n < opdm_a_.size(); n++) {
 
             int i = opdm_a_[n].i;
             int j = opdm_a_[n].j;
@@ -791,7 +758,7 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
 
         // rho_b(r)
         double dumb = 0.0;
-        for (int n = 0; n < nb; n++) {
+        for (size_t n = 0; n < opdm_b_.size(); n++) {
 
             int i = opdm_b_[n].i;
             int j = opdm_b_[n].j;
@@ -813,13 +780,8 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
         temp_tot += rho_p[p]  * grid_w_->pointer()[p];
         temp_a   += rho_ap[p] * grid_w_->pointer()[p];
         temp_b   += rho_bp[p] * grid_w_->pointer()[p];
-
-        // rho_p[p] = rho_ap[p] + rho_bp[p];
-        // m_p[p] =  rho_ap[p] - rho_bp[p];
-
-        // zeta_p[p] =  m_p[p]  / rho_p[p];
-        // rs_p[p] = pow( 3.0 / ( 4.0 * M_PI * rho_p[p] ) , 1.0/3.0 );
     }
+
     outfile->Printf("\n");
     outfile->Printf("      Integrated total density = %20.12lf\n",temp_tot);
     outfile->Printf("      Integrated alpha density = %20.12lf\n",temp_a);
@@ -857,7 +819,7 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
         double duma_z = 0.0;
         double dumta = 0.0;
 
-        for (int n = 0; n < na; n++) {
+        for (size_t n = 0; n < opdm_a_.size(); n++) {
 
             int i = opdm_a_[n].i;
             int j = opdm_a_[n].j;
@@ -889,7 +851,7 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
         double dumb_z = 0.0;
         double dumtb = 0.0;
 
-        for (int n = 0; n < nb; n++) {
+        for (size_t n = 0; n < opdm_b_.size(); n++) {
             
             int i = opdm_b_[n].i;
             int j = opdm_b_[n].j;
@@ -922,113 +884,13 @@ void RealSpaceDensity::BuildRhoFast(int na, int nb) {
 
         rho_a_zp[p] = duma_z;
         rho_b_zp[p] = dumb_z;
-
     }
 
-    double * w_p   = grid_w_->pointer();
-    double * x_p   = grid_x_->pointer();
-    double * y_p   = grid_y_->pointer();
-    double * z_p   = grid_z_->pointer();
-
-    double ** phi   = super_phi_->pointer();
-
-    FILE *pfile;
-    pfile = fopen("grids.txt","w");
-    std::fprintf(pfile,"     w                              x                             y                            z\n");
-    for (int p = 0; p < phi_points_; p++) {
-        std::fprintf(pfile,"%-16.12lf             %-16.12lf            %-16.12lf            %-16.12lf\n"
-        ,w_p[p],x_p[p],y_p[p],z_p[p]);
-    }
-    fclose(pfile);
-
-    pfile = fopen("orbitals.txt","w");
-    for (int p = 0; p < phi_points_; p++) {
-        for (int mu =  0; mu < nso_; mu++) {
-            std::fprintf(pfile,"       %-16.12lf",phi[p][mu]);
-        }
-        std::fprintf(pfile,"\n");
-    }
-    fclose(pfile);
-
-}
-
-void RealSpaceDensity::ReadOPDM() {
-
-    std::shared_ptr<PSIO> psio (new PSIO());
-
-    if ( !psio->exists(PSIF_V2RDM_D1A) ) throw PsiException("No D1a on disk",__FILE__,__LINE__);
-    if ( !psio->exists(PSIF_V2RDM_D1B) ) throw PsiException("No D1b on disk",__FILE__,__LINE__);
-
-    // D1a
-
-    psio->open(PSIF_V2RDM_D1A,PSIO_OPEN_OLD);
-
-    long int na;
-    psio->read_entry(PSIF_V2RDM_D1A,"length",(char*)&na,sizeof(long int));
-
-    opdm_a_ = (opdm *)malloc(na * sizeof(opdm));
-    psio->read_entry(PSIF_V2RDM_D1A,"D1a",(char*)opdm_a_,na * sizeof(opdm));
-    psio->close(PSIF_V2RDM_D1A,1);
-
-    for (int n = 0; n < na; n++) {
-
-        int i = opdm_a_[n].i;
-        int j = opdm_a_[n].j;
-
-        int hi = symmetry_[i];
-        int hj = symmetry_[j];
-
-        if ( hi != hj ) {
-            throw PsiException("error: something is wrong with the symmetry of the alpha OPDM",__FILE__,__LINE__);
-        }
-
-        int ii = i - pitzer_offset_[hi];
-        int jj = j - pitzer_offset_[hi];
-
-        Da_->pointer(hi)[ii][jj] = opdm_a_[n].value;
-
-    }
-
-    // D1b
-
-    psio->open(PSIF_V2RDM_D1B,PSIO_OPEN_OLD);
-
-    long int nb;
-    psio->read_entry(PSIF_V2RDM_D1B,"length",(char*)&nb,sizeof(long int));
-
-    opdm_b_ = (opdm *)malloc(nb * sizeof(opdm));
-    psio->read_entry(PSIF_V2RDM_D1B,"D1b",(char*)opdm_b_,nb * sizeof(opdm));
-    psio->close(PSIF_V2RDM_D1B,1);
-
-   for (int n = 0; n < nb; n++) {
-
-        int i = opdm_b_[n].i;
-        int j = opdm_b_[n].j;
-
-        int hi = symmetry_[i];
-        int hj = symmetry_[j];
-
-        if ( hi != hj ) {
-            throw PsiException("error: something is wrong with the symmetry of the beta OPDM",__FILE__,__LINE__);
-        }
-
-        int ii = i - pitzer_offset_[hi];
-        int jj = j - pitzer_offset_[hi];
-
-        Db_->pointer(hi)[ii][jj] = opdm_b_[n].value;
-
-    }
-
+    outfile->Printf("    ... Done. <==\n");
     outfile->Printf("\n");
-    outfile->Printf("    ==> Build Rho's ...\n");
-    BuildRhoFast(na,nb);
-    outfile->Printf("    ... Done. <==\n\n");
-
-    free(opdm_a_);
-    free(opdm_b_);
 }
 
-void RealSpaceDensity::BuildPiFromDisk() {
+void RealSpaceDensity::ReadTPDM() {
 
     std::shared_ptr<PSIO> psio (new PSIO());
 
@@ -1042,20 +904,12 @@ void RealSpaceDensity::BuildPiFromDisk() {
     long int nab;
     psio->read_entry(PSIF_V2RDM_D2AB,"length",(char*)&nab,sizeof(long int));
 
-    tpdm * d2 = (tpdm *)malloc(nab * sizeof(tpdm));
-    memset((void*)d2,'\0',nab * sizeof(tpdm));
+    tpdm_ab_.resize(nab);
+    memset((void*)&tpdm_ab_[0],'\0',nab * sizeof(tpdm));
 
-    psio->read_entry(PSIF_V2RDM_D2AB,"D2ab",(char*)d2,nab * sizeof(tpdm));
+    psio->read_entry(PSIF_V2RDM_D2AB,"D2ab",(char*)&tpdm_ab_[0],nab * sizeof(tpdm));
 
     psio->close(PSIF_V2RDM_D2AB,1);
-
-    // build on-top pair density (already built of REFERENCE_TPDM = V2RDM)
-    outfile->Printf("\n");
-    outfile->Printf("    ==> Build Pi ...");
-    BuildPiFast(d2,nab);
-    outfile->Printf(" Done. <==\n");
-
-    free(d2);
 }
 
 std::shared_ptr<Vector> RealSpaceDensity::xc_hole(double x, double y, double z) {
@@ -1077,7 +931,6 @@ std::shared_ptr<Vector> RealSpaceDensity::xc_hole(double x, double y, double z) 
             p = myp;
         }
     }
-    //printf("closest point: %20.12lf %20.12lf %20.12lf\n",x_p[p],y_p[p],z_p[p]);
     BuildExchangeCorrelationHole(p);
     return xc_hole_;
 }

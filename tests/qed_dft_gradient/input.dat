@@ -1,0 +1,48 @@
+# PYTHONPATH must include directory above plugin directory.
+#     Define either externally or here, then import plugin.
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule h2 {
+         O            0.000000000000     0.000000000000    -0.068516219320    
+         H            0.000000000000    -0.790689573744     0.543701060715    
+         H            0.000000000000     0.790689573744     0.543701060715    
+no_reorient
+nocom
+symmetry c1
+}
+
+set {
+  basis sto-3g 
+  scf_type df 
+  e_convergence 1e-10
+  d_convergence 1e-10 
+} 
+
+# frequency: 2.0 eV
+w = 0.07349864501573
+
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+g = 0.05 / np.sqrt(2.0 * w)
+
+set { 
+  maxiter 500
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
+}
+
+set points 3
+set reference uks
+set dft_spherical_points 590
+set {
+    qed_dft_functional 'pbe'
+}
+g1 = np.asarray(gradient('qed-dft',dertype=0))
+g2 = np.asarray(gradient('qed-dft',dertype=1))
+diff = g2 - g1
+
+
+#print('||g-g||',np.linalg.norm(diff))
+compare_values(0.0, np.linalg.norm(diff), 5, "QED-DFT numerical versus analytic energy gradient") # TEST
+

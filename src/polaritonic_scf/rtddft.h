@@ -53,8 +53,6 @@ class PolaritonicRTDDFT: public PolaritonicHF {
 
     double compute_energy();
 
-    void build_sigma(int N, int maxdim, int L, double **Q, double **sigmar, double **sigmal);
-
     void build_sigma_generalized(int N, int maxdim, int L, double **Q, double **sigmah, double **sigmas);
 
   protected:
@@ -88,7 +86,6 @@ class PolaritonicRTDDFT: public PolaritonicHF {
 
     // hybrid alpha?
     double x_alpha_;
-
 };
 
 } // End namespaces

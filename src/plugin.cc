@@ -63,8 +63,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_TDDFT POLARITONIC_RPA POLARITONIC_RDFRPA");
-
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_RTDDFT POLARITONIC_UTDDFT POLARITONIC_RPA POLARITONIC_RDFRPA MCPDFT");
 
         /*- Do DIIS? -*/
         options.add_bool("DIIS", true);
@@ -339,10 +338,10 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION POLARITONIC SCF -*/
 
         /*- functional for cavity QED-DFT -*/
-        options.add_str("CAVITY_QED_DFT_FUNCTIONAL", "B3LYP");
+        options.add_str("QED_DFT_FUNCTIONAL", "B3LYP");
 
         /*- number of photon number states -*/
-        options.add_int("N_PHOTON_STATES", 1);
+        options.add_int("N_PHOTON_STATES", 2);
 
         /*- do use coherent-state basis? !expert -*/
         options.add_bool("USE_COHERENT_STATE_BASIS", true);
@@ -385,6 +384,17 @@ int read_options(std::string name, Options& options)
 
         /*- include exchange in RPA ground state energy? -*/
         options.add_bool("RPA_EXCHANGE", false);
+
+        /*- SUBSECTION MCPDFT -*/
+
+       /*- MCPDFT type -*/
+        options.add_str("MCPDFT_METHOD", "MCPDFT", "MCPDFT");
+        /*- MCPDFT functional -*/
+        options.add_str("MCPDFT_FUNCTIONAL", "PBE");
+        /*- JK object type can be DF or PK -*/
+        options.add_str("MCPDFT_TYPE", "DF", "DF PK");
+        /*- reference type -*/
+        options.add_str("MCPDFT_REFERENCE", "V2RDM");
     }
 
     return true;
@@ -454,7 +464,7 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         return (std::shared_ptr<Wavefunction>)rhf;
 
-    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_TDDFT") {
+    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_RTDDFT") {
 
         std::shared_ptr<PolaritonicRKS> rks (new PolaritonicRKS(ref_wfn,options));
         double energy = rks->compute_energy();
@@ -463,6 +473,16 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         double dum = rtddft->compute_energy();
 
         return (std::shared_ptr<Wavefunction>)rks;
+
+    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_UTDDFT") {
+
+        std::shared_ptr<PolaritonicUKS> uks (new PolaritonicUKS(ref_wfn,options));
+        double energy = uks->compute_energy();
+
+        std::shared_ptr<PolaritonicUTDDFT> utddft (new PolaritonicUTDDFT((std::shared_ptr<Wavefunction>)uks,options,ref_wfn));
+        double dum = utddft->compute_energy();
+
+        return (std::shared_ptr<Wavefunction>)uks;
 
     }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_RCIS") {
 
@@ -563,7 +583,6 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         throw PsiException("unknown HILBERT_METHODS",__FILE__,__LINE__);
 
     }
-
 
     return ref_wfn;
 }

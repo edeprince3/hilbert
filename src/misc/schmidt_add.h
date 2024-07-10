@@ -24,14 +24,13 @@
  *  @END LICENSE
  */
 
-#ifndef OMP_H
-#define OMP_H
+#ifndef SCHMIDT_ADD_H
+#define SCHMIDT_ADD_H
 
-#ifdef _OPENMP
-    #include<omp.h>
-#else
-    #define omp_get_wtime() ( (double)clock() / CLOCKS_PER_SEC )
-    #define omp_get_max_threads() 1
-#endif
+namespace hilbert{
+
+    int schmidt_add(double** A, int rows, int cols, double* v);
+
+} // end of namespace
 
 #endif

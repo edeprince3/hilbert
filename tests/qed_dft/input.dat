@@ -35,23 +35,28 @@ set {
   d_convergence 1e-10 
 } 
 
-# apparently lambda = 0.149557981435142
-set hilbert {
+# frequency: 2.0 eV
+w = 0.07349864501573
+
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+g = 0.05 / np.sqrt(2.0 * w)
+
+set {
   maxiter 500
-  n_photon_states          2
-  cavity_frequency         [0.0, 0.0, 0.495589583372]
-  cavity_coupling_strength [0.0, 0.0, 0.150221990521748]
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
+  qed_dft_functional tpssh
 }
 
-ref_dft = -76.409786399931
+ref_dft = -76.453452994149
 
 set reference uks
 activate(mol1)
 set basis def2-tzvppd
-en,wfn = energy('tpssh',return_wfn=True)
-energy('polaritonic-uks',ref_wfn=wfn)
+energy('qed-dft')
 
-compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QEDFT total energy (xyz)") # TEST
+compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QED-DFT total energy (xyz)") # TEST
 
 set reference uks
 activate(mol2)
@@ -59,10 +64,9 @@ set basis def2-tzvppd
 set hilbert {
     rotate_polarization_axis "ZXY"
 }
-en,wfn = energy('tpssh',return_wfn=True)
-energy('polaritonic-uks',ref_wfn=wfn)
+energy('qed-dft')
 
-compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QEDFT total energy (zxy)") # TEST
+compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QED-DFT total energy (zxy)") # TEST
 
 set reference uks
 activate(mol3)
@@ -70,7 +74,6 @@ set basis def2-tzvppd
 set hilbert {
     rotate_polarization_axis "YZX"
 }
-en,wfn = energy('tpssh',return_wfn=True)
-energy('polaritonic-uks',ref_wfn=wfn)
+energy('qed-dft')
 
-compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QEDFT total energy (yzx)") # TEST
+compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QED-DFT total energy (yzx)") # TEST

@@ -202,9 +202,15 @@ void v2RDMSolver::SortedNaturalOrbitals(int state) {
     //    x1boff = d1boff;
     //}
 
+    Dimension psi_amopi(nirrep_);
+    for (int i = 0; i < nirrep_; i++) {
+        psi_amopi[i] = amopi_[i];
+    }
+
     std::shared_ptr<Matrix> Da (new Matrix(nirrep_,amopi_,amopi_));
     std::shared_ptr<Matrix> eigveca (new Matrix(nirrep_,amopi_,amopi_));
-    std::shared_ptr<Vector> eigvala (new Vector("Natural Orbital Occupation Numbers (alpha)",nirrep_,amopi_));
+    std::shared_ptr<Vector> eigvala = std::make_shared<Vector>("Natural Orbital Occupation Numbers (alpha)",psi_amopi);
+
     for (int h = 0; h < nirrep_; h++) {
         for (int i = 0; i < amopi_[h] ; i++) {
             for (int j = 0; j < amopi_[h]; j++) {
@@ -224,7 +230,7 @@ void v2RDMSolver::SortedNaturalOrbitals(int state) {
 
     std::shared_ptr<Matrix> Db (new Matrix(nirrep_,amopi_,amopi_));
     std::shared_ptr<Matrix> eigvecb (new Matrix(nirrep_,amopi_,amopi_));
-    std::shared_ptr<Vector> eigvalb (new Vector("Natural Orbital Occupation Numbers (beta)",nirrep_,amopi_));
+    std::shared_ptr<Vector> eigvalb = std::make_shared<Vector>("Natural Orbital Occupation Numbers (beta)", psi_amopi);
     for (int h = 0; h < nirrep_; h++) {
         for (int i = 0; i < amopi_[h] ; i++) {
             for (int j = 0; j < amopi_[h]; j++) {
