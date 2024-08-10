@@ -348,13 +348,13 @@ int read_options(std::string name, Options& options)
         options.add("CAVITY_COUPLING_STRENGTH",new ArrayType());
 
         /*- do include u0 in polaritioinic ccsd? -*/
-        options.add_bool("POLARITONIC_CC_INCLUDE_U0",false);
+        options.add_bool("POLARITONIC_CC_INCLUDE_U0",true);
 
         /*- do include u1 in polaritioinic ccsd? -*/
-        options.add_bool("POLARITONIC_CC_INCLUDE_U1",false);
+        options.add_bool("POLARITONIC_CC_INCLUDE_U1",true);
 
         /*- do include u2 in polaritioinic ccsd? -*/
-        options.add_bool("POLARITONIC_CC_INCLUDE_U2",false);
+        options.add_bool("POLARITONIC_CC_INCLUDE_U2",true);
 
         /*- do use TDA in TDDFT? -*/
         options.add_bool("TDSCF_TDA",false);
