@@ -167,11 +167,11 @@ namespace hilbert {
         Printf("\n");
         Printf("    ==>  Begin %s iterations <==    \n", cc_type_.c_str());
         Printf("\n");
-        Printf("%5s %16s %15s %15s  | %8s %8s",  "Iter","energy","dE","|dT|","|dT1|","|dT2|\n");
+        Printf("%5s %16s %15s %15s  | %7s %7s",  "Iter","energy","dE","|dT|","|dT1|","|dT2|\n");
     }
 
     void CCSD::print_iteration(size_t iter, double energy, double dele, double tnorm) const {
-        Printf("%5i %17.12lf %15.12lf %15.12lf | %-8.1e %-8.1e",iter,energy,dele,tnorm,
+        Printf("%5i %17.12lf %15.12lf %15.12lf | %7.0e%7.0e",iter,energy,dele,tnorm,
                resid_norms_.at("t1"),
                resid_norms_.at("t2"));
         Printf("\n");
