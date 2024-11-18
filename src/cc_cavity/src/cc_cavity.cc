@@ -349,39 +349,21 @@ namespace hilbert {
         doubleDim_ = oa_ * oa_ * va_ * va_
                      + ob_ * ob_ * vb_ * vb_
                      + oa_ * ob_ * va_ * vb_;
-        if (includes_["t3"] || includes_["t3_1"])
-            tripleDim_ = oa_ * oa_ * oa_ * va_ * va_ * va_
-                         + ob_ * ob_ * ob_ * vb_ * vb_ * vb_
-                         + oa_ * oa_ * ob_ * va_ * va_ * vb_
-                         + oa_ * ob_ * ob_ * va_ * vb_ * vb_;
-        if (includes_["t4"] || includes_["t4_1"])
-            quadDim_ = oa_ * oa_ * oa_ * oa_ * va_ * va_ * va_ * va_
-                       + ob_ * ob_ * ob_ * ob_ * vb_ * vb_ * vb_ * vb_
-                       + oa_ * oa_ * oa_ * ob_ * va_ * va_ * va_ * vb_
-                       + oa_ * oa_ * ob_ * ob_ * va_ * va_ * vb_ * vb_
-                       + oa_ * ob_ * ob_ * ob_ * va_ * vb_ * vb_ * vb_;
 
         /// evaluate the total number of amplitudes
         size_t ccamps_dim_ = singleDim_ + doubleDim_; // t1, t2
-        if (includes_["t3"]) ccamps_dim_ += tripleDim_; // t3
-        if (includes_["t4"]) ccamps_dim_ += quadDim_; // t4
         if (includes_["t0_1"]) ccamps_dim_++; // t0_1
         if (includes_["t1_1"]) ccamps_dim_ += singleDim_; // t1_1
         if (includes_["t2_1"]) ccamps_dim_ += doubleDim_; // t2_1
-        if (includes_["t3_1"]) ccamps_dim_ += tripleDim_; // t3_1
-        if (includes_["t4_1"]) ccamps_dim_ += quadDim_; // t4_1
+        if (includes_["t0_2"]) ccamps_dim_++; // t0_2
+        if (includes_["t1_2"]) ccamps_dim_ += singleDim_; // t1_2
+        if (includes_["t2_2"]) ccamps_dim_ += doubleDim_; // t2_2
 
         /// print included amplitudes
         Printf("  Included amplitudes:\n");
-        Printf("    %4s  %4s  %4s\n", "  ", includes_["t0_1"] ? "T01" : "  ", includes_["t0_2"] ? "T02" : "  ");
-        Printf("    %4s  %4s  %4s\n", "T1", includes_["t1_1"] ? "T11" : "  ", includes_["t1_2"] ? "T12" : "  ");
-        Printf("    %4s  %4s  %4s\n", "T2", includes_["t2_1"] ? "T21" : "  ", includes_["t2_2"] ? "T22" : "  ");
-        if (includes_["t3"] || includes_["t3_1"] || includes_["t3_2"]) {
-            Printf("    %4s  %4s  %4s\n", "T3", includes_["t3_1"] ? "T31" : "  ", includes_["t3_2"] ? "T32" : "  ");
-        }
-        if (includes_["t4"] || includes_["t4_1"] || includes_["t4_2"]) {
-            Printf("    %4s  %4s  %4s\n", "T4", includes_["t4_1"] ? "T41" : "  ", includes_["t4_2"] ? "T42" : "  ");
-        }
+        Printf("    %4s  %4s  %4s\n", "  ", includes_["t0_1"] ? "T0,1" : "  ", includes_["t0_2"] ? "T0,2" : "  ");
+        Printf("    %4s  %4s  %4s\n", "T1", includes_["t1_1"] ? "T1,1" : "  ", includes_["t1_2"] ? "T1,2" : "  ");
+        Printf("    %4s  %4s  %4s\n", "T2", includes_["t2_1"] ? "T2,1" : "  ", includes_["t2_2"] ? "T2,2" : "  ");
         Printf("\n  Dimension of CC amplitudes: %d\n\n", ccamps_dim_);
         if (has_photon_){
             // calculate cavity volumes: lambda = (1/(4*pi)*V_cav)^(-1/2) -> V_cav = (4*pi/lambda^2)

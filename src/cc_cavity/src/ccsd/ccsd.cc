@@ -177,11 +177,6 @@ namespace hilbert {
         Printf("\n");
     }
 
-#ifndef KEEP_NO_QED
-    double CCSD::build_residuals() {
-        throw PsiException("CCSD::build_residuals() should not be called when KEEP_NO_QED is not defined", __FILE__, __LINE__);
-    }
-#else
     double CCSD::build_residuals() {
         // prepare objects for computing residuals
 
@@ -209,6 +204,6 @@ namespace hilbert {
         return scalars_["energy"] + enuc_;
 
     }
-#endif
+
 
 } // cc_cavity
