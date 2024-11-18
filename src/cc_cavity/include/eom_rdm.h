@@ -88,18 +88,6 @@ namespace hilbert {
          */
         virtual void compute_eom_1rdm() = 0;
 
-        /**
-         * compute a 2-RDM in MO basis
-         * @param rdm_states: the left and right states of the rdm to save
-         */
-        virtual void compute_eom_2rdm() = 0;
-
-        /**
-         * save the density to wavefunction
-         * @param rdm_states: the left and right states of the rdm to save
-         */
-        virtual void save_density(vector<int> rdm_states);
-
     };
 }
 
