@@ -118,15 +118,17 @@ void export_HilbertHelper(py::module& m) {
         .def_readwrite("l", &tpdm::l)
         .def_readwrite("value", &tpdm::value);
 
-    #ifdef USE_QED_CC
+    #ifdef WITH_TA
         // import the mpi4py API
-        //if (import_mpi4py() < 0) {
-            //throw std::runtime_error("Could not load mpi4py API.");
-        //}
+        if (import_mpi4py() < 0) {
+            throw std::runtime_error("Could not load mpi4py API.");
+        }
 
         m.def("set_comm", [](py::object comm) {
-            //CavityHelper::comm_ = *PyMPIComm_Get(comm.ptr());
-            CavityHelper::comm_ = MPI_COMM_WORLD; // for now
+            CavityHelper::comm_ = *PyMPIComm_Get(comm.ptr());
+            if (CavityHelper::comm_ == MPI_COMM_NULL) {
+                CavityHelper::comm_ = MPI_COMM_WORLD;
+            }
         });
         m.def("ta_initialize", &CavityHelper::ta_initialize);
         m.def("ta_finalize", &CavityHelper::ta_finalize);

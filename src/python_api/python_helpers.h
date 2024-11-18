@@ -34,8 +34,9 @@
 #include <p2rdm/p2rdm_solver.h>
 #include <misc/real_space_density.h>
 
-#ifdef USE_QED_CC
+#ifdef WITH_TA
     #include <mpi.h>
+    #include <mpi4py/mpi4py.h>
     #include <tiledarray.h>
 #endif
 
@@ -193,7 +194,7 @@ class v2RDMHelper{
 
 };
 
-#ifdef USE_QED_CC
+#ifdef WITH_TA
 
 class CavityHelper {
     public:
@@ -206,7 +207,7 @@ class CavityHelper {
 
     static void ta_initialize(){
         if (CavityHelper::comm_ == MPI_COMM_NULL) {
-            throw PsiException("MPI communicator not set. Use set_comm() to set it.", __FILE__, __LINE__);
+            throw PsiException("MPI communicator not set or set incorrectly. Use set_comm() to set it.", __FILE__, __LINE__);
         } else if (CavityHelper::initialized_) {
             return;
         } else if (CavityHelper::finalized_) {
