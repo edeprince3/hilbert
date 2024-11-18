@@ -53,7 +53,7 @@ namespace hilbert {
                ""); // Add the extra space if needed
         Printf("        *%s*\n", pad_space_str.c_str());
         Printf("        *%s*\n", pad_space_str.c_str());
-        Printf("        %s\n", pad_star_str.c_str());
+        Printf("        %s\n\n", pad_star_str.c_str());
     }
 
     void EOM_Driver::compute_eom_energy() {
@@ -91,7 +91,7 @@ namespace hilbert {
         }
 
         if (initdim_ > maxdim_) {
-            initdim_ = maxdim_;
+            initdim_ = maxdim_ > 1 ? maxdim_ / 2 : 1;
             Printf(
                     "Warning: Initial subspace size is larger than the maximum subspace size. "
                     "Setting initial subspace size to %d\n", maxdim_
