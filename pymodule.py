@@ -57,7 +57,8 @@ def init_cc_cavity(name, **kwargs):
         # check if 'eom-ea' is in the name and set EOM_TYPE to EA if so
         if 'eom-ea' in name:
             psi4.core.set_local_option('HILBERT', 'EOM_TYPE', 'EA')
-
+    else:
+        psi4.core.set_local_option('HILBERT', 'PERFORM_EOM', False)
 
     # set the number of threads for MADNESS with TiledArray
     try:

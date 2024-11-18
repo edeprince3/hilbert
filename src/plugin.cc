@@ -716,8 +716,7 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         bool do_eom = options.get_bool("PERFORM_EOM");
 
         // return the wavefunction if not performing EOM
-        if (!do_eom) (std::shared_ptr<Wavefunction>)qedcc;
-
+        if (!do_eom) return (std::shared_ptr<Wavefunction>)qedcc;
 
         std::shared_ptr<EOM_Driver> eom_driver;
         if (options.get_str("EOM_TYPE") == "EE") { // use EOM for excitation energies
