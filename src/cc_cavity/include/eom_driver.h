@@ -28,19 +28,15 @@
 #define CC_CAVITY_EOM_DRIVER_H
 
 #include "cc_cavity.h"
-
-using namespace std;
-using namespace TA;
-using namespace psi;
-using namespace TA_Helper;
+#include "misc/nonsym_davidson_solver.h"
 
 namespace hilbert {
 
     class EOM_Driver {
     public:
 
-        EOM_Driver(const shared_ptr<CC_Cavity> &cc_wfn, Options & options);
-        ~EOM_Driver() = default;
+        EOM_Driver(shared_ptr<CC_Cavity> &cc_wfn, Options & options);
+        virtual ~EOM_Driver() = default;
 
         // world object
         World & world_;
@@ -54,7 +50,7 @@ namespace hilbert {
          */
         inline static size_t sqr_2_tri_idx(size_t i, size_t j, size_t N) {
             if (N < 2) {
-                cout << "The leading dimension of the array must be at least 2.\n"
+                std::cout << "The leading dimension of the array must be at least 2.\n"
                         "Check number of occupied and virtual orbitals.\n"
                         "row index: " << i << ", column index: " << j << "\n";
                 exit(1);
@@ -63,7 +59,7 @@ namespace hilbert {
                 return i;
 
             if (i > j) {
-                cout << "The row index must be less than or equal to the column index.\n"
+                std::cout << "The row index must be less than or equal to the column index.\n"
                         "Check the indices of the element in the upper triangular array.\n"
                         "row index: " << i << ", column index: " << j << "\n";
                 exit(1);
@@ -83,7 +79,7 @@ namespace hilbert {
          */
         static inline size_t cube_2_tri_idx(size_t i, size_t j, size_t k, size_t N) {
             if (N < 3){
-                cout << "The leading dimension of the array must be at least 3.\n"
+                std::cout << "The leading dimension of the array must be at least 3.\n"
                         "Check number of occupied and virtual orbitals.\n"
                         "row index: " << i << ", column index: " << j << ", third index: " << k << "\n";
                 exit(1);
@@ -92,7 +88,7 @@ namespace hilbert {
                 return sqr_2_tri_idx(i, j, N); // ijk index is just ij index because only one k index
 
             if (i > j || j > k) {
-                cout << "The first index must be less than or equal to the second index. "
+                std::cout << "The first index must be less than or equal to the second index. "
                         "and the second index must be less than the third index.\n"
                         "Check the indices of the element in the upper triangular array.\n"
                         "first index: " << i << ", second index: " << j << ", third index: " << k << "\n";
@@ -107,7 +103,7 @@ namespace hilbert {
         /** ------------------------ Common Attributes ------------------------ */
 
         // CC_Cavity object
-        std::shared_ptr<CC_Cavity> cc_wfn_;
+        std::shared_ptr<CC_Cavity> &cc_wfn_;
         Options & options_;
 
         // reference energy from ground state calculation or other source
@@ -138,11 +134,11 @@ namespace hilbert {
         /// eom-cc parameters
 
         bool build_hamiltonian_ = options_.get_bool("BUILD_HAMILTONIAN"); // build hamiltonian?
-        double eom_e_conv_ = options_.get_double("EOM_E_CONV"); // energy convergence
-        double eom_r_conv_ = options_.get_double("EOM_R_CONV"); // residual convergence
+        double eom_e_conv_ = options_.get_double("R_CONVERGENCE"); // energy convergence
+        double eom_r_conv_ = options_.get_double("R_CONVERGENCE"); // residual convergence
         size_t eom_maxiter_ = options_.get_int("EOM_MAXITER"); // maximum number of iterations
         bool read_guess_ = options_.get_int("LOAD_ID") != -1; // read guess from file?
-        bool eom_ss_guess_ = options_.get_bool("EOM_SS_GUESS"); // use singles hamiltonian for guess?
+        bool eom_ss_guess_ = false; //options_.get_bool("EOM_SS_GUESS"); // use singles hamiltonian for guess?
         double eom_shift_ = options_.get_double("EOM_SHIFT"); // use shift?
 //        bool use_res_norm_ = options_.get_bool("USE_RES_NORM"); // use residual norm?
         bool use_res_norm_ = true; // residual norm is always used to adjust the subspace size
@@ -157,8 +153,10 @@ namespace hilbert {
 
         string eom_type_; // eom type
         vector<TArrayD> sigmaOps; // trial independent operators
-        map<string, TArrayD> reuse_tmps_; // trial independent operators
-        map<string, double> scalars_; // trial independent scalars
+        TArrayMap reuse_tmps_; // trial independent operators
+        TArrayMap reused_; // trial independent operators
+        map<string, double> &scalars_ = cc_wfn_->scalars_; // trial independent scalars
+        TArrayMap &tmps_ = cc_wfn_->tmps_; // trial independent temporary arrays
         SharedVector eigvals_; // left/right eigenvalue blocks
         SharedMatrix revec_, levec_; // left/right eigenvalue blocks
         TArrayMap evec_blks_;   // left/right trial vector blocks
@@ -274,7 +272,7 @@ namespace hilbert {
         virtual void unpack_eigenvectors() = 0;
 
         typedef // custom type for storing information of transitions:
-        tuple<double, // the weight of the transition (l*r)
+        std::tuple<double, // the weight of the transition (l*r)
               double, // the value of l
               double, // the value of r
               string, // the spin of the transition
@@ -290,8 +288,8 @@ namespace hilbert {
 
         typedef // a map of the excitation operator blocks to a priority queue of its dominant transitions
         map<string, // the excitation operator block name
-            priority_queue<TransitionType, // the priority queue of transitions
-                deque<TransitionType>, // the container for storing transitions (deque is faster than vector here)
+            std::priority_queue<TransitionType, // the priority queue of transitions
+                std::deque<TransitionType>, // the container for storing transitions (deque is faster than vector here)
                 TransitionCompare // the comparison function for the priority queue
             >
         > DominantTransitionsType;

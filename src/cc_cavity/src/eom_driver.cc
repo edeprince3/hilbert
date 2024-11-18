@@ -29,15 +29,11 @@
 
 namespace hilbert {
 
-    EOM_Driver::EOM_Driver(const shared_ptr<CC_Cavity> &cc_wfn, Options &options) :
+    EOM_Driver::EOM_Driver(shared_ptr<CC_Cavity> &cc_wfn, Options &options) :
             cc_wfn_(cc_wfn), options_(options), world_(TA::get_default_world()) {
 
         // type of eom-cc calculation (e.g. EOM-EE-CCSD)
         eom_type_ = "EOM-" + options_.get_str("EOM_TYPE") + "-" + cc_wfn_->cc_type_;
-
-        // print header for eom-cc calculation
-        print_banner();
-
     }
 
     void EOM_Driver::print_banner() const {
@@ -64,6 +60,9 @@ namespace hilbert {
 
         // set dimension of the problem
         set_problem_size();
+
+        // print header for eom-cc calculation
+        print_banner();
 
         if (build_hamiltonian_) M_ = N_;
 
@@ -147,8 +146,6 @@ namespace hilbert {
         if (save_evecs_) save_eigenvectors();
 
         // print out dominant transitions for each root
-        Printf("\n");
-        Printf("    ==>  Dominant Transitions:  <==    \n");
         transitions_summary();
 
         // print the results
@@ -215,6 +212,7 @@ namespace hilbert {
 
         // initialize sigma vectors with zeros
         memset(*sigmar, 0, maxdim_ * N_ * sizeof(double));
+        memset(*sigmal, 0, maxdim_ * N_ * sizeof(double));
 
         auto Lsize = static_cast<size_t>(L);
 
@@ -264,9 +262,10 @@ namespace hilbert {
         // print out the header for the table
         print_eom_header();
 
-
         double last_en = 0.0;
         bool no_degeneracy = options_.get_bool("NO_DEGENERACY");
+
+        ground_energy_ref_ = eigvals_->get(0);
 
         // loop over roots
         for (int i = 0; i < M_; i++) {
@@ -336,7 +335,7 @@ namespace hilbert {
             // print top `n` transitions for each excitation block
             for(auto transitionBlock : dominant_transitions) {
                 // grab first 5 values from priority queue
-                deque<TransitionType> topTransitions;
+                std::deque<TransitionType> topTransitions;
 
                 for (size_t i = 0; i < num_print; i++) {
                     if (!transitionBlock.second.empty()) {
@@ -370,13 +369,21 @@ namespace hilbert {
                     size_t size = labels.size(); // size of transitionBlock pairs
                     if (size == 0) { // ground state
                         Printf(": l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1, lr, l, r);
-                    } else if (size == 2 || size == 1) { // singles
+                    } else if (size == 1) { // singles
+                        Printf("\n        %3d: (+%2d%c), l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1,
+                               labels[0], spin[0], lr, l, r);
+                    } else if (size == 2) { // singles
                         Printf("\n        %3d: (%2d%c ) -> (%2d%c ), l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1,
-                               labels[1], spin[0], labels[0], spin[0], lr, l, r);
-                    } else if (size == 4 || size == 3) { // doubles
+                               labels[1], spin[1], labels[0], spin[0], lr, l, r);
+                    } else if (size == 3) { // singles
+                        Printf("\n        %3d: (%2d%c ) -> (%2d%c,+%2d%c ), l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1,
+                               labels[2], spin[2], labels[1], spin[1], labels[0], spin[0], lr, l, r);
+                    } else if (size == 4) { // doubles
                         Printf("\n        %3d: (%2d%c,%2d%c ) -> (%2d%c,%2d%c ), l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1,
-                               labels[2], spin[0], labels[3], spin[1],
+                               labels[2], spin[2], labels[3], spin[3],
                                labels[0], spin[0], labels[1], spin[1], lr, l, r);
+                    } else {
+                        throw PsiException("Too many transitions for current EOM method. Update EOM_Driver::transitions_summary", __FILE__, __LINE__);
                     }
                 }
             }

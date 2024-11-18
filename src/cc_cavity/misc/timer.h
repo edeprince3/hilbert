@@ -34,8 +34,8 @@ namespace hilbert {
 
     private:
         /***** TIMERS *****/
-        long double start_time_; // current start time
-        long double end_time_; // current end time
+        long double start_time_{}; // current start time
+        long double end_time_{}; // current end time
         long double runtime_ = 0.0; // timer runtime_
         bool running_ = false; // is the timer running_?
         size_t n_calls_ = 0; // number of times the timer has been called

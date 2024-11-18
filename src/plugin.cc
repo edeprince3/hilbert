@@ -50,24 +50,32 @@
 #include <misc/backtransform_tpdm.h>
 
 #ifdef USE_QED_CC
-    #include "python_api/python_helpers.h"
-    #include <tiledarray.h>
-    #include "cc_cavity/include/cc_cavity.h"
-    #include "cc_cavity/include/derived/qed_ccsd.h"
+#include <tiledarray.h>
+#include "cc_cavity/include/cc_cavity.h"
+#include "cc_cavity/include/ccsd/ccsd.h"
+#include "cc_cavity/include/qed_ccsd_21/qed_ccsd_21.h"
+#include "python_api/python_helpers.h"
 
-    #if MAX_CC_LEVEL >= 3
+#if MAX_CC_LEVEL >= 3
         #include "cc_cavity/include/derived/qed_ccsdt.h"
     #endif
     #if MAX_CC_LEVEL >= 4
         #include "cc_cavity/include/derived/qed_ccsdtq.h"
     #endif
+
+    #if MAX_PHOTON_LEVEL >= 2
+        #include "cc_cavity/include/qed_ccsd_22/qed_ccsd_22.h"
+#endif
 #endif
 
 #ifdef USE_QED_EOM_CC
-    #include "cc_cavity/include/derived/eom_ee_ccsd.h"
-    #include "cc_cavity/include/derived/eom_ee_qed_ccsd.h"
-    #include "cc_cavity/include/derived/eom_ea_driver.h"
-    #include "cc_cavity/include/derived/eom_ee_rdm.h"
+#include "cc_cavity/include/ccsd/eom_ea_ccsd.h"
+#include "cc_cavity/include/ccsd/eom_ee_ccsd.h"
+#include "cc_cavity/include/ccsd/eom_ee_rdm.h"
+
+#include "cc_cavity/include/qed_ccsd_21/eom_ea_qed_ccsd_21.h"
+#include "cc_cavity/include/qed_ccsd_21/eom_ee_qed_ccsd_21.h"
+#include "cc_cavity/include/qed_ccsd_21/eom_ee_qed_rdm_21.h"
 #endif
 
 
@@ -362,10 +370,13 @@ int read_options(std::string name, Options& options)
         options.add_str("CAVITY_QED_DFT_FUNCTIONAL", "B3LYP");
 
         /*- number of photon number states -*/
-        options.add_int("N_PHOTON_STATES", 1);
+        options.add_int("N_PHOTON_STATES", 2);
 
         /*- do use coherent-state basis? !expert -*/
         options.add_bool("USE_COHERENT_STATE_BASIS", true);
+
+        /*- do use quadrupole integrals for squared dipole terms? -*/
+        options.add_bool("USE_QUADRUPOLE_INTEGRALS", true);
 
         /*- cavity excitation energy for the modes along the x, y and z axis (a.u.) -*/
         options.add("CAVITY_FREQUENCY",new ArrayType());
@@ -389,7 +400,7 @@ int read_options(std::string name, Options& options)
         options.add_bool("QED_USE_RELAXED_ORBITALS", true);
 
         /*- change cavity mode polarization by redefining x, y, and z -*/
-        options.add_str("ROTATE_POLARIZATION_AXIS", "XYZ");
+        options.add_str("ROTATE_POLARIZATION_AXIS", "XYZ", "XYZ YZX ZXY XZY YXZ ZYX");
 
         /*- residual norm -*/
         options.add_double("RESIDUAL_NORM",1.0e-5);
@@ -415,22 +426,9 @@ int read_options(std::string name, Options& options)
         /*- number of threads to use for MADNESS -*/
         options.add_int("MAD_NUM_THREADS", 1);
 
-        /*- do include triples in polaritioinic cc? -*/
-        options.add_bool("QED_CC_INCLUDE_T3", false);
-        options.add_bool("QED_CC_INCLUDE_U3", false);
-
-        /*- do include quadruples in polaritioinic cc? -*/
-        options.add_bool("QED_CC_INCLUDE_T4", false);
-        options.add_bool("QED_CC_INCLUDE_U4", false);
-
-        /*- do include u0 in polaritioinic ccsd? -*/
-        options.add_bool("QED_CC_INCLUDE_U0", false);
-
-        /*- do include u1 in polaritioinic ccsd? -*/
-        options.add_bool("QED_CC_INCLUDE_U1", false);
-
-        /*- do include u2 in polaritioinic ccsd? -*/
-        options.add_bool("QED_CC_INCLUDE_U2", false);
+        /*- override inclusion of u0, u1, u2, u3, u4 -*/
+        /*- CCSD-xy means include singles and doubles with x'th order excitations coupled to y photon states -*/
+        options.add_str("QED_CC_TYPE", "CCSD-21", "CCSD-00 CCSD-01 CCSD-11 CCSD-21 CCSD-22 CCSDT-00 CCSDT-11 CCSDT-21 CCSDT-31 CCSDTQ-00 CCSDTQ-11 CCSDTQ-21 CCSDTQ-31 CCSDTQ-41");
 
         /*- explicitly set u0=0 -*/
         options.add_bool("ZERO_U0", false);
@@ -684,83 +682,123 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         std::shared_ptr<CC_Cavity> qedcc;
 
         // get the options
-        bool include_t3_ = options.get_bool("QED_CC_INCLUDE_T3");
-        bool include_t4_ = options.get_bool("QED_CC_INCLUDE_T4");
-        bool include_u0_ = options.get_bool("QED_CC_INCLUDE_U0");
-        bool include_u1_ = options.get_bool("QED_CC_INCLUDE_U1");
-        bool include_u2_ = options.get_bool("QED_CC_INCLUDE_U2");
-        bool include_u3_ = options.get_bool("QED_CC_INCLUDE_U3");
-        bool include_u4_ = options.get_bool("QED_CC_INCLUDE_U4");
+        map<std::string, bool> includes_;
+        std::string qed_type = options.get_str("QED_CC_TYPE");
+
+
+        // determine the level of theory from the qed_type
+
+        // use last letter before '-' to determine excitation level
+        char exc_level = qed_type[qed_type.find('-')-1];
+        int exc_order;
+        switch (exc_level) {
+            case 'D':
+                exc_order = 2; break;
+            case 'T':
+                exc_order = 3; break;
+            case 'Q':
+                exc_order = 4; break;
+            default:
+                throw PsiException("Excitation level not recognized. Please choose C, T, or Q.",__FILE__,__LINE__);
+        }
+
+        // use last letter after '-' to determine photon-electron excitation level (order) and photon level
+        int photon_order  = qed_type[qed_type.size()-2] - '0';
+        int photon_level = qed_type[qed_type.size()-1] - '0';
+
+        // set boolean flags for including the various t amplitudes with coupled photon states
+        for (int i = 0; i <= exc_order; i++) {
+            string i_str = to_string(i);
+            for (int j = 0; j <= photon_level; j++) {
+                if (i == 0 && j == 0) continue;
+                bool do_include = i <= photon_order || j == 0;
+
+                string j_str;
+                if (j > 0) {
+                    j_str = "_" + to_string(j);
+                }
+                string include_str = "t" + i_str + j_str;
+                includes_[include_str] = do_include;
+            }
+        }
 
         // determine the level of theory
-        bool three_body = include_t3_ || include_u3_;
-        bool four_body  = include_t4_ || include_u4_;
-        bool has_photon = include_u0_ || include_u1_ || include_u2_ || include_u3_ || include_u4_
-                           || options.get_int("N_PHOTON_STATES") > 1;
+        bool three_body = exc_order >= 3;
+        bool four_body  = exc_order >= 4;
+        bool has_photon = photon_order > 0 || photon_level > 0 || options.get_int("N_PHOTON_STATES") > 1;
 
         // select the appropriate derived CC_CAVITY object
-        if (four_body)
-    #if MAX_CC_LEVEL >= 4
-            qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSDTQ(qed_ref_wfn, options));
-    #else
-            throw PsiException("QED_CCSDTQ requires MAX_CC_LEVEL >= 4 at compile time",__FILE__,__LINE__);
-    #endif
-        else if (three_body)
-    #if MAX_CC_LEVEL >= 3
-            qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSDT(qed_ref_wfn, options));
-    #else
-            throw PsiException("QED_CCSDT requires MAX_CC_LEVEL >= 3 at compile time",__FILE__,__LINE__);
-    #endif
-        else {
-            if (has_photon)
-                qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD(qed_ref_wfn, options));
-            else
-            #ifdef KEEP_NO_QED // build separate object for CCSD w/o qed?
-                qedcc = std::shared_ptr<CC_Cavity>(new CC_Cavity(qed_ref_wfn, options));
+        if (four_body){
+            #if MAX_CC_LEVEL >= 4
+                qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSDTQ(qed_ref_wfn, options, includes_));
             #else
-                qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD(qed_ref_wfn, options));
+                    throw PsiException("QED_CCSDTQ requires MAX_CC_LEVEL >= 4 at compile time",__FILE__,__LINE__);
             #endif
-//
+        } else if (three_body){
+            #if MAX_CC_LEVEL >= 3
+                qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSDT(qed_ref_wfn, options, includes_));
+            #else
+                throw PsiException("QED_CCSDT requires MAX_CC_LEVEL >= 3 at compile time",__FILE__,__LINE__);
+            #endif
+        } else if (has_photon) {
+                if (photon_level == 1) {
+                    qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD(qed_ref_wfn, options, includes_));
+                } else if (photon_level == 2) {
+                    #if MAX_PHOTON_LEVEL >= 2 // build separate object for CCSD w/o qed?
+                        qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD_22(qed_ref_wfn, options, includes_));
+                    #else
+                        throw PsiException("QED_CCSD_22 requires MAX_PHOTON_LEVEL >= 2 at compile time",__FILE__,__LINE__);
+                    #endif
+                } else throw PsiException("Photon number not recognized. Please choose 1 or 2.",__FILE__,__LINE__);
+        } else {
+            #ifdef KEEP_NO_QED // build separate object for CCSD w/o qed?
+                qedcc = std::shared_ptr<CC_Cavity>(new CCSD(qed_ref_wfn, options, includes_));
+            #else
+                qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD(qed_ref_wfn, options, includes_));
+            #endif
         }
 
         // compute the energy
         double energy = qedcc->compute_energy();
-
-//        // perform lambda iterations if requested
-//        bool do_lambda = options.get_bool("PERFORM_LAMBDA");
-//        if (do_lambda) {
-//            if (!has_photon)
-//                throw PsiException("LAMBDA iterations require the `QED_CC_INCLUDE_U*` flags to be set (for now)",
-//                                   __FILE__, __LINE__);
-//            std::shared_ptr<LambdaDriver> lambda_driver(new LambdaDriver(qedcc, options));
-//            lambda_driver->compute_lambda();
-//        }
 
         // perform QED-EOM-CC if requested
         bool do_eom = options.get_bool("PERFORM_EOM");
 
         if (do_eom && !four_body && !three_body) {
         #ifndef USE_QED_EOM_CC
-            throw PsiException("QED-EOM-CC calculations require the `USE_QED_EOM_CC` flag to be set at compile time",__FILE__,__LINE__);
+            outfile->Printf("QED-EOM-CC calculations require the `USE_QED_EOM_CC` flag to be set at compile time. Exiting...\n");
+            return qedcc;
         #else
             std::shared_ptr<EOM_Driver> eom_driver;
             if (options.get_str("EOM_TYPE") == "EE") { // use EOM for excitation energies
-                if (has_photon)
-                    eom_driver = std::shared_ptr<EOM_Driver>(
-                        new EOM_EE_QED_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
-                else
+                if (has_photon) {
+                    if (photon_level == 1)
+                        eom_driver = std::shared_ptr<EOM_Driver>(new EOM_EE_QED_CCSD(qedcc, options));
+                    else if (photon_level == 2)
+                        throw PsiException("EOM-EE-CCSD with photon level 2 not implemented.", __FILE__, __LINE__);
+                } else
                 #ifdef KEEP_NO_QED
                     eom_driver = std::shared_ptr<EOM_Driver>(
-                        new EOM_EE_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
+                        new EOM_EE_CCSD(qedcc, options));
                 #else
                 eom_driver = std::shared_ptr<EOM_Driver>(
-                        new EOM_EE_QED_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
+                        new EOM_EE_QED_CCSD(qedcc, options));
                 #endif
             }
             else if (options.get_str("EOM_TYPE") == "EA") { // use EOM for electron attachment
-//throw PsiException("QED-EOM-EA-CC is not fuctional for release yet.", __FILE__, __LINE__);
-                eom_driver = std::shared_ptr<EOM_Driver>(
-                        new EOM_EA_CCSD((std::shared_ptr<CC_Cavity>) qedcc, options));
+                if (has_photon) {
+                    if (photon_level == 1)
+                        eom_driver = std::shared_ptr<EOM_Driver>(new EOM_EA_QED_CCSD(qedcc, options));
+                    else if (photon_level == 2)
+                        throw PsiException("EOM-EA-CCSD with photon level 2 not implemented.", __FILE__, __LINE__);
+                } else
+#ifdef KEEP_NO_QED
+                    eom_driver = std::shared_ptr<EOM_Driver>(
+                        new EOM_EA_CCSD(qedcc, options));
+#else
+                            eom_driver = std::shared_ptr<EOM_Driver>(
+                                    new EOM_EA_QED_CCSD(qedcc, options));
+#endif
             }
             else throw PsiException("EOM_TYPE not recognized. Please choose EE or EA.", __FILE__, __LINE__);
 
@@ -772,13 +810,17 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
                 Printf("Computing EOM 1-RDM and oscillator strengths...");
 
                 // compute the RDMs
-//                if (has_photon)
-//                    std::shared_ptr<EOM_RDM> rdm(new EOM_EE_QED_RDM((std::shared_ptr<EOM_Driver>) eom_driver, options));
-//                else
+                std::shared_ptr<EOM_RDM> rdm;
+                if (has_photon) {
+                    if (photon_level == 1)
+                        rdm = std::shared_ptr<EOM_RDM>(new EOM_EE_QED_RDM_21(eom_driver, options));
+                    else if (photon_level == 2)
+                        throw PsiException("EOM-EE-CCSD with photon level 2 not implemented.", __FILE__, __LINE__);
+                } else
                 #ifdef KEEP_NO_QED
-                    std::shared_ptr<EOM_RDM> rdm(new EOM_EE_RDM((std::shared_ptr<EOM_Driver>) eom_driver, options));
+                    rdm = make_shared<EOM_EE_RDM>((std::shared_ptr<EOM_Driver>) eom_driver, options);
                 #else
-                    std::shared_ptr<EOM_RDM> rdm(new EOM_EE_RDM((std::shared_ptr<EOM_Driver>) eom_driver, options));
+                    rdm = make_shared<EOM_EE_QED_RDM_21>((std::shared_ptr<EOM_Driver>) eom_driver, options);
                 #endif
 
                 rdm->compute_eom_1rdm();
@@ -809,13 +851,11 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
                 // compute the 2RDMs if requested
                 bool compute_2rdm = options.get_bool("COMPUTE_2RDM");
                 if (compute_2rdm) {
-                    TA::get_default_world().gop.serial_invoke([]() {
-                        outfile->Printf("Computing EOM 2-RDM...");
-                    });
-                    rdm->compute_eom_2rdm(rdm_states);
-                    //rdm->save_density(rdm_states, 2); // psi4 does not need to store the 2RDM at this time
-                }
+                    Printf("Computing EOM 2-RDM...");
+                    rdm->compute_eom_2rdm();
 
+                    // TODO: store the 2RDM
+                }
             }
         #endif
 

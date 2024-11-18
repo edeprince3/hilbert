@@ -39,29 +39,21 @@
 #include <psi4/libmints/vector.h>
 #include <psi4/libmints/basisset.h>
 #include <psi4/lib3index/dftensor.h>
-#include <psi4/libqt/qt.h>
 
-#include "cc_cavity/misc/ta_helper.hpp"
+#include "cc_cavity/misc/ta_helper.h"
 #include "misc/threeindexintegrals.h"
 
 #include <mkl.h>
 #include <omp.h>
-#include "misc/blas.h"
-#include "misc/hilbert_psifiles.h"
-#include "polaritonic_scf/uhf.h"
 #include <unistd.h>
 #include <psi4/psifiles.h>
 #include "cc_cavity/include/cc_cavity.h"
 
-using namespace std;
-using namespace TA;
-using namespace psi;
-using namespace TA_Helper;
-
 namespace hilbert {
 
-    CC_Cavity::CC_Cavity(std::shared_ptr<Wavefunction> reference_wavefunction, Options& options_):
-            PolaritonicHF(std::move(reference_wavefunction), options_) {
+    CC_Cavity::CC_Cavity(std::shared_ptr<Wavefunction> reference_wavefunction, 
+                         Options& options_, map<string, bool> &includes) :
+            PolaritonicHF(std::move(reference_wavefunction), options_), includes_(includes) {
 
         // set block_size for tiledarray
         TA_Helper::tile_size_ = (size_t) options_.get_int("TILE_SIZE");
@@ -84,10 +76,10 @@ namespace hilbert {
             Printf("WARNING: CC Cavity should have two photon states if using bosonic operators\n");
 
         world_.gop.fence();
-        common_init();
+        initialize();
     }
 
-    void CC_Cavity::common_init(){
+    void CC_Cavity::initialize(){
         Printf("\n\n");
         Printf( "        *******************************************************\n");
         Printf( "        *                                                     *\n");
@@ -138,11 +130,8 @@ namespace hilbert {
             update_cavity_terms();
         same_a_b_orbs_ = same_a_b_dens_ = false;
 
-        cc_type_ = has_photon_ ? "QED-CC" : "CC";
-        cc_type_ += "SD";
-        if (includes_["t3"] || includes_["u3"]) cc_type_ += "T";
-        if (includes_["t4"] || includes_["u4"]) cc_type_ += "Q";
-        if (has_photon_) cc_type_ += "-1";
+        cc_type_ = has_photon_ ? "QED-" : "";
+        cc_type_ += options_.get_str("QED_CC_TYPE");
 
         // set coupling factors
         lambda_[0] = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
@@ -158,25 +147,16 @@ namespace hilbert {
         init_integrals();
 
         // initialize orbital energies
-        epsilon_ = (double*) calloc(2*nso_, sizeof(double));
+        epsilon_ = (double*) calloc(ns_, sizeof(double));
 
         // transform integrals to MO basis
+        t_transform.start();
         transform_integrals(false);
+        t_transform.stop();
 
     }
 
     void CC_Cavity::init_operators() {
-        /// initialize arbitrary index strings
-        idx_map_ = std::vector<std::string>(25);
-        for (int i = 1; i < 25; i++) { // hard-coded for now. Unlikely to need more than 25 indices.
-
-            // build string of indices for i'th rank tensor
-            for (int j = 0; j < i; j++) idx_map_[i] += "x" + std::to_string(i) + ",";
-
-            // remove last comma
-            idx_map_[i].pop_back();
-        }
-
         /// make identity tensors
 
         Id_blks_["a_o"] = makeTensor(world_, {oa_}, false);   Id_blks_["a_o"].fill(1.0);
@@ -200,6 +180,7 @@ namespace hilbert {
 
         /// build MO transformation matrix
         size_t ns = ns_, oa = oa_, ob = ob_;
+        size_t nso = nso_;
 
         // grab the MO coefficients
         double ** ca = Ca_->pointer();
@@ -211,7 +192,6 @@ namespace hilbert {
         C_blks_["b_v"] = makeTensor(world_, {ns_, vb_}, false);
 
         // copy the MO coefficients into the tensor
-        size_t nso = nso_;
         C_blks_["a_o"].init_elements([ca, nso](auto& I) {
             if (I[0] < nso) return ca[I[0]][I[1]];
             else return 0.0;
@@ -305,7 +285,7 @@ namespace hilbert {
             world_.gop.fence();
             Qso.reset();
         } else if ( options_.get_str("SCF_TYPE") == "CD" ) {
-            long int nQ = static_cast<size_t>(nQ_);
+            long int nQ = static_cast<long int>(nQ_);
             ThreeIndexIntegrals(reference_wavefunction_,nQ,memory_);
             nQ_ = static_cast<size_t>(nQ);
 
@@ -369,12 +349,12 @@ namespace hilbert {
         doubleDim_ = oa_ * oa_ * va_ * va_
                      + ob_ * ob_ * vb_ * vb_
                      + oa_ * ob_ * va_ * vb_;
-        if (includes_["t3"] || includes_["u3"])
+        if (includes_["t3"] || includes_["t3_1"])
             tripleDim_ = oa_ * oa_ * oa_ * va_ * va_ * va_
                          + ob_ * ob_ * ob_ * vb_ * vb_ * vb_
                          + oa_ * oa_ * ob_ * va_ * va_ * vb_
                          + oa_ * ob_ * ob_ * va_ * vb_ * vb_;
-        if (includes_["t4"] || includes_["u4"])
+        if (includes_["t4"] || includes_["t4_1"])
             quadDim_ = oa_ * oa_ * oa_ * oa_ * va_ * va_ * va_ * va_
                        + ob_ * ob_ * ob_ * ob_ * vb_ * vb_ * vb_ * vb_
                        + oa_ * oa_ * oa_ * ob_ * va_ * va_ * va_ * vb_
@@ -385,26 +365,22 @@ namespace hilbert {
         size_t ccamps_dim_ = singleDim_ + doubleDim_; // t1, t2
         if (includes_["t3"]) ccamps_dim_ += tripleDim_; // t3
         if (includes_["t4"]) ccamps_dim_ += quadDim_; // t4
-        if (includes_["u0"]) ccamps_dim_++; // u0
-        if (includes_["u1"]) ccamps_dim_ += singleDim_; // u1
-        if (includes_["u2"]) ccamps_dim_ += doubleDim_; // u2
-        if (includes_["u3"]) ccamps_dim_ += tripleDim_; // u3
-        if (includes_["u4"]) ccamps_dim_ += quadDim_; // u4
+        if (includes_["t0_1"]) ccamps_dim_++; // t0_1
+        if (includes_["t1_1"]) ccamps_dim_ += singleDim_; // t1_1
+        if (includes_["t2_1"]) ccamps_dim_ += doubleDim_; // t2_1
+        if (includes_["t3_1"]) ccamps_dim_ += tripleDim_; // t3_1
+        if (includes_["t4_1"]) ccamps_dim_ += quadDim_; // t4_1
 
         /// print included amplitudes
         Printf("  Included amplitudes:\n");
-        Printf(includes_["u1"] ? "    U0\n" : "");
-        Printf("    %2s", "T1");
-        Printf("    %2s\n", includes_["u1"] ? "U1" : "  ");
-        Printf("    %2s", "T2");
-        Printf("    %2s\n", includes_["u2"] ? "U2" : "  ");
-        if (includes_["t3"] || includes_["u3"]) {
-            Printf("    %2s", includes_["t3"] ? "T3" : "  ");
-            Printf("    %2s\n", includes_["u3"] ? "U3" : "  ");
+        Printf("    %4s  %4s  %4s\n", "  ", includes_["t0_1"] ? "T01" : "  ", includes_["t0_2"] ? "T02" : "  ");
+        Printf("    %4s  %4s  %4s\n", "T1", includes_["t1_1"] ? "T11" : "  ", includes_["t1_2"] ? "T12" : "  ");
+        Printf("    %4s  %4s  %4s\n", "T2", includes_["t2_1"] ? "T21" : "  ", includes_["t2_2"] ? "T22" : "  ");
+        if (includes_["t3"] || includes_["t3_1"] || includes_["t3_2"]) {
+            Printf("    %4s  %4s  %4s\n", "T3", includes_["t3_1"] ? "T31" : "  ", includes_["t3_2"] ? "T32" : "  ");
         }
-        if (includes_["t4"] || includes_["u4"]) {
-            Printf("    %2s", includes_["t4"] ? "T4" : "  ");
-            Printf("    %2s\n", includes_["u4"] ? "U4" : "  ");
+        if (includes_["t4"] || includes_["t4_1"] || includes_["t4_2"]) {
+            Printf("    %4s  %4s  %4s\n", "T4", includes_["t4_1"] ? "T41" : "  ", includes_["t4_2"] ? "T42" : "  ");
         }
         Printf("\n  Dimension of CC amplitudes: %d\n\n", ccamps_dim_);
         if (has_photon_){
@@ -420,10 +396,13 @@ namespace hilbert {
             V_cav *= bohr_to_nm * bohr_to_nm * bohr_to_nm;
 
             // print cavity parameters
-            Printf("  V_cav (nm3) = %6.4lf\n", V_cav);
-            Printf("  lambda      = x: %6.4lf y: %6.4lf z: %6.4lf\n", lambda_[0], lambda_[1], lambda_[2]);
-            Printf("  hw          = x: %6.4lf y: %6.4lf z: %6.4lf\n",
+            Printf("  V_cav (nm3) = %10.8lf\n", V_cav);
+            Printf("  lambda      = x: %10.8lf y: %10.8lf z: %10.8lf\n", lambda_[0], lambda_[1], lambda_[2]);
+            Printf("  hw          = x: %10.4lf y: %10.8lf z: %10.8lf\n",
                    cavity_frequency_[0], cavity_frequency_[1], cavity_frequency_[2]);
+            Printf("  electric dipole moments: x: %10.8lf y: %10.8lf z: %10.8lf\n",
+                   e_dip_x_, e_dip_y_, e_dip_z_);
+            Printf("  average electric dipole self-energy: %10.8lf\n", average_electric_dipole_self_energy_);
             Printf(
                     options_.get_bool("QED_USE_RELAXED_ORBITALS") ? "  Using relaxed orbitals.\n"
                                                                   : "  Using unrelaxed orbitals.\n"
@@ -477,13 +456,13 @@ namespace hilbert {
         Printf(
                    "  ==> Time spent in CC iterations <==  \n"
                    "                    Total: %s\n"
-                   "      Residuals Equations: %s\n"
-                   "        Update Amplitudes: %s\n"
-                   "      Transform Integrals: %s\n",
-                   t_ground.elapsed().c_str(),
-                   t_resid.elapsed().c_str(),
-                   t_ampUp.elapsed().c_str(),
-                   t_transform.elapsed().c_str()
+                   "      Residuals Equations: total = %10s | average = %10s\n"
+                   "      Transform Integrals: total = %10s | average = %10s\n"
+                   "        Update Amplitudes: total = %10s | average = %10s\n"
+                   , t_ground.elapsed().c_str(),
+                   t_resid.elapsed().c_str(), t_resid.average_time().c_str(),
+                   t_transform.elapsed().c_str(), t_transform.average_time().c_str(),
+                   t_ampUp.elapsed().c_str(), t_ampUp.average_time().c_str()
                );
 
         Printf("\n");
@@ -518,7 +497,7 @@ namespace hilbert {
             t_resid.stop();
 
             t_ampUp.start();
-            extrapolate_amplitudes(); world_.gop.fence(); // update and extrapolate amplitudes
+            update_amplitudes(); world_.gop.fence(); // update and extrapolate amplitudes
             tnorm = compute_residual_norms(); world_.gop.fence(); // compute residual norms
             t_ampUp.stop();
 
@@ -550,13 +529,6 @@ namespace hilbert {
         }
 
         return energy;
-    }
-
-    void CC_Cavity::print_iter_header() const {
-    }
-
-    void CC_Cavity::print_iteration(size_t iter, double energy, double dele, double tnorm) const {
-
     }
 
     void CC_Cavity::apply_transform(TArrayMap &CL, TArrayMap &CR) {
@@ -750,13 +722,30 @@ namespace hilbert {
             lz2 = lambda_[2] * lambda_[2];
         }
 
-        static unordered_set<string> valid_names = {
-            "aaaa_oooo", "aaaa_vvvv", "aaaa_oovv", "aaaa_vvoo", "aaaa_vovo", "aaaa_vooo", "aaaa_oovo", "aaaa_vovv", "aaaa_vvvo",
-            "abab_oooo", "abab_vvvv", "abab_oovv", "abab_vvoo", "abab_vovo", "abab_vooo", "abab_oovo", "abab_vovv", "abab_vvvo",
-            "bbbb_oooo", "bbbb_vvvv", "bbbb_oovv", "bbbb_vvoo", "bbbb_vovo", "bbbb_vooo", "bbbb_oovo", "bbbb_vovv", "bbbb_vvvo",
+        static unordered_set<string> valid_blocks = {
+                "aaaa_oooo", "aaaa_oovo", "aaaa_oovv", "aaaa_vooo", "aaaa_vovo", "aaaa_vovv", "aaaa_vvoo", "aaaa_vvvo",
+                "abab_oooo", "abab_oovo", "abab_oovv", "abab_vooo", "abab_vovo", "abab_vovv", "abab_vvoo", "abab_vvvo",
+                "abab_vvvv", "abba_oovo", "abba_vovo", "abba_vvvo", "baab_vooo", "baab_vovo", "baab_vovv", "baba_vovo",
+                "bbbb_oooo", "bbbb_oovo", "bbbb_oovv", "bbbb_vooo", "bbbb_vovo", "bbbb_vovv", "bbbb_vvoo", "bbbb_vvvo",
+                "aaaa_vvvv", "bbbb_vvvv",
 
-            // extra terms generated from parsed equations (helps optimization in TABuilder)
-            "abba_oovo", "abba_vooo", "baab_vooo", "baba_vovo", "abba_vovo", "baab_vovo", "baab_vovv", "abba_vvvo"
+                "aaaa_oooo", "aaaa_ooov", "aaaa_oovv", "aaaa_vooo", "aaaa_voov", "aaaa_vovv", "aaaa_vvoo", "aaaa_vvov",
+                "abba_oooo", "abba_ooov", "abba_oovv", "abba_vooo", "abba_voov", "abba_vovv", "abba_vvoo", "abba_vvov",
+                "abba_vvvv", "abab_ooov", "abab_voov", "abab_vvov", "baba_vooo", "baba_voov", "baba_vovv", "baab_voov",
+                "bbbb_oooo", "bbbb_ooov", "bbbb_oovv", "bbbb_vooo", "bbbb_voov", "bbbb_vovv", "bbbb_vvoo", "bbbb_vvov",
+                "aaaa_vvvv", "bbbb_vvvv",
+
+                "aaaa_oooo", "aaaa_oovo", "aaaa_oovv", "aaaa_ovoo", "aaaa_ovvo", "aaaa_ovvv", "aaaa_vvoo", "aaaa_vvvo",
+                "baab_oooo", "baab_oovo", "baab_oovv", "baab_ovoo", "baab_ovvo", "baab_ovvv", "baab_vvoo", "baab_vvvo",
+                "baab_vvvv", "baba_oovo", "baba_ovvo", "baba_vvvo", "abab_ovoo", "abab_ovvo", "abab_ovvv", "abba_ovvo",
+                "bbbb_oooo", "bbbb_oovo", "bbbb_oovv", "bbbb_ovoo", "bbbb_ovvo", "bbbb_ovvv", "bbbb_vvoo", "bbbb_vvvo",
+                "aaaa_vvvv", "bbbb_vvvv",
+
+                "aaaa_oooo", "aaaa_ooov", "aaaa_oovv", "aaaa_ovoo", "aaaa_ovov", "aaaa_ovvv", "aaaa_vvoo", "aaaa_vvov",
+                "baba_oooo", "baba_ooov", "baba_oovv", "baba_ovoo", "baba_ovov", "baba_ovvv", "baba_vvoo", "baba_vvov",
+                "baba_vvvv", "baab_ooov", "baab_ovov", "baab_vvov", "abba_ovoo", "abba_ovov", "abba_ovvv", "abab_ovov",
+                "bbbb_oooo", "bbbb_ooov", "bbbb_oovv", "bbbb_ovoo", "bbbb_ovov", "bbbb_ovvv", "bbbb_vvoo", "bbbb_vvov",
+                "aaaa_vvvv", "bbbb_vvvv"
         };
 
         // build string for eri spin
@@ -790,7 +779,7 @@ namespace hilbert {
 
         // check if eri name is valid
         static auto is_valid_name = [](const string& eri_name, const unordered_set<string>& ) {
-            return valid_names.find(eri_name) != valid_names.end();
+            return valid_blocks.find(eri_name) != valid_blocks.end();
         };
 
         // build string for exchange name
@@ -826,7 +815,7 @@ namespace hilbert {
                 string eri_ov = build_eri_ov(colm_lov, colm_rov);
                 string eri_name = eri_spin + "_" + eri_ov;
 
-                if (!is_valid_spin(eri_spin) || is_in_V_blks(eri_name) || !is_valid_name(eri_name, valid_names))
+                if (!is_valid_spin(eri_spin) || is_in_V_blks(eri_name) || !is_valid_name(eri_name, valid_blocks))
                     continue;
 
                 string exc_l = build_exchange_name(colm_lspin, colm_rspin, colm_lov, colm_rov);
@@ -862,27 +851,35 @@ namespace hilbert {
         memset(eps, 0, sizeof(double)*ns_);
 
         // oo/aa block
-        forall(F_blks_["aa_oo"], [eps,oa,o,va](auto &tile, auto &x){
-            if (x[0] != x[1]) return;
-            eps[x[0]] = tile[x];
+        foreach_inplace(F_blks_["aa_oo"], [eps](auto &tile){
+            for (auto &x : tile.range()) {
+                if (x[0] == x[1])
+                    eps[x[0]] = tile[x];
+            }
         });
 
         // oo/bb block
-        forall(F_blks_["bb_oo"], [eps,oa,o,va](auto &tile, auto &x){
-            if (x[0] != x[1]) return;
-            eps[x[0] + oa] = tile[x];
+        foreach_inplace(F_blks_["bb_oo"], [eps,oa](auto &tile){
+            for (auto &x : tile.range()) {
+                if (x[0] == x[1])
+                    eps[x[0] + oa] = tile[x];
+            }
         });
 
         // vv/aa block
-        forall(F_blks_["aa_vv"], [eps,oa,o,va](auto &tile, auto &x){
-            if (x[0] != x[1]) return;
-            eps[x[0] + o] = tile[x];
+        foreach_inplace(F_blks_["aa_vv"], [eps,o](auto &tile){
+            for (auto &x : tile.range()) {
+                if (x[0] == x[1])
+                    eps[x[0] + o] = tile[x];
+            }
         });
 
         // vv/bb block
-        forall(F_blks_["bb_vv"], [eps,oa,o,va](auto &tile, auto &x){
-            if (x[0] != x[1]) return;
-            eps[x[0] + o + va] = tile[x];
+        foreach_inplace(F_blks_["bb_vv"], [eps,o,va](auto &tile){
+            for (auto &x : tile.range()) {
+                if (x[0] == x[1])
+                    eps[x[0] + o + va] = tile[x];
+            }
         });
 
         world_.gop.fence();
@@ -890,15 +887,14 @@ namespace hilbert {
 
     }
 
+    void CC_Cavity::update_amplitudes() {
 
-    void CC_Cavity::update_amplitudes(){
-
-    }
-
-    void CC_Cavity::extrapolate_amplitudes() {
-
-        // update amplitudes
-        update_amplitudes();
+        // update amplitudes according to u + du = amplitude - residual / (eps + w)
+        update_residuals();
+        for (auto &[name, amp] : amplitudes_) {
+            amp(idxs_[name]) -= residuals_[name](idxs_[name]);
+        }
+        world_.gop.fence();
 
         /// build vectors for DIIS
 

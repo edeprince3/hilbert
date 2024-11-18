@@ -34,6 +34,7 @@ namespace hilbert {
 
     public:
         EOM_RDM(const shared_ptr<EOM_Driver> &eom_driver, Options &options);
+        virtual ~EOM_RDM() = default;
 
         // initialize the eom driver
         shared_ptr<EOM_Driver> eom_driver_;
@@ -64,6 +65,8 @@ namespace hilbert {
         // initialize array of properties
         TArrayMap properties_;
 
+        TArrayMap &tmps_ = eom_driver_->tmps_;
+
         /** ------------------------ Common Functions ------------------------ */
 
         /**
@@ -89,13 +92,13 @@ namespace hilbert {
          * compute a 2-RDM in MO basis
          * @param rdm_states: the left and right states of the rdm to save
          */
-        virtual void compute_eom_2rdm(vector<int> rdm_states) = 0;
+        virtual void compute_eom_2rdm() = 0;
 
         /**
          * save the density to wavefunction
          * @param rdm_states: the left and right states of the rdm to save
          */
-        virtual void save_density(vector<int> rdm_states) = 0;
+        virtual void save_density(vector<int> rdm_states);
 
     };
 }

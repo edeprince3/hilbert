@@ -8,7 +8,7 @@ cmake_policy(SET CMP0148 NEW)
 # project name and version
 project(hilbert 
     VERSION 0.1
-    LANGUAGES CXX C Fortran)
+    LANGUAGES CXX C)
 
 set(hilbert_AUTHORS      "A. Eugene DePrince III and the DePrince Group")
 set(hilbert_DESCRIPTION  "Hilbert: A space for quantum chemistry plugins to Psi4")
@@ -21,8 +21,8 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 include(psi4OptionsTools)
 
-find_package(pybind11 REQUIRED)
 find_package(psi4 REQUIRED)
+find_package(pybind11 REQUIRED)
 
 # Include QED-CC CMake configurations if requested
 include(${PROJECT_SOURCE_DIR}/cmake/cc_cavity.cmake)
@@ -62,6 +62,9 @@ set(pp2rdm
         src/pp2rdm/pp2rdm_solver.cc
         src/pp2rdm/write_tpdm.cc
         )
+
+# add fortran as a language for focas
+enable_language(Fortran)
 set(focas
         src/focas/update_transformation_matrix.cc
         src/focas/orbital_optimizer.cc
@@ -183,8 +186,8 @@ add_psi4_plugin(hilbert
 set(EXTERNAL_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/external/)
 add_subdirectory(external)
 
-set(EXTERNAL_INCLUDE  "${PROJECT_SOURCE_DIR}/external/include")
-target_include_directories(hilbert PRIVATE  ${EXTERNAL_INCLUDE})
+#set(EXTERNAL_INCLUDE  "${PROJECT_SOURCE_DIR}/external/include")
+#target_include_directories(hilbert PRIVATE  ${EXTERNAL_INCLUDE})
 
 # hilbert module headers
 target_include_directories(hilbert PRIVATE "${PROJECT_SOURCE_DIR}/src")

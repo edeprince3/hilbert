@@ -37,7 +37,6 @@
 #ifdef USE_QED_CC
     #include <mpi.h>
     #include <tiledarray.h>
-    #include <mpi4py/mpi4py.h>
 #endif
 
 namespace hilbert{
@@ -187,7 +186,7 @@ class CavityHelper {
     CavityHelper() = default;
     ~CavityHelper() = default;
 
-    static MPI_Comm comm_;
+    static inline MPI_Comm comm_ = MPI_COMM_WORLD;
     static inline bool initialized_ = false;
     static inline bool finalized_ = false;
 

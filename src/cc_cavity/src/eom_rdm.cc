@@ -44,18 +44,25 @@ namespace hilbert {
         TArrayMap &Dip_blks = eom_driver_->cc_wfn_->Dip_blks_;
 
         // Compute transition dipole tensors
-        for (auto &rdm: RDM_blks_) {
-            string rdm_blk = rdm.first;
+        for (auto &[name, rdm]: RDM_blks_) {
 
             // check if this is a 1RDM
-            if (rdm_blk.find("D1") == string::npos) continue;
+            if (name.find("D1") == string::npos) continue;
 
-            // strip off the D1_ prefix and keep the rest
-            rdm_blk = rdm_blk.substr(3);
+            // strip off the D1_ prefix and keep the rest (e.g. D1_aa_oo -> aa_oo)
+            string rdm_blk = name.substr(3);
 
-            properties_["X TRANSITION DIPOLES"]("I,F") += rdm.second("I,F,p,q") * Dip_blks["dx_" + rdm_blk]("p,q");
-            properties_["Y TRANSITION DIPOLES"]("I,F") += rdm.second("I,F,p,q") * Dip_blks["dy_" + rdm_blk]("p,q");
-            properties_["Z TRANSITION DIPOLES"]("I,F") += rdm.second("I,F,p,q") * Dip_blks["dz_" + rdm_blk]("p,q");
+            // check if spin is valid (aa or bb)
+            string spin = rdm_blk.substr(0, 2);
+            if (spin != "aa" && spin != "bb") continue;
+
+            TArrayD &dip_x = Dip_blks["dx_" + rdm_blk];
+            TArrayD &dip_y = Dip_blks["dy_" + rdm_blk];
+            TArrayD &dip_z = Dip_blks["dz_" + rdm_blk];
+
+            properties_["X TRANSITION DIPOLES"]("I,F") += rdm("I,F,p,q") * dip_x("p,q");
+            properties_["Y TRANSITION DIPOLES"]("I,F") += rdm("I,F,p,q") * dip_y("p,q");
+            properties_["Z TRANSITION DIPOLES"]("I,F") += rdm("I,F,p,q") * dip_z("p,q");
         }
 
         // Compute oscillator strengths
@@ -66,9 +73,11 @@ namespace hilbert {
 
         // Scale by energy difference
         double *eigval = eom_driver_->eigvals_->pointer();
-        forall(properties_["OSCILLATOR STRENGTHS"], [eigval](auto &tile, auto &x) {
-            double w = eigval[x[1]] - eigval[x[0]];
-            tile[x] *= 2.0 / 3.0 * w;
+        foreach_inplace(properties_["OSCILLATOR STRENGTHS"], [eigval](auto &tile) {
+            for (auto &x : tile.range()) {
+                double w = eigval[x[1]] - eigval[x[0]];
+                tile[x] *= 2.0 / 3.0 * w;
+            }
         });
         world_.gop.fence();
     }
@@ -103,11 +112,11 @@ namespace hilbert {
             throw PsiException("ROTATE_POLARIZATION_AXIS must be XYZ, ZXY, or YZX", __FILE__, __LINE__);
         }
 
-        forall(properties_["OSCILLATOR STRENGTHS"],
-                        [oscp](auto &tile, auto &x) { oscp[x[0]][x[1]] = tile[x]; });
-        forall(properties_["X TRANSITION DIPOLES"], [xp](auto &tile, auto &x) { xp[x[0]][x[1]] = tile[x]; });
-        forall(properties_["Y TRANSITION DIPOLES"], [yp](auto &tile, auto &x) { yp[x[0]][x[1]] = tile[x]; });
-        forall(properties_["Z TRANSITION DIPOLES"], [zp](auto &tile, auto &x) { zp[x[0]][x[1]] = tile[x]; });
+        foreach_inplace(properties_["OSCILLATOR STRENGTHS"],
+                        [oscp](auto &tile) { for (auto &x : tile.range()) oscp[x[0]][x[1]] = tile[x]; });
+        foreach_inplace(properties_["X TRANSITION DIPOLES"], [xp](auto &tile) { for (auto &x : tile.range()) xp[x[0]][x[1]] = tile[x]; });
+        foreach_inplace(properties_["Y TRANSITION DIPOLES"], [yp](auto &tile) { for (auto &x : tile.range()) yp[x[0]][x[1]] = tile[x]; });
+        foreach_inplace(properties_["Z TRANSITION DIPOLES"], [zp](auto &tile) { for (auto &x : tile.range()) zp[x[0]][x[1]] = tile[x]; });
         world_.gop.fence();
 
         double cc_energy = eom_driver_->cc_wfn_->cc_energy_;
@@ -170,4 +179,57 @@ namespace hilbert {
             }
         });
     }
+
+    void EOM_RDM::save_density(vector<int> rdm_states) {
+
+        // if only single state, we do not use a transition density matrix
+        if (rdm_states.size() == 1) {
+            rdm_states.push_back(rdm_states[0]);
+        }
+
+        // remove t1 transforms if they exist (shouldn't)
+        if (eom_driver_->cc_wfn_->has_t1_integrals_)
+            eom_driver_->cc_wfn_->transform_integrals(false);
+
+        // get reference wavefunction
+        const auto & cc_wfn = eom_driver_->cc_wfn_;
+        size_t nso = cc_wfn->nso(); // could have done this sooner...
+
+        // extract the RDMs
+        SharedMatrix D1a(new Matrix(nso, nso));
+        SharedMatrix D1b(new Matrix(nso, nso));
+
+        double** D1a_p = D1a->pointer();
+        double** D1b_p = D1b->pointer();
+
+        // helper function to extract density from blocks
+        auto extract_density = [rdm_states](TArrayD& D1_blk, double** D1_p, std::pair<size_t, size_t> offs){
+            foreach_inplace(D1_blk, [D1_p, offs, rdm_states](auto &tile){
+                for(auto &x : tile.range()) {
+                    size_t mu = x[2] + offs.first, nu = x[3] + offs.second;
+                    if (x[0] == rdm_states[0] && x[1] == rdm_states[1])
+                        D1_p[mu][nu] = tile[x];
+                }
+            });
+        };
+
+        extract_density(RDM_blks_["D1_aa_oo"], D1a_p, {0, 0});
+        extract_density(RDM_blks_["D1_aa_ov"], D1a_p, {0, oa_});
+        extract_density(RDM_blks_["D1_aa_vo"], D1a_p, {oa_, 0});
+        extract_density(RDM_blks_["D1_aa_vv"], D1a_p, {oa_, oa_});
+
+        extract_density(RDM_blks_["D1_bb_oo"], D1b_p, {0, 0});
+        extract_density(RDM_blks_["D1_bb_ov"], D1b_p, {0, ob_});
+        extract_density(RDM_blks_["D1_bb_vo"], D1b_p, {ob_, 0});
+        extract_density(RDM_blks_["D1_bb_vv"], D1b_p, {ob_, ob_});
+        world_.gop.fence();
+
+        // transform MO basis back to AO basis
+        D1a->back_transform(cc_wfn->Ca());
+        D1b->back_transform(cc_wfn->Cb());
+
+        // set objects as members of the cc_wfn
+        cc_wfn->save_density(D1a, D1b);
+    }
+
 }

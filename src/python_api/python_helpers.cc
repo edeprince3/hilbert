@@ -43,9 +43,6 @@ namespace py = pybind11;
 using namespace pybind11::literals;
 
 namespace hilbert{
-    #ifdef USE_QED_CC
-        MPI_Comm CavityHelper::comm_ = MPI_COMM_WORLD; // default communicator
-    #endif
 
 void export_HilbertHelper(py::module& m) {
 
@@ -109,12 +106,13 @@ void export_HilbertHelper(py::module& m) {
 
     #ifdef USE_QED_CC
         // import the mpi4py API
-        if (import_mpi4py() < 0) {
-            throw std::runtime_error("Could not load mpi4py API.");
-        }
+        //if (import_mpi4py() < 0) {
+            //throw std::runtime_error("Could not load mpi4py API.");
+        //}
 
         m.def("set_comm", [](py::object comm) {
-            CavityHelper::comm_ = *PyMPIComm_Get(comm.ptr());
+            //CavityHelper::comm_ = *PyMPIComm_Get(comm.ptr());
+            CavityHelper::comm_ = MPI_COMM_WORLD; // for now
         });
         m.def("ta_initialize", &CavityHelper::ta_initialize);
         m.def("ta_finalize", &CavityHelper::ta_finalize);

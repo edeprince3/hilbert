@@ -43,17 +43,18 @@ from psi4.driver import qcdb
 def init_cc_cavity(name, **kwargs):
    try:
        # pass MPI communicator to C++ code
-       from mpi4py import MPI
+       #from mpi4py import MPI
        import hilbert
-       comm = MPI.COMM_WORLD
-       hilbert.set_comm(comm)
+       #comm = MPI.COMM_WORLD
+       #hilbert.set_comm(comm)
 
        # upon exit, finalize MPI
        import atexit
        @atexit.register
        def cleanup():
            hilbert.ta_finalize()
-   except:
+   except Exception as e:
+       print(e)
        raise Exception('Hilbert is not compiled with TA support. Please recompile with the `USE_QED_CC` flag.')
    psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'CC_CAVITY')
 
@@ -79,7 +80,8 @@ def run_polaritonic_scf(name, **kwargs):
     """
     lowername = name.lower()
     kwargs = p4util.kwargs_lower(kwargs)
-
+    
+    debug = kwargs.get('debug', False)
     optstash = p4util.OptionsState(
         ['SCF', 'DF_INTS_IO'])
 
@@ -130,7 +132,8 @@ def run_polaritonic_scf(name, **kwargs):
 
     aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_CC",
                                         psi4.core.get_global_option("DF_BASIS_CC"),
-                                        "RIFIT", psi4.core.get_global_option("BASIS"))
+                                        "RIFIT", psi4.core.get_global_option("BASIS"),
+                                        puream=ref_wfn.basisset().has_puream())
     ref_wfn.set_basisset("DF_BASIS_CC", aux_basis)
 
     # Ensure IWL files have been written when not using DF/CD
@@ -228,7 +231,8 @@ def run_polaritonic_scf_gradient(name, **kwargs):
 
     aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_CC",
                                          psi4.core.get_global_option("DF_BASIS_CC"),
-                                         "RIFIT", psi4.core.get_global_option("BASIS"))
+                                         "RIFIT", psi4.core.get_global_option("BASIS"),
+                                         puream=ref_wfn.basisset().has_puream())
     ref_wfn.set_basisset("DF_BASIS_CC", aux_basis)
 
     # Ensure IWL files have been written when not using DF/CD

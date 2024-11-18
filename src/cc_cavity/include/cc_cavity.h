@@ -29,24 +29,28 @@
 
 
 #include <tiledarray.h>
-#include <psi4/libpsio/psio.hpp>
-#include "psi4/libpsi4util/PsiOutStream.h"
+#include <psi4/psi4-dec.h>
+#include <psi4/liboptions/liboptions.h>
+#include <memory>
+#include <unordered_set>
+#include <unordered_map>
 #include "polaritonic_scf/hf.h"
-#include "misc/nonsym_davidson_solver.h"
-#include "cc_cavity/misc/ta_helper.hpp"
+
+#include "cc_cavity/misc/ta_helper.h"
 #include "cc_cavity/misc/ta_diis.h"
-#include "misc/blas.h"
 #include "cc_cavity/misc/timer.h"
 
-using namespace std;
-using namespace psi;
-using namespace TA;
-using namespace TA_Helper;
 
 namespace hilbert {
 
+    using std::string, std::unordered_map, std::unordered_set, std::vector, std::map,
+          std::shared_ptr, std::to_string, std::make_shared;
+    using namespace TA;
+    using namespace psi;
+    using namespace TA_Helper;
+
     // thread safe print function in scope of hilbert namespace
-    inline void Printf(const char *format, ...) {
+    static inline void Printf(const char *format, ...) {
         va_list argptr;
         va_start(argptr, format);
         char input[1024];
@@ -60,7 +64,13 @@ namespace hilbert {
         );
     }
 
-    typedef unordered_map<std::string, TA::TArrayD> TArrayMap;
+    static inline std::string to_string(const TArrayD& array){
+        std::stringstream ss;
+        ss << array;
+        return ss.str();
+    }
+
+    typedef map<std::string, TA::TArrayD> TArrayMap;
 
     class CC_Cavity : public PolaritonicHF {
 
@@ -73,7 +83,7 @@ namespace hilbert {
          *  @param[in] wfn      Wavefunction object
          *  @param[in] options  Options object
          */
-        CC_Cavity(std::shared_ptr<Wavefunction> reference_wavefunction, Options & options);
+        CC_Cavity(std::shared_ptr<Wavefunction> reference_wavefunction, Options & options, map<string, bool> &includes);
         ~CC_Cavity() override {
             if (epsilon_) free(epsilon_);
         }
@@ -81,7 +91,7 @@ namespace hilbert {
         /**
          *  @brief initialize the CC_Cavity object
          */
-        void common_init();
+        void initialize();
 
         /// basis set dimensions
 
@@ -105,27 +115,20 @@ namespace hilbert {
 
 
         /// operators
-        vector<string> idx_map_; // map of indices for the operators
+        std::map<string, string> idxs_; // map of indices for the operators
         TArrayMap amplitudes_; // amplitudes
         TArrayMap residuals_; // residuals
-        map<string, double> scalar_amps_; // scalar amplitudes
-        map<string, double> scalar_resids_; // scalar residuals
+        TArrayMap tmps_; // temporary arrays
+        std::map<string, double> scalars_; // scalar values
 
         map<string, double> resid_norms_; // residual norms
         TArrayMap Id_blks_; // identity matrix blocks
         
         // initialize included operator bools
-        map<string, bool> includes_{
-                {"t3", options_.get_bool("QED_CC_INCLUDE_T3")},
-                {"t4", options_.get_bool("QED_CC_INCLUDE_T4")},
-                {"u0", options_.get_bool("QED_CC_INCLUDE_U0")},
-                {"u1", options_.get_bool("QED_CC_INCLUDE_U1")},
-                {"u2", options_.get_bool("QED_CC_INCLUDE_U2")},
-                {"u3", options_.get_bool("QED_CC_INCLUDE_U3")},
-                {"u4", options_.get_bool("QED_CC_INCLUDE_U4")},
-        };
-        bool has_photon_ = includes_["u0"] || includes_["u1"] || includes_["u2"] || includes_["u3"] || includes_["u4"]
-                           || options_.get_int("N_PHOTON_STATES") > 1;
+        map<string, bool> &includes_;
+        bool has_photon_ = includes_["t0_1"] || includes_["t1_1"] || includes_["t2_1"] || includes_["t3_1"] || includes_["t4_1"] ||
+                           includes_["t0_2"] || includes_["t1_2"] || includes_["t2_2"] || includes_["t3_2"] || includes_["t4_2"] ||
+                           options_.get_int("N_PHOTON_STATES") > 1;
 
         double lambda_[3] = {0,0,0}; // coupling strengths
         double * epsilon_; // orbital energies
@@ -160,9 +163,9 @@ namespace hilbert {
          * @brief reset all tiles of a TA object
          * @param array the TA object
          */
-        static void zero_tiles(TArrayD& array) {
-            static TA::World& world = TA::get_default_world();
-            array = TArrayD(world, array.trange()); array.fill(0.0);
+        void zero_tiles(TArrayD& array) {
+            array = TArrayD(world_, array.trange()); array.fill(0.0);
+            world_.gop.fence();
         }
 
         // true if t1 amplitudes are folded into the integrals
@@ -240,7 +243,7 @@ namespace hilbert {
         /**
          * @brief update and extrapolate amplitudes using DIIS
          */
-        virtual void extrapolate_amplitudes();
+        virtual void update_amplitudes();
 
         // *** virtual functions to be implemented by derived classes ***
 
@@ -260,9 +263,9 @@ namespace hilbert {
         virtual double build_residuals() = 0;
 
         /**
-         * @brief update cluster amplitudes from residual equations
+         * @brief update residual equations with the orbital energies
          */
-        virtual void update_amplitudes() = 0;
+        virtual void update_residuals() = 0;
 
 
         /**
