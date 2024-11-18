@@ -111,9 +111,9 @@ void PolaritonicUCCSD::common_init() {
     same_a_b_dens_ = false;
 
     // include amplitudes for photon transitions?
-    include_u0_ = options_.get_bool("POLARITONIC_CC_INCLUDE_U0");
-    include_u1_ = options_.get_bool("POLARITONIC_CC_INCLUDE_U1");
-    include_u2_ = options_.get_bool("POLARITONIC_CC_INCLUDE_U2");
+    include_u0_ = options_.get_bool("QED_CC_INCLUDE_U0");
+    include_u1_ = options_.get_bool("QED_CC_INCLUDE_U1");
+    include_u2_ = options_.get_bool("QED_CC_INCLUDE_U2");
 
     // molecular hamiltonian
     if ( !is_hubbard_ ) {
@@ -1846,9 +1846,9 @@ double PolaritonicUCCSD::compute_energy() {
     double ec = cc_iterations();
 
     // CCSD iterations with photon
-    include_u0_ = options_.get_bool("POLARITONIC_CC_INCLUDE_U0");;
-    include_u1_ = options_.get_bool("POLARITONIC_CC_INCLUDE_U1");;
-    include_u2_ = options_.get_bool("POLARITONIC_CC_INCLUDE_U2");;
+    include_u0_ = options_.get_bool("QED_CC_INCLUDE_U0");;
+    include_u1_ = options_.get_bool("QED_CC_INCLUDE_U1");;
+    include_u2_ = options_.get_bool("QED_CC_INCLUDE_U2");;
 
     if ( include_u0_ || include_u1_ || include_u2_ ) {
 
