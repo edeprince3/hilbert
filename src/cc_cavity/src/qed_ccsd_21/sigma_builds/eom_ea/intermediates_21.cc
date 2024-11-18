@@ -27,12 +27,12 @@
 #include "cc_cavity/include/qed_ccsd_21/eom_ea_qed_ccsd_21.h"
 #include "cc_cavity/include/qed_ccsd_21/qed_ccsd_21.h"
 
-void hilbert::EOM_EA_QED_CCSD::build_hamiltonian() {
+void hilbert::EOM_EA_QED_CCSD_21::build_hamiltonian() {
     // TODO: Implement build_hamiltonian
     throw PsiException("EOM_EA_CCSD::build_hamiltonian not implemented", __FILE__, __LINE__);
 }
 
-void hilbert::EOM_EA_QED_CCSD::build_common_ops() {
+void hilbert::EOM_EA_QED_CCSD_21::build_common_ops() {
 
     if (!cc_wfn_->has_t1_integrals_) cc_wfn_->transform_integrals(true);
 
@@ -41,7 +41,7 @@ void hilbert::EOM_EA_QED_CCSD::build_common_ops() {
     double coupling_factor_z = w0 * cc_wfn_->cavity_coupling_strength_[2];
 
     // get dipole integrals
-    TArrayMap dp = reinterpret_pointer_cast<QED_CCSD>(cc_wfn_)->effective_dipole();
+    TArrayMap dp = reinterpret_pointer_cast<QED_CCSD_21>(cc_wfn_)->effective_dipole();
 
     // extract 0-body amplitudes
     double t0_1;

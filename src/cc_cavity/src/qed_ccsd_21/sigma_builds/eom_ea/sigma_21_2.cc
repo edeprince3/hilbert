@@ -27,14 +27,14 @@
 #include "cc_cavity/include/qed_ccsd_21/eom_ea_qed_ccsd_21.h"
 #include "cc_cavity/include/qed_ccsd_21/qed_ccsd_21.h"
 
-void hilbert::EOM_EA_QED_CCSD::sigma_ea_21_2() {
+void hilbert::EOM_EA_QED_CCSD_21::sigma_ea_21_2() {
 
     // Get cavity information
     double w0 = cc_wfn_->cavity_frequency_[2];
     double coupling_factor_z = w0 * cc_wfn_->cavity_coupling_strength_[2];
 
     // get effective dipole integrals
-    TArrayMap dp = reinterpret_pointer_cast<QED_CCSD>(cc_wfn_)->effective_dipole();
+    TArrayMap dp = reinterpret_pointer_cast<QED_CCSD_21>(cc_wfn_)->effective_dipole();
 
     // get integrals
     TArrayMap &eri = cc_wfn_->V_blks_;

@@ -31,11 +31,11 @@
 
 namespace hilbert {
 
-    class QED_CCSD : public CCSD {
+    class QED_CCSD_21 : public CCSD {
 
     public:
-        QED_CCSD(const shared_ptr<Wavefunction> &reference_wavefunction, Options & options, map<string,bool> &includes);
-        ~QED_CCSD() override = default;
+        QED_CCSD_21(const shared_ptr<Wavefunction> &reference_wavefunction, Options & options, map<string,bool> &includes);
+        ~QED_CCSD_21() override = default;
 
         /**
          * return the effective dipole operators

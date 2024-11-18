@@ -39,12 +39,12 @@ using namespace TA_Helper;
 
 namespace hilbert {
 
-    QED_CCSD::QED_CCSD(const shared_ptr<Wavefunction> &reference_wavefunction, Options &options, map<string,bool> &includes) :
+    QED_CCSD_21::QED_CCSD_21(const shared_ptr<Wavefunction> &reference_wavefunction, Options &options, map<string,bool> &includes) :
                              CCSD(reference_wavefunction, options, includes) {
     }
 
 
-    void QED_CCSD::init_operators() {
+    void QED_CCSD_21::init_operators() {
 
         // call base class for t1 and t2, plus some other stuff
         CCSD::init_operators();
@@ -74,7 +74,7 @@ namespace hilbert {
 
     }
 
-    void QED_CCSD::update_residuals() {
+    void QED_CCSD_21::update_residuals() {
 
         CCSD::update_residuals(); // call parent function for t1 and t2
 
@@ -135,7 +135,7 @@ namespace hilbert {
 
     }
 
-    double QED_CCSD::compute_residual_norms(bool return_tot) {
+    double QED_CCSD_21::compute_residual_norms(bool return_tot) {
 
         /// residual norms for each amplitude
 
@@ -169,7 +169,7 @@ namespace hilbert {
         return 0.0;
     }
     
-    void QED_CCSD::print_properties() {
+    void QED_CCSD_21::print_properties() {
         // calculate norms of amplitudes
         map<string, double> amp_norms;
         double total_norm = 0.0;
@@ -200,25 +200,25 @@ namespace hilbert {
         Printf("\n   ------------------------------");
         Printf("\n     T1: %15.12lf | %5.2f %%", sqrt(nT1), 100*nT1/total_norm);
         Printf("\n     T2: %15.12lf | %5.2f %%", sqrt(nT2), 100*nT2/total_norm);
-        Printf("\n    T01: %15.12lf | %5.2f %%", sqrt(nT01), 100.0*nT01/total_norm);
-        Printf("\n    T11: %15.12lf | %5.2f %%", sqrt(nT11), 100.0*nT11/total_norm);
-        Printf("\n    T21: %15.12lf | %5.2f %%", sqrt(nT21), 100.0*nT21/total_norm);
+        Printf("\n   T0,1: %15.12lf | %5.2f %%", sqrt(nT01), 100.0*nT01/total_norm);
+        Printf("\n   T1,1: %15.12lf | %5.2f %%", sqrt(nT11), 100.0*nT11/total_norm);
+        Printf("\n   T2,1: %15.12lf | %5.2f %%", sqrt(nT21), 100.0*nT21/total_norm);
         Printf("\n   ------------------------------");
         Printf("\n    Total: %15.12lf\n\n", sqrt(total_norm));
     }
 
-    void QED_CCSD::print_iter_header() const {
+    void QED_CCSD_21::print_iter_header() const {
         Printf("\n");
         Printf("    ==>  Begin %s iterations <==    \n", cc_type_.c_str());
         Printf("\n");
         Printf("%5s %16s %15s %15s  | %-7s%-7s",  "Iter","energy","dE","|dT|","|dT1|","|dT2|");
-        Printf("%-7s","|dT01|");
-        Printf("%-7s","|dT11|");
-        Printf("%-7s","|dT21|");
+        Printf("%-7s","|dT0,1|");
+        Printf("%-7s","|dT1,1|");
+        Printf("%-7s","|dT2,1|");
         Printf("\n");
     }
 
-    void QED_CCSD::print_iteration(size_t iter, double energy, double dele, double tnorm) const {
+    void QED_CCSD_21::print_iteration(size_t iter, double energy, double dele, double tnorm) const {
         Printf("%5i %17.12lf %15.12lf %15.12lf | %-7.0e%-7.0e",iter,energy,dele,tnorm,resid_norms_.at("t1"),resid_norms_.at("t2"));
         Printf("%-7.0e", resid_norms_.at("t0_1"));
         Printf("%-7.0e", resid_norms_.at("t1_1"));
@@ -226,7 +226,7 @@ namespace hilbert {
         Printf("\n");
     }
 
-    TArrayMap QED_CCSD::effective_dipole() {
+    TArrayMap QED_CCSD_21::effective_dipole() {
         // build effective dipole integrals
 
         // Get cavity information
@@ -248,7 +248,7 @@ namespace hilbert {
         return dp;
     }
 
-    double QED_CCSD::build_residuals() {
+    double QED_CCSD_21::build_residuals() {
         // t1 transformation of integrals
         if ( !has_t1_integrals_ ) transform_integrals(true);
 

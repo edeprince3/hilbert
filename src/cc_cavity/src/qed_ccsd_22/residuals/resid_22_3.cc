@@ -31,7 +31,6 @@ using namespace std;
 using namespace TA;
 using namespace hilbert;
 
-#if MAX_PHOTON_LEVEL >= 2
 void QED_CCSD_22::resid_22_3() {
     
     // unpack integrals
@@ -671,4 +670,3 @@ void QED_CCSD_22::resid_22_3() {
         //  mems: o3v1  = o3v1
         tmps_["127_aaaa_vooo"]("a,i,j,k")  = eri["aaaa_vovo"]("a,i,b,j") * t1_1["aa"]("b,k");
 }
-#endif

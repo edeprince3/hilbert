@@ -257,6 +257,67 @@ namespace hilbert {
         world_.gop.fence();
     }
 
+    void EOM_EE_CCSD::build_Hc_cH(size_t L) {
+
+        // transform integrals if needed with t1 amplitudes
+        if (!cc_wfn_->has_t1_integrals_)
+            cc_wfn_->transform_integrals(true);
+
+        /// initialize sigma vectors for this trial
+        sigvec_blks_.clear();
+
+        // reduce sigma into spins
+        sigvec_blks_["sigmar0"]   = makeTensor(world_, {L}, true);
+        sigvec_blks_["sigmal0"]   = makeTensor(world_, {L}, true);
+
+        sigvec_blks_["sigmar1_aa"]   = makeTensor(world_, {L, va_, oa_}, true);
+        sigvec_blks_["sigmar1_bb"]   = makeTensor(world_, {L, vb_, ob_}, true);
+
+        sigvec_blks_["sigmal1_aa"]   = makeTensor(world_, {L, va_, oa_}, true);
+        sigvec_blks_["sigmal1_bb"]   = makeTensor(world_, {L, vb_, ob_}, true);
+
+        sigvec_blks_["sigmar2_aaaa"]   = makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
+        sigvec_blks_["sigmar2_abab"]   = makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
+        sigvec_blks_["sigmar2_bbbb"]   = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
+
+        sigvec_blks_["sigmal2_aaaa"]   = makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
+        sigvec_blks_["sigmal2_abab"]   = makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
+        sigvec_blks_["sigmal2_bbbb"]   = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
+
+        // run sigma vector builds
+        sigma_ee_00_1();
+        sigma_ee_00_2();
+        sigma_ee_00_3();
+        sigma_ee_00_4();
+        world_.gop.fence();
+
+        /// add constant terms to sigma vectors
+        double nuclear = cc_wfn_->enuc_ + cc_wfn_->average_electric_dipole_self_energy_;
+
+        // set ground state
+        sigvec_blks_["sigmar0"]("I") = evec_blks_["r0"]("I") * cc_wfn_->cc_energy_;
+        sigvec_blks_["sigmal0"]("I") = evec_blks_["l0"]("I") * cc_wfn_->cc_energy_;
+
+        // set singles
+        sigvec_blks_["sigmar1_aa"]("I, e, m") += evec_blks_["r1_aa"]("I, e, m") * nuclear;
+        sigvec_blks_["sigmar1_bb"]("I, e, m") += evec_blks_["r1_bb"]("I, e, m") * nuclear;
+        sigvec_blks_["sigmal1_aa"]("I, e, m") += evec_blks_["l1_aa"]("I, m, e") * nuclear;
+        sigvec_blks_["sigmal1_bb"]("I, e, m") += evec_blks_["l1_bb"]("I, m, e") * nuclear;
+
+        // set doubles
+        sigvec_blks_["sigmar2_aaaa"]("I, e, f, m, n") += evec_blks_["r2_aaaa"]("I, e, f, m, n") * nuclear;
+        sigvec_blks_["sigmar2_abab"]("I, e, f, m, n") += evec_blks_["r2_abab"]("I, e, f, m, n") * nuclear;
+        sigvec_blks_["sigmar2_bbbb"]("I, e, f, m, n") += evec_blks_["r2_bbbb"]("I, e, f, m, n") * nuclear;
+        sigvec_blks_["sigmal2_aaaa"]("I, e, f, m, n") += evec_blks_["l2_aaaa"]("I, m, n, e, f") * nuclear;
+        sigvec_blks_["sigmal2_abab"]("I, e, f, m, n") += evec_blks_["l2_abab"]("I, m, n, e, f") * nuclear;
+        sigvec_blks_["sigmal2_bbbb"]("I, e, f, m, n") += evec_blks_["l2_bbbb"]("I, m, n, e, f") * nuclear;
+
+        // clear temporary arrays
+        tmps_.clear();
+
+        world_.gop.fence();
+    }
+
     void EOM_EE_CCSD::pack_sigma_vectors(size_t L, double **sigmar, double **sigmal) {
 
         /// fill elements of all sigma vectors from their respective blocks
@@ -635,80 +696,6 @@ namespace hilbert {
         return dominant_transitions;
     }
 
-#ifndef KEEP_NO_QED
-    void EOM_EE_CCSD::build_common_ops(){
-        throw PsiException("EOM_EE_CCSD::build_common_ops() should not be called when KEEP_NO_QED is not defined", __FILE__, __LINE__);
-    }
 
-    double* EOM_EE_CCSD::build_ss_diagonal() {
-        throw PsiException("EOM_EE_CCSD::build_ss_diagonal() should not be called when KEEP_NO_QED is not defined", __FILE__, __LINE__);
-        return nullptr;
-    }
-
-    void EOM_EE_CCSD::build_Hc_cH(size_t L) {
-        throw PsiException("EOM_EE_CCSD::build_Hc_cH() should not be called when KEEP_NO_QED is not defined", __FILE__, __LINE__);
-    }
-#else
-    void EOM_EE_CCSD::build_Hc_cH(size_t L) {
-
-        // transform integrals if needed with t1 amplitudes
-        if (!cc_wfn_->has_t1_integrals_)
-            cc_wfn_->transform_integrals(true);
-
-        /// initialize sigma vectors for this trial
-        sigvec_blks_.clear();
-
-        // reduce sigma into spins
-        sigvec_blks_["sigmar0"]   = makeTensor(world_, {L}, true);
-        sigvec_blks_["sigmal0"]   = makeTensor(world_, {L}, true);
-
-        sigvec_blks_["sigmar1_aa"]   = makeTensor(world_, {L, va_, oa_}, true);
-        sigvec_blks_["sigmar1_bb"]   = makeTensor(world_, {L, vb_, ob_}, true);
-
-        sigvec_blks_["sigmal1_aa"]   = makeTensor(world_, {L, va_, oa_}, true);
-        sigvec_blks_["sigmal1_bb"]   = makeTensor(world_, {L, vb_, ob_}, true);
-
-        sigvec_blks_["sigmar2_aaaa"]   = makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
-        sigvec_blks_["sigmar2_abab"]   = makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
-        sigvec_blks_["sigmar2_bbbb"]   = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
-
-        sigvec_blks_["sigmal2_aaaa"]   = makeTensor(world_, {L, va_, va_, oa_, oa_}, true);
-        sigvec_blks_["sigmal2_abab"]   = makeTensor(world_, {L, va_, vb_, oa_, ob_}, true);
-        sigvec_blks_["sigmal2_bbbb"]   = makeTensor(world_, {L, vb_, vb_, ob_, ob_}, true);
-
-        // run sigma vector builds
-        sigma_ee_00_1();
-        sigma_ee_00_2();
-        sigma_ee_00_3();
-        sigma_ee_00_4();
-        world_.gop.fence();
-
-        /// add constant terms to sigma vectors
-        double nuclear = cc_wfn_->enuc_ + cc_wfn_->average_electric_dipole_self_energy_;
-
-        // set ground state
-        sigvec_blks_["sigmar0"]("I") = evec_blks_["r0"]("I") * cc_wfn_->cc_energy_;
-        sigvec_blks_["sigmal0"]("I") = evec_blks_["l0"]("I") * cc_wfn_->cc_energy_;
-
-        // set singles
-        sigvec_blks_["sigmar1_aa"]("I, e, m") += evec_blks_["r1_aa"]("I, e, m") * nuclear;
-        sigvec_blks_["sigmar1_bb"]("I, e, m") += evec_blks_["r1_bb"]("I, e, m") * nuclear;
-        sigvec_blks_["sigmal1_aa"]("I, e, m") += evec_blks_["l1_aa"]("I, m, e") * nuclear;
-        sigvec_blks_["sigmal1_bb"]("I, e, m") += evec_blks_["l1_bb"]("I, m, e") * nuclear;
-
-        // set doubles
-        sigvec_blks_["sigmar2_aaaa"]("I, e, f, m, n") += evec_blks_["r2_aaaa"]("I, e, f, m, n") * nuclear;
-        sigvec_blks_["sigmar2_abab"]("I, e, f, m, n") += evec_blks_["r2_abab"]("I, e, f, m, n") * nuclear;
-        sigvec_blks_["sigmar2_bbbb"]("I, e, f, m, n") += evec_blks_["r2_bbbb"]("I, e, f, m, n") * nuclear;
-        sigvec_blks_["sigmal2_aaaa"]("I, e, f, m, n") += evec_blks_["l2_aaaa"]("I, m, n, e, f") * nuclear;
-        sigvec_blks_["sigmal2_abab"]("I, e, f, m, n") += evec_blks_["l2_abab"]("I, m, n, e, f") * nuclear;
-        sigvec_blks_["sigmal2_bbbb"]("I, e, f, m, n") += evec_blks_["l2_bbbb"]("I, m, n, e, f") * nuclear;
-
-        // clear temporary arrays
-        tmps_.clear();
-
-        world_.gop.fence();
-    }
-#endif
 
 } // cc_cavity

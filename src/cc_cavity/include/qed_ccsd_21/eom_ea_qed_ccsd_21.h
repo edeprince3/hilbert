@@ -36,10 +36,10 @@ using namespace TA_Helper;
 
 namespace hilbert {
 
-class EOM_EA_QED_CCSD : public EOM_EA_CCSD {
+class EOM_EA_QED_CCSD_21 : public EOM_EA_CCSD {
 public:
-    EOM_EA_QED_CCSD(shared_ptr<CC_Cavity> &cc_wfn, Options & options);
-    ~EOM_EA_QED_CCSD() = default;
+    EOM_EA_QED_CCSD_21(shared_ptr<CC_Cavity> &cc_wfn, Options & options);
+    ~EOM_EA_QED_CCSD_21() = default;
 
     double old_e_dip_z_; // store the old dipole moment for backtracking
     double old_dipole_self_energy_; // store the old dipole_self_energy_ for backtracking

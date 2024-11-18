@@ -29,11 +29,11 @@
 
 namespace hilbert {
 
-    EOM_EE_QED_CCSD::EOM_EE_QED_CCSD(std::shared_ptr<CC_Cavity> &cc_wfn, Options &options) :
+    EOM_EE_QED_CCSD_21::EOM_EE_QED_CCSD_21(std::shared_ptr<CC_Cavity> &cc_wfn, Options &options) :
             EOM_EE_CCSD(cc_wfn, options) {}
 
 
-    void EOM_EE_QED_CCSD::set_problem_size() {
+    void EOM_EE_QED_CCSD_21::set_problem_size() {
 
         // get problem size from the EOM_EE_CCSD object
         EOM_EE_CCSD::set_problem_size();
@@ -50,11 +50,11 @@ namespace hilbert {
 
     }
 
-    void EOM_EE_QED_CCSD::build_hamiltonian() {
+    void EOM_EE_QED_CCSD_21::build_hamiltonian() {
         throw PsiException("EOM_EE_QEDCCSD::build_hamiltonian not implemented", __FILE__, __LINE__);
     }
 
-    double* EOM_EE_QED_CCSD::build_preconditioner() {
+    double* EOM_EE_QED_CCSD_21::build_preconditioner() {
 
         // get properties from the CC_Cavity object
         double cc_energy_ = cc_wfn_->cc_energy_;
@@ -152,7 +152,7 @@ namespace hilbert {
         return precond;
     }
 
-    void EOM_EE_QED_CCSD::print_eom_header() {
+    void EOM_EE_QED_CCSD_21::print_eom_header() {
         // print out energies and amplitude norms
         Printf("\n%5s", "state");
         Printf(" %20s", "total energy (Eh)");
@@ -169,7 +169,7 @@ namespace hilbert {
 //        ground_energy_ref_ = eigvals_->get(0);
     }
 
-    double* EOM_EE_QED_CCSD::get_state_norms(size_t i) const {
+    double* EOM_EE_QED_CCSD_21::get_state_norms(size_t i) const {
 
         // get pointers to the eigenvectors
         double** rerp_ = revec_->pointer();
@@ -196,7 +196,7 @@ namespace hilbert {
         return norms;
     };
 
-    void EOM_EE_QED_CCSD::unpack_trial_vectors(size_t L, double **Q) {
+    void EOM_EE_QED_CCSD_21::unpack_trial_vectors(size_t L, double **Q) {
 
         // initialize electronic operators
         EOM_EE_CCSD::unpack_trial_vectors(L, Q);
@@ -279,7 +279,7 @@ namespace hilbert {
         world_.gop.fence();
     }
 
-    void EOM_EE_QED_CCSD::build_Hc_cH(size_t L) {
+    void EOM_EE_QED_CCSD_21::build_Hc_cH(size_t L) {
 
         // transform integrals if needed with t1 amplitudes
         if (!cc_wfn_->has_t1_integrals_)
@@ -403,7 +403,7 @@ namespace hilbert {
         world_.gop.fence();
     }
 
-    void EOM_EE_QED_CCSD::pack_sigma_vectors(size_t L, double **sigmar, double **sigmal) {
+    void EOM_EE_QED_CCSD_21::pack_sigma_vectors(size_t L, double **sigmar, double **sigmal) {
 
         /// initialize electronic sigma vectors
         EOM_EE_CCSD::pack_sigma_vectors(L, sigmar, sigmal);
@@ -510,7 +510,7 @@ namespace hilbert {
         world_.gop.fence();
     }
 
-    void EOM_EE_QED_CCSD::unpack_eigenvectors() {
+    void EOM_EE_QED_CCSD_21::unpack_eigenvectors() {
 
         // initialize electronic operators
         EOM_EE_CCSD::unpack_eigenvectors();
@@ -650,7 +650,7 @@ namespace hilbert {
         world_.gop.fence();
     }
 
-    EOM_Driver::DominantTransitionsType EOM_EE_QED_CCSD::find_dominant_transitions(size_t I) {
+    EOM_Driver::DominantTransitionsType EOM_EE_QED_CCSD_21::find_dominant_transitions(size_t I) {
         /// get dominant transition for each root in each block
 
         // get pointers to eigenvectors
@@ -672,7 +672,7 @@ namespace hilbert {
         r = rerp[I][id + off]; // get r
         lr = l*r; // get lr
         if (fabs(lr) > threshold) {
-            dominant_transitions["l0_1*r0_1"].push({lr, l, r, "", {}});
+            dominant_transitions["l0,1*r0,1"].push({lr, l, r, "", {}});
         }
         off++;
 
@@ -683,7 +683,7 @@ namespace hilbert {
                 r = rerp[I][id + off]; // get r
                 lr = l*r; // get lr
                 if (fabs(lr) > threshold) {
-                    dominant_transitions["l1_1*r1_1"].push({lr, l, r, "aa", {a+1 + oa_, oa_ - i}});
+                    dominant_transitions["l1,1*r1,1"].push({lr, l, r, "aa", {a+1 + oa_, oa_ - i}});
                 }
                 id++;
             }
@@ -698,7 +698,7 @@ namespace hilbert {
                 r = rerp[I][id + off]; // get r
                 lr = l*r; // get lr
                 if (fabs(lr) > threshold) {
-                    dominant_transitions["l1_1*r1_1"].push({lr, l, r, "bb", {a+1 + ob_, ob_ - i}});
+                    dominant_transitions["l1,1*r1,1"].push({lr, l, r, "bb", {a+1 + ob_, ob_ - i}});
                 }
                 id++;
             }
@@ -715,7 +715,7 @@ namespace hilbert {
                         r = rerp[I][id + off]; // get r
                         lr = l*r; // get lr
                         if (fabs(lr) > threshold) {
-                            dominant_transitions["l2_1*r2_1"].push({lr, l, r, "aaaa", {a+1 + oa_, b+1 + oa_, oa_ - i, oa_ - j}});
+                            dominant_transitions["l2,1*r2,1"].push({lr, l, r, "aaaa", {a+1 + oa_, b+1 + oa_, oa_ - i, oa_ - j}});
                         }
                         id++;
                     }
@@ -734,7 +734,7 @@ namespace hilbert {
                         r = rerp[I][id + off]; // get r
                         lr = l*r; // get lr
                         if (fabs(lr) > threshold) {
-                            dominant_transitions["l2_1*r2_1"].push({lr, l, r, "abab", {a+1 + oa_, b+1 + ob_, oa_ - i, ob_ - j}});
+                            dominant_transitions["l2,1*r2,1"].push({lr, l, r, "abab", {a+1 + oa_, b+1 + ob_, oa_ - i, ob_ - j}});
                         }
                         id++;
                     }
@@ -753,7 +753,7 @@ namespace hilbert {
                         r = rerp[I][id + off]; // get r
                         lr = l*r; // get lr
                         if (fabs(lr) > threshold) {
-                            dominant_transitions["l2_1*r2_1"].push({lr, l, r, "bbbb", {a+1 + ob_, b+1 + ob_, ob_ - i, ob_ - j}});
+                            dominant_transitions["l2,1*r2,1"].push({lr, l, r, "bbbb", {a+1 + ob_, b+1 + ob_, ob_ - i, ob_ - j}});
                         }
                         id++;
                     }

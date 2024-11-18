@@ -28,7 +28,7 @@
 #include "cc_cavity/include/qed_ccsd_21/eom_ee_qed_ccsd_21.h"
 #include "cc_cavity/include/qed_ccsd_21/qed_ccsd_21.h"
 
-double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
+double* hilbert::EOM_EE_QED_CCSD_21::build_ss_diagonal() {
 
     if (!cc_wfn_->has_t1_integrals_) cc_wfn_->transform_integrals(true);
 
@@ -553,7 +553,7 @@ double* hilbert::EOM_EE_QED_CCSD::build_ss_diagonal() {
 
 }
 
-void hilbert::EOM_EE_QED_CCSD::build_common_ops() {
+void hilbert::EOM_EE_QED_CCSD_21::build_common_ops() {
     
     if (!cc_wfn_->has_t1_integrals_) cc_wfn_->transform_integrals(true);
 
@@ -562,7 +562,7 @@ void hilbert::EOM_EE_QED_CCSD::build_common_ops() {
     double coupling_factor_z = w0 * cc_wfn_->cavity_coupling_strength_[2];
 
     // get dipole integrals
-    TArrayMap dp = reinterpret_pointer_cast<QED_CCSD>(cc_wfn_)->effective_dipole();
+    TArrayMap dp = reinterpret_pointer_cast<QED_CCSD_21>(cc_wfn_)->effective_dipole();
 
     // extract 0-body amplitudes
     // extract 0-body amplitudes

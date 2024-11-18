@@ -31,7 +31,6 @@ using namespace std;
 using namespace TA;
 using namespace hilbert;
 
-#if MAX_PHOTON_LEVEL >= 2
 void QED_CCSD_22::resid_22_5() {
 
     // unpack integrals
@@ -677,4 +676,3 @@ void QED_CCSD_22::resid_22_5() {
         tmps_["103_bb_vo"].~TArrayD();
         tmps_["51_baab_vovo"].~TArrayD();
 }
-#endif

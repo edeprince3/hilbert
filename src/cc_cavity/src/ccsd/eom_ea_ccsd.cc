@@ -166,25 +166,6 @@ namespace hilbert {
         world_.gop.fence();
     }
 
-#ifndef KEEP_NO_QED
-    void EOM_EA_CCSD::build_common_ops(){
-        throw PsiException("EOM_EE_CCSD::build_common_ops() should not be called when KEEP_NO_QED is not defined", __FILE__, __LINE__);
-    }
-
-    double* EOM_EA_CCSD::build_ss_diagonal() {
-        throw PsiException("EOM_EE_CCSD::build_ss_diagonal() should not be called when KEEP_NO_QED is not defined", __FILE__, __LINE__);
-        return nullptr;
-    }
-
-    void hilbert::EOM_EA_CCSD::build_hamiltonian() {
-        throw PsiException("EOM_EE_CCSD::build_hamiltonian() should not be called when KEEP_NO_QED is not defined", __FILE__, __LINE__);
-    }
-
-    void EOM_EA_CCSD::build_Hc_cH(size_t L) {
-        throw PsiException("EOM_EE_CCSD::build_Hc_cH() should not be called when KEEP_NO_QED is not defined", __FILE__, __LINE__);
-    }
-#else
-
     void EOM_EA_CCSD::build_Hc_cH(size_t L) {
         // transform integrals if needed with t1 amplitudes
         if (!cc_wfn_->has_t1_integrals_)
@@ -228,7 +209,6 @@ namespace hilbert {
 
         world_.gop.fence();
     }
-#endif
 
     void EOM_EA_CCSD::pack_sigma_vectors(size_t L, double **sigmar, double **sigmal) {
         size_t oa = oa_, ob = ob_, // number of occupied orbitals

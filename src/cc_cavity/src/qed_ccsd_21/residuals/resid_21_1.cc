@@ -31,7 +31,7 @@ using namespace std;
 using namespace TA;
 using namespace hilbert;
 
-void QED_CCSD::resid_21_1() {
+void QED_CCSD_21::resid_21_1() {
     
     // unpack integrals
     TArrayMap &Id         = Id_blks_;

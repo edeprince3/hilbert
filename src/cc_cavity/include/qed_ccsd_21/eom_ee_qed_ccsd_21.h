@@ -30,10 +30,10 @@
 
 namespace hilbert {
 
-    class EOM_EE_QED_CCSD : public EOM_EE_CCSD {
+    class EOM_EE_QED_CCSD_21 : public EOM_EE_CCSD {
     public:
-        EOM_EE_QED_CCSD(shared_ptr<CC_Cavity> &cc_wfn, Options & options);
-        ~EOM_EE_QED_CCSD() = default;
+        EOM_EE_QED_CCSD_21(shared_ptr<CC_Cavity> &cc_wfn, Options & options);
+        ~EOM_EE_QED_CCSD_21() = default;
 
         void set_problem_size() override;
 

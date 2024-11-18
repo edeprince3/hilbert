@@ -46,12 +46,6 @@ namespace hilbert {
          */
         void compute_eom_1rdm() override;
 
-        /**
-         * Compute the 2-RDMs in MO basis
-         */
-        void compute_eom_2rdm() override;
-        void rdm2_21_1(), rdm2_21_2(), rdm2_21_3(), rdm2_21_4(), rdm2_21_5(), rdm2_21_6(), rdm2_21_7(), rdm2_21_8();
-
     };
 
 } // cc_cavity

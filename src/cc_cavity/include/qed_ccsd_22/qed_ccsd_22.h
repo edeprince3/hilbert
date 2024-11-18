@@ -31,7 +31,7 @@
 
 namespace hilbert {
 
-    class QED_CCSD_22 : public QED_CCSD {
+    class QED_CCSD_22 : public QED_CCSD_21 {
 
     public:
         QED_CCSD_22(const shared_ptr<Wavefunction> &reference_wavefunction, Options & options, map<string,bool> &includes);
