@@ -25,6 +25,7 @@
 #
 
 import numpy as np
+import os
 
 import psi4
 import psi4.driver.p4util as p4util
@@ -33,34 +34,57 @@ from psi4.driver.procrouting import proc
 from psi4.driver.p4util.exceptions import ValidationError
 
 def init_cc_cavity(name, **kwargs):
-   try:
-       # pass MPI communicator to C++ code
-       #from mpi4py import MPI
-       import hilbert
-       #comm = MPI.COMM_WORLD
-       #hilbert.set_comm(comm)
 
-       # upon exit, finalize MPI
-       import atexit
-       @atexit.register
-       def cleanup():
-           hilbert.ta_finalize()
-   except Exception as e:
-       print(e)
-       raise Exception('Hilbert is not compiled with TA support. Please recompile with the `USE_QED_CC` flag.')
-   psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'CC_CAVITY')
+    # set method to CC_CAVITY
+    psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'CC_CAVITY')
 
-   # Get the number of MAD threads and set in environment when loading the plugin
-   try:
-       mad_num_threads = str(psi4.core.get_local_option('HILBERT', 'MAD_NUM_THREADS'))
-   except:
-       mad_num_threads = '1'
+    # determine level of theory from name
+    if 'ccsd-00' in name:
+        psi4.core.set_local_option('HILBERT', 'QED_CC_TYPE', 'CCSD-00')
+    elif 'ccsd-21' in name:
+        psi4.core.set_local_option('HILBERT', 'QED_CC_TYPE', 'CCSD-21')
+    elif 'ccsd-22' in name:
+        psi4.core.set_local_option('HILBERT', 'QED_CC_TYPE', 'CCSD-22')
 
-   import os
-   if mad_num_threads is not None and mad_num_threads != '' and int(mad_num_threads) > 0:
-       os.environ['MAD_NUM_THREADS'] = str(mad_num_threads)
-   else:
-       os.environ['MAD_NUM_THREADS'] = '1'
+
+    # determine if using eom-cc or ground-state CC
+    if 'eom' in name:
+        psi4.core.set_local_option('HILBERT', 'PERFORM_EOM', True)
+
+        # default to EOM_EE_CCSD
+        psi4.core.set_local_option('HILBERT', 'EOM_TYPE', 'EE')
+
+        # check if 'eom-ea' is in the name and set EOM_TYPE to EA if so
+        if 'eom-ea' in name:
+            psi4.core.set_local_option('HILBERT', 'EOM_TYPE', 'EA')
+
+
+    # set the number of threads for MADNESS with TiledArray
+    try:
+        mad_num_threads = str(psi4.core.get_local_option('HILBERT', 'MAD_NUM_THREADS'))
+    except:
+        # check if the number of threads is set in the environment; if not, set to 1
+        mad_num_threads = os.environ.get('MAD_NUM_THREADS', 1)
+
+    # set environment variable for MAD_NUM_THREADS
+    os.environ['MAD_NUM_THREADS'] = mad_num_threads
+
+    # get MPI communicator
+    try:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+    except ImportError:
+        raise Exception('Hilbert is not compiled with TA support. Please recompile with `-D WITH_TA` cmake flag.')
+
+    # set MPI communicator for TA in Hilbert
+    import hilbert
+    hilbert.set_comm(comm)
+
+    # upon exit, finalize MPI
+    import atexit
+    @atexit.register
+    def cleanup():
+        hilbert.ta_finalize()
 
 
 def run_qed_scf(name, **kwargs):
@@ -101,7 +125,7 @@ def run_qed_scf(name, **kwargs):
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RTDDFT')
         else:
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UTDDFT')
-    elif ( lowername == 'cc_cavity' ):
+    elif ( 'qed-ccsd' in lowername): # cc_cavity
         init_cc_cavity(name, **kwargs)
 
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
@@ -180,7 +204,7 @@ def run_qed_scf_gradient(name, **kwargs):
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RTDDFT')
         else:
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UTDDFT')
-    elif ( lowername == 'cc_cavity' ):
+    elif ( 'qed-ccsd' in lowername): # cc_cavity
         init_cc_cavity(name, **kwargs)
 
 
@@ -1027,15 +1051,28 @@ psi4.driver.procedures['energy']['v2rdm-casscf'] = run_v2rdm_casscf
 psi4.driver.procedures['gradient']['v2rdm-casscf'] = run_v2rdm_casscf_gradient
 
 # qed-scf,dft,cc,tddft
-psi4.driver.procedures['energy']['qed-scf'] = run_qed_scf
-psi4.driver.procedures['energy']['qed-dft'] = run_qed_scf
+psi4.driver.procedures['energy']['qed-scf']   = run_qed_scf
+psi4.driver.procedures['energy']['qed-dft']   = run_qed_scf
 psi4.driver.procedures['energy']['qed-tddft'] = run_qed_scf
-psi4.driver.procedures['energy']['qed-ccsd'] = run_qed_scf
+psi4.driver.procedures['energy']['qed-ccsd']  = run_qed_scf
 
+# qed-ccsd with tiled-array
+psi4.driver.procedures['energy']['qed-ccsd-00']     = run_qed_scf
+psi4.driver.procedures['energy']['qed-ccsd-21']     = run_qed_scf
+psi4.driver.procedures['energy']['qed-ccsd-22']     = run_qed_scf
+
+# eom qed methods
+psi4.driver.procedures['energy']['eom-ee-qed-ccsd-00'] = run_qed_scf
+psi4.driver.procedures['energy']['eom-ea-qed-ccsd-00'] = run_qed_scf
+psi4.driver.procedures['energy']['eom-qed-ccsd-00']    = run_qed_scf
+
+psi4.driver.procedures['energy']['eom-ee-qed-ccsd-21'] = run_qed_scf
+psi4.driver.procedures['energy']['eom-ea-qed-ccsd-21'] = run_qed_scf
+psi4.driver.procedures['energy']['eom-qed-ccsd-21']    = run_qed_scf 
+
+# gradients for qed-scf,dft
 psi4.driver.procedures['gradient']['qed-scf'] = run_qed_scf_gradient
 psi4.driver.procedures['gradient']['qed-dft'] = run_qed_scf_gradient
-
-psi4.driver.procedures['gradient']['cc_cavity'] = run_qed_scf_gradient
 
 # mcpdft
 psi4.driver.procedures['energy']['mcpdft'] = run_mcpdft
