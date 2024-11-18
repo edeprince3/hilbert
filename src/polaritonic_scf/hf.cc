@@ -116,6 +116,28 @@ void PolaritonicHF::common_init() {
     initialize_cavity();
 }
 
+void PolaritonicHF::update_charge(int charge) {
+    // update electron count for anion
+
+    molecule_->set_molecular_charge(molecule_->molecular_charge() + charge);
+
+    // update spin count (keep nalpha_ >= nbeta_)
+    nalpha_ -= charge;
+    if (nalpha_ < nbeta_)
+        std::swap(nalpha_, nbeta_);
+
+    same_a_b_dens_ = nalpha_ == nbeta_;
+
+    // calculate new multiplicity
+    multiplicity_ = abs(nalpha_ - nbeta_) + 1;
+
+    molecule_->set_multiplicity(multiplicity_);
+
+    // update geometry
+    molecule_->update_geometry();
+
+}
+
 std::shared_ptr<Matrix> PolaritonicHF::OrbitalGradient(std::shared_ptr<Matrix> D,
                                                        std::shared_ptr<Matrix> F,
                                                        std::shared_ptr<Matrix> Shalf) {
@@ -212,67 +234,175 @@ void PolaritonicHF::initialize_cavity() {
     // dipole integrals
     dipole_ = mints->so_dipole();
 
+    size_t x = 0, y = 1, z = 2;
+    size_t xx = 0, xy = 1, xz = 2, yy = 3, yz = 4, zz = 5;
+
     // quadrupole integrals
-    quadrupole_ = mints->so_quadrupole();
+    if ( options_.get_bool("USE_QUADRUPOLE_INTEGRALS") ) {
+        quadrupole_ = mints->so_quadrupole();
+    } else {
+
+        // do not use integrals; compute as mu_pr * mu_rq
+        auto square_dipole = [](const std::shared_ptr<Matrix>& d1, const std::shared_ptr<Matrix>& d2) {
+            std::shared_ptr<Matrix> result(new Matrix(d1->nrow(),d2->ncol()));
+            result->gemm(false,false,1.0,d1,d2,1.0);
+            return result;
+        };
+
+        quadrupole_ = std::vector<std::shared_ptr<Matrix>>(6);
+
+        // 0: xx
+        quadrupole_[xx] = square_dipole(dipole_[x],dipole_[x]);
+        // 1: xy
+        quadrupole_[xy] = square_dipole(dipole_[x],dipole_[y]);
+        // 2: xz
+        quadrupole_[xz] = square_dipole(dipole_[x],dipole_[z]);
+        // 3: yy
+        quadrupole_[yy] = square_dipole(dipole_[y],dipole_[y]);
+        // 4: yz
+        quadrupole_[yz] = square_dipole(dipole_[y],dipole_[z]);
+        // 5: zz
+        quadrupole_[zz] = square_dipole(dipole_[z],dipole_[z]);
+    }
+
+
 
     // reorder dipole / quadrupole integrals integrals
     // if polarization other than "z" is desired
     //
-    std::string order = options_.get_str("ROTATE_POLARIZATION_AXIS");
-    std::vector< std::shared_ptr<Matrix> > old_d = mints->so_dipole();
-    std::vector< std::shared_ptr<Matrix> > old_q = mints->so_quadrupole();
+    axis_order_ = options_.get_str("ROTATE_POLARIZATION_AXIS");
+
+    // copy dipoles
+    std::vector< std::shared_ptr<Matrix> > old_d(3);
+    for (int i = 0; i < 3; i++) 
+        old_d[i] = std::make_shared<Matrix>(dipole_[i]->clone());
+    
+    // copy quadrupoles
+    std::vector< std::shared_ptr<Matrix> > old_q(6);
+    for (int i = 0; i < 6; i++) 
+        old_q[i] = std::make_shared<Matrix>(quadrupole_[i]->clone()); 
+    
     double old_nuc_dip_x = nuc_dip_x_;
     double old_nuc_dip_y = nuc_dip_y_;
     double old_nuc_dip_z = nuc_dip_z_;
-    if ( order == "XYZ"){
+
+    auto swap_quadrupoles = [this, &old_q, &old_d](size_t i, size_t j, bool transpose) {
+        quadrupole_[i]->copy(old_q[j]);
+        if ( transpose ) {
+            quadrupole_[i]->transpose_this();
+        }
+    };
+
+    if ( axis_order_ == "XYZ"){
         // do nothing
-    }else if ( order == "YZX" ) {
-        // 0: x
-        dipole_[0]->copy(old_d[1]);
+    } else if ( axis_order_ == "YZX" ) {
+        // 0: x -> y
+        dipole_[x]->copy(old_d[y]);
         nuc_dip_x_ = old_nuc_dip_y;
-        // 1: y
-        dipole_[1]->copy(old_d[2]);
+        // 1: y -> z
+        dipole_[y]->copy(old_d[z]);
         nuc_dip_y_ = old_nuc_dip_z;
-        // 2: z
-        dipole_[2]->copy(old_d[0]);
+        // 2: z -> x
+        dipole_[z]->copy(old_d[x]);
         nuc_dip_z_ = old_nuc_dip_x;
 
-        // 0: xx
-        quadrupole_[0]->copy(old_q[3]);
-        // 1: xy
-        quadrupole_[1]->copy(old_q[4]);
-        // 2: xz
-        quadrupole_[2]->copy(old_q[1]);
-        // 3: yy
-        quadrupole_[3]->copy(old_q[5]);
-        // 4: yz
-        quadrupole_[4]->copy(old_q[2]);
-        // 5: zz
-        quadrupole_[5]->copy(old_q[0]);
-    }else if ( order == "ZXY" ) {
-        // 0: x
-        dipole_[0]->copy(old_d[2]);
+        // 0: xx -> yy
+        swap_quadrupoles(xx,yy,false);
+        // 1: xy -> yz
+        swap_quadrupoles(xy,yz,false);
+        // 2: xz -> yx <- xy
+        swap_quadrupoles(xz,xy,true);
+        // 3: yy -> zz
+        swap_quadrupoles(yy,zz,false);
+        // 4: yz -> zx <- xz
+        swap_quadrupoles(yz,xz,true);
+        // 5: zz -> xx
+        swap_quadrupoles(zz,xx,false);
+    } else if ( axis_order_ == "ZXY" ) {
+        // 0: x -> z
+        dipole_[x]->copy(old_d[z]);
         nuc_dip_x_ = old_nuc_dip_z;
-        // 1: y
-        dipole_[1]->copy(old_d[0]);
+        // 1: y -> x
+        dipole_[y]->copy(old_d[x]);
         nuc_dip_y_ = old_nuc_dip_x;
-        // 2: z
-        dipole_[2]->copy(old_d[1]);
+        // 2: z -> y
+        dipole_[z]->copy(old_d[y]);
         nuc_dip_z_ = old_nuc_dip_y;
 
-        // 0: xx
-        quadrupole_[0]->copy(old_q[5]);
-        // 1: xy
-        quadrupole_[1]->copy(old_q[2]);
-        // 2: xz
-        quadrupole_[2]->copy(old_q[4]);
-        // 3: yy
-        quadrupole_[3]->copy(old_q[0]);
-        // 4: yz
-        quadrupole_[4]->copy(old_q[1]);
-        // 5: zz
-        quadrupole_[5]->copy(old_q[3]);
-    }else {
+        // 0: xx -> zz
+        swap_quadrupoles(xx,zz,false);
+        // 1: xy -> zx <- xz
+        swap_quadrupoles(xy,xz,true);
+        // 2: xz -> zy <- yz
+        swap_quadrupoles(xz,yz,true);
+        // 3: yy -> xx
+        swap_quadrupoles(yy,xx,false);
+        // 4: yz -> xy
+        swap_quadrupoles(yz,xy,false);
+        // 5: zz -> yy
+        swap_quadrupoles(zz,yy,false);
+    } else if ( axis_order_ == "XZY" ) {
+        // 0: x -> x (do nothing)
+        // 1: y -> z
+        dipole_[y]->copy(old_d[z]);
+        nuc_dip_y_ = old_nuc_dip_z;
+        // 2: z -> y
+        dipole_[z]->copy(old_d[y]);
+        nuc_dip_z_ = old_nuc_dip_y;
+
+        // 0: xx -> xx (do nothing)
+        // 1: xy -> xz
+        swap_quadrupoles(xy,xz,false);
+        // 2: xz -> xy
+        swap_quadrupoles(xz,xy,false);
+        // 3: yy -> zz
+        swap_quadrupoles(yy,zz,false);
+        // 4: yz -> zy <- yz
+        swap_quadrupoles(yz,yz,true);
+        // 5: zz -> yy
+        swap_quadrupoles(zz,yy,false);
+
+    } else if ( axis_order_ == "ZYX" ) {
+        // 0: x -> z
+        dipole_[x]->copy(old_d[z]);
+        nuc_dip_x_ = old_nuc_dip_z;
+        // 1: y -> y (do nothing)
+        // 2: z -> x
+        dipole_[z]->copy(old_d[x]);
+        nuc_dip_z_ = old_nuc_dip_x;
+
+        // 0: xx -> zz
+        swap_quadrupoles(xx,zz,false);
+        // 1: xy -> zy <- yz
+        swap_quadrupoles(xy,yz,true);
+        // 2: xz -> zx <- xz
+        swap_quadrupoles(xz,xz,true);
+        // 3: yy -> yy (do nothing)
+        // 4: yz -> yx <- xy
+        swap_quadrupoles(yz,xy,true);
+        // 5: zz -> xx
+        swap_quadrupoles(zz,xx,false);
+    } else if ( axis_order_ == "YXZ" ) {
+        // 0: x -> y
+        dipole_[x]->copy(old_d[y]);
+        nuc_dip_x_ = old_nuc_dip_y;
+        // 1: y -> x
+        dipole_[y]->copy(old_d[x]);
+        nuc_dip_y_ = old_nuc_dip_x;
+        // 2: z -> z (do nothing)
+
+        // 0: xx -> yy
+        swap_quadrupoles(xx,yy,false);
+        // 1: xy -> yx <- xy 
+        swap_quadrupoles(xy,xy,true);
+        // 2: xz -> yz
+        swap_quadrupoles(xz,yz,false);
+        // 3: yy -> xx
+        swap_quadrupoles(yy,xx,false);
+        // 4: yz -> xz
+        swap_quadrupoles(yz,xz,false);
+        // 5: zz -> zz (do nothing)
+    } else {
         throw PsiException("invalid choice for ROTATE_POLARIZATION_AXIS",__FILE__,__LINE__);
     }
     

@@ -1,7 +1,7 @@
 #
 # @BEGIN LICENSE
 #
-# Hilbert: a space for quantum chemistry plugins to Psi4 
+# Hilbert: a space for quantum chemistry plugins to Psi4
 #
 # Copyright (c) 2020 by its authors (LICENSE).
 #
@@ -22,7 +22,7 @@
 # along with this program.  If not, see http://www.gnu.org/licenses/.
 #
 # @END LICENSE
-# 
+#
 
 import numpy as np
 
@@ -31,6 +31,37 @@ import psi4.driver.p4util as p4util
 from psi4.driver.procrouting import proc_util
 from psi4.driver.procrouting import proc
 from psi4.driver.p4util.exceptions import ValidationError
+
+def init_cc_cavity(name, **kwargs):
+   try:
+       # pass MPI communicator to C++ code
+       #from mpi4py import MPI
+       import hilbert
+       #comm = MPI.COMM_WORLD
+       #hilbert.set_comm(comm)
+
+       # upon exit, finalize MPI
+       import atexit
+       @atexit.register
+       def cleanup():
+           hilbert.ta_finalize()
+   except Exception as e:
+       print(e)
+       raise Exception('Hilbert is not compiled with TA support. Please recompile with the `USE_QED_CC` flag.')
+   psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'CC_CAVITY')
+
+   # Get the number of MAD threads and set in environment when loading the plugin
+   try:
+       mad_num_threads = str(psi4.core.get_local_option('HILBERT', 'MAD_NUM_THREADS'))
+   except:
+       mad_num_threads = '1'
+
+   import os
+   if mad_num_threads is not None and mad_num_threads != '' and int(mad_num_threads) > 0:
+       os.environ['MAD_NUM_THREADS'] = str(mad_num_threads)
+   else:
+       os.environ['MAD_NUM_THREADS'] = '1'
+
 
 def run_qed_scf(name, **kwargs):
     r"""Function encoding sequence of PSI module and plugin calls so that
@@ -70,6 +101,8 @@ def run_qed_scf(name, **kwargs):
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RTDDFT')
         else:
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UTDDFT')
+    elif ( lowername == 'cc_cavity' ):
+        init_cc_cavity(name, **kwargs)
 
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
     # Fock matrices, and more
@@ -92,7 +125,8 @@ def run_qed_scf(name, **kwargs):
 
     aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_CC",
                                         psi4.core.get_global_option("DF_BASIS_CC"),
-                                        "RIFIT", psi4.core.get_global_option("BASIS"))
+                                        "RIFIT", psi4.core.get_global_option("BASIS"),
+                                        puream=ref_wfn.basisset().has_puream())
     ref_wfn.set_basisset("DF_BASIS_CC", aux_basis)
 
     # Ensure IWL files have been written when not using DF/CD
@@ -146,6 +180,9 @@ def run_qed_scf_gradient(name, **kwargs):
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RTDDFT')
         else:
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UTDDFT')
+    elif ( lowername == 'cc_cavity' ):
+        init_cc_cavity(name, **kwargs)
+
 
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
     # Fock matrices, and more
@@ -176,8 +213,9 @@ def run_qed_scf_gradient(name, **kwargs):
     ref_wfn.set_basisset("DF_BASIS_SCF", scf_aux_basis)
 
     aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_CC",
-                                        psi4.core.get_global_option("DF_BASIS_CC"),
-                                        "RIFIT", psi4.core.get_global_option("BASIS"))
+                                         psi4.core.get_global_option("DF_BASIS_CC"),
+                                         "RIFIT", psi4.core.get_global_option("BASIS"),
+                                         puream=ref_wfn.basisset().has_puream())
     ref_wfn.set_basisset("DF_BASIS_CC", aux_basis)
 
     # Ensure IWL files have been written when not using DF/CD
@@ -711,7 +749,7 @@ def run_mcpdft(name, **kwargs):
         print('    error: mc-pdft requires the python interface to libxc. see https://gitlab.com/libxc/libxc/-/tree/devel#python-library')
         print('')
         exit()
-        
+
 
     functional_name_dict = {
         'svwn' : ['lda_x', 'lda_c_vwn_rpa'],
@@ -740,7 +778,7 @@ def run_mcpdft(name, **kwargs):
     base_wfn = psi4.core.Wavefunction.build(ref_molecule, psi4.core.get_global_option('BASIS'))
     new_wfn = proc.scf_wavefunction_factory(func, base_wfn, 'UKS')
 
-    # push reference orbitals onto new wave function 
+    # push reference orbitals onto new wave function
     for irrep in range (0,ref_wfn.Ca().nirrep()):
         new_wfn.Ca().nph[irrep][:,:] = ref_wfn.Ca().nph[irrep][:,:]
         new_wfn.Cb().nph[irrep][:,:] = ref_wfn.Cb().nph[irrep][:,:]
@@ -772,7 +810,7 @@ def run_mcpdft(name, **kwargs):
 
     opdm_a = kwargs.get('opdm_a', None)
     opdm_b = kwargs.get('opdm_b', None)
-    if opdm_a is None or opdm_b is None: 
+    if opdm_a is None or opdm_b is None:
         rho_helper.read_opdm()
     else:
         rho_helper.set_opdm(opdm_a, opdm_b)
@@ -781,8 +819,8 @@ def run_mcpdft(name, **kwargs):
     rho_helper.build_rho()
 
     # need Da and Db to build T+V+J. rho_helper has them in the MO basis
-    Da = rho_helper.Da() 
-    Db = rho_helper.Db() 
+    Da = rho_helper.Da()
+    Db = rho_helper.Db()
 
     # T + V
     mints = psi4.core.MintsHelper(new_wfn.basisset())
@@ -853,7 +891,7 @@ def run_mcpdft(name, **kwargs):
     rho_a_x = np.asarray(rho_helper.rho_a_x())
     rho_a_y = np.asarray(rho_helper.rho_a_y())
     rho_a_z = np.asarray(rho_helper.rho_a_z())
-    
+
     rho_b_x = np.asarray(rho_helper.rho_b_x())
     rho_b_y = np.asarray(rho_helper.rho_b_y())
     rho_b_z = np.asarray(rho_helper.rho_b_z())
@@ -996,6 +1034,8 @@ psi4.driver.procedures['energy']['qed-ccsd'] = run_qed_scf
 
 psi4.driver.procedures['gradient']['qed-scf'] = run_qed_scf_gradient
 psi4.driver.procedures['gradient']['qed-dft'] = run_qed_scf_gradient
+
+psi4.driver.procedures['gradient']['cc_cavity'] = run_qed_scf_gradient
 
 # mcpdft
 psi4.driver.procedures['energy']['mcpdft'] = run_mcpdft

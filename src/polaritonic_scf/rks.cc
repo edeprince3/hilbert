@@ -525,12 +525,14 @@ double PolaritonicRKS::compute_energy() {
 
     }while(fabs(dele) > e_convergence || gnorm_a > d_convergence );
 
-    if ( iter > maxiter ) {
-        throw PsiException("Maximum number of iterations exceeded!",__FILE__,__LINE__);
-    }
-
     outfile->Printf("\n");
-    outfile->Printf("    SCF iterations converged!\n");
+    if ( iter > maxiter && options_.get_bool("FAIL_ON_MAXITER") ){
+        throw PsiException("Maximum number of iterations exceeded!",__FILE__,__LINE__);
+    } else if ( iter > maxiter ) {
+        outfile->Printf("    SCF iterations did not converge!\n");
+    } else {
+        outfile->Printf("    SCF iterations converged!\n");
+    }
     outfile->Printf("\n");
 
     // evaluate dipole self energy
