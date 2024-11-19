@@ -81,10 +81,11 @@ def init_cc_cavity(name, **kwargs):
     # set MPI communicator for TA in Hilbert
 
     # upon exit, finalize MPI
-    import atexit
-    @atexit.register
+    from atexit import register
+    @register
     def cleanup():
-        hilbert.ta_finalize()
+        from hilbert import ta_finalize
+        ta_finalize()
 
 
 def run_qed_scf(name, **kwargs):
