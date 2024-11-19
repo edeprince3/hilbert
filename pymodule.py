@@ -73,13 +73,12 @@ def init_cc_cavity(name, **kwargs):
     # get MPI communicator
     try:
         from mpi4py import MPI
-        comm = MPI.COMM_WORLD
+        from hilbert import set_comm
+        set_comm(MPI.COMM_WORLD)
     except ImportError:
         raise Exception('Hilbert is not compiled with TA support. Please recompile with `-D WITH_TA` cmake flag.')
 
     # set MPI communicator for TA in Hilbert
-    import hilbert
-    hilbert.set_comm(comm)
 
     # upon exit, finalize MPI
     import atexit
