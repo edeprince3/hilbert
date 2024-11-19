@@ -1,8 +1,4 @@
-if (POLICY CMP0025)
-  cmake_policy(SET CMP0025 NEW)
-endif ()
-
-cmake_policy(SET CMP0048 NEW)  # project_VERSION* variables populated from project(... VERSION x.x.x) string
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
 project(hilbert
         VERSION 0.1
@@ -13,8 +9,6 @@ set(hilbert_DESCRIPTION  "Hilbert: A space for quantum chemistry plugins to Psi4
 set(hilbert_URL          "https://github.com/edeprince3/hilbert")
 set(hilbert_LICENSE      "GPL-3.0+")
 set(CMAKE_CXX_STANDARD 17)
-
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
