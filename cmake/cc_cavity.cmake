@@ -107,6 +107,7 @@ set(qed_eom_builds
         src/cc_cavity/src/ccsd/sigma_builds/eom_ea/intermediates_00.cc
 
         src/cc_cavity/src/ccsd/eom_ee_rdm.cc
+        src/cc_cavity/src/ccsd/eom_ea_rdm.cc
 )
 set(qed_eom_builds
         ${qed_eom_builds} # QED-CCSD-21
@@ -127,6 +128,7 @@ set(qed_eom_builds
         src/cc_cavity/src/qed_ccsd_21/sigma_builds/eom_ea/intermediates_21.cc
 
         src/cc_cavity/src/qed_ccsd_21/eom_ee_qed_rdm_21.cc
+        src/cc_cavity/src/qed_ccsd_21/eom_ea_qed_rdm_21.cc
 )
 
 # the following files take a long time to compile with -fvar-tracking-assignments; disable it for these files

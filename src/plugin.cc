@@ -64,7 +64,11 @@
 #include "cc_cavity/include/qed_ccsd_21/eom_ee_qed_rdm_21.h"
 
 #include "cc_cavity/include/ccsd/eom_ea_ccsd.h"
+#include "cc_cavity/include/ccsd/eom_ea_rdm.h"
+
 #include "cc_cavity/include/qed_ccsd_21/eom_ea_qed_ccsd_21.h"
+#include "cc_cavity/include/qed_ccsd_21/eom_ea_qed_rdm_21.h"
+
 #endif
 
 
@@ -759,14 +763,13 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
             }
         }
         else if (options.get_str("EOM_TYPE") == "EA") {
-//            if (qed_type == "CCSD-00") {
-//                rdm = std::shared_ptr<EOM_RDM>(new EOM_EA_RDM(eom_driver, options));
-//            } else if (qed_type == "CCSD-21") {
-//                rdm = std::shared_ptr<EOM_RDM>(new EOM_EA_QED_RDM_21(eom_driver, options));
-//            } else {
-//                throw PsiException("RDM construction for EOM_EA not implemented for " + qed_type, __FILE__, __LINE__);
-//            }
-            return (std::shared_ptr<Wavefunction>)qedcc;
+            if (qed_type == "CCSD-00") {
+                rdm = std::shared_ptr<EOM_RDM>(new EOM_EA_RDM(eom_driver, options));
+            } else if (qed_type == "CCSD-21") {
+                rdm = std::shared_ptr<EOM_RDM>(new EOM_EA_QED_RDM_21(eom_driver, options));
+            } else {
+                throw PsiException("RDM construction for EOM_EA not implemented for " + qed_type, __FILE__, __LINE__);
+            }
         }
 
         // build the 1-RDMs

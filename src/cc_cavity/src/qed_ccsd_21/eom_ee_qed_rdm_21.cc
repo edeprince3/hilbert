@@ -68,7 +68,12 @@ namespace hilbert {
         TArrayD r0 = eom_driver_->evec_blks_["r0"];
         TArrayD l0 = eom_driver_->evec_blks_["l0"];
 
-        double t0_1 = eom_driver_->cc_wfn_->scalars_["t0_1"];
+        double t0_1;
+        foreach_inplace(eom_driver_->cc_wfn_->amplitudes_["t0_1"], [&t0_1](auto &tile){
+            for(auto &x : tile.range())
+                t0_1 = tile[x];
+        });
+
         TArrayD r0_1 = eom_driver_->evec_blks_["l0_1"];
         TArrayD l0_1 = eom_driver_->evec_blks_["r0_1"];
 
