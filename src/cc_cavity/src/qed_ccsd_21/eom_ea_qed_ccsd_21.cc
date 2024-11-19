@@ -542,9 +542,9 @@ namespace hilbert {
         world_.gop.fence();
 
         /// initialize left operators
-        evec_blks_["l1_a"] = makeTensor(world_, {L, va_}, false); // alpha singles excitations
-        evec_blks_["l2_aaa"] = makeTensor(world_, {L, oa_, va_, va_}, false); // alpha doubles excitations
-        evec_blks_["l2_bab"] = makeTensor(world_, {L, ob_, va_, vb_}, false); // alpha-beta doubles excitations
+        evec_blks_["l1_1_a"] = makeTensor(world_, {L, va_}, false); // alpha singles excitations
+        evec_blks_["l2_1_aaa"] = makeTensor(world_, {L, oa_, va_, va_}, false); // alpha doubles excitations
+        evec_blks_["l2_1_bab"] = makeTensor(world_, {L, ob_, va_, vb_}, false); // alpha-beta doubles excitations
 
         // pack singles into tensors
         offset = dim_e_;
