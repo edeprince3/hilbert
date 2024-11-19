@@ -78,8 +78,6 @@ def init_cc_cavity(name, **kwargs):
     except ImportError:
         raise Exception('Hilbert is not compiled with TA support. Please recompile with `-D WITH_TA` cmake flag.')
 
-    # set MPI communicator for TA in Hilbert
-
     # upon exit, finalize MPI
     from atexit import register
     @register
