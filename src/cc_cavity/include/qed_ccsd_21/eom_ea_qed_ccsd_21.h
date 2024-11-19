@@ -64,7 +64,7 @@ public:
 
     void unpack_eigenvectors() override;
 
-    DominantTransitionsType find_dominant_transitions(size_t I) override;
+    std::map<string, EOM_Driver::DominantTransitions> find_dominant_transitions(size_t I) override;
 
 
 };

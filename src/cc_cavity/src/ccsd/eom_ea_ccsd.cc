@@ -313,9 +313,7 @@ namespace hilbert {
         return;
     }
 
-    EOM_Driver::DominantTransitionsType EOM_EA_CCSD::find_dominant_transitions(size_t I) {
-        /// get dominant transition for each root in each block
-
+    std::map<string, EOM_Driver::DominantTransitions> EOM_EA_CCSD::find_dominant_transitions(size_t I) {
         // get pointers to eigenvectors
         double **rerp = revec_->pointer();
         double **relp = levec_->pointer();
@@ -327,56 +325,55 @@ namespace hilbert {
         //     the magnitude of the transition
         //     the spin of the transition
         //     the indicies of the transition
-        EOM_Driver::DominantTransitionsType dominant_transitions;
+        std::map<string, DominantTransitions> dominant_transition_map;
 
         size_t off = 0;
-        size_t id = 0;
+        double  l, r, lr;
 
         // singles a
-        double l, r, lr;
         for (size_t a = 0; a < va_; a++) {
-            l = relp[I][id + off]; // get l
-            r = rerp[I][id + off]; // get r
+            l = relp[I][off]; // get l
+            r = rerp[I][off]; // get r
             lr = l*r; // get lr
             if (fabs(lr) > threshold) {
-                dominant_transitions["l1*r1"].push({lr, l, r, "a", {a+1 + oa_}});
+                TransitionData td(lr, l, r, "v", "a", {a+1 + oa_});
+                dominant_transition_map["l1*r1"].push(td);
             }
-            id++;
+            off++;
         }
-        off += id;
 
         // doubles aaa
         for (size_t a = 0; a < va_; a++) {
             for (size_t b = a + 1; b < va_; b++) {
                 for (size_t i = 0; i < oa_; i++) {
-                    l = relp[I][id + off]; // get l
-                    r = rerp[I][id + off]; // get r
+                    l = relp[I][off]; // get l
+                    r = rerp[I][off]; // get r
                     lr = l*r; // get lr
                     if (fabs(lr) > threshold) {
-                        dominant_transitions["l2*r2"].push({lr, l, r, "aaa", {a+1 + oa_, b+1 + oa_, oa_ - i}});
+                        TransitionData td(lr, l, r, "vvo", "aaa", {a+1 + oa_, b+1 + oa_, i+1});
+                        dominant_transition_map["l2*r2"].push(td);
                     }
-                    id++;
+                    off++;
                 }
             }
         }
-        off += id;
-        id = 0;
 
         // doubles abb
         for (size_t a = 0; a < va_; a++) {
             for (size_t b = 0; b < vb_; b++) {
-                for (size_t i = 0; i < oa_; i++) {
-                    l = relp[I][id + off]; // get l
-                    r = rerp[I][id + off]; // get r
+                for (size_t i = 0; i < ob_; i++) {
+                    l = relp[I][off]; // get l
+                    r = rerp[I][off]; // get r
                     lr = l*r; // get lr
                     if (fabs(lr) > threshold) {
-                        dominant_transitions["l2*r2"].push({lr, l, r, "abb", {a+1 + oa_, b+1 + ob_, ob_ - i}});
+                        TransitionData td(lr, l, r, "vvo", "abb", {a+1 + oa_, b+1 + ob_, i+1});
+                        dominant_transition_map["l2*r2"].push(td);
                     }
-                    id++;
+                    off++;
                 }
             }
         }
 
-        return dominant_transitions;
+        return dominant_transition_map;
     }
 } // cc_cavity

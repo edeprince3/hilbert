@@ -650,7 +650,7 @@ namespace hilbert {
         world_.gop.fence();
     }
 
-    EOM_Driver::DominantTransitionsType EOM_EE_QED_CCSD_21::find_dominant_transitions(size_t I) {
+    std::map<string, EOM_Driver::DominantTransitions> EOM_EE_QED_CCSD_21::find_dominant_transitions(size_t I) {
         /// get dominant transition for each root in each block
 
         // get pointers to eigenvectors
@@ -661,107 +661,106 @@ namespace hilbert {
         static constexpr double threshold = 1e-10;
 
         // get electronic dominant transitions from EOM_EE_CCSD
-        EOM_Driver::DominantTransitionsType dominant_transitions = EOM_EE_CCSD::find_dominant_transitions(I);
+        std::map<string, EOM_Driver::DominantTransitions> dominant_transition_map = EOM_EE_CCSD::find_dominant_transitions(I);
 
         size_t off = dim_e_;
-        size_t id = 0;
 
         // ground state + hw
         double  l, r, lr;
-        l = relp[I][id + off]; // get l
-        r = rerp[I][id + off]; // get r
+        l = relp[I][off]; // get l
+        r = rerp[I][off]; // get r
         lr = l*r; // get lr
+
+        // ground state
         if (fabs(lr) > threshold) {
-            dominant_transitions["l0,1*r0,1"].push({lr, l, r, "", {}});
+            TransitionData td(lr, l, r, "", "", {});
+            dominant_transition_map["l0*r0 + hw"].push(td);
         }
         off++;
 
-        // singles aa + hw
+        // singles aa
         for (size_t a = 0; a < va_; a++) {
             for (size_t i = 0; i < oa_; i++) {
-                l = relp[I][id + off]; // get l
-                r = rerp[I][id + off]; // get r
+                l = relp[I][off]; // get l
+                r = rerp[I][off]; // get r
                 lr = l*r; // get lr
                 if (fabs(lr) > threshold) {
-                    dominant_transitions["l1,1*r1,1"].push({lr, l, r, "aa", {a+1 + oa_, oa_ - i}});
+                    TransitionData td(lr, l, r, "vo", "aa", {a+1 + oa_, i+1});
+                    dominant_transition_map["l1*r1 + hw"].push(td);
                 }
-                id++;
+                off++;
             }
         }
-        off += id;
-        id = 0;
 
-        // singles bb + hw
+        // singles bb
         for (size_t a = 0; a < vb_; a++) {
             for (size_t i = 0; i < ob_; i++) {
-                l = relp[I][id + off]; // get l
-                r = rerp[I][id + off]; // get r
+                l = relp[I][off]; // get l
+                r = rerp[I][off]; // get r
                 lr = l*r; // get lr
                 if (fabs(lr) > threshold) {
-                    dominant_transitions["l1,1*r1,1"].push({lr, l, r, "bb", {a+1 + ob_, ob_ - i}});
+                    TransitionData td(lr, l, r, "vo", "bb", {a+1 + ob_, i+1});
+                    dominant_transition_map["l1*r1 + hw"].push(td);
                 }
-                id++;
+                off++;
             }
         }
-        off += id;
-        id = 0;
 
-        // doubles aaaa + hw
+        // doubles aaaa
         for (size_t a = 0; a < va_; a++) {
             for (size_t b = a + 1; b < va_; b++) {
                 for (size_t i = 0; i < oa_; i++) {
                     for (size_t j = i + 1; j < oa_; j++) {
-                        l = relp[I][id + off]; // get l
-                        r = rerp[I][id + off]; // get r
+                        l = relp[I][off]; // get l
+                        r = rerp[I][off]; // get r
                         lr = l*r; // get lr
                         if (fabs(lr) > threshold) {
-                            dominant_transitions["l2,1*r2,1"].push({lr, l, r, "aaaa", {a+1 + oa_, b+1 + oa_, oa_ - i, oa_ - j}});
+                            TransitionData td(lr, l, r, "vvoo", "aaaa", {a+1 + oa_, b+1 + oa_, i+1, j+1});
+                            dominant_transition_map["l2*r2 + hw"].push(td);
                         }
-                        id++;
+                        off++;
                     }
                 }
             }
         }
-        off += id;
-        id = 0;
 
-        // doubles abab + hw
+        // doubles abab
         for (size_t a = 0; a < va_; a++) {
             for (size_t b = 0; b < vb_; b++) {
                 for (size_t i = 0; i < oa_; i++) {
                     for (size_t j = 0; j < ob_; j++) {
-                        l = relp[I][id + off]; // get l
-                        r = rerp[I][id + off]; // get r
+                        l = relp[I][off]; // get l
+                        r = rerp[I][off]; // get r
                         lr = l*r; // get lr
                         if (fabs(lr) > threshold) {
-                            dominant_transitions["l2,1*r2,1"].push({lr, l, r, "abab", {a+1 + oa_, b+1 + ob_, oa_ - i, ob_ - j}});
+                            TransitionData td(lr, l, r, "vvoo", "abab", {a+1 + oa_, b+1 + ob_, i+1, j+1});
+                            dominant_transition_map["l2*r2 + hw"].push(td);
                         }
-                        id++;
+                        off++;
                     }
                 }
             }
         }
-        off += id;
-        id = 0;
 
-        // doubles bbbb + hw
+        // doubles bbbb
         for (size_t a = 0; a < vb_; a++) {
             for (size_t b = a + 1; b < vb_; b++) {
                 for (size_t i = 0; i < ob_; i++) {
                     for (size_t j = i + 1; j < ob_; j++) {
-                        l = relp[I][id + off]; // get l
-                        r = rerp[I][id + off]; // get r
+                        l = relp[I][off]; // get l1
+                        r = rerp[I][off]; // get r
                         lr = l*r; // get lr
                         if (fabs(lr) > threshold) {
-                            dominant_transitions["l2,1*r2,1"].push({lr, l, r, "bbbb", {a+1 + ob_, b+1 + ob_, ob_ - i, ob_ - j}});
+                            TransitionData td(lr, l, r, "vvoo", "bbbb", {a+1 + ob_, b+1 + ob_, i+1, j+1});
+                            dominant_transition_map["l2*r2 + hw"].push(td);
                         }
-                        id++;
+                        off++;
                     }
                 }
             }
         }
 
-        return dominant_transitions;
+        return dominant_transition_map;
     }
 
 } // hilbert

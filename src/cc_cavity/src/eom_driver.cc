@@ -318,80 +318,31 @@ namespace hilbert {
         }
     }
 
-    void EOM_Driver::transitions_summary(){
+    void EOM_Driver::transitions_summary() {
 
         // print out the dominant transitions for each root if requested
         if (options_.get_bool("PRINT_TRANSITIONS"))
-            Printf("\n\n    ==>  Dominant Transitions:  <==    \n", eom_type_.c_str());
+            Printf("\n\n    ==>  Dominant Transitions:  <==    \n\n", eom_type_.c_str());
         else return;
 
         for (size_t I = 0; I < M_; I++) {
             // get the dominant transitions for state I
-            DominantTransitionsType dominant_transitions = find_dominant_transitions(I);
+            map<string, DominantTransitions> dominant_transitions = find_dominant_transitions(I);
             size_t num_print = options_.get_int("NUM_PRINT_TRANSITIONS");
-            // print the dominant transitions
-            Printf("\n\n  --> Root %zu <--\n", I);
+            Printf("--> Root %zu <--\n", I);
 
-            // print top `n` transitions for each excitation block
-            for(auto transitionBlock : dominant_transitions) {
-                // grab first 5 values from priority queue
-                std::deque<TransitionType> topTransitions;
-
-                for (size_t i = 0; i < num_print; i++) {
-                    if (!transitionBlock.second.empty()) {
-                        topTransitions.push_back(transitionBlock.second.top());
-                        transitionBlock.second.pop();
-                    }
-                }
-
-                // print top 5 in following format:
-                //     --> l1*r1_bbbb <--
-                //          1: (  i  )->(  a  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
-                //          2: (  i  )->(  a  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
-                //          3: (  i  )->(  a  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
-                //          4: (  i  )->(  a  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
-                //          5: (  i  )->(  a  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
-                //     --> l2*r2_aaaa <--
-                //          1: (  i,  j  )->(  a,  b  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
-                //          2: (  i,  j  )->(  a,  b  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
-                //          3: (  i,  j  )->(  a,  b  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
-                //          4: (  i,  j  )->(  a,  b  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
-                //          5: (  i,  j  )->(  a,  b  ), lr=(+-)0.1234, l=(+-)0.1234, r=(+-)0.1234
-
-                size_t top_size = topTransitions.size();
-                if (top_size == 0) continue;
-
-                Printf("\n    %s", transitionBlock.first.c_str());
-                for (size_t i = 0; i < top_size; i++) {
-                    TransitionType &tpair = topTransitions[i];
-
-                    auto [lr, l, r, spin, labels] = tpair;
-                    size_t size = labels.size(); // size of transitionBlock pairs
-                    if (size == 0) { // ground state
-                        Printf(": l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1, lr, l, r);
-                    } else if (size == 1) { // singles
-                        Printf("\n        %3d: (+%2d%c), l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1,
-                               labels[0], spin[0], lr, l, r);
-                    } else if (size == 2) { // singles
-                        Printf("\n        %3d: (%2d%c ) -> (%2d%c ), l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1,
-                               labels[1], spin[1], labels[0], spin[0], lr, l, r);
-                    } else if (size == 3) { // singles
-                        Printf("\n        %3d: (%2d%c ) -> (%2d%c,+%2d%c ), l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1,
-                               labels[2], spin[2], labels[1], spin[1], labels[0], spin[0], lr, l, r);
-                    } else if (size == 4) { // doubles
-                        Printf("\n        %3d: (%2d%c,%2d%c ) -> (%2d%c,%2d%c ), l*r = %15.12lf | l = %11.8lf, r = %11.8lf", i+1,
-                               labels[2], spin[2], labels[3], spin[3],
-                               labels[0], spin[0], labels[1], spin[1], lr, l, r);
-                    } else {
-                        throw PsiException("Too many transitions for current EOM method. Update EOM_Driver::transitions_summary", __FILE__, __LINE__);
-                    }
+            // print the dominant transitions for each operator
+            for (auto &[exc_block, transitions]: dominant_transitions) {
+                Printf("  %s\n", exc_block.c_str());
+                size_t count = 0;
+                while (!transitions.empty() && count++ < num_print) {
+                    string transition = transitions.top().str();
+                    Printf("      %d: %s\n", count, transition.c_str());
+                    transitions.pop();
                 }
             }
-
-            // free memory
-            dominant_transitions.clear();
+            Printf("\n\n");
         }
-        Printf("\n\n");
     }
 
     void EOM_Driver::print_timers() const {

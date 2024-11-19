@@ -271,34 +271,57 @@ namespace hilbert {
          */
         virtual void unpack_eigenvectors() = 0;
 
-        typedef // custom type for storing information of transitions:
-        std::tuple<double, // the weight of the transition (l*r)
-              double, // the value of l
-              double, // the value of r
-              string, // the spin of the transition
-              vector<size_t> // the indices of the transition
-            > TransitionType;
 
-        // a comparison function for the priority queue that sorts by the magnitude of the transition
-        struct TransitionCompare {
-            bool operator()(const TransitionType &lhs, const TransitionType &rhs) const {
-                return fabs(get<0>(lhs)) < fabs(get<0>(rhs));
+        /**
+         * data structure to store information about a transition
+         */
+        struct TransitionData {
+            double weight, l, r; // the weight of the transition (l*r), the value of l, the value of r
+            string spin; // the spin orbitals of the transition ( ex: abab )
+            string ov;   // the occupied/unoccupied orbitals of the transition ( ex: vvoo )
+            vector<size_t> indices;  // the orbital indices for the transition ( ex: 1, 2, 3, 4 )
+            size_t size; // the size of the transition
+
+            TransitionData(double weight, double l, double r, string ov, string spin, vector<size_t> indices) :
+                    weight(weight), l(l), r(r), ov(ov), spin(spin), indices(indices), size(indices.size()) {}
+
+            bool operator<(const TransitionData &rhs) const {
+                // sort by size of indices, then by weight, then by indices
+                if (size != rhs.size) return size < rhs.size;
+                if (fabs(weight - rhs.weight) > 1e-10) return weight < rhs.weight;
+                return indices < rhs.indices;
+            }
+
+            string str() const {
+                // build string for occupied/unoccupied orbitals
+                string occ = "( ", vir = "( ";
+                for (size_t i = 0; i < size; i++) {
+                    string idx_str = to_string(indices[i]) + spin[i];
+                    if (ov[i] == 'o')
+                        occ += idx_str + ",";
+                    else vir += idx_str + ",";
+                }
+                occ.pop_back(); vir.pop_back();
+                occ += " )"; vir += " )";
+
+                // build string for transition
+                string trans = occ + " -> " + vir;
+
+                // add weight, l, and r to the string with 10 decimal places
+                char buffer[100];
+                sprintf(buffer, "l*r = %20.12f, l = %12.8f, r = %12.8f", weight, l, r);
+                string lr = buffer;
+
+                return trans + " | " + lr;
             }
         };
-
-        typedef // a map of the excitation operator blocks to a priority queue of its dominant transitions
-        map<string, // the excitation operator block name
-            std::priority_queue<TransitionType, // the priority queue of transitions
-                std::deque<TransitionType>, // the container for storing transitions (deque is faster than vector here)
-                TransitionCompare // the comparison function for the priority queue
-            >
-        > DominantTransitionsType;
+        typedef std::priority_queue<TransitionData, std::vector<TransitionData>> DominantTransitions;
 
         /**
          * find the dominant transitions for a given state
          * @param I the state
          */
-        virtual DominantTransitionsType find_dominant_transitions(size_t I) = 0;
+        virtual map<string, DominantTransitions> find_dominant_transitions(size_t I) = 0;
 
         /**
          * Print the dominant transitions for all states
