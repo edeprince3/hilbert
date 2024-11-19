@@ -310,7 +310,93 @@ namespace hilbert {
     }
 
     void EOM_EA_CCSD::unpack_eigenvectors() {
-        return;
+        evec_blks_.clear(); // clear the map of trial vectors
+
+        // only extract the target roots
+        size_t L = M_;
+        double **rerp = revec_->pointer(), **relp = levec_->pointer();
+
+        // initialize operators
+        evec_blks_["r1_a"] = makeTensor(world_, {L, va_}, false); // alpha singles excitations
+        evec_blks_["r2_aaa"] = makeTensor(world_, {L, va_, va_, oa_}, false); // alpha doubles excitations
+        evec_blks_["r2_abb"] = makeTensor(world_, {L, va_, vb_, ob_}, false); // alpha-beta doubles excitations
+
+        size_t oa = oa_, ob = ob_, // number of occupied orbitals
+        va = va_, vb = vb_; // number of virtual beta orbitals
+        size_t aaa = (va*va-va)*oa/2, abb = va*vb*ob; // offsets for indexing into Q
+
+        size_t offset = 0;
+        /// pack electronic trial vectors into TA::TArrayD
+
+        // pack singles into tensors
+        {
+            evec_blks_["r1_a"].init_elements([rerp, offset](auto &I) {
+                size_t trial = I[0], e = I[1];
+                return rerp[trial][e + offset];
+            }); offset += va;
+        }
+
+        // pack redundant doubles into tensors
+        {
+            evec_blks_["r2_aaa"].init_elements([rerp, oa, ob, vb, va, offset](auto &I) {
+                size_t trial = I[0], e = I[1], f = I[2], m = I[3];
+
+                if (e == f) return 0.0; // return 0 for diagonal elements
+
+                bool change_sign = (e > f);
+                if (change_sign) std::swap(e, f);
+
+                size_t ef_off = EOM_Driver::sqr_2_tri_idx(e, f, va);
+                size_t upper_tri_index = ef_off*oa + m + offset;
+
+                double value = rerp[trial][upper_tri_index];
+                return change_sign ? -value : value;
+            }); offset += aaa;
+
+            evec_blks_["r2_abb"].init_elements([rerp, oa, ob, vb, va, offset](auto &I) {
+                size_t trial = I[0], e = I[1], f = I[2], m = I[3];
+                return rerp[trial][e*vb*ob + f*ob + m + offset];
+            }); offset += abb;
+        }
+        world_.gop.fence();
+
+        /// initialize left operators
+        evec_blks_["l1_a"] = makeTensor(world_, {L, va_}, false); // alpha singles excitations
+        evec_blks_["l2_aaa"] = makeTensor(world_, {L, oa_, va_, va_}, false); // alpha doubles excitations
+        evec_blks_["l2_bab"] = makeTensor(world_, {L, ob_, va_, vb_}, false); // alpha-beta doubles excitations
+
+        // pack singles into tensors
+        offset = 0;
+        {
+            evec_blks_["l1_a"].init_elements([relp, offset](auto &I) {
+                size_t trial = I[0], e = I[1];
+                return relp[trial][e + offset];
+            }); offset += va;
+        }
+
+        // pack redundant doubles into tensors
+        {
+            evec_blks_["l2_aaa"].init_elements([relp, oa, ob, vb, va, offset](auto &I) {
+                size_t trial = I[0], m = I[1], e = I[2], f = I[3];
+
+                if (e == f) return 0.0; // return 0 for diagonal elements
+
+                bool change_sign = (e > f);
+                if (change_sign) std::swap(e, f);
+
+                size_t ef_off = EOM_Driver::sqr_2_tri_idx(e, f, va);
+                size_t upper_tri_index = ef_off*oa + m + offset;
+
+                double value = relp[trial][upper_tri_index];
+                return change_sign ? -value : value;
+            }); offset += aaa;
+
+            evec_blks_["l2_bab"].init_elements([relp, oa, ob, vb, va, offset](auto &I) {
+                size_t trial = I[0], m = I[1], e = I[2], f = I[3];
+                return relp[trial][e*vb*ob + f*ob + m + offset];
+            }); offset += abb;
+        }
+        world_.gop.fence();
     }
 
     std::map<string, EOM_Driver::DominantTransitions> EOM_EA_CCSD::find_dominant_transitions(size_t I) {
