@@ -28,18 +28,15 @@ if (NOT mpi4py_FOUND)
     message(FATAL_ERROR "mpi4py not found; please install mpi4py with the command 'conda install mpi4py' or 'pip install mpi4py'")
 endif ()
 
-# set include directory for mpi4py
-include_directories(${mpi4py_INCLUDE_DIRS})
-
-# disable building the tests for tiledarray
-set(BUILD_TESTING OFF CACHE BOOL "Build tests" FORCE)
-
 # add tiledarray library
+message(STATUS "Fetching TiledArray")
 FetchContent_Declare(tiledarray
         GIT_REPOSITORY https://github.com/ValeevGroup/tiledarray.git
         GIT_TAG 248f85ce93e35d7e5326f35daceb4c262987c167
 )
 
+# disable building the tests for tiledarray
+set(BUILD_TESTING OFF CACHE BOOL "Build tests" FORCE)
 FetchContent_MakeAvailable(tiledarray)
 
 # Tiled Array should always be built in Release mode

@@ -189,9 +189,7 @@ target_link_libraries(hilbert PUBLIC sdp)
 target_link_libraries(hilbert PUBLIC LBFGS::lib)
 
 if(WITH_TA)
-  target_include_directories(hilbert PUBLIC ${mpi4py_INCLUDE_DIR})
-  target_include_directories(hilbert PUBLIC ${tiledarray_INCLUDE_DIR})
-  target_link_libraries(hilbert PUBLIC tiledarray)
+  target_link_libraries(hilbert PUBLIC mpi4py::mpi4py tiledarray)
 endif()
 
 # set install prefix to project root in hilbert folder
