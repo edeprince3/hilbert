@@ -400,14 +400,16 @@ double PolaritonicROHF::compute_energy() {
 
     }while(fabs(dele) > e_convergence || gnorm > d_convergence );
 
-    if ( iter > maxiter ) {
+    outfile->Printf("\n");
+    if ( iter > maxiter && options_.get_bool("FAIL_ON_MAXITER") ){
         throw PsiException("Maximum number of iterations exceeded!",__FILE__,__LINE__);
+    } else if ( iter > maxiter ) {
+        outfile->Printf("    SCF iterations did not converge!\n");
+    } else {
+        outfile->Printf("    SCF iterations converged!\n");
     }
 
     outfile->Printf("\n");
-    outfile->Printf("    SCF iterations converged!\n");
-    outfile->Printf("\n");
-
     // evaluate dipole self energy
     if ( n_photon_states_ > 1 ) {
         evaluate_dipole_self_energy();

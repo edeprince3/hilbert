@@ -117,6 +117,22 @@ void export_HilbertHelper(py::module& m) {
         .def_readwrite("k", &tpdm::k)
         .def_readwrite("l", &tpdm::l)
         .def_readwrite("value", &tpdm::value);
+
+    #ifdef WITH_TA
+        // import the mpi4py API
+        if (import_mpi4py() < 0) {
+            throw std::runtime_error("Could not load mpi4py API.");
+        }
+
+        m.def("set_comm", [](py::object comm) {
+            CavityHelper::comm_ = *PyMPIComm_Get(comm.ptr());
+            if (CavityHelper::comm_ == MPI_COMM_NULL) {
+                CavityHelper::comm_ = MPI_COMM_WORLD;
+            }
+        });
+        m.def("ta_initialize", &CavityHelper::ta_initialize);
+        m.def("ta_finalize", &CavityHelper::ta_finalize);
+    #endif
 }
 
 PYBIND11_MODULE(hilbert, m) {
@@ -354,7 +370,6 @@ std::shared_ptr<Matrix> v2RDMHelper::get_orbitals(const std::string& orbital_nam
 void v2RDMHelper::set_orbitals(const std::string& orbital_name, SharedMatrix orbitals) {
     v2rdm->set_orbitals(orbital_name, orbitals);
 }
-
 
 }
 
