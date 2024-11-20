@@ -445,7 +445,7 @@ int read_options(std::string name, Options& options)
         /*- Convergence criteria for davidson solver -*/
         options.add_double("EOM_R_CONV", 1e-6);
         options.add_double("EOM_E_CONV", 1e-8);
-        options.add_int("EOM_MAXITER", 100);
+        options.add_int("EOM_MAXITER", 250);
 
         /*- Use diagonals from singles block in EOM-CC -*/
         options.add_bool("EOM_SS_GUESS", true);

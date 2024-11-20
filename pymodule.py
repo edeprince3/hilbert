@@ -46,13 +46,14 @@ def init_cc_cavity(name, **kwargs):
     elif 'ccsd-22' in name:
         psi4.core.set_local_option('HILBERT', 'QED_CC_TYPE', 'CCSD-22')
 
+    # check if coupling strength is zero
+    if np.allclose(psi4.core.get_option('HILBERT', 'CAVITY_COUPLING_STRENGTH'), 0.0):
+        psi4.core.set_local_option('HILBERT', 'QED_CC_TYPE', 'CCSD-00')
+        psi4.core.set_local_option('HILBERT', 'CAVITY_FREQUENCY', [0.0, 0.0, 1000.0])
 
     # determine if using eom-cc or ground-state CC
     if 'eom' in name:
         psi4.core.set_local_option('HILBERT', 'PERFORM_EOM', True)
-
-        # default to EOM_EE_CCSD
-        psi4.core.set_local_option('HILBERT', 'EOM_TYPE', 'EE')
 
         # check if 'eom-ea' is in the name and set EOM_TYPE to EA if so
         if 'eom-ea' in name:
