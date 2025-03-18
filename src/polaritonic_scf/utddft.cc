@@ -87,14 +87,14 @@ void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
         //throw PsiException("polaritonic rtddft only works with TDA df for now",__FILE__,__LINE__);
     }
 
-    // ensure scf_type df
-    if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" ) {
-        throw PsiException("polaritonic utddft only works with scf_type df for now",__FILE__,__LINE__);
+    // check SCF type
+    if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" && options_.get_str("SCF_TYPE") != "PK") {
+        throw PsiException("invalid SCF_TYPE for qed-utddft",__FILE__,__LINE__);
     }
 
     // ensure running in c1 symmetry
     if ( reference_wavefunction_->nirrep() > 1 ) {
-        throw PsiException("polaritonic utddft only works with c1 symmetry for now.",__FILE__,__LINE__);
+        throw PsiException("qed-utddft only works with c1 symmetry for now.",__FILE__,__LINE__);
     }
 
     // get primary basis:
@@ -111,85 +111,43 @@ void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
     // apparently compute_Vx wants me to set the density
     potential_->set_D({Da_,Db_});
 
-    // print the ks information
-    //potential_->print_header();
-
-    is_x_lrc_    = functional->is_x_lrc();
-    is_x_hybrid_ = functional->is_x_hybrid();
-    x_omega_     = functional->x_omega();
-    x_alpha_     = functional->x_alpha();
-    needs_xc_    = functional->needs_xc();
-
     if ( options_.get_str("SCF_TYPE") == "DF" ) {
 
         // get auxiliary basis:
         std::shared_ptr<BasisSet> auxiliary = reference_wavefunction_->get_basisset("DF_BASIS_SCF");
 
-        // total number of auxiliary basis functions
-        //nQ = auxiliary->nbf();
-
-        std::shared_ptr<DiskDFJK> myjk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary,options_));
-
-        // memory for jk (say, 80% of what is available)
-        myjk->set_memory(0.8 * memory_);
-
-        // integral cutoff
-        myjk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
-
-        // Do J/K/wK?
-        is_x_lrc_  = functional->is_x_lrc();
-        is_x_hybrid_  = functional->is_x_hybrid();
-        //if ( options_["IP_FITTING"].has_changed() ) {
-        //    if ( options_.get_bool("IP_FITTING") ) {
-        //        is_x_lrc = true;
-        //    }
-        //}
-        x_omega_ = functional->x_omega();
-        if ( options_["DFT_OMEGA"].has_changed() ) {
-            x_omega_ = options_.get_double("DFT_OMEGA");
-        }
-
-        myjk->set_do_J(true);
-        myjk->set_do_K(is_x_hybrid_);
-        myjk->set_do_wK(is_x_lrc_);
-        myjk->set_omega(x_omega_);
-
-        myjk->initialize();
-
-        jk_ = myjk;
+        jk_ = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary,options_));
 
     }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
 
-        std::shared_ptr<CDJK> myjk = (std::shared_ptr<CDJK>)(new CDJK(primary,options_,options_.get_double("CHOLESKY_TOLERANCE")));
+        jk_ = (std::shared_ptr<CDJK>)(new CDJK(primary,options_,options_.get_double("CHOLESKY_TOLERANCE")));
 
-        // memory for jk (say, 80% of what is available)
-        myjk->set_memory(0.8 * memory_);
+    }else if ( options_.get_str("SCF_TYPE") == "PK" ) {
 
-        // integral cutoff
-        myjk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
-
-        // Do J/K/wK?
-        is_x_lrc_  = functional->is_x_lrc();
-        is_x_hybrid_  = functional->is_x_hybrid();
-        //if ( options_["IP_FITTING"].has_changed() ) {
-        //    if ( options_.get_bool("IP_FITTING") ) {
-        //        is_x_lrc = true;
-        //    }
-        //}
-        x_omega_ = functional->x_omega();
-        if ( options_["DFT_OMEGA"].has_changed() ) {
-            x_omega_ = options_.get_double("DFT_OMEGA");
-        }
-
-        myjk->set_do_J(true);
-        myjk->set_do_K(is_x_hybrid_);
-        myjk->set_do_wK(is_x_lrc_);
-        myjk->set_omega(x_omega_);
-
-        myjk->initialize();
-
-        jk_ = myjk;
+        jk_ = (std::shared_ptr<PKJK>)(new PKJK(primary,options_));
     }
+
+    // memory for jk (say, 80% of what is available)
+    jk_->set_memory(0.8 * memory_);
+
+    // integral cutoff
+    jk_->set_cutoff(options_.get_double("INTS_TOLERANCE"));
+
+    is_x_lrc_    = functional->is_x_lrc();
+    is_x_hybrid_ = functional->is_x_hybrid();
+    x_omega_     = functional->x_omega();
+    if ( options_["DFT_OMEGA"].has_changed() ) {
+        x_omega_ = options_.get_double("DFT_OMEGA");
+    }
+    x_alpha_     = functional->x_alpha();
+    needs_xc_    = functional->needs_xc();
+
+    jk_->set_do_J(true);
+    jk_->set_do_K(is_x_hybrid_);
+    jk_->set_do_wK(is_x_lrc_);
+    jk_->set_omega(x_omega_);
+
+    jk_->initialize();
 
     // alpha + beta MO transformation matrix
     C_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nmo_));

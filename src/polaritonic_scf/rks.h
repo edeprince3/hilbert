@@ -29,9 +29,6 @@
 
 #include "hf.h"
 
-// jk object
-#include <psi4/libfock/jk.h>
-
 using namespace psi;
 
 namespace hilbert{ 
@@ -78,9 +75,6 @@ class PolaritonicRKS: public PolaritonicHF {
 
     /// do print cavity properties?
     bool print_cavity_properties_ = false;
-
-    // jk object
-    std::shared_ptr<JK> jk_;
 
 };
 
