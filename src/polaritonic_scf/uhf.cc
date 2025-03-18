@@ -68,14 +68,14 @@ void PolaritonicUHF::common_init() {
     same_a_b_orbs_ = false;
     same_a_b_dens_ = false;
 
-    // ensure scf_type df
-    if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" ) {
-        throw PsiException("polaritonic uhf only works with scf_type df or cd",__FILE__,__LINE__);
+    // check SCF type
+    if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" && options_.get_str("SCF_TYPE") != "PK") {
+        throw PsiException("invalid SCF_TYPE for qed-uhf",__FILE__,__LINE__);
     }
 
     // ensure running in c1 symmetry
     if ( reference_wavefunction_->nirrep() > 1 ) {
-        throw PsiException("polaritonic uhf only works with c1 symmetry for now.",__FILE__,__LINE__);
+        throw PsiException("qed-uhf only works with c1 symmetry for now.",__FILE__,__LINE__);
     }
 
     // this code only works in the coheren-state basis
@@ -118,43 +118,30 @@ double PolaritonicUHF::compute_energy() {
         // total number of auxiliary basis functions
         nQ = auxiliary->nbf();
 
-        std::shared_ptr<DiskDFJK> myjk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary,options_));
-
-        // memory for jk (say, 80% of what is available)
-        myjk->set_memory(0.8 * memory_);
-
-        // integral cutoff
-        myjk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
-
-        // Do J/K, Not wK 
-        myjk->set_do_J(true);
-        myjk->set_do_K(true);
-        myjk->set_do_wK(false);
-
-        myjk->initialize();
-
-        jk = myjk;
+        //std::shared_ptr<DiskDFJK> myjk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary,options_));
+        jk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary,options_));
 
     }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
 
-        std::shared_ptr<CDJK> myjk = (std::shared_ptr<CDJK>)(new CDJK(primary,options_,options_.get_double("CHOLESKY_TOLERANCE")));
+        jk = (std::shared_ptr<CDJK>)(new CDJK(primary,options_,options_.get_double("CHOLESKY_TOLERANCE")));
 
-        // memory for jk (say, 80% of what is available)
-        myjk->set_memory(0.8 * memory_);
+    }else if ( options_.get_str("SCF_TYPE") == "PK" ) {
 
-        // integral cutoff
-        myjk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
-
-        // Do J/K, Not wK 
-        myjk->set_do_J(true);
-        myjk->set_do_K(true);
-        myjk->set_do_wK(false);
-
-        myjk->initialize();
-
-        jk = myjk;
-
+        jk = (std::shared_ptr<PKJK>)(new PKJK(primary,options_));
     }
+
+    // memory for jk (say, 80% of what is available)
+    jk->set_memory(0.8 * memory_);
+
+    // integral cutoff
+    jk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
+
+    // Do J/K, Not wK 
+    jk->set_do_J(true);
+    jk->set_do_K(true);
+    jk->set_do_wK(false);
+
+    jk->initialize();
 
     // grab some input options_
     double e_convergence = options_.get_double("E_CONVERGENCE");

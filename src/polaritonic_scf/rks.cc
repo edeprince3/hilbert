@@ -70,14 +70,14 @@ void PolaritonicRKS::common_init() {
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *******************************************************\n");
 
-    // ensure scf_type df
-    if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" ) {
-        throw PsiException("polaritonic rks only works with scf_type df for now",__FILE__,__LINE__);
+    // check SCF type
+    if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" && options_.get_str("SCF_TYPE") != "PK") {
+        throw PsiException("invalid SCF_TYPE for qed-rks",__FILE__,__LINE__);
     }
 
     // ensure running in c1 symmetry
     if ( reference_wavefunction_->nirrep() > 1 ) {
-        throw PsiException("polaritonic rks only works with c1 symmetry for now.",__FILE__,__LINE__);
+        throw PsiException("qed-rks only works with c1 symmetry for now.",__FILE__,__LINE__);
     }
 
     // SO-basis xc potential matrices
@@ -141,10 +141,9 @@ double PolaritonicRKS::compute_energy() {
     potential->print_header();
 
     // JK object
-    //std::shared_ptr<JK> jk;
+    std::shared_ptr<JK> jk;
 
     int nQ = 0;
-    bool is_x_lrc = false;
     if ( options_.get_str("SCF_TYPE") == "DF" ) {
 
         // get auxiliary basis:
@@ -153,67 +152,42 @@ double PolaritonicRKS::compute_energy() {
         // total number of auxiliary basis functions
         nQ = auxiliary->nbf();
 
-        std::shared_ptr<DiskDFJK> myjk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary,options_));
-
-        // memory for jk (say, 80% of what is available)
-        myjk->set_memory(0.8 * memory_);
-
-        // integral cutoff
-        myjk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
-
-        // Do J/K/wK?
-        is_x_lrc  = functional->is_x_lrc();
-        //if ( options_["IP_FITTING"].has_changed() ) {
-        //    if ( options_.get_bool("IP_FITTING") ) {
-        //        is_x_lrc = true;
-        //    }
-        //}
-        double x_omega = functional->x_omega();
-        if ( options_["DFT_OMEGA"].has_changed() ) {
-            x_omega = options_.get_double("DFT_OMEGA");
-        }
-
-        myjk->set_do_J(true);
-        myjk->set_do_K(functional->is_x_hybrid());
-        myjk->set_do_wK(is_x_lrc);
-        myjk->set_omega(x_omega);
-
-        myjk->initialize();
-
-        jk_ = myjk;
+        //std::shared_ptr<DiskDFJK> myjk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary,options_));
+        jk = (std::shared_ptr<DiskDFJK>)(new DiskDFJK(primary,auxiliary,options_));
 
     }else if ( options_.get_str("SCF_TYPE") == "CD" ) {
 
-        std::shared_ptr<CDJK> myjk = (std::shared_ptr<CDJK>)(new CDJK(primary,options_,options_.get_double("CHOLESKY_TOLERANCE")));
+        jk = (std::shared_ptr<CDJK>)(new CDJK(primary,options_,options_.get_double("CHOLESKY_TOLERANCE")));
 
-        // memory for jk (say, 80% of what is available)
-        myjk->set_memory(0.8 * memory_);
-
-        // integral cutoff
-        myjk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
-
-        // Do J/K/wK?
-        is_x_lrc  = functional->is_x_lrc();
-        //if ( options_["IP_FITTING"].has_changed() ) {
-        //    if ( options_.get_bool("IP_FITTING") ) {
-        //        is_x_lrc = true;
-        //    }
-        //}
-        double x_omega = functional->x_omega();
-        if ( options_["DFT_OMEGA"].has_changed() ) {
-            x_omega = options_.get_double("DFT_OMEGA");
-        }
-
-        myjk->set_do_J(true);
-        myjk->set_do_K(functional->is_x_hybrid());
-        myjk->set_do_wK(is_x_lrc);
-        myjk->set_omega(x_omega);
-
-        myjk->initialize();
-
-        jk_ = myjk;
-
+    }else if ( options_.get_str("SCF_TYPE") == "PK" ) {
+        
+        jk = (std::shared_ptr<PKJK>)(new PKJK(primary,options_));
     }
+
+    // memory for jk (say, 80% of what is available)
+    jk->set_memory(0.8 * memory_);
+
+    // integral cutoff
+    jk->set_cutoff(options_.get_double("INTS_TOLERANCE"));
+
+    // Do J/K/wK?
+    bool is_x_lrc  = functional->is_x_lrc();
+    //if ( options_["IP_FITTING"].has_changed() ) {
+    //    if ( options_.get_bool("IP_FITTING") ) {
+    //        is_x_lrc = true;
+    //    }
+    //}
+    double x_omega = functional->x_omega();
+    if ( options_["DFT_OMEGA"].has_changed() ) {
+        x_omega = options_.get_double("DFT_OMEGA");
+    }
+
+    jk->set_do_J(true);
+    jk->set_do_K(functional->is_x_hybrid());
+    jk->set_do_wK(is_x_lrc);
+    jk->set_omega(x_omega);
+
+    jk->initialize();
 
     // grab some input options_
     double e_convergence = options_.get_double("E_CONVERGENCE");
@@ -324,16 +298,16 @@ double PolaritonicRKS::compute_energy() {
         }
 
         // push occupied orbitals onto JK object
-        std::vector< std::shared_ptr<Matrix> >& C_left  = jk_->C_left();
+        std::vector< std::shared_ptr<Matrix> >& C_left  = jk->C_left();
         C_left.clear();
         C_left.push_back(myCa);
 
         // form J/K
-        jk_->compute();
+        jk->compute();
 
         // form Fa = h + Ja + Jb - Ka
-        Fa_->copy(jk_->J()[0]);
-        Fa_->add(jk_->J()[0]);
+        Fa_->copy(jk->J()[0]);
+        Fa_->add(jk->J()[0]);
 
         // Construct density from C
         C_DGEMM('n','t',nso_,nso_,nalpha_,1.0,&(Ca_->pointer()[0][0]),nso_,&(Ca_->pointer()[0][0]),nso_,0.0,&(Da_->pointer()[0][0]),nso_);
@@ -355,14 +329,14 @@ double PolaritonicRKS::compute_energy() {
         if (functional->is_x_hybrid()) {
             // form F = h + 2*J + V - alpha K
             double alpha = functional->x_alpha();
-            Fa_->axpy(-alpha,jk_->K()[0]);
+            Fa_->axpy(-alpha,jk->K()[0]);
         }
 
         // LRC functional?
         if (is_x_lrc) {
             // form Fa/b = h + Ja + Jb + Va/b - alpha Ka/b - beta wKa/b
             double beta = 1.0 - functional->x_alpha();
-            Fa_->axpy(-beta,jk_->wK()[0]);
+            Fa_->axpy(-beta,jk->wK()[0]);
         }
 
         std::shared_ptr<Matrix> oei (new Matrix(h));
@@ -443,16 +417,16 @@ double PolaritonicRKS::compute_energy() {
         energy_ += Da_->vector_dot(oei);
         energy_ += Da_->vector_dot(oei);
 
-        energy_ += 0.5 * Da_->vector_dot(jk_->J()[0]);
-        energy_ += 0.5 * Da_->vector_dot(jk_->J()[0]);
+        energy_ += 0.5 * Da_->vector_dot(jk->J()[0]);
+        energy_ += 0.5 * Da_->vector_dot(jk->J()[0]);
 
-        energy_ += 0.5 * Da_->vector_dot(jk_->J()[0]);
-        energy_ += 0.5 * Da_->vector_dot(jk_->J()[0]);
+        energy_ += 0.5 * Da_->vector_dot(jk->J()[0]);
+        energy_ += 0.5 * Da_->vector_dot(jk->J()[0]);
 
         if (functional->is_x_hybrid()) {
             double alpha = functional->x_alpha();
-            energy_ -= 0.5 * alpha * Da_->vector_dot(jk_->K()[0]);
-            energy_ -= 0.5 * alpha * Da_->vector_dot(jk_->K()[0]);
+            energy_ -= 0.5 * alpha * Da_->vector_dot(jk->K()[0]);
+            energy_ -= 0.5 * alpha * Da_->vector_dot(jk->K()[0]);
         }
 
         // dipole self energy contributions ... ignore if following QED-TDDFT outlined in J. Chem. Phys. 155, 064107 (2021)
@@ -468,8 +442,8 @@ double PolaritonicRKS::compute_energy() {
     
         if (is_x_lrc) {
             double beta = 1.0 - functional->x_alpha();
-            energy_ -= 0.5 * beta * Da_->vector_dot(jk_->wK()[0]);
-            energy_ -= 0.5 * beta * Da_->vector_dot(jk_->wK()[0]);
+            energy_ -= 0.5 * beta * Da_->vector_dot(jk->wK()[0]);
+            energy_ -= 0.5 * beta * Da_->vector_dot(jk->wK()[0]);
         }
 
         double exchange_correlation_energy = 0.0;
