@@ -75,7 +75,7 @@ void PolaritonicHF::common_init() {
     nmo_      = reference_wavefunction_->nmo();
     nsopi_    = reference_wavefunction_->nsopi();
     molecule_ = reference_wavefunction_->molecule();
-    enuc_     = molecule_->nuclear_repulsion_energy({0.0,0.0,0.0});
+    enuc_     = molecule_->nuclear_repulsion_energy(reference_wavefunction_->get_dipole_field_strength());
 
     AO2SO_ = std::shared_ptr<Matrix>(reference_wavefunction_->aotoso());
 
