@@ -55,18 +55,33 @@ class PolaritonicHF: public Wavefunction {
         throw PsiException("compute_energy has not been implemented for this Polaritonic HF solver",__FILE__,__LINE__);
     }
 
-  protected:
-
-    /// evaluate orbital gradient
-    std::shared_ptr<Matrix> OrbitalGradient(std::shared_ptr<Matrix> D,
-                                            std::shared_ptr<Matrix> F,
-                                            std::shared_ptr<Matrix> Shalf);
+    void update_charge(int charge);
 
     /// nuclear repulsion energy
     double enuc_;
 
     /// part of the dipole self energy: 1/2 lambda^2 (dn - <d>)^2 = 1/2 lambda^2 <de>^2
     double average_electric_dipole_self_energy_;
+
+    /// parameters for the cavity
+    double * cavity_frequency_;
+    double * cavity_coupling_strength_;
+    std::string axis_order_;
+
+    /// nuclear dipole moments
+    double nuc_dip_x_;
+    double nuc_dip_y_;
+    double nuc_dip_z_;
+
+    /// electronic dipole moments
+    double e_dip_x_;
+    double e_dip_y_;
+    double e_dip_z_;
+
+    /// total dipole moments
+    double tot_dip_x_;
+    double tot_dip_y_;
+    double tot_dip_z_;
 
     /// the multiplicity
     int multiplicity_;
@@ -77,28 +92,20 @@ class PolaritonicHF: public Wavefunction {
     std::shared_ptr<Matrix> quadrupole_scaled_sum_;
     std::shared_ptr<Matrix> scaled_e_n_dipole_squared_;
 
-    double * cavity_frequency_; 
-    double * cavity_coupling_strength_; 
-
     long int n_photon_states_;
-
-    double nuc_dip_x_;
-    double nuc_dip_y_; 
-    double nuc_dip_z_;
-
-    double e_dip_x_;
-    double e_dip_y_; 
-    double e_dip_z_;
-
-    double tot_dip_x_;
-    double tot_dip_y_; 
-    double tot_dip_z_;
-
-    void initialize_cavity();
-    void update_cavity_terms();
 
     /// do use coherent-state basis? default true
     bool use_coherent_state_basis_ = true;
+
+  protected:
+    /// evaluate orbital gradient
+    std::shared_ptr<Matrix> OrbitalGradient(std::shared_ptr<Matrix> D,
+                                            std::shared_ptr<Matrix> F,
+                                            std::shared_ptr<Matrix> Shalf);
+
+    /// set up the cavity
+    void initialize_cavity();
+    void update_cavity_terms();
 
     /// evaluate constant and one- and two-electron components of the dipole self energy
     void evaluate_dipole_self_energy();

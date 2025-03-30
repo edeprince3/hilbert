@@ -36,9 +36,9 @@ set hilbert {
   n_hubbard_sites 4
   hubbard_multiplicity 1
 
-  polaritonic_cc_include_u0 true
-  polaritonic_cc_include_u1 true
-  polaritonic_cc_include_u2 true
+  qed_cc_include_u0 true
+  qed_cc_include_u1 true
+  qed_cc_include_u2 true
 }
 
 activate(h2)

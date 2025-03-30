@@ -33,9 +33,9 @@ set hilbert {
   cavity_frequency         [0.0, 0.0, $w]
   cavity_coupling_strength [0.0, 0.0, $g]
 
-  polaritonic_cc_include_u0 true
-  polaritonic_cc_include_u1 true
-  polaritonic_cc_include_u2 true
+  qed_cc_include_u0 true
+  qed_cc_include_u1 true
+  qed_cc_include_u2 true
 
   r_convergence 1e-12
 }
