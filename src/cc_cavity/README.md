@@ -40,10 +40,19 @@ with the following modifications:
 
 - To enable QED-CC functionality, set the `WITH_TA` flag in CMake to `ON`.
   ``` bash
-  cmake {...psi4-generated stuff...} -DWITH_TA=ON -Bobjdir -DCMAKE_INSTALL_PREFIX=path_to_hilbert_top_dir
+  cmake {...psi4-generated stuff...} \
+       -D WITH_TA=ON \
+       -D CMAKE_INSTALL_PREFIX={path to hilbert top directory} \
+       -B objdir \
+       -S . \
   ```
-- it is also recommended to add `-G Ninja` to the cmake line to speed up the build process. 
-  It is also more stable for installing TiledArray, which is a dependency of CC_Cavity.
+- It is recommended to explicitly provide the paths to the MPI C, C++, and Fortran compilers to avoid any issues with the default compilers.
+  ``` bash
+  -D CMAKE_C_COMPILER={path to MPI C compiler} \
+  -D CMAKE_CXX_COMPILER={path to MPI C++ compiler} \
+  -D CMAKE_Fortran_COMPILER={path to MPI Fortran compiler} \
+  ```
+- It is also recommended to add `-G Ninja` to the cmake line to speed up the build process. 
 
 After completing these steps, the `cc_cavity` class will be available as a plugin in your Psi4 installation. 
 You can then use it to perform QED-CC and QED-EOM-CC calculations.
