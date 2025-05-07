@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
 project(hilbert
         VERSION 0.1
-        LANGUAGES CXX C)
+        LANGUAGES CXX C Fortran)
 
 set(hilbert_AUTHORS      "A. Eugene DePrince III and the DePrince Group")
 set(hilbert_DESCRIPTION  "Hilbert: A space for quantum chemistry plugins to Psi4")
@@ -56,8 +56,6 @@ set(pp2rdm
         src/pp2rdm/write_tpdm.cc
         )
 
-# add fortran as a language for focas
-enable_language(Fortran)
 set(focas
         src/focas/update_transformation_matrix.cc
         src/focas/orbital_optimizer.cc
