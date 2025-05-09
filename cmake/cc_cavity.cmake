@@ -19,9 +19,8 @@ include(FetchContent)
 
 # get mpi components
 message(STATUS "Finding MPI")
-find_package(MPI REQUIRED COMPONENTS C CXX)
-
-find_package(mpi4py)
+find_package(MPI REQUIRED)
+find_package(mpi4py REQUIRED)
 
 # check if mpi4py was found
 if (NOT mpi4py_FOUND)
