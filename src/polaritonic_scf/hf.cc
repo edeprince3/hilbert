@@ -692,6 +692,33 @@ void PolaritonicHF::evaluate_dipole_self_energy() {
 */
 void PolaritonicHF::evaluate_dipole_variance() {
 
+    // evaluate the dipole moment integrals in the molecular basis
+
+    double dipole_mo_x = 0.0;
+    double dipole_mo_y = 0.0;
+    double dipole_mo_z = 0.0;
+
+    dipole_mo_x = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
+    dipole_mo_y = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
+    dipole_mo_z = C_DDOT(nso_*nso_,&(Da_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+    if ( same_a_b_dens_ ) {
+        dipole_mo_x *= 2.0;
+        dipole_mo_y *= 2.0;
+        dipole_mo_z *= 2.0;
+    }else {
+        dipole_mo_x += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
+        dipole_mo_y += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
+        dipole_mo_z += C_DDOT(nso_*nso_,&(Db_->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+    }
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> dipole integrals <== \n");
+    outfile->Printf("\n");
+    outfile->Printf("    <mu_x> = %20.12lf\n",dipole_mo_x);
+    outfile->Printf("    <mu_y> = %20.12lf\n",dipole_mo_y);
+    outfile->Printf("    <mu_z> = %20.12lf\n",dipole_mo_z);
+    outfile->Printf("\n");
+
     double one_electron_xx = 0.0;
     double one_electron_xy = 0.0;
     double one_electron_xz = 0.0;
