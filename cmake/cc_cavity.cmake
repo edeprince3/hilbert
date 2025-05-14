@@ -14,6 +14,12 @@ else ()
     return()
 endif ()
 
+# if the user didn’t specify a build type, default to Debug
+# compile times are significantly longer with Release.
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
+endif()
+
 # fetch cmake files for tiledarray from ValeevGroup/kit-cmake
 include(FetchContent)
 
@@ -38,8 +44,9 @@ FetchContent_Declare(tiledarray
 set(BUILD_TESTING OFF CACHE BOOL "Build tests" FORCE)
 FetchContent_MakeAvailable(tiledarray)
 
-# Tiled Array should always be built in Release mode
-set_target_properties(tiledarray PROPERTIES CMAKE_BUILD_TYPE Release)
+# The below code is super slow to compile for marginal benefit
+# if you want to use it, uncomment the following lines
+#set_target_properties(tiledarray PROPERTIES CMAKE_BUILD_TYPE Release)
 
 # files for QED-CC
 set(qed_cc
