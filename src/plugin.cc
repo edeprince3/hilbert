@@ -332,6 +332,9 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION POLARITONIC SCF -*/
 
+        /*- do compute static polarizability / hyperpolarizability QED-HF and QED-DFT -*/
+        options.add_bool("COMPUTE_STATIC_RESPONSE", false);
+
         /*- functional for cavity QED-DFT -*/
         options.add_str("QED_DFT_FUNCTIONAL", "B3LYP");
 
@@ -513,8 +516,10 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         std::shared_ptr<PolaritonicUKS> uks (new PolaritonicUKS(ref_wfn,options));
         double energy = uks->compute_energy();
 
-        std::shared_ptr<PolaritonicUTDDFT> utddft (new PolaritonicUTDDFT((std::shared_ptr<Wavefunction>)uks,options,ref_wfn));
-        utddft->compute_static_responses();
+        if ( options.get_bool("COMPUTE_STATIC_RESPONSE") ) {
+            std::shared_ptr<PolaritonicUTDDFT> utddft (new PolaritonicUTDDFT((std::shared_ptr<Wavefunction>)uks,options,ref_wfn));
+            utddft->compute_static_responses();
+        }
 
         return (std::shared_ptr<Wavefunction>)uks;
 

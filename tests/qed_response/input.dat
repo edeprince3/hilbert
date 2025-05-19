@@ -22,6 +22,7 @@ set {
   cholesky_tolerance 1e-14
   ints_tolerance 0.0
   df_fitting_condition 1e-16
+  compute_static_response true
 } 
 
 # freq: w
