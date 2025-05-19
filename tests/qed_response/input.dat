@@ -41,11 +41,6 @@ set hilbert {
   qed_dft_functional hf
 }
 
-set num_roots 10
-set TDSCF_TDA false
-set TDSCF_STATES 10
-set df_ints_io save
-
 # unrestricted tddft
 set reference uks 
 energy('qed-dft')
