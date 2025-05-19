@@ -298,7 +298,7 @@ void PolaritonicUTDDFT::compute_static_responses() {
 
     for (int iter = 0; iter < 500; iter++) {
         double damp = 0.5;
-        if (iter > 50) {
+        if (iter > 10) {
             damp = 0.0;
         }
         double err = 0.0;
