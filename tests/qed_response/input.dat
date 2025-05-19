@@ -1,0 +1,63 @@
+# PYTHONPATH must include directory above plugin directory.
+#     Define either externally or here, then import plugin.
+sys.path.insert(0, '../../..')
+import hilbert
+import numpy as np
+
+molecule {
+0 1
+O    0.00000   0.00000   0.12716
+H    0.75808   0.00000  -0.50864
+H   -0.75808   0.00000  -0.50864
+no_reorient
+nocom
+symmetry c1
+}
+
+set {
+  basis aug-cc-pvdz
+  scf_type df
+  e_convergence 1e-11
+  d_convergence 1e-11
+  cholesky_tolerance 1e-14
+  ints_tolerance 0.0
+  df_fitting_condition 1e-16
+} 
+
+# freq: w
+w = 0.07349864501573
+
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+g = 0.05 / np.sqrt(2.0 * w)
+
+set hilbert {
+  maxiter 500
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
+  maxdim                   15
+  indim                    5
+  qed_dft_functional hf
+}
+
+set num_roots 10
+set TDSCF_TDA false
+set TDSCF_STATES 10
+set df_ints_io save
+
+# unrestricted tddft
+set reference uks 
+energy('qed-dft')
+
+print_variables()
+          
+compare_values( -0.000000000120,psi4.variable("QED-DFT BETA(XXX)"), 8, "BETA(XXX)")
+compare_values(  0.000000000000,psi4.variable("QED-DFT BETA(XXY)"), 8, "BETA(XXY)")
+compare_values(-13.867469898002,psi4.variable("QED-DFT BETA(XXZ)"), 8, "BETA(XXZ)")
+compare_values(  0.000000000080,psi4.variable("QED-DFT BETA(XYY)"), 8, "BETA(XYY)")
+compare_values( -0.000000000000,psi4.variable("QED-DFT BETA(XYZ)"), 8, "BETA(XYZ)")
+compare_values(  0.000000000021,psi4.variable("QED-DFT BETA(XZZ)"), 8, "BETA(XZZ)")
+compare_values(  0.000000000001,psi4.variable("QED-DFT BETA(YYY)"), 8, "BETA(YYY)")
+compare_values(  0.161688390333,psi4.variable("QED-DFT BETA(YYZ)"), 8, "BETA(YYZ)")
+compare_values(  0.000000000000,psi4.variable("QED-DFT BETA(YZZ)"), 8, "BETA(YZZ)")
+compare_values( -6.598986611287,psi4.variable("QED-DFT BETA(ZZZ)"), 8, "BETA(ZZZ)")

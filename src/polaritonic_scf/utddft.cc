@@ -56,6 +56,11 @@
 #include <misc/threeindexintegrals.h>
 #include <misc/nonsym_davidson_solver.h>
 
+// diis solver
+#include <misc/diis.h>
+
+#include <algorithm>
+
 using namespace psi;
 using namespace fnocc;
 
@@ -202,6 +207,700 @@ void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
     Dipole_x_->transform(C_);
     Dipole_y_->transform(C_);
     Dipole_z_->transform(C_);
+}
+
+void PolaritonicUTDDFT::compute_static_responses() {
+
+    outfile->Printf("\n");
+    outfile->Printf("    No. basis functions:            %5i\n",nso_);
+    outfile->Printf("    No. alpha electrons:            %5i\n",nalpha_);
+    outfile->Printf("    No. beta electrons:             %5i\n",nbeta_);
+
+    if ( n_photon_states_ > 1 ) {
+        update_cavity_terms();
+    }
+
+    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+
+    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
+    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+
+    double ** dx = Dipole_x_->pointer();
+    double ** dy = Dipole_y_->pointer();
+    double ** dz = Dipole_z_->pointer();
+
+    std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
+    HCavity_z->zero();
+    if ( n_photon_states_ > 1 ) {
+        HCavity_z->pointer()[1][1] = cavity_frequency_[2];
+    }
+    if ( n_photon_states_ > 2 ) {
+        throw PsiException("polaritonic response properties do not work with N_PHOTON_STATES > 2",__FILE__,__LINE__);
+    }
+
+    // dimension of the problem
+    int oa = nalpha_;
+    int ob = nbeta_;
+    int va = nso_ - oa;
+    int vb = nso_ - ob;
+
+    int N = 2*(oa*va+ob*vb) + 2;
+
+    double * amps1 = (double*)malloc(3*N*sizeof(double));
+    memset((void*)amps1, '\0', 3*N * sizeof(double));
+
+    double * old_amps1 = (double*)malloc(3*N*sizeof(double));
+    memset((void*)old_amps1, '\0', 3*N * sizeof(double));
+
+    double * amps1_error = (double*)malloc(3*N*sizeof(double));
+    memset((void*)amps1_error, '\0', 3*N * sizeof(double));
+
+    double * ABu = (double*)malloc(3*2*nmo_*nmo_*sizeof(double));
+    memset((void*)ABu, '\0', 3*2*nmo_*nmo_ * sizeof(double));
+
+    double * ea = epsilon_a_->pointer();
+    double * eb = epsilon_b_->pointer();
+
+    std::shared_ptr<MintsHelper> mints (new MintsHelper(reference_wavefunction_));
+
+    // dipole integrals
+    std::vector<std::shared_ptr<Matrix>> mua = mints->so_dipole();
+    mua[0]->transform(Ca_);
+    mua[1]->transform(Ca_);
+    mua[2]->transform(Ca_);
+
+    std::vector<std::shared_ptr<Matrix>> mub = mints->so_dipole();
+    mub[0]->transform(Cb_);
+    mub[1]->transform(Cb_);
+    mub[2]->transform(Cb_);
+
+    // photon parts
+    int L = 1;
+    double *gm = (double*)malloc(3*N*L*sizeof(double));
+    double *sigma_m_r = (double*)malloc(3*L*sizeof(double));
+    double *sigma_m_l = (double*)malloc(3*L*sizeof(double));
+
+    memset((void*)gm,'\0',3*N*L*sizeof(double));
+    memset((void*)sigma_m_r,'\0',3*L*sizeof(double));
+    memset((void*)sigma_m_l,'\0',3*L*sizeof(double));
+
+    double * alpha = (double*)malloc(9*sizeof(double));
+    memset((void*)alpha, '\0', 9*sizeof(double));
+
+    std::shared_ptr<DIIS> diis (new DIIS(3*N));
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> First-Order Response Equations <==\n");
+    outfile->Printf("\n");
+
+    for (int iter = 0; iter < 500; iter++) {
+        double damp = 0.5;
+        if (iter > 50) {
+            damp = 0.0;
+        }
+        double err = 0.0;
+        C_DCOPY(3*N, amps1, 1, old_amps1, 1);
+        for (int p = 0; p < 3; p++) {
+
+            build_Au_Bu_response(N, &amps1[p*N], &ABu[p*2*nmo_*nmo_]);
+            build_gm(N, 1, &amps1[p*N + (oa*va+ob*vb)], &gm[p*N]);
+
+            for (int i = 0; i < oa; i++) {
+                for (int a = 0; a < va; a++) {
+                    double precon = 1.0 / (ea[a+oa] - ea[i]);
+                    int ia = i * va + a;
+                    amps1[p*N+ia] = damp * amps1[p*N+ia] + (1.0 - damp) * precon * (mua[p]->pointer()[i][a+oa] - ABu[p*2*nmo_*nmo_ + i*nmo_+(a+oa)] - ABu[p*2*nmo_*nmo_ + (a+oa)*nmo_+i] - 2.0 * gm[p*N+ia]);
+                }
+            }
+            for (int i = 0; i < ob; i++) {
+                for (int a = 0; a < vb; a++) {
+                    int ia = oa*va + i * vb + a;
+                    double precon = 1.0 / (eb[a+ob] - eb[i]);
+                    amps1[p*N+ia] = damp * amps1[p*N+ia] + (1.0 - damp) * precon * (mub[p]->pointer()[i][a+ob] - ABu[p*2*nmo_*nmo_ + nmo_*nmo_ + i*nmo_+(a+ob)] - ABu[p*2*nmo_*nmo_ + nmo_*nmo_ + (a+ob)*nmo_+i] - 2.0 * gm[p*N+ia]);
+                }
+            }
+            C_DCOPY(N, &amps1[p*N], 1, &amps1_error[p*N], 1);
+            C_DAXPY(N, -1.0, &old_amps1[p*N], 1, &amps1_error[p*N], 1);
+
+            // photon part
+            build_sigma_m(N, L, &amps1[p*N], &amps1[p*N], &amps1[p*N + (oa*va+ob*vb)], &sigma_m_r[p], &sigma_m_l[p]);
+            amps1[p*N + (oa*va+ob*vb)] = -sigma_m_r[p] / cavity_frequency_[2];
+            
+            alpha[p*3 + p] = 0.0;
+            for (int i = 0; i < oa; i++) {
+                for (int a = 0; a < va; a++) {
+                    int ia = i * va + a;
+                    alpha[p*3 + p] += 2.0 * mua[p]->pointer()[i][a+oa] * amps1[p*N+ia];
+                }
+            }
+            for (int i = 0; i < ob; i++) {
+                for (int a = 0; a < vb; a++) {
+                    int ia = oa*va + i * vb + a;
+                    alpha[p*3 + p] += 2.0 * mub[p]->pointer()[i][a+ob] * amps1[p*N+ia];
+                }
+            }
+        }
+
+        err += C_DDOT(N, amps1_error, 1, amps1_error, 1);
+        err = sqrt(err);
+
+        // DIIS extrapolation
+        diis->WriteVector(amps1);
+        diis->WriteErrorVector(amps1_error);
+        diis->Extrapolate(amps1);
+
+        outfile->Printf("%5i %20.12lf %20.12lf %20.12lf %20.12lf\n", iter, alpha[0*3+0], alpha[1*3+1], alpha[2*3+2], err);
+        if ( err < options_.get_double("D_CONVERGENCE") ) {
+            break;
+        }
+    }
+
+    for (int p = 0; p < 3; p++) {
+        build_Au_Bu_response(N, &amps1[p*N], &ABu[p*2*nmo_*nmo_]);
+
+        // photon part
+        build_sigma_m(N, L, &amps1[p*N], &amps1[p*N], &amps1[p*N + (oa*va+ob*vb)], &sigma_m_r[p], &sigma_m_l[p]);
+        // double check sign
+        amps1[p*N + (oa*va+ob*vb)] = - sigma_m_r[p] / cavity_frequency_[2];
+    }
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> Static Polarizability <==\n");
+    outfile->Printf("\n");
+    for (int p = 0; p < 3; p++) {
+        std::string dir1 = "X";
+        if ( p == 1 ) dir1 = "Y";
+        else if ( p == 2 ) dir1 = "Z";
+        for (int q = p; q < 3; q++) {
+            std::string dir2 = "X";
+            if ( q == 1 ) dir2 = "Y";
+            else if ( q == 2 ) dir2 = "Z";
+            alpha[p*3 + q] = 0.0;
+            for (int i = 0; i < oa; i++) {
+                for (int a = 0; a < va; a++) {
+                    int ia = i * va + a;
+                    alpha[p*3 + q] += 2.0 * mua[p]->pointer()[i][a+oa] * amps1[q*N+ia];
+                }
+            }
+            for (int i = 0; i < ob; i++) {
+                for (int a = 0; a < vb; a++) {
+                    int ia = oa*va + i * vb + a;
+                    alpha[p*3 + q] += 2.0 * mub[p]->pointer()[i][a+ob] * amps1[q*N+ia];
+                }
+            }
+            outfile->Printf("    ALPHA(%s%s) %20.12lf\n", dir1.c_str(), dir2.c_str(), alpha[p*3 + q]);
+
+            // add polarizabilities to psi variables
+            std::string label = "QED-DFT ALPHA(";
+            label += dir1 + dir2 + ")";
+            std::transform(label.begin(), label.end(), label.begin(),
+                [](unsigned char c) { return std::toupper(c); });
+            Process::environment.globals[label] = alpha[p*3 + q];
+        }
+    }
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> Static Hyperpolarizability <==\n");
+    outfile->Printf("\n");
+
+    for (int p = 0; p < 3; p++) {
+        std::string dir1 = "X";
+        if ( p == 1 ) dir1 = "Y";
+        else if ( p == 2 ) dir1 = "Z";
+        for (int q = p; q < 3; q++) {
+            std::string dir2 = "X";
+            if ( q == 1 ) dir2 = "Y";
+            else if ( q == 2 ) dir2 = "Z";
+            for (int r = q; r < 3; r++) {
+                std::string dir3 = "X";
+                if ( r == 1 ) dir3 = "Y";
+                else if ( r == 2 ) dir3 = "Z";
+                double beta = 0.0;
+                // alpha-spin
+                for (int i = 0; i < oa; i++) {
+                    for (int j = 0; j < oa; j++) {
+                        double dum_pq = 0.0;
+                        double dum_pr = 0.0;
+                        double dum_qr = 0.0;
+                        for (int a = 0; a < va; a++) {
+                            int ia = i * va + a;
+                            int ja = j * va + a;
+                            dum_pq += amps1[p*N + ia] * amps1[q*N + ja];
+                            dum_pr += amps1[p*N + ia] * amps1[r*N + ja];
+                            dum_qr += amps1[q*N + ia] * amps1[r*N + ja];
+                        }
+                        int ij = i * nmo_ + j;
+                        int ji = j * nmo_ + i;
+                        beta -= 2 * (ABu[p*2*nmo_*nmo_ + ij] + ABu[p*2*nmo_*nmo_ + ji]) * dum_qr; // symmetrize to pick up all six combinations
+                        beta -= 2 * (ABu[q*2*nmo_*nmo_ + ij] + ABu[q*2*nmo_*nmo_ + ji]) * dum_pr;
+                        beta -= 2 * (ABu[r*2*nmo_*nmo_ + ij] + ABu[r*2*nmo_*nmo_ + ji]) * dum_pq;
+                    }
+                }
+                for (int a = 0; a < va; a++) {
+                    for (int b = 0; b < va; b++) {
+                        double dum_pq = 0.0;
+                        double dum_pr = 0.0;
+                        double dum_qr = 0.0;
+                        for (int i = 0; i < oa; i++) {
+                            int ia = i * va + a;
+                            int ib = i * va + b;
+                            dum_pq += amps1[p*N + ia] * amps1[q*N + ib];
+                            dum_pr += amps1[p*N + ia] * amps1[r*N + ib];
+                            dum_qr += amps1[q*N + ia] * amps1[r*N + ib];
+                        }
+                        int ab = (a+oa) * nmo_ + (b+oa);
+                        int ba = (b+oa) * nmo_ + (a+oa);
+                        beta += 2 * (ABu[p*2*nmo_*nmo_ + ab] + ABu[p*2*nmo_*nmo_ + ba]) * dum_qr; // symmetrize to pick up all six combinations
+                        beta += 2 * (ABu[q*2*nmo_*nmo_ + ab] + ABu[q*2*nmo_*nmo_ + ba]) * dum_pr;
+                        beta += 2 * (ABu[r*2*nmo_*nmo_ + ab] + ABu[r*2*nmo_*nmo_ + ba]) * dum_pq;
+                    }
+                }
+                // beta-spin
+                for (int i = 0; i < ob; i++) {
+                    for (int j = 0; j < ob; j++) {
+                        double dum_pq = 0.0;
+                        double dum_pr = 0.0;
+                        double dum_qr = 0.0;
+                        for (int a = 0; a < vb; a++) {
+                            int ia = i * vb + a + oa*va;
+                            int ja = j * vb + a + oa*va;
+                            dum_pq += amps1[p*N + ia] * amps1[q*N + ja];
+                            dum_pr += amps1[p*N + ia] * amps1[r*N + ja];
+                            dum_qr += amps1[q*N + ia] * amps1[r*N + ja];
+                        }
+                        int ij = i * nmo_ + j + nmo_*nmo_;
+                        int ji = j * nmo_ + i + nmo_*nmo_;
+                        beta -= 2 * (ABu[p*2*nmo_*nmo_ + ij] +ABu[p*2*nmo_*nmo_ + ji]) * dum_qr; // symmetrize to pick up all six combinations
+                        beta -= 2 * (ABu[q*2*nmo_*nmo_ + ij] +ABu[q*2*nmo_*nmo_ + ji]) * dum_pr;
+                        beta -= 2 * (ABu[r*2*nmo_*nmo_ + ij] +ABu[r*2*nmo_*nmo_ + ji]) * dum_pq;
+                    }
+                }
+                for (int a = 0; a < vb; a++) {
+                    for (int b = 0; b < vb; b++) {
+                        double dum_pq = 0.0;
+                        double dum_pr = 0.0;
+                        double dum_qr = 0.0;
+                        for (int i = 0; i < ob; i++) {
+                            int ia = i * vb + a + oa*va;
+                            int ib = i * vb + b + oa*va;
+                            dum_pq += amps1[p*N + ia] * amps1[q*N + ib];
+                            dum_pr += amps1[p*N + ia] * amps1[r*N + ib];
+                            dum_qr += amps1[q*N + ia] * amps1[r*N + ib];
+                        }
+                        int ab = (a+ob) * nmo_ + (b+ob) + nmo_*nmo_;
+                        int ba = (b+ob) * nmo_ + (a+ob) + nmo_*nmo_;
+                        beta += 2 * (ABu[p*2*nmo_*nmo_ + ab] +ABu[p*2*nmo_*nmo_ + ba]) * dum_qr; // symmetrize to pick up all six combinations
+                        beta += 2 * (ABu[q*2*nmo_*nmo_ + ab] +ABu[q*2*nmo_*nmo_ + ba]) * dum_pr;
+                        beta += 2 * (ABu[r*2*nmo_*nmo_ + ab] +ABu[r*2*nmo_*nmo_ + ba]) * dum_pq;
+                    }
+                }
+
+                // derivative wrt field plus second derivative wrt wfn parameters
+                //beta += -2.00 * einsum('ji,ai,aj', f[o, o], t1, t1, optimize=['einsum_path', (0, 1), (0, 1)])
+                //beta +=  2.00 * einsum('ab,ai,bi', f[v, v], t1, t1, optimize=['einsum_path', (0, 1), (0, 1)])
+
+                // also, third derivative wrt wrt wfn parameters has similar structure
+                //beta += -2.00 * einsum('ji,ai,aj,', dipole[o, o], t1, t1, t0_1p, optimize=['einsum_path', (0, 1), (0, 2), (0, 1)])
+                //beta +=  2.00 * einsum('ab,ai,bi,', dipole[v, v], t1, t1, t0_1p, optimize=['einsum_path', (0, 1), (0, 2), (0, 1)])
+
+                // alpha-spin
+                for (int i = 0; i < oa; i++) {
+                    for (int j = 0; j < oa; j++) {
+                        double dum_pq = 0.0;
+                        double dum_pr = 0.0;
+                        double dum_qr = 0.0;
+                        for (int a = 0; a < va; a++) {
+                            int ia = i * va + a;
+                            int ja = j * va + a;
+                            dum_pq += amps1[p*N + ja] * amps1[q*N + ia];
+                            dum_pr += amps1[p*N + ja] * amps1[r*N + ia];
+                            dum_qr += amps1[q*N + ja] * amps1[r*N + ia];
+                        }
+                        beta += 2 * dum_qr * mua[p]->pointer()[j][i];
+                        beta += 2 * dum_pr * mua[q]->pointer()[j][i];
+                        beta += 2 * dum_pq * mua[r]->pointer()[j][i];
+                        // double check sign
+                        beta += +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mua[2]->pointer()[j][i] * coupling_factor_z;
+                        beta += +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mua[2]->pointer()[j][i] * coupling_factor_z;
+                        beta += +4 * dum_pq * amps1[r*N + (oa*va+ob*vb)] * mua[2]->pointer()[j][i] * coupling_factor_z;
+                    }
+                }
+                for (int a = 0; a < va; a++) {
+                    for (int b = 0; b < va; b++) {
+                        double dum_pq = 0.0;
+                        double dum_pr = 0.0;
+                        double dum_qr = 0.0;
+                        for (int i = 0; i < oa; i++) {
+                            int ia = i * va + a;
+                            int ib = i * va + b;
+                            dum_pq += amps1[p*N + ia] * amps1[q*N + ib];
+                            dum_pr += amps1[p*N + ia] * amps1[r*N + ib];
+                            dum_qr += amps1[q*N + ia] * amps1[r*N + ib];
+                        }
+                        beta -= 2 * dum_qr * mua[p]->pointer()[a+oa][b+oa];
+                        beta -= 2 * dum_pr * mua[q]->pointer()[a+oa][b+oa];
+                        beta -= 2 * dum_pq * mua[r]->pointer()[a+oa][b+oa];
+                        // double check sign
+                        beta -= +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mua[2]->pointer()[a+oa][b+oa] * coupling_factor_z;
+                        beta -= +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mua[2]->pointer()[a+oa][b+oa] * coupling_factor_z;
+                        beta -= +4 * dum_pq * amps1[r*N + (oa*va+ob*vb)] * mua[2]->pointer()[a+oa][b+oa] * coupling_factor_z;
+                    }
+                }
+
+                // beta-spin
+                for (int i = 0; i < ob; i++) {
+                    for (int j = 0; j < ob; j++) {
+                        double dum_pq = 0.0;
+                        double dum_pr = 0.0;
+                        double dum_qr = 0.0;
+                        for (int a = 0; a < vb; a++) {
+                            int ia = i * vb + a + oa*va;
+                            int ja = j * vb + a + oa*va;
+                            dum_pq += amps1[p*N + ja] * amps1[q*N + ia];
+                            dum_pr += amps1[p*N + ja] * amps1[r*N + ia];
+                            dum_qr += amps1[q*N + ja] * amps1[r*N + ia];
+                        }
+                        beta += 2 * dum_qr * mub[p]->pointer()[j][i];
+                        beta += 2 * dum_pr * mub[q]->pointer()[j][i];
+                        beta += 2 * dum_pq * mub[r]->pointer()[j][i];
+                        // is this sign wrong? also, is the factor of four wrong?
+                        // double check sign
+                        beta += +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mub[2]->pointer()[j][i] * coupling_factor_z;
+                        beta += +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mub[2]->pointer()[j][i] * coupling_factor_z;
+                        beta += +4 * dum_pq * amps1[r*N + (oa*va+ob*vb)] * mub[2]->pointer()[j][i] * coupling_factor_z;
+                    }
+                }
+                for (int a = 0; a < vb; a++) {
+                    for (int b = 0; b < vb; b++) {
+                        double dum_pq = 0.0;
+                        double dum_pr = 0.0;
+                        double dum_qr = 0.0;
+                        for (int i = 0; i < ob; i++) {
+                            int ia = i * vb + a + oa*va;
+                            int ib = i * vb + b + oa*va;
+                            dum_pq += amps1[p*N + ia] * amps1[q*N + ib];
+                            dum_pr += amps1[p*N + ia] * amps1[r*N + ib];
+                            dum_qr += amps1[q*N + ia] * amps1[r*N + ib];
+                        }
+                        beta -= 2 * dum_qr * mub[p]->pointer()[a+ob][b+ob];
+                        beta -= 2 * dum_pr * mub[q]->pointer()[a+ob][b+ob];
+                        beta -= 2 * dum_pq * mub[r]->pointer()[a+ob][b+ob];
+                        // is this sign wrong? also, is the factor of four wrong?
+                        beta -= +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mub[2]->pointer()[a+ob][b+ob] * coupling_factor_z;
+                        beta -= +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mub[2]->pointer()[a+ob][b+ob] * coupling_factor_z;
+                        beta -= +4 * dum_pq * amps1[r*N + (oa*va+ob*vb)] * mub[2]->pointer()[a+ob][b+ob] * coupling_factor_z;
+                    }
+                }
+
+                // third derivative of dipole-self energy 
+              
+                if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+
+                    double dipole_Ja_p = 0.0;
+                    double dipole_Ja_q = 0.0;
+                    double dipole_Ja_r = 0.0;
+                    for (int j = 0; j < oa; j++) {
+                        for (int a = 0; a < va; a++) {
+                            double dja = mua[2]->pointer()[j][a+oa];
+                            int aj = j * va + a;
+                            dipole_Ja_p += 2.0 * dja * lambda_z * lambda_z * amps1[p*N + aj];
+                            dipole_Ja_q += 2.0 * dja * lambda_z * lambda_z * amps1[q*N + aj];
+                            dipole_Ja_r += 2.0 * dja * lambda_z * lambda_z * amps1[r*N + aj];
+                        }
+                    }
+                    double dipole_Jb_p = 0.0;
+                    double dipole_Jb_q = 0.0;
+                    double dipole_Jb_r = 0.0;
+                    for (int j = 0; j < ob; j++) {
+                        for (int a = 0; a < vb; a++) {
+                            double dja = mub[2]->pointer()[j][a+ob];
+                            int aj = j * vb + a + oa*va;
+                            dipole_Jb_p += 2.0 * dja * lambda_z * lambda_z * amps1[p*N + aj];
+                            dipole_Jb_q += 2.0 * dja * lambda_z * lambda_z * amps1[q*N + aj];
+                            dipole_Jb_r += 2.0 * dja * lambda_z * lambda_z * amps1[r*N + aj];
+                        }
+                    }
+                    // alpha-alpha (exchange)
+                    for (int i = 0; i < oa; i++) {
+                        for (int k = 0; k < oa; k++) {
+                            double tmp_ik_pq = 0.0;
+                            double tmp_ik_qp = 0.0;
+                            double tmp_ik_qr = 0.0;
+                            double tmp_ik_rq = 0.0;
+                            double tmp_ik_pr = 0.0;
+                            double tmp_ik_rp = 0.0;
+                            for (int b = 0; b < va; b++) {
+                                int bi = i * va + b;
+                                int bk = k * va + b;
+                                tmp_ik_qr += 2 * amps1[q*N + bi] * amps1[r*N + bk] * lambda_z * lambda_z;
+                                tmp_ik_rq += 2 * amps1[r*N + bi] * amps1[q*N + bk] * lambda_z * lambda_z;
+                                tmp_ik_pq += 2 * amps1[p*N + bi] * amps1[q*N + bk] * lambda_z * lambda_z;
+                                tmp_ik_qp += 2 * amps1[q*N + bi] * amps1[p*N + bk] * lambda_z * lambda_z;
+                                tmp_ik_pr += 2 * amps1[p*N + bi] * amps1[r*N + bk] * lambda_z * lambda_z;
+                                tmp_ik_rp += 2 * amps1[r*N + bi] * amps1[p*N + bk] * lambda_z * lambda_z;
+                            }
+                            for (int j = 0; j < oa; j++) {
+                                double dji = mua[2]->pointer()[j][i];
+                                for (int a = 0; a < va; a++) {
+                                    double dip = dji * mua[2]->pointer()[k][a+oa];
+                                    int aj = j * va + a;
+                                    beta += dip * amps1[p*N + aj] * (tmp_ik_qr + tmp_ik_rq); 
+                                    beta += dip * amps1[q*N + aj] * (tmp_ik_pr + tmp_ik_rp); 
+                                    beta += dip * amps1[r*N + aj] * (tmp_ik_pq + tmp_ik_qp);
+                                }
+                            }
+                        }
+                    }
+                    // beta-beta (exchange)
+                    for (int i = 0; i < ob; i++) {
+                        for (int k = 0; k < ob; k++) {
+                            double tmp_ik_pq = 0.0;
+                            double tmp_ik_qp = 0.0;
+                            double tmp_ik_qr = 0.0;
+                            double tmp_ik_rq = 0.0;
+                            double tmp_ik_pr = 0.0;
+                            double tmp_ik_rp = 0.0;
+                            for (int b = 0; b < vb; b++) {
+                                int bi = i * vb + b + oa*va;
+                                int bk = k * vb + b + oa*va;
+                                tmp_ik_qr += 2 * amps1[q*N + bi] * amps1[r*N + bk] * lambda_z * lambda_z;
+                                tmp_ik_rq += 2 * amps1[r*N + bi] * amps1[q*N + bk] * lambda_z * lambda_z;
+                                tmp_ik_pq += 2 * amps1[p*N + bi] * amps1[q*N + bk] * lambda_z * lambda_z;
+                                tmp_ik_qp += 2 * amps1[q*N + bi] * amps1[p*N + bk] * lambda_z * lambda_z;
+                                tmp_ik_pr += 2 * amps1[p*N + bi] * amps1[r*N + bk] * lambda_z * lambda_z;
+                                tmp_ik_rp += 2 * amps1[r*N + bi] * amps1[p*N + bk] * lambda_z * lambda_z;
+                            }
+                            for (int j = 0; j < ob; j++) {
+                                double dji = mub[2]->pointer()[j][i];
+                                for (int a = 0; a < vb; a++) {
+                                    double dip = dji * mub[2]->pointer()[k][a+ob];
+                                    int aj = j * vb + a + oa*va;
+                                    beta += dip * amps1[p*N + aj] * (tmp_ik_qr + tmp_ik_rq); 
+                                    beta += dip * amps1[q*N + aj] * (tmp_ik_pr + tmp_ik_rp); 
+                                    beta += dip * amps1[r*N + aj] * (tmp_ik_pq + tmp_ik_qp); 
+                                }
+                            }
+                        }
+                    }
+                    // alpha-alpha (coulomb) and alpha-beta (coulomb)
+                    for (int k = 0; k < oa; k++) {
+                        for (int i = 0; i < oa; i++) {
+                            double dki = mua[2]->pointer()[k][i];
+                            double tmp_pq = 0.0;
+                            double tmp_qp = 0.0;
+                            double tmp_qr = 0.0;
+                            double tmp_rq = 0.0;
+                            double tmp_pr = 0.0;
+                            double tmp_rp = 0.0;
+                            for (int b = 0; b < va; b++) {
+                                int bi = i * va + b;
+                                int bk = k * va + b;
+                                tmp_pq += amps1[p*N + bi] * amps1[q*N + bk];
+                                tmp_qp += amps1[q*N + bi] * amps1[p*N + bk];
+                                tmp_pr += amps1[p*N + bi] * amps1[r*N + bk];
+                                tmp_rp += amps1[r*N + bi] * amps1[p*N + bk];
+                                tmp_qr += amps1[q*N + bi] * amps1[r*N + bk];
+                                tmp_rq += amps1[r*N + bi] * amps1[q*N + bk];
+                            }
+                            beta += -(dipole_Ja_p + dipole_Jb_p) * dki * (tmp_qr + tmp_rq);
+                            beta += -(dipole_Ja_q + dipole_Jb_q) * dki * (tmp_pr + tmp_rp);
+                            beta += -(dipole_Ja_r + dipole_Jb_r) * dki * (tmp_pq + tmp_qp);
+                        }
+                    }
+                    // beta-beta (coulomb) and beta-alpha (coulomb)
+                    for (int k = 0; k < ob; k++) {
+                        for (int i = 0; i < ob; i++) {
+                            double dki = mub[2]->pointer()[k][i];
+                            double tmp_pq = 0.0;
+                            double tmp_qp = 0.0;
+                            double tmp_qr = 0.0;
+                            double tmp_rq = 0.0;
+                            double tmp_pr = 0.0;
+                            double tmp_rp = 0.0;
+                            for (int b = 0; b < vb; b++) {
+                                int bi = i * vb + b + oa*va;
+                                int bk = k * vb + b + oa*va;
+                                tmp_pq += amps1[p*N + bi] * amps1[q*N + bk];
+                                tmp_qp += amps1[q*N + bi] * amps1[p*N + bk];
+                                tmp_pr += amps1[p*N + bi] * amps1[r*N + bk];
+                                tmp_rp += amps1[r*N + bi] * amps1[p*N + bk];
+                                tmp_qr += amps1[q*N + bi] * amps1[r*N + bk];
+                                tmp_rq += amps1[r*N + bi] * amps1[q*N + bk];
+                            }
+                            beta += -(dipole_Ja_p + dipole_Jb_p) * dki * (tmp_qr + tmp_rq);
+                            beta += -(dipole_Ja_q + dipole_Jb_q) * dki * (tmp_pr + tmp_rp);
+                            beta += -(dipole_Ja_r + dipole_Jb_r) * dki * (tmp_pq + tmp_qp);
+                        }
+                    }
+                    dipole_Ja_p = 0.0;
+                    dipole_Ja_q = 0.0;
+                    dipole_Ja_r = 0.0;
+                    for (int i = 0; i < oa; i++) {
+                        for (int b = 0; b < va; b++) {
+                            int bi = i * va + b;
+                            double dib = mua[2]->pointer()[i][b+oa];
+                            dipole_Ja_p += 2.0 * dib * amps1[p*N + bi] * lambda_z * lambda_z;
+                            dipole_Ja_q += 2.0 * dib * amps1[q*N + bi] * lambda_z * lambda_z;
+                            dipole_Ja_r += 2.0 * dib * amps1[r*N + bi] * lambda_z * lambda_z;
+                        }
+                    }
+                    dipole_Jb_p = 0.0;
+                    dipole_Jb_q = 0.0;
+                    dipole_Jb_r = 0.0;
+                    for (int i = 0; i < ob; i++) {
+                        for (int b = 0; b < vb; b++) {
+                            int bi = i * vb + b + oa*va;
+                            double dib = mub[2]->pointer()[i][b+ob];
+                            dipole_Jb_p += 2.0 * dib * amps1[p*N + bi] * lambda_z * lambda_z;
+                            dipole_Jb_q += 2.0 * dib * amps1[q*N + bi] * lambda_z * lambda_z;
+                            dipole_Jb_r += 2.0 * dib * amps1[r*N + bi] * lambda_z * lambda_z;
+                        }
+                    }
+                    // alpha-alpha (exchange)
+                    for (int a = 0; a < va; a++) {
+                        for (int c = 0; c < va; c++) {
+                            double tmp_ac_pq = 0.0;
+                            double tmp_ac_qp = 0.0;
+                            double tmp_ac_pr = 0.0;
+                            double tmp_ac_rp = 0.0;
+                            double tmp_ac_qr = 0.0;
+                            double tmp_ac_rq = 0.0;
+                            for (int j = 0; j < oa; j++) {
+                                int aj = j * va + a;
+                                int cj = j * va + c;
+                                tmp_ac_pq += 2.0 * lambda_z * lambda_z * amps1[p*N + aj] * amps1[q*N + cj];
+                                tmp_ac_qp += 2.0 * lambda_z * lambda_z * amps1[q*N + aj] * amps1[p*N + cj];
+                                tmp_ac_pr += 2.0 * lambda_z * lambda_z * amps1[p*N + aj] * amps1[r*N + cj];
+                                tmp_ac_rp += 2.0 * lambda_z * lambda_z * amps1[r*N + aj] * amps1[p*N + cj];
+                                tmp_ac_qr += 2.0 * lambda_z * lambda_z * amps1[q*N + aj] * amps1[r*N + cj];
+                                tmp_ac_rq += 2.0 * lambda_z * lambda_z * amps1[r*N + aj] * amps1[q*N + cj];
+                            }
+                            for (int i = 0; i < oa; i++) {
+                                double dic = mua[2]->pointer()[i][c+oa];
+                                for (int b = 0; b < va; b++) {
+                                    double dip =  dic * mua[2]->pointer()[a+oa][b+oa];
+                                    int bi = i * va + b;
+                                    beta -= dip * amps1[p*N + bi] * tmp_ac_qr;
+                                    beta -= dip * amps1[p*N + bi] * tmp_ac_rq;
+                                    beta -= dip * amps1[q*N + bi] * tmp_ac_pr;
+                                    beta -= dip * amps1[q*N + bi] * tmp_ac_rp;
+                                    beta -= dip * amps1[r*N + bi] * tmp_ac_pq;
+                                    beta -= dip * amps1[r*N + bi] * tmp_ac_qp;
+                                }
+                            }
+                        }
+                    }
+                    // beta-beta (exchange)
+                    for (int a = 0; a < vb; a++) {
+                        for (int c = 0; c < vb; c++) {
+                            double tmp_ac_pq = 0.0;
+                            double tmp_ac_qp = 0.0;
+                            double tmp_ac_pr = 0.0;
+                            double tmp_ac_rp = 0.0;
+                            double tmp_ac_qr = 0.0;
+                            double tmp_ac_rq = 0.0;
+                            for (int j = 0; j < ob; j++) {
+                                int aj = j * vb + a + oa*va;
+                                int cj = j * vb + c + oa*va;
+                                tmp_ac_pq += 2.0 * lambda_z * lambda_z * amps1[p*N + aj] * amps1[q*N + cj];
+                                tmp_ac_qp += 2.0 * lambda_z * lambda_z * amps1[q*N + aj] * amps1[p*N + cj];
+                                tmp_ac_pr += 2.0 * lambda_z * lambda_z * amps1[p*N + aj] * amps1[r*N + cj];
+                                tmp_ac_rp += 2.0 * lambda_z * lambda_z * amps1[r*N + aj] * amps1[p*N + cj];
+                                tmp_ac_qr += 2.0 * lambda_z * lambda_z * amps1[q*N + aj] * amps1[r*N + cj];
+                                tmp_ac_rq += 2.0 * lambda_z * lambda_z * amps1[r*N + aj] * amps1[q*N + cj];
+                            }
+                            for (int i = 0; i < ob; i++) {
+                                double dic = mub[2]->pointer()[i][c+ob];
+                                for (int b = 0; b < vb; b++) {
+                                    double dip =  dic * mub[2]->pointer()[a+ob][b+ob];
+                                    int bi = i * vb + b + oa*va;
+                                    beta -= dip * amps1[p*N + bi] * tmp_ac_qr;
+                                    beta -= dip * amps1[p*N + bi] * tmp_ac_rq;
+                                    beta -= dip * amps1[q*N + bi] * tmp_ac_pr;
+                                    beta -= dip * amps1[q*N + bi] * tmp_ac_rp;
+                                    beta -= dip * amps1[r*N + bi] * tmp_ac_pq;
+                                    beta -= dip * amps1[r*N + bi] * tmp_ac_qp;
+                                }
+                            }
+                        }
+                    }
+                    // alpha-alpha (coulomb) + alpha-beta (coulomb)
+                    for (int a = 0; a < va; a++) {
+                        for (int c = 0; c < va; c++) {
+                            double dac = mua[2]->pointer()[a+oa][c+oa];
+                            double tmp_pq = 0.0;
+                            double tmp_qp = 0.0;
+                            double tmp_qr = 0.0;
+                            double tmp_rq = 0.0;
+                            double tmp_pr = 0.0;
+                            double tmp_rp = 0.0;
+                            for (int j = 0; j < oa; j++) {
+                                int aj = j * va + a;
+                                int cj = j * va + c;
+                                tmp_pq += amps1[p*N + aj] * amps1[q*N + cj];
+                                tmp_qp += amps1[q*N + aj] * amps1[p*N + cj];
+                                tmp_pr += amps1[p*N + aj] * amps1[r*N + cj];
+                                tmp_rp += amps1[r*N + aj] * amps1[p*N + cj];
+                                tmp_qr += amps1[q*N + aj] * amps1[r*N + cj];
+                                tmp_rq += amps1[r*N + aj] * amps1[q*N + cj];
+                            }
+                            beta -= -(dipole_Ja_p + dipole_Jb_p) * dac * (tmp_qr + tmp_rq);
+                            beta -= -(dipole_Ja_q + dipole_Jb_q) * dac * (tmp_pr + tmp_rp);
+                            beta -= -(dipole_Ja_r + dipole_Jb_r) * dac * (tmp_pq + tmp_qp);
+                        }
+                    }
+                    // beta-alpha (coulomb) + beta-beta (coulomb)
+                    for (int a = 0; a < vb; a++) {
+                        for (int c = 0; c < vb; c++) {
+                            double dac = mub[2]->pointer()[a+ob][c+ob];
+                            double tmp_pq = 0.0;
+                            double tmp_qp = 0.0;
+                            double tmp_qr = 0.0;
+                            double tmp_rq = 0.0;
+                            double tmp_pr = 0.0;
+                            double tmp_rp = 0.0;
+                            for (int j = 0; j < ob; j++) {
+                                int aj = j * vb + a + oa*va;
+                                int cj = j * vb + c + oa*va;
+                                tmp_pq += amps1[p*N + aj] * amps1[q*N + cj];
+                                tmp_qp += amps1[q*N + aj] * amps1[p*N + cj];
+                                tmp_pr += amps1[p*N + aj] * amps1[r*N + cj];
+                                tmp_rp += amps1[r*N + aj] * amps1[p*N + cj];
+                                tmp_qr += amps1[q*N + aj] * amps1[r*N + cj];
+                                tmp_rq += amps1[r*N + aj] * amps1[q*N + cj];
+                            }
+                            beta -= -(dipole_Ja_p + dipole_Jb_p) * dac * (tmp_qr + tmp_rq);
+                            beta -= -(dipole_Ja_q + dipole_Jb_q) * dac * (tmp_pr + tmp_rp);
+                            beta -= -(dipole_Ja_r + dipole_Jb_r) * dac * (tmp_pq + tmp_qp);
+                        }
+                    }
+                }
+
+                outfile->Printf("    BETA(%s%s%s) %20.12lf\n", dir1.c_str(), dir2.c_str(), dir3.c_str(), beta);
+
+                // add hyperpolarizabilities to psi variables
+                std::string label = "QED-DFT BETA(";
+                label += dir1 + dir2 + dir3 + ")";
+                std::transform(label.begin(), label.end(), label.begin(),
+                    [](unsigned char c) { return std::toupper(c); });
+                Process::environment.globals[label.c_str()] = beta;
+            }
+        }
+    }
+
+    free(alpha);
+    free(gm);
+    free(sigma_m_r);
+    free(sigma_m_l);
+    free(amps1);
+    free(old_amps1);
+    free(amps1_error);
+    free(ABu);
+
+    return;
 }
 
 double PolaritonicUTDDFT::compute_energy() {
@@ -831,7 +1530,6 @@ void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
         }
 
         // dipole self energy (for singles)
-// TODO
         // J-like contribution from dipole self energy (alpha)
         double dipole_Ja = 0.0;
         for (int i = 0; i < oa; i++) {
@@ -960,6 +1658,340 @@ void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
     free(tmpb_a);
     free(tmpb_b);
     free(c);
+}
+
+void PolaritonicUTDDFT::build_Au_Bu_response(int N, double *u, double *ABu){
+
+    if ( n_photon_states_ > 2 ) {
+        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+    }
+
+    int oa = nalpha_;
+    int ob = nbeta_;
+    int va = nso_ - oa;
+    int vb = nso_ - ob;
+
+    double ** cap = Ca_->pointer();
+    double ** cbp = Cb_->pointer();
+
+    std::vector<SharedMatrix>& C_left  = jk_->C_left();
+    std::vector<SharedMatrix>& C_right = jk_->C_right();
+    C_left.clear();
+    C_right.clear();
+
+    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+
+    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
+    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+
+    double ** dx = Dipole_x_->pointer();
+    double ** dy = Dipole_y_->pointer();
+    double ** dz = Dipole_z_->pointer();
+
+    std::vector<std::shared_ptr<Matrix> > Vx;
+    std::vector<std::shared_ptr<Matrix> > Dx;
+
+    // J/K-like contributions
+
+    // push density matrices on JK object
+    // we need density matrices for alpha as well as
+    // alpha plus a photon
+
+    // Da(mu,nu) = ca(j,b) Ca(mu,j) Ca(nu,b) = Ca(mu,j) Ca'(nu,j)
+    // Ca'(nu,j) = ca(j,b) Ca(nu,b)
+
+    // etc.
+
+    // singles
+
+    // alpha
+    std::shared_ptr<Matrix> cra (new Matrix(Ca_) );
+    std::shared_ptr<Matrix> cla (new Matrix(Ca_) );
+
+    double ** clap = cla->pointer();
+    double ** crap = cra->pointer();
+
+    cra->zero();
+    cla->zero();
+
+    for (int mu = 0; mu < nso_; mu++) {
+        for (int i = 0; i < oa; i++) {
+
+            // left is plain orbitals
+            clap[mu][i] = cap[mu][i];
+
+            // right is modified orbitals
+            double dum = 0.0;
+            for (int a = 0; a < va; a++) {
+                int ia = i * va + a;
+                dum += cap[mu][a+oa] * u[ia];
+            }
+            crap[mu][i] = dum;
+
+        }
+    }
+
+    // push alpha orbitals onto JK object
+    C_left.push_back(cla);
+    C_right.push_back(cra);
+
+    // build pseudo densities for xc contribution
+    if (needs_xc_) {
+
+        auto Dx_a = linalg::doublet(cla, cra, false, true);
+
+        Vx.push_back(std::make_shared<Matrix>("Vax temp", Dx_a->rowspi(), Dx_a->colspi(), Dx_a->symmetry()));
+
+        Dx.push_back(Dx_a);
+    }
+
+    // beta
+    std::shared_ptr<Matrix> crb (new Matrix(Cb_) );
+    std::shared_ptr<Matrix> clb (new Matrix(Cb_) );
+
+    double ** clbp = clb->pointer();
+    double ** crbp = crb->pointer();
+
+    crb->zero();
+    clb->zero();
+
+    for (int mu = 0; mu < nso_; mu++) {
+        for (int i = 0; i < ob; i++) {
+
+            // left is plain orbitals
+            clbp[mu][i] = cbp[mu][i];
+
+            // right is modified orbitals
+            double dum = 0.0;
+            for (int a = 0; a < vb; a++) {
+                int ia = i * vb + a;
+                dum += cbp[mu][a+ob] * u[oa*va + ia];
+            }
+            crbp[mu][i] = dum;
+
+        }
+    }
+
+    // push beta orbitals onto JK object
+    C_left.push_back(clb);
+    C_right.push_back(crb);
+
+    // build pseudo densities for xc contribution
+    if (needs_xc_) {
+
+        auto Dx_b = linalg::doublet(clb, crb, false, true);
+
+        Vx.push_back(std::make_shared<Matrix>("Vbx temp", Dx_b->rowspi(), Dx_b->colspi(), Dx_b->symmetry()));
+
+        Dx.push_back(Dx_b);
+    }
+
+    // form J/K
+    jk_->compute();
+
+    // form xc contributions
+    if ( needs_xc_ ) {
+        potential_->compute_Vx(Dx, Vx);
+    }
+
+    // now, accumulate sigma vectors
+
+    // offset for j/k matrices
+    int count = 0;
+
+    double * ea = epsilon_a_->pointer();
+    double * eb = epsilon_b_->pointer();
+
+    double * tmpa_a = (double*)malloc(oa*va*sizeof(double));
+    double * tmpa_b = (double*)malloc(oa*oa*sizeof(double));
+    double * tmpb_a = (double*)malloc(ob*vb*sizeof(double));
+    double * tmpb_b = (double*)malloc(ob*ob*sizeof(double));
+
+    // a <- a+b coulomb
+    std::shared_ptr<Matrix> sa (new Matrix(jk_->J()[count]));
+    sa->add(jk_->J()[count+1]);
+
+    // b <- a+b coulomb
+    std::shared_ptr<Matrix> sb (new Matrix(jk_->J()[count]));
+    sb->add(jk_->J()[count+1]);
+
+    // xc?
+    // a <- a
+    // b <- b
+    if ( needs_xc_ ) {
+        sa->axpy(1.0, Vx[count]);
+        sb->axpy(1.0, Vx[count+1]);
+    }
+
+    // exact exchange?
+    // a <- a
+    // b <- b
+    if (is_x_hybrid_) {
+        sa->axpy(-x_alpha_,jk_->K()[count]);
+        sb->axpy(-x_alpha_,jk_->K()[count+1]);
+    }
+
+    // LRC functional?
+    // a <- a
+    // b <- b
+    if (is_x_lrc_) {
+        double beta = 1.0 - x_alpha_;
+        sa->axpy(-beta,jk_->wK()[count]);
+        sb->axpy(-beta,jk_->wK()[count+1]);
+    }
+
+    // update counter
+    count += 2;
+
+    // transform jk, e.g., j(a,i) = j(mu,nu) c(mu,a) c(nu,i)
+
+    sa->transform(Ca_);
+    sb->transform(Cb_);
+
+    double ** sap = sa->pointer();
+    double ** sbp = sb->pointer();
+
+    // alpha
+    C_DCOPY(nmo_*nmo_, &sap[0][0], 1, &ABu[0], 1);
+
+    // beta
+    C_DCOPY(nmo_*nmo_, &sbp[0][0], 1, &ABu[nmo_*nmo_], 1);
+
+    // dipole self energy (for singles)
+
+    // J-like contribution from dipole self energy (alpha)
+    double dipole_Ja = 0.0;
+    for (int i = 0; i < oa; i++) {
+        for (int a = 0; a < va; a++) {
+            int ia = i * va + a;
+            dipole_Ja += u[ia] * dz[i][a + oa + ob];
+        }
+    }
+    double dipole_Jb = 0.0;
+    for (int i = 0; i < ob; i++) {
+        for (int a = 0; a < vb; a++) {
+            int ia = i * vb + a;
+            dipole_Jb += u[ia + oa*va] * dz[i + oa][a + oa + ob + va];
+        }
+    }
+
+    // intermediate for K-like contribution from dipole self energy
+
+    // ignore if following QED-TDDFT outlined in J. Chem. Phys. 155, 064107 (2021)
+    memset((void*)tmpa_a,'\0',oa*va*sizeof(double));
+    memset((void*)tmpa_b,'\0',oa*oa*sizeof(double));
+    memset((void*)tmpb_a,'\0',ob*vb*sizeof(double));
+    memset((void*)tmpb_b,'\0',ob*ob*sizeof(double));
+
+    if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+
+        // A term (alpha)
+        for (int i = 0; i < oa; i++) {
+            for (int a = 0; a < va; a++) {
+                double dum_a = 0.0;
+                for (int j = 0; j < oa; j++) {
+                    int ja = j * va + a;
+                    dum_a += u[ja] * dz[i][j];
+                }
+                tmpa_a[a*oa+i] = dum_a;
+            }
+        }
+
+        // A term (beta)
+        for (int i = 0; i < ob; i++) {
+            for (int a = 0; a < vb; a++) {
+                double dum_a = 0.0;
+                for (int j = 0; j < ob; j++) {
+                    int ja = j * vb + a;
+                    dum_a += u[ja + oa*va] * dz[i + oa][j + oa];
+                }
+                tmpb_a[a*ob+i] = dum_a;
+            }
+        }
+
+        // B term (alpha)
+        for (int i = 0; i < oa; i++) {
+            for (int j = 0; j < oa; j++) {
+                double dum_b = 0.0;
+                for (int b = 0; b < va; b++) {
+                    int jb = j * va + b;
+                    dum_b += u[jb] * dz[b + oa + ob][i];
+                }
+                tmpa_b[i*oa+j] = dum_b;
+            }
+        }
+
+        // B term (beta)
+        for (int i = 0; i < ob; i++) {
+            for (int j = 0; j < ob; j++) {
+                double dum_b = 0.0;
+                for (int b = 0; b < vb; b++) {
+                    int jb = j * vb + b;
+                    dum_b += u[jb + oa*va] * dz[b + oa + ob + va][i + oa];
+                }
+                tmpb_b[i*ob+j] = dum_b;
+            }
+        }
+    }
+
+    // ia and ai parts for second derivatives
+
+    // alpha
+    for (int i = 0; i < oa; i++) {
+        for (int a = 0; a < va; a++) {
+
+            double dipole_J_ia = (dipole_Ja + dipole_Jb) * dz[i][a + oa + ob];
+
+            // A term
+            double dipole_Ka_A = 0.0;
+            for (int b = 0; b < va; b++) {
+                dipole_Ka_A += tmpa_a[b*oa + i] * dz[a + oa + ob][b + oa + ob];
+            }
+            // B term
+            double dipole_Ka_B = 0.0;
+            for (int j = 0; j < oa; j++) {
+                dipole_Ka_B += tmpa_b[i*oa + j] * dz[a + oa + ob][j];
+            }
+
+            int ia = i * nmo_ + (a + oa);
+            int ai = (a + oa) * nmo_ + i;
+
+            ABu[ia] += lambda_z * lambda_z * (dipole_J_ia - dipole_Ka_A);
+            ABu[ai] += lambda_z * lambda_z * (dipole_J_ia - dipole_Ka_B);
+        }
+    }
+    // beta
+    for (int i = 0; i < ob; i++) {
+        for (int a = 0; a < vb; a++) {
+
+            double dipole_J_ia = (dipole_Ja + dipole_Jb) * dz[i + oa][a + oa + ob + va];
+
+            // A term
+            double dipole_Kb_A = 0.0;
+            for (int b = 0; b < vb; b++) {
+                dipole_Kb_A += tmpb_a[b*ob + i] * dz[a + oa + ob + va][b + oa + ob + va];
+            }
+            // B term
+            double dipole_Kb_B = 0.0;
+            for (int j = 0; j < ob; j++) {
+                dipole_Kb_B += tmpb_b[i*ob + j] * dz[a + oa + ob + va][j + oa];
+            }
+
+            int ia = i * nmo_ + (a + ob) + nmo_*nmo_;
+            int ai = (a + ob) * nmo_ + i + nmo_*nmo_;
+
+            ABu[ia] += lambda_z * lambda_z * (dipole_J_ia - dipole_Kb_A);
+            ABu[ai] += lambda_z * lambda_z * (dipole_J_ia - dipole_Kb_B);
+        }
+    }
+
+    free(tmpa_a);
+    free(tmpa_b);
+    free(tmpb_a);
+    free(tmpb_b);
 }
 
 void PolaritonicUTDDFT::build_gm(int N, int L, double *m, double *gm) {

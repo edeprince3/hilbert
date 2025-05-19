@@ -513,6 +513,9 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         std::shared_ptr<PolaritonicUKS> uks (new PolaritonicUKS(ref_wfn,options));
         double energy = uks->compute_energy();
 
+        std::shared_ptr<PolaritonicUTDDFT> utddft (new PolaritonicUTDDFT((std::shared_ptr<Wavefunction>)uks,options,ref_wfn));
+        utddft->compute_static_responses();
+
         return (std::shared_ptr<Wavefunction>)uks;
 
     }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_UCCSD") {
