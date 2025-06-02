@@ -138,6 +138,8 @@ void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
     // integral cutoff
     jk_->set_cutoff(options_.get_double("INTS_TOLERANCE"));
 
+    is_hf_ = functional->name() == "HF" ? true : false;
+
     is_x_lrc_    = functional->is_x_lrc();
     is_x_hybrid_ = functional->is_x_hybrid();
     x_omega_     = functional->x_omega();
@@ -363,7 +365,6 @@ void PolaritonicUTDDFT::compute_static_responses() {
 
         // photon part
         build_sigma_m(N, L, &amps1[p*N], &amps1[p*N], &amps1[p*N + (oa*va+ob*vb)], &sigma_m_r[p], &sigma_m_l[p]);
-        // double check sign
         amps1[p*N + (oa*va+ob*vb)] = - sigma_m_r[p] / cavity_frequency_[2];
     }
 
@@ -395,6 +396,20 @@ void PolaritonicUTDDFT::compute_static_responses() {
                 [](unsigned char c) { return std::toupper(c); });
             Process::environment.globals[label] = alpha[p*3 + q];
         }
+    }
+
+    free(alpha);
+    free(gm);
+    free(sigma_m_r);
+    free(sigma_m_l);
+    free(old_amps1);
+    free(amps1_error);
+
+    // static hyperpolarizability is only implemented for QED-HF
+    if ( !is_hf_ ) {
+        free(amps1);
+        free(ABu);
+        return;
     }
 
     outfile->Printf("\n");
@@ -508,6 +523,7 @@ void PolaritonicUTDDFT::compute_static_responses() {
                         beta += 2 * dum_qr * mua[p]->pointer()[j][i];
                         beta += 2 * dum_pr * mua[q]->pointer()[j][i];
                         beta += 2 * dum_pq * mua[r]->pointer()[j][i];
+
                         // double check factor
                         beta += +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mua[2]->pointer()[j][i] * coupling_factor_z;
                         beta += +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mua[2]->pointer()[j][i] * coupling_factor_z;
@@ -529,6 +545,7 @@ void PolaritonicUTDDFT::compute_static_responses() {
                         beta -= 2 * dum_qr * mua[p]->pointer()[a+oa][b+oa];
                         beta -= 2 * dum_pr * mua[q]->pointer()[a+oa][b+oa];
                         beta -= 2 * dum_pq * mua[r]->pointer()[a+oa][b+oa];
+
                         // double check factor
                         beta -= +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mua[2]->pointer()[a+oa][b+oa] * coupling_factor_z;
                         beta -= +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mua[2]->pointer()[a+oa][b+oa] * coupling_factor_z;
@@ -878,13 +895,7 @@ void PolaritonicUTDDFT::compute_static_responses() {
         }
     }
 
-    free(alpha);
-    free(gm);
-    free(sigma_m_r);
-    free(sigma_m_l);
     free(amps1);
-    free(old_amps1);
-    free(amps1_error);
     free(ABu);
 
     return;

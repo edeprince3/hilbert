@@ -75,6 +75,9 @@ class PolaritonicUTDDFT: public PolaritonicHF {
     // jk object
     std::shared_ptr<JK> jk_;
 
+    // is the functional hf?
+    bool is_hf_;
+
     // hybrid?
     bool is_x_hybrid_;
 
