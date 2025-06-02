@@ -370,14 +370,9 @@ void PolaritonicUTDDFT::compute_static_responses() {
     outfile->Printf("\n");
     outfile->Printf("    ==> Static Polarizability <==\n");
     outfile->Printf("\n");
+    std::vector<std::string> dir {"X", "Y", "Z"};
     for (int p = 0; p < 3; p++) {
-        std::string dir1 = "X";
-        if ( p == 1 ) dir1 = "Y";
-        else if ( p == 2 ) dir1 = "Z";
         for (int q = p; q < 3; q++) {
-            std::string dir2 = "X";
-            if ( q == 1 ) dir2 = "Y";
-            else if ( q == 2 ) dir2 = "Z";
             alpha[p*3 + q] = 0.0;
             for (int i = 0; i < oa; i++) {
                 for (int a = 0; a < va; a++) {
@@ -391,11 +386,11 @@ void PolaritonicUTDDFT::compute_static_responses() {
                     alpha[p*3 + q] += 2.0 * mub[p]->pointer()[i][a+ob] * amps1[q*N+ia];
                 }
             }
-            outfile->Printf("    ALPHA(%s%s) %20.12lf\n", dir1.c_str(), dir2.c_str(), alpha[p*3 + q]);
+            outfile->Printf("    ALPHA(%s%s) %20.12lf\n", dir[p].c_str(), dir[q].c_str(), alpha[p*3 + q]);
 
             // add polarizabilities to psi variables
             std::string label = "QED-DFT ALPHA(";
-            label += dir1 + dir2 + ")";
+            label += dir[p] + dir[q] + ")";
             std::transform(label.begin(), label.end(), label.begin(),
                 [](unsigned char c) { return std::toupper(c); });
             Process::environment.globals[label] = alpha[p*3 + q];
@@ -407,17 +402,8 @@ void PolaritonicUTDDFT::compute_static_responses() {
     outfile->Printf("\n");
 
     for (int p = 0; p < 3; p++) {
-        std::string dir1 = "X";
-        if ( p == 1 ) dir1 = "Y";
-        else if ( p == 2 ) dir1 = "Z";
         for (int q = p; q < 3; q++) {
-            std::string dir2 = "X";
-            if ( q == 1 ) dir2 = "Y";
-            else if ( q == 2 ) dir2 = "Z";
             for (int r = q; r < 3; r++) {
-                std::string dir3 = "X";
-                if ( r == 1 ) dir3 = "Y";
-                else if ( r == 2 ) dir3 = "Z";
                 double beta = 0.0;
                 // alpha-spin
                 for (int i = 0; i < oa; i++) {
@@ -502,7 +488,7 @@ void PolaritonicUTDDFT::compute_static_responses() {
                 //beta += -2.00 * einsum('ji,ai,aj', f[o, o], t1, t1, optimize=['einsum_path', (0, 1), (0, 1)])
                 //beta +=  2.00 * einsum('ab,ai,bi', f[v, v], t1, t1, optimize=['einsum_path', (0, 1), (0, 1)])
 
-                // also, third derivative wrt wrt wfn parameters has similar structure
+                // also, third derivative wrt wfn parameters has similar structure
                 //beta += -2.00 * einsum('ji,ai,aj,', dipole[o, o], t1, t1, t0_1p, optimize=['einsum_path', (0, 1), (0, 2), (0, 1)])
                 //beta +=  2.00 * einsum('ab,ai,bi,', dipole[v, v], t1, t1, t0_1p, optimize=['einsum_path', (0, 1), (0, 2), (0, 1)])
 
@@ -522,7 +508,7 @@ void PolaritonicUTDDFT::compute_static_responses() {
                         beta += 2 * dum_qr * mua[p]->pointer()[j][i];
                         beta += 2 * dum_pr * mua[q]->pointer()[j][i];
                         beta += 2 * dum_pq * mua[r]->pointer()[j][i];
-                        // double check sign
+                        // double check factor
                         beta += +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mua[2]->pointer()[j][i] * coupling_factor_z;
                         beta += +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mua[2]->pointer()[j][i] * coupling_factor_z;
                         beta += +4 * dum_pq * amps1[r*N + (oa*va+ob*vb)] * mua[2]->pointer()[j][i] * coupling_factor_z;
@@ -543,7 +529,7 @@ void PolaritonicUTDDFT::compute_static_responses() {
                         beta -= 2 * dum_qr * mua[p]->pointer()[a+oa][b+oa];
                         beta -= 2 * dum_pr * mua[q]->pointer()[a+oa][b+oa];
                         beta -= 2 * dum_pq * mua[r]->pointer()[a+oa][b+oa];
-                        // double check sign
+                        // double check factor
                         beta -= +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mua[2]->pointer()[a+oa][b+oa] * coupling_factor_z;
                         beta -= +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mua[2]->pointer()[a+oa][b+oa] * coupling_factor_z;
                         beta -= +4 * dum_pq * amps1[r*N + (oa*va+ob*vb)] * mua[2]->pointer()[a+oa][b+oa] * coupling_factor_z;
@@ -566,8 +552,8 @@ void PolaritonicUTDDFT::compute_static_responses() {
                         beta += 2 * dum_qr * mub[p]->pointer()[j][i];
                         beta += 2 * dum_pr * mub[q]->pointer()[j][i];
                         beta += 2 * dum_pq * mub[r]->pointer()[j][i];
-                        // is this sign wrong? also, is the factor of four wrong?
-                        // double check sign
+
+                        // double check factor
                         beta += +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mub[2]->pointer()[j][i] * coupling_factor_z;
                         beta += +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mub[2]->pointer()[j][i] * coupling_factor_z;
                         beta += +4 * dum_pq * amps1[r*N + (oa*va+ob*vb)] * mub[2]->pointer()[j][i] * coupling_factor_z;
@@ -588,7 +574,8 @@ void PolaritonicUTDDFT::compute_static_responses() {
                         beta -= 2 * dum_qr * mub[p]->pointer()[a+ob][b+ob];
                         beta -= 2 * dum_pr * mub[q]->pointer()[a+ob][b+ob];
                         beta -= 2 * dum_pq * mub[r]->pointer()[a+ob][b+ob];
-                        // is this sign wrong? also, is the factor of four wrong?
+
+                        // double check factor
                         beta -= +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mub[2]->pointer()[a+ob][b+ob] * coupling_factor_z;
                         beta -= +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mub[2]->pointer()[a+ob][b+ob] * coupling_factor_z;
                         beta -= +4 * dum_pq * amps1[r*N + (oa*va+ob*vb)] * mub[2]->pointer()[a+ob][b+ob] * coupling_factor_z;
@@ -879,11 +866,11 @@ void PolaritonicUTDDFT::compute_static_responses() {
                     }
                 }
 
-                outfile->Printf("    BETA(%s%s%s) %20.12lf\n", dir1.c_str(), dir2.c_str(), dir3.c_str(), beta);
+                outfile->Printf("    BETA(%s%s%s) %20.12lf\n", dir[p].c_str(), dir[q].c_str(), dir[r].c_str(), beta);
 
                 // add hyperpolarizabilities to psi variables
                 std::string label = "QED-DFT BETA(";
-                label += dir1 + dir2 + dir3 + ")";
+                label += dir[p] + dir[q] + dir[r] + ")";
                 std::transform(label.begin(), label.end(), label.begin(),
                     [](unsigned char c) { return std::toupper(c); });
                 Process::environment.globals[label.c_str()] = beta;
