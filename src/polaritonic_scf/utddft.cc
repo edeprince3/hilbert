@@ -524,12 +524,13 @@ void PolaritonicUTDDFT::compute_static_responses() {
                         beta += 2 * dum_pr * mua[q]->pointer()[j][i];
                         beta += 2 * dum_pq * mua[r]->pointer()[j][i];
 
-                        // double check factor
+                        // extra factor of 2 because we get terms from b and b^ in H
                         beta += +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mua[2]->pointer()[j][i] * coupling_factor_z;
                         beta += +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mua[2]->pointer()[j][i] * coupling_factor_z;
                         beta += +4 * dum_pq * amps1[r*N + (oa*va+ob*vb)] * mua[2]->pointer()[j][i] * coupling_factor_z;
                     }
                 }
+
                 for (int a = 0; a < va; a++) {
                     for (int b = 0; b < va; b++) {
                         double dum_pq = 0.0;
@@ -546,7 +547,7 @@ void PolaritonicUTDDFT::compute_static_responses() {
                         beta -= 2 * dum_pr * mua[q]->pointer()[a+oa][b+oa];
                         beta -= 2 * dum_pq * mua[r]->pointer()[a+oa][b+oa];
 
-                        // double check factor
+                        // extra factor of 2 because we get terms from b and b^ in H
                         beta -= +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mua[2]->pointer()[a+oa][b+oa] * coupling_factor_z;
                         beta -= +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mua[2]->pointer()[a+oa][b+oa] * coupling_factor_z;
                         beta -= +4 * dum_pq * amps1[r*N + (oa*va+ob*vb)] * mua[2]->pointer()[a+oa][b+oa] * coupling_factor_z;
@@ -570,7 +571,7 @@ void PolaritonicUTDDFT::compute_static_responses() {
                         beta += 2 * dum_pr * mub[q]->pointer()[j][i];
                         beta += 2 * dum_pq * mub[r]->pointer()[j][i];
 
-                        // double check factor
+                        // extra factor of 2 because we get terms from b and b^ in H
                         beta += +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mub[2]->pointer()[j][i] * coupling_factor_z;
                         beta += +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mub[2]->pointer()[j][i] * coupling_factor_z;
                         beta += +4 * dum_pq * amps1[r*N + (oa*va+ob*vb)] * mub[2]->pointer()[j][i] * coupling_factor_z;
@@ -592,7 +593,7 @@ void PolaritonicUTDDFT::compute_static_responses() {
                         beta -= 2 * dum_pr * mub[q]->pointer()[a+ob][b+ob];
                         beta -= 2 * dum_pq * mub[r]->pointer()[a+ob][b+ob];
 
-                        // double check factor
+                        // extra factor of 2 because we get terms from b and b^ in H
                         beta -= +4 * dum_qr * amps1[p*N + (oa*va+ob*vb)] * mub[2]->pointer()[a+ob][b+ob] * coupling_factor_z;
                         beta -= +4 * dum_pr * amps1[q*N + (oa*va+ob*vb)] * mub[2]->pointer()[a+ob][b+ob] * coupling_factor_z;
                         beta -= +4 * dum_pq * amps1[r*N + (oa*va+ob*vb)] * mub[2]->pointer()[a+ob][b+ob] * coupling_factor_z;
