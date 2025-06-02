@@ -29,7 +29,7 @@
 #include <psi4/liboptions/liboptions.h>
 #include <psi4/libmints/wavefunction.h>
 #include <psi4/libpsio/psio.hpp>
-#include <psi4/libpsio/psio.hpp>
+#include <psi4/libpsi4util/process.h>
 
 #include <v2rdm_casscf/v2rdm_solver.h>
 #include <v2rdm_doci/v2rdm_doci_solver.h>
@@ -46,8 +46,31 @@
 #include <polaritonic_scf/rcis.h>
 #include <polaritonic_scf/rtddft.h>
 #include <polaritonic_scf/utddft.h>
-
 #include <misc/backtransform_tpdm.h>
+
+#ifdef WITH_TA
+#include <tiledarray.h>
+#include "python_api/python_helpers.h"
+#include "cc_cavity/include/cc_cavity.h"
+
+#include "cc_cavity/include/ccsd/ccsd.h"
+#include "cc_cavity/include/qed_ccsd_21/qed_ccsd_21.h"
+#include "cc_cavity/include/qed_ccsd_22/qed_ccsd_22.h"
+
+#include "cc_cavity/include/ccsd/eom_ee_ccsd.h"
+#include "cc_cavity/include/ccsd/eom_ee_rdm.h"
+
+#include "cc_cavity/include/qed_ccsd_21/eom_ee_qed_ccsd_21.h"
+#include "cc_cavity/include/qed_ccsd_21/eom_ee_qed_rdm_21.h"
+
+#include "cc_cavity/include/ccsd/eom_ea_ccsd.h"
+#include "cc_cavity/include/ccsd/eom_ea_rdm.h"
+
+#include "cc_cavity/include/qed_ccsd_21/eom_ea_qed_ccsd_21.h"
+#include "cc_cavity/include/qed_ccsd_21/eom_ea_qed_rdm_21.h"
+
+#endif
+
 
 using namespace psi;
 
@@ -56,12 +79,12 @@ namespace hilbert {
 extern "C" PSI_API
 int read_options(std::string name, Options& options)
 {
-    if (name == "HILBERT"|| options.read_globals()) {
+    if (name == "HILBERT" || options.read_globals()) {
 
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_RTDDFT POLARITONIC_UTDDFT POLARITONIC_RPA MCPDFT");
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_RTDDFT POLARITONIC_UTDDFT POLARITONIC_RPA MCPDFT CC_CAVITY");
 
         /*- Do DIIS? -*/
         options.add_bool("DIIS", true);
@@ -344,6 +367,9 @@ int read_options(std::string name, Options& options)
         /*- do use coherent-state basis? !expert -*/
         options.add_bool("USE_COHERENT_STATE_BASIS", true);
 
+        /*- do use quadrupole integrals for squared dipole terms? -*/
+        options.add_bool("USE_QUADRUPOLE_INTEGRALS", true);
+
         /*- cavity excitation energy for the modes along the x, y and z axis (a.u.) -*/
         options.add("CAVITY_FREQUENCY",new ArrayType());
 
@@ -351,13 +377,13 @@ int read_options(std::string name, Options& options)
         options.add("CAVITY_COUPLING_STRENGTH",new ArrayType());
 
         /*- do include u0 in polaritioinic ccsd? -*/
-        options.add_bool("POLARITONIC_CC_INCLUDE_U0",true);
+        options.add_bool("QED_CC_INCLUDE_U0",true);
 
         /*- do include u1 in polaritioinic ccsd? -*/
-        options.add_bool("POLARITONIC_CC_INCLUDE_U1",true);
+        options.add_bool("QED_CC_INCLUDE_U1",true);
 
         /*- do include u2 in polaritioinic ccsd? -*/
-        options.add_bool("POLARITONIC_CC_INCLUDE_U2",true);
+        options.add_bool("QED_CC_INCLUDE_U2",true);
 
         /*- do use TDA in TDDFT? -*/
         options.add_bool("TDSCF_TDA",false);
@@ -366,7 +392,7 @@ int read_options(std::string name, Options& options)
         options.add_bool("QED_USE_RELAXED_ORBITALS", true);
 
         /*- change cavity mode polarization by redefining x, y, and z -*/
-        options.add_str("ROTATE_POLARIZATION_AXIS", "XYZ");
+        options.add_str("ROTATE_POLARIZATION_AXIS", "XYZ", "XYZ YZX ZXY XZY YXZ ZYX");
 
         /*- residual norm -*/
         options.add_double("RESIDUAL_NORM",1.0e-5);
@@ -390,6 +416,71 @@ int read_options(std::string name, Options& options)
         options.add_str("MCPDFT_TYPE", "DF", "DF PK");
         /*- reference type -*/
         options.add_str("MCPDFT_REFERENCE", "V2RDM");
+
+
+        /*- SUBSECTION CC_Cavity -*/
+
+        /*- Maximum number of vectors in DIIS -*/
+        options.add_int("DIIS_MAX_VECS", 8);
+
+        /*- tile size for tiled array -*/
+        options.add_int("TILE_SIZE", -1); // -1 means to use all data in one tile
+
+        /*- number of threads to use for MADNESS -*/
+        options.add_int("MAD_NUM_THREADS", 1);
+
+        /*- override inclusion of u0, u1, u2, u3, u4 -*/
+        /*- CCSD-xy means include singles and doubles with x'th order excitations coupled to y photon states -*/
+        options.add_str("QED_CC_TYPE", "CCSD-21", "CCSD-00 CCSD-21 CCSD-22");
+
+        /*- explicitly set u0=0 -*/
+        options.add_bool("ZERO_U0", false);
+
+        /*- Perform EOM for cc_cavity -*/
+        options.add_bool("PERFORM_EOM", false);
+
+        /*- Generate lambda amplitudes for cc_cavity -*/
+        options.add_bool("PERFORM_LAMBDA", false);
+
+        /*- Perform EOM with full hamiltonian for qed-ccsd (not implemented) -*/
+        options.add_bool("BUILD_HAMILTONIAN", false);
+
+        /*- Convergence criteria for davidson solver -*/
+        options.add_double("EOM_R_CONV", 1e-6);
+        options.add_double("EOM_E_CONV", 1e-8);
+        options.add_int("EOM_MAXITER", 250);
+
+        /*- Use diagonals from singles block in EOM-CC -*/
+        options.add_bool("EOM_SS_GUESS", true);
+
+        /*- value of shift to apply to davidson solver -*/
+        options.add_double("EOM_SHIFT", 0.0l); // 0.0 means no shift
+
+        /*- keep degenerate states in EOM-CC -*/
+        options.add_bool("NO_DEGENERACY", false);
+
+        /*- Save and load eigenvectors -*/
+        options.add_bool("SAVE_EVECS", false); // save eigenvectors to file?
+        options.add_int("LOAD_ID", -1); // id of file to load eigenvectors from
+
+        /*- EOM-CC TYPE -*/
+        options.add_str("EOM_TYPE", "EE", "EE EA");
+
+        /*- do print excited state transition dipoles (computed either way) -*/
+        options.add_bool("GET_PROPERTIES", true);
+
+        /*- do print dominant transitions in each state -*/
+        options.add_bool("PRINT_TRANSITIONS", true);
+
+        /*- number of dominant transitions to print in each state -*/
+        options.add_int("NUM_PRINT_TRANSITIONS", 8);
+
+        /*- Select left and right states to visualize density or transition density -*/
+        options.add_array("RDM_STATES");
+
+        /*- boolean for whether to compute the 2-RDM -*/
+        options.add_bool("COMPUTE_2RDM", false);
+
     }
 
     return true;
@@ -558,10 +649,149 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         }
 
-    }else {
+    } else if ( options.get_str("HILBERT_METHOD") == "CC_CAVITY") {
+        #ifndef WITH_TA
+            throw PsiException("CC_CAVITY requires the WITH_TA flag to be set at compile time",__FILE__,__LINE__);
+        #else
 
-        throw PsiException("unknown HILBERT_METHODS",__FILE__,__LINE__);
+        // get the reference wavefunction
+        std::shared_ptr<Wavefunction> qed_ref_wfn;
+        if ( options.get_str("REFERENCE") == "UHF") {
 
+            std::shared_ptr<PolaritonicUHF> uhf (new PolaritonicUHF(ref_wfn,options));
+            double energy = uhf->compute_energy();
+
+            qed_ref_wfn = (std::shared_ptr<Wavefunction>)uhf;
+
+        } else if ( options.get_str("REFERENCE") == "ROHF" ) {
+
+            std::shared_ptr<PolaritonicROHF> rohf (new PolaritonicROHF(ref_wfn,options));
+            double energy = rohf->compute_energy();
+
+            qed_ref_wfn = (std::shared_ptr<Wavefunction>)rohf;
+
+        } else if ( options.get_str("REFERENCE") == "RHF" ) {
+
+            std::shared_ptr<PolaritonicRHF> rhf (new PolaritonicRHF(ref_wfn,options));
+            double energy = rhf->compute_energy();
+
+            qed_ref_wfn = (std::shared_ptr<Wavefunction>)rhf;
+
+        } else {
+            throw PsiException("unknown REFERENCE for polaritonic UHF",__FILE__,__LINE__);
+        }
+
+        // set the number of threads for MADNESS
+        int mad_num_threads = options.get_int("MAD_NUM_THREADS");
+        psi::Process::environment.globals["MAD_NUM_THREADS"] = mad_num_threads;
+        string mad_num_env = "MAD_NUM_THREADS=" + std::to_string(mad_num_threads);
+        putenv(const_cast<char *>(mad_num_env.c_str()));
+
+        // initialize tiledarray with MPIComm from mpi4py if not already initialized
+        if (!CavityHelper::initialized_)
+            CavityHelper::ta_initialize();
+
+        // create the CC_CAVITY object
+        std::shared_ptr<CC_Cavity> qedcc;
+
+        // get the options
+        map<std::string, bool> includes_;
+        std::string qed_type = options.get_str("QED_CC_TYPE");
+
+        // select the appropriate derived CC_CAVITY object
+
+        if (qed_type == "CCSD-00") {
+            includes_["t0_1"] = false; includes_["t0_2"] = false;
+            includes_["t1_1"] = false; includes_["t1_2"] = false;
+            includes_["t2_1"] = false; includes_["t2_2"] = false;
+            qedcc = std::shared_ptr<CC_Cavity>(new CCSD(qed_ref_wfn, options, includes_));
+        }
+        else if (qed_type == "CCSD-21") {
+            includes_["t0_1"] = true; includes_["t0_2"] = false;
+            includes_["t1_1"] = true; includes_["t1_2"] = false;
+            includes_["t2_1"] = true; includes_["t2_2"] = false;
+            qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD_21(qed_ref_wfn, options, includes_));
+        }
+        else if (qed_type == "CCSD-22") {
+            includes_["t0_1"] = true; includes_["t0_2"] = true;
+            includes_["t1_1"] = true; includes_["t1_2"] = true;
+            includes_["t2_1"] = true; includes_["t2_2"] = true;
+            qedcc = std::shared_ptr<CC_Cavity>(new QED_CCSD_22(qed_ref_wfn, options, includes_));
+        }
+        else
+            throw PsiException("QED_CC_TYPE not recognized. Please choose CCSD-00, CCSD-21, or CCSD-22.", __FILE__, __LINE__);
+
+        // compute the energy
+        double energy = qedcc->compute_energy();
+
+        // perform QED-EOM-CC if requested
+        bool do_eom = options.get_bool("PERFORM_EOM");
+
+        // return the wavefunction if not performing EOM
+        if (!do_eom) return (std::shared_ptr<Wavefunction>)qedcc;
+
+        std::shared_ptr<EOM_Driver> eom_driver;
+        if (options.get_str("EOM_TYPE") == "EE") { // use EOM for excitation energies
+            if (qed_type == "CCSD-00") {
+                eom_driver = std::shared_ptr<EOM_Driver>(new EOM_EE_CCSD(qedcc, options));
+            } else if (qed_type == "CCSD-21") {
+                eom_driver = std::shared_ptr<EOM_Driver>(new EOM_EE_QED_CCSD_21(qedcc, options));
+            } else {
+                throw PsiException("EOM-EE not implemented for " + qed_type, __FILE__, __LINE__);
+            }
+        } else if (options.get_str("EOM_TYPE") == "EA") { // use EOM for electron attachment
+            if (qed_type == "CCSD-00") {
+                eom_driver = std::shared_ptr<EOM_Driver>(new EOM_EA_CCSD(qedcc, options));
+            } else if (qed_type == "CCSD-21") {
+                eom_driver = std::shared_ptr<EOM_Driver>(new EOM_EA_QED_CCSD_21(qedcc, options));
+            } else {
+                throw PsiException("EOM-EA not implemented for " + qed_type, __FILE__, __LINE__);
+            }
+        } else {
+            throw PsiException("EOM_TYPE not recognized. Please choose EE or EA.", __FILE__, __LINE__);
+        }
+
+        // compute the excited state energies for the given EOM type
+        eom_driver->compute_eom_energy();
+
+        bool build_rdms = options.get_bool("GET_PROPERTIES");
+        if (!build_rdms) return (std::shared_ptr<Wavefunction>)qedcc;
+
+        // compute the RDMs and oscillator strengths for the given EOM type
+        std::shared_ptr<EOM_RDM> rdm;
+        Printf("Computing 1-RDMs and oscillator strengths...");
+
+        if (options.get_str("EOM_TYPE") == "EE") {
+            if (qed_type == "CCSD-00") {
+                rdm = std::shared_ptr<EOM_RDM>(new EOM_EE_RDM(eom_driver, options));
+            } else if (qed_type == "CCSD-21") {
+                rdm = std::shared_ptr<EOM_RDM>(new EOM_EE_QED_RDM_21(eom_driver, options));
+            } else {
+                throw PsiException("RDM construction not implemented for " + qed_type, __FILE__, __LINE__);
+            }
+        }
+        else if (options.get_str("EOM_TYPE") == "EA") {
+            if (qed_type == "CCSD-00") {
+                rdm = std::shared_ptr<EOM_RDM>(new EOM_EA_RDM(eom_driver, options));
+            } else if (qed_type == "CCSD-21") {
+                rdm = std::shared_ptr<EOM_RDM>(new EOM_EA_QED_RDM_21(eom_driver, options));
+            } else {
+                throw PsiException("RDM construction for EOM_EA not implemented for " + qed_type, __FILE__, __LINE__);
+            }
+        }
+
+        // build the 1-RDMs
+        rdm->compute_eom_1rdm();
+
+        // compute and print the oscillator strengths
+        rdm->compute_oscillators();
+        rdm->print_oscillators();
+
+        // return the wavefunction
+        return (std::shared_ptr<Wavefunction>)qedcc;
+        #endif
+    } else {
+        throw PsiException("unknown HILBERT_METHOD",__FILE__,__LINE__);
     }
 
     return ref_wfn;

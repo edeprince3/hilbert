@@ -24,8 +24,15 @@
  *  @END LICENSE
  */
 
+
+
 #ifndef BLAS_MANGLE_H
 #define BLAS_MANGLE_H
+
+#ifdef __GNUC__
+// Avoid tons of warnings with 'more than one instance of overloaded function'
+#pragma GCC system_header
+#endif
 
 /**
  * Declare mangling for fortran-ordered blas routines
@@ -40,7 +47,6 @@
 #elif FC_SYMBOL==2
 #define F77NAME(x) x##_
 #endif
-
 
 #ifdef USE_FCMANGLE_H
 #include "FCMangle.h"
