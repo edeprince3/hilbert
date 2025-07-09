@@ -43,43 +43,40 @@ void TDHF::common_init(){
 
     std::shared_ptr<MintsHelper> mints (new MintsHelper(reference_wavefunction_));
 
-    T = mints->so_kinetic();
-    T->transform(Ca_);
+    T_ = mints->so_kinetic();
+    T_->transform(Ca_);
 
-    V = mints->so_potential();
-    V->transform(Ca_);
+    V_ = mints->so_potential();
+    V_->transform(Ca_);
 
     eri = mints->mo_eri(Ca_,Ca_);
 
-    Dre        = (std::shared_ptr<Matrix>) (new Matrix(nmo_, nmo_));
-    Dim        = (std::shared_ptr<Matrix>) (new Matrix(nmo_, nmo_));
-    Vext       = (std::shared_ptr<Matrix>) (new Matrix(nmo_, nmo_));
-    Fre        = (std::shared_ptr<Matrix>) (new Matrix(nmo_, nmo_));
-    Fim        = (std::shared_ptr<Matrix>) (new Matrix(nmo_, nmo_));
+    Dre = (std::shared_ptr<Matrix>) (new Matrix(nmo_, nmo_));
+    Dim = (std::shared_ptr<Matrix>) (new Matrix(nmo_, nmo_));
+    Fre = (std::shared_ptr<Matrix>) (new Matrix(nmo_, nmo_));
+    Fim = (std::shared_ptr<Matrix>) (new Matrix(nmo_, nmo_));
 
     for (int i = 0; i < nalpha_; i++) {
         Dre->pointer()[i][i] = 1.0;
     }
 
     // get dipole integrals:
-    dipole = mints->so_dipole();
+    dipole_ = mints->so_dipole();
     for (size_t i = 0; i < 3; i++) {
-        dipole[i]->transform(Ca_);
+        dipole_[i]->transform(Ca_);
     }
 
     // get polarization:
-    polarization = (double*)malloc(sizeof(double)*3);
+    polarization_ = (double*)malloc(sizeof(double)*3);
     if (options_["POLARIZATION"].has_changed()){
        if (options_["POLARIZATION"].size() != 3)
           throw PsiException("The POLARIZATION array has the wrong dimensions",__FILE__,__LINE__);
-       for (int i = 0; i < 3; i++) polarization[i] = options_["POLARIZATION"][i].to_double();
+       for (int i = 0; i < 3; i++) polarization_[i] = options_["POLARIZATION"][i].to_double();
     }else{
-       polarization[0] = 0.0;
-       polarization[1] = 0.0;
-       polarization[2] = 1.0;
+       polarization_[0] = 0.0;
+       polarization_[1] = 0.0;
+       polarization_[2] = 1.0;
     }
-
-    BuildFock(&(Dre->pointer())[0][0],&(Dim->pointer())[0][0],0.0);
 
     total_time = options_.get_double("TOTAL_TIME");
     time_step  = options_.get_double("TIME_STEP");
@@ -100,14 +97,17 @@ void TDHF::common_init(){
         pulse_shape_ = 2;
     }
 
-    // pad the correlation function with zeros just to get more output points
-
     // correlation function or dipole acceleration (fourier transformed)
     td_dipole = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*(int)(total_iter));
     td_field = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*(int)(total_iter));
 }
 
-void TDHF::BuildFock(double * Dre, double * Dim, double curtime) {
+void TDHF::build_fock(double * Dre, double * Dim, double curtime) {
+
+    Fre->zero();
+    Fim->zero();
+    Fre->add(V_);
+    Fre->add(T_);
 
     for (int i = 0; i < nmo_; i++) {
         for (int j = 0; j < nmo_; j++) {
@@ -119,63 +119,11 @@ void TDHF::BuildFock(double * Dre, double * Dim, double curtime) {
                     dumim += (2.0 * eri->pointer()[i*nmo_+j][a*nmo_+b] - eri->pointer()[i*nmo_+a][j*nmo_+b]) * (Dim[a*nmo_+b]);
                 }
             }
-            dumre += T->pointer()[i][j] + V->pointer()[i][j];
-            Fre->pointer()[i][j] = dumre;
-            Fim->pointer()[i][j] = dumim;
+            Fre->pointer()[i][j] += dumre;
+            Fim->pointer()[i][j] += dumim;
         }
     }
 
-/*
-    for (int q = 0; q < nQ; q++) {
-        double dumre = 0.0;
-        double dumim = 0.0;
-        for (int a = 0; a < nmo_; a++) {
-            for (int b = 0; b < nmo_; b++) {
-                dumre += 2.0 * Qmo[q*nmo_*nmo_+a*nmo_+b] * Dre[a*nmo_+b];
-                dumim += 2.0 * Qmo[q*nmo_*nmo_+a*nmo_+b] * Dim[a*nmo_+b];
-            }
-        }
-        Ire[q] = dumre;
-        Iim[q] = dumim;
-    }
-    for (int i = 0; i < nmo_; i++) {
-        for (int j = 0; j < nmo_; j++) {
-            double dumre = 0.0;
-            double dumim = 0.0;
-            for (int q = 0; q < nQ; q++) {
-                dumre += Qmo[q*nmo_*nmo_+i*nmo_+j] * Ire[q];
-                dumim += Qmo[q*nmo_*nmo_+i*nmo_+j] * Iim[q];
-            }
-            dumre += T->pointer()[i][j] + V->pointer()[i][j];
-            Fre->pointer()[i][j] = dumre;
-            Fim->pointer()[i][j] = dumim;
-        }
-    }
-
-    // K(re)
-    F_DGEMM('t','n',nmo_,nmo_*nQ,nmo_,1.0,Dre,nmo_,Qmo,nmo_,0.0,Ire,nmo_);
-    for (int q = 0; q < nQ; q++) {
-        for (int a = 0; a < nmo_; a++) {
-            for (int j = 0; j < nmo_; j++) {
-                Iim[a*nmo_+j] = Ire[q*nmo_*nmo_+j*nmo_+a];
-            }
-        }
-        C_DCOPY(nmo_*nmo_,Iim,1,Ire+q*nmo_*nmo_,1);
-    }
-    F_DGEMM('n','t',nmo_,nmo_,nQ*nmo_,-1.0,Ire,nmo_,Qmo,nmo_,1.0,&(Fre->pointer()[0][0]),nmo_);
-    // K(im)
-    F_DGEMM('t','n',nmo_,nmo_*nQ,nmo_,1.0,Dim,nmo_,Qmo,nmo_,0.0,Ire,nmo_);
-    for (int q = 0; q < nQ; q++) {
-        for (int a = 0; a < nmo_; a++) {
-            for (int j = 0; j < nmo_; j++) {
-                Iim[a*nmo_+j] = Ire[q*nmo_*nmo_+j*nmo_+a];
-            }
-        }
-        C_DCOPY(nmo_*nmo_,Iim,1,Ire+q*nmo_*nmo_,1);
-    }
-    F_DGEMM('n','t',nmo_,nmo_,nQ*nmo_,-1.0,Ire,nmo_,Qmo,nmo_,1.0,&(Fim->pointer()[0][0]),nmo_);*/
-
-    Vext->zero();
     double sigma = laser_time*0.5;
 
     // add external field
@@ -184,9 +132,9 @@ void TDHF::BuildFock(double * Dre, double * Dim, double curtime) {
 
     for (int i = 0; i < nmo_; i++) {
         for (int j = 0; j < nmo_; j++) {
-            Fre->pointer()[i][j] -= field * dipole[0]->pointer()[i][j] * polarization[0];
-            Fre->pointer()[i][j] -= field * dipole[1]->pointer()[i][j] * polarization[1];
-            Fre->pointer()[i][j] -= field * dipole[2]->pointer()[i][j] * polarization[2];
+            Fre->pointer()[i][j] -= field * dipole_[0]->pointer()[i][j] * polarization_[0];
+            Fre->pointer()[i][j] -= field * dipole_[1]->pointer()[i][j] * polarization_[1];
+            Fre->pointer()[i][j] -= field * dipole_[2]->pointer()[i][j] * polarization_[2];
         }
     }
 }
@@ -220,6 +168,25 @@ double TDHF::get_field(double t) {
     return field;
 }
 
+// -i [in1, in2]
+// -i [in1_re + i in2_im, in2_re + i in2_im]
+void TDHF::commutator(double * in1_re, double * in1_im, 
+                      double * in2_re, double * in2_im, 
+                      double * out_re, double * out_im, int dim) {
+
+        // real:  in1_re.in2_im + in1_im.in2_re - in2_im.in1_re - in2_re.in1_im
+        F_DGEMM('n', 'n', dim, dim, dim,  1.0, in1_re, dim, in2_im, dim, 0.0, out_re, dim);
+        F_DGEMM('n', 'n', dim, dim, dim,  1.0, in1_im, dim, in2_re, dim, 1.0, out_re, dim);
+        F_DGEMM('n', 'n', dim, dim, dim, -1.0, in2_im, dim, in1_re, dim, 1.0, out_re, dim);
+        F_DGEMM('n', 'n', dim, dim, dim, -1.0, in2_re, dim, in1_im, dim, 1.0, out_re, dim);
+
+        // imag: -in1_re.in2_re + in1_im.in1_im + in2_re.in1_re - in2_im.in1_im
+        F_DGEMM('n', 'n', dim, dim, dim, -1.0, in1_re, dim, in2_re, dim, 0.0, out_im, dim);
+        F_DGEMM('n', 'n', dim, dim, dim,  1.0, in1_im, dim, in2_im, dim, 1.0, out_im, dim);
+        F_DGEMM('n', 'n', dim, dim, dim,  1.0, in2_re, dim, in1_re, dim, 1.0, out_im, dim);
+        F_DGEMM('n', 'n', dim, dim, dim, -1.0, in2_im, dim, in1_im, dim, 1.0, out_im, dim); 
+} 
+
 double TDHF::compute_energy() {
 
     double * tempre = (double*)malloc(nmo_*nmo_*sizeof(double));
@@ -248,127 +215,66 @@ double TDHF::compute_energy() {
     // imag:  dDim / dt = Fre.Dre - Fim.Dim - Dre.Fre + Dim.Fim
     fftw_iter   = 0;
 
-    double * factorB = (double*)malloc(sizeof(double)*5);
-    double * factorb = (double*)malloc(sizeof(double)*5);
-
-    // factors for symplectic integrator.  they come from that sanz-serna paper.
-    double fac,tntf = 1./3924.;
-    factorB[0] = (642.+sqrt(471.))*tntf;
-    factorB[1] = 121.*(12.-sqrt(471.))*tntf;
-    factorB[2] = 1. - 2.*(factorB[0]+factorB[1]);
-    factorB[3] = factorB[1];
-    factorB[4] = factorB[0];
-
-    factorb[0] = 6./11.;
-    factorb[1] = .5 - factorb[0];
-    factorb[2] = factorb[1];
-    factorb[3] = factorb[0];
-    factorb[4] = 0.;
-
-
-    for ( int iter = 0; iter < total_iter; iter++ ) {
+    for (size_t iter = 0; iter < total_iter; iter++) {
 
         // RK4
         // y(n+1) = y( n ) + 1/6 h ( k1 + 2k2 + 2k3 + k4 )
         // t(n+1) = t( n ) + h
 
         // k1     = f( t( n )         , y( n ) )
-        BuildFock(&(Dre->pointer())[0][0],&(Dim->pointer())[0][0],iter * time_step);
+        build_fock(&(Dre->pointer())[0][0],&(Dim->pointer())[0][0],iter * time_step);
 
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(Dim->pointer()[0][0]),nmo_,&(Fre->pointer()[0][0]),nmo_,0.0,k1re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(Dre->pointer()[0][0]),nmo_,&(Fim->pointer()[0][0]),nmo_,1.0,k1re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fim->pointer()[0][0]),nmo_,&(Dre->pointer()[0][0]),nmo_,1.0,k1re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fre->pointer()[0][0]),nmo_,&(Dim->pointer()[0][0]),nmo_,1.0,k1re,nmo_);
+        commutator(Dre->pointer()[0], Dim->pointer()[0], Fre->pointer()[0], Fim->pointer()[0], k1re, k1im, nmo_);
 
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Dre->pointer()[0][0]),nmo_,&(Fre->pointer()[0][0]),nmo_,0.0,k1im,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(Dim->pointer()[0][0]),nmo_,&(Fim->pointer()[0][0]),nmo_,1.0,k1im,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(Fre->pointer()[0][0]),nmo_,&(Dre->pointer()[0][0]),nmo_,1.0,k1im,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fim->pointer()[0][0]),nmo_,&(Dim->pointer()[0][0]),nmo_,1.0,k1im,nmo_);
-        for (int i = 0; i < nmo_; i++) {
-            for (int j = 0; j < nmo_; j++) {
-                tempre[i*nmo_+j] = Dre->pointer()[i][j] + k1re[i*nmo_+j] * time_step / 2.0;
-                tempim[i*nmo_+j] = Dim->pointer()[i][j] + k1im[i*nmo_+j] * time_step / 2.0;
-            }
-        }
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Dre->pointer()[0][0]),nmo_,&(Fre->pointer()[0][0]),nmo_,0.0,k3re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Dim->pointer()[0][0]),nmo_,&(Fim->pointer()[0][0]),nmo_,0.0,k1re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(Fre->pointer()[0][0]),nmo_,&(Dre->pointer()[0][0]),nmo_,0.0,k4re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(Fim->pointer()[0][0]),nmo_,&(Dim->pointer()[0][0]),nmo_,0.0,k2re,nmo_);
-
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(Dim->pointer()[0][0]),nmo_,&(Fre->pointer()[0][0]),nmo_,0.0,k1re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(Dre->pointer()[0][0]),nmo_,&(Fim->pointer()[0][0]),nmo_,1.0,k1re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fim->pointer()[0][0]),nmo_,&(Dre->pointer()[0][0]),nmo_,1.0,k1re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fre->pointer()[0][0]),nmo_,&(Dim->pointer()[0][0]),nmo_,1.0,k1re,nmo_);
+        C_DCOPY(nmo_*nmo_, Dre->pointer()[0], 1, tempre, 1);
+        C_DCOPY(nmo_*nmo_, Dim->pointer()[0], 1, tempim, 1);
+        C_DAXPY(nmo_*nmo_, 0.5 * time_step, k1re, 1, tempre, 1);
+        C_DAXPY(nmo_*nmo_, 0.5 * time_step, k1im, 1, tempim, 1);
 
         // k2     = f( t( n + 1/2 h ) , y( n ) + h/2 k1 )
-        BuildFock(tempre,tempim,(iter+0.5)*time_step);
+        build_fock(tempre,tempim,(iter+0.5)*time_step);
 
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(tempim[0]),nmo_,&(Fre->pointer()[0][0]),nmo_,0.0,k2re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(tempre[0]),nmo_,&(Fim->pointer()[0][0]),nmo_,1.0,k2re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fim->pointer()[0][0]),nmo_,&(tempre[0]),nmo_,1.0,k2re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fre->pointer()[0][0]),nmo_,&(tempim[0]),nmo_,1.0,k2re,nmo_);
+        commutator(tempre, tempim, Fre->pointer()[0], Fim->pointer()[0], k2re, k2im, nmo_);
 
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(tempre[0]),nmo_,&(Fre->pointer()[0][0]),nmo_,0.0,k2im,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(tempim[0]),nmo_,&(Fim->pointer()[0][0]),nmo_,1.0,k2im,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(Fre->pointer()[0][0]),nmo_,&(tempre[0]),nmo_,1.0,k2im,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fim->pointer()[0][0]),nmo_,&(tempim[0]),nmo_,1.0,k2im,nmo_);
+        C_DCOPY(nmo_*nmo_, Dre->pointer()[0], 1, tempre, 1);
+        C_DCOPY(nmo_*nmo_, Dim->pointer()[0], 1, tempim, 1);
+        C_DAXPY(nmo_*nmo_, 0.5 * time_step, k2re, 1, tempre, 1);
+        C_DAXPY(nmo_*nmo_, 0.5 * time_step, k2im, 1, tempim, 1);
 
-        for (int i = 0; i < nmo_; i++) {
-            for (int j = 0; j < nmo_; j++) {
-                tempre[i*nmo_+j] = Dre->pointer()[i][j] + k2re[i*nmo_+j] * time_step / 2.0;
-                tempim[i*nmo_+j] = Dim->pointer()[i][j] + k2im[i*nmo_+j] * time_step / 2.0;
-            }
-        }
         // k3     = f( t( n + 1/2 h ) , y( n ) + h/2 k2 )
-        BuildFock(tempre,tempim,(iter+0.5)*time_step);
+        build_fock(tempre,tempim,(iter+0.5)*time_step);
 
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(tempim[0]),nmo_,&(Fre->pointer()[0][0]),nmo_,0.0,k3re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(tempre[0]),nmo_,&(Fim->pointer()[0][0]),nmo_,1.0,k3re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fim->pointer()[0][0]),nmo_,&(tempre[0]),nmo_,1.0,k3re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fre->pointer()[0][0]),nmo_,&(tempim[0]),nmo_,1.0,k3re,nmo_);
+        commutator(tempre, tempim, Fre->pointer()[0], Fim->pointer()[0], k3re, k3im, nmo_);
 
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(tempre[0]),nmo_,&(Fre->pointer()[0][0]),nmo_,0.0,k3im,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(tempim[0]),nmo_,&(Fim->pointer()[0][0]),nmo_,1.0,k3im,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(Fre->pointer()[0][0]),nmo_,&(tempre[0]),nmo_,1.0,k3im,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fim->pointer()[0][0]),nmo_,&(tempim[0]),nmo_,1.0,k3im,nmo_);
+        C_DCOPY(nmo_*nmo_, Dre->pointer()[0], 1, tempre, 1);
+        C_DCOPY(nmo_*nmo_, Dim->pointer()[0], 1, tempim, 1);
+        C_DAXPY(nmo_*nmo_, time_step, k3re, 1, tempre, 1);
+        C_DAXPY(nmo_*nmo_, time_step, k3im, 1, tempim, 1);
 
-        for (int i = 0; i < nmo_; i++) {
-            for (int j = 0; j < nmo_; j++) {
-                tempre[i*nmo_+j] = Dre->pointer()[i][j] + k3re[i*nmo_+j] * time_step;
-                tempim[i*nmo_+j] = Dim->pointer()[i][j] + k3im[i*nmo_+j] * time_step;
-            }
-        }
         // k4     = f( t( n + h )     , y( n ) + h k3 )
-        BuildFock(tempre,tempim,(iter+1)*time_step);
+        build_fock(tempre,tempim,(iter+1)*time_step);
 
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(tempim[0]),nmo_,&(Fre->pointer()[0][0]),nmo_,0.0,k4re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(tempre[0]),nmo_,&(Fim->pointer()[0][0]),nmo_,1.0,k4re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fim->pointer()[0][0]),nmo_,&(tempre[0]),nmo_,1.0,k4re,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fre->pointer()[0][0]),nmo_,&(tempim[0]),nmo_,1.0,k4re,nmo_);
-
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(tempre[0]),nmo_,&(Fre->pointer()[0][0]),nmo_,0.0,k4im,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(tempim[0]),nmo_,&(Fim->pointer()[0][0]),nmo_,1.0,k4im,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,1.0,&(Fre->pointer()[0][0]),nmo_,&(tempre[0]),nmo_,1.0,k4im,nmo_);
-        F_DGEMM('n','n',nmo_,nmo_,nmo_,-1.0,&(Fim->pointer()[0][0]),nmo_,&(tempim[0]),nmo_,1.0,k4im,nmo_);
+        commutator(tempre, tempim, Fre->pointer()[0], Fim->pointer()[0], k4re, k4im, nmo_);
 
         // y(n+1) = y( n ) + 1/6 h ( k1 + 2k2 + 2k3 + k4 )
 
-        for (int i = 0; i < nmo_; i++) {
-            for (int j = 0; j < nmo_; j++) {
-                Dre->pointer()[i][j] += 1.0 / 6.0 * time_step * ( k1re[i*nmo_+j] + 2.0 * k2re[i*nmo_+j] + 2.0 * k3re[i*nmo_+j] + k4re[i*nmo_+j] );
-                Dim->pointer()[i][j] += 1.0 / 6.0 * time_step * ( k1im[i*nmo_+j] + 2.0 * k2im[i*nmo_+j] + 2.0 * k3im[i*nmo_+j] + k4im[i*nmo_+j] );
-            }
-        }
+        C_DAXPY(nmo_*nmo_, 1.0 / 6.0 * time_step, k1re, 1, Dre->pointer()[0], 1);
+        C_DAXPY(nmo_*nmo_, 2.0 / 6.0 * time_step, k2re, 1, Dre->pointer()[0], 1);
+        C_DAXPY(nmo_*nmo_, 2.0 / 6.0 * time_step, k3re, 1, Dre->pointer()[0], 1);
+        C_DAXPY(nmo_*nmo_, 1.0 / 6.0 * time_step, k4re, 1, Dre->pointer()[0], 1);
 
-
+        C_DAXPY(nmo_*nmo_, 1.0 / 6.0 * time_step, k1im, 1, Dim->pointer()[0], 1);
+        C_DAXPY(nmo_*nmo_, 2.0 / 6.0 * time_step, k2im, 1, Dim->pointer()[0], 1);
+        C_DAXPY(nmo_*nmo_, 2.0 / 6.0 * time_step, k3im, 1, Dim->pointer()[0], 1);
+        C_DAXPY(nmo_*nmo_, 1.0 / 6.0 * time_step, k4im, 1, Dim->pointer()[0], 1);
 
         // evaluate dipole moment:
-        double dpre = C_DDOT(nmo_*nmo_,&(Dre->pointer())[0][0],1,&(dipole[0]->pointer())[0][0],1);
-        dpre       += C_DDOT(nmo_*nmo_,&(Dre->pointer())[0][0],1,&(dipole[1]->pointer())[0][0],1);
-        dpre       += C_DDOT(nmo_*nmo_,&(Dre->pointer())[0][0],1,&(dipole[2]->pointer())[0][0],1);
-        double dpim = C_DDOT(nmo_*nmo_,&(Dim->pointer())[0][0],1,&(dipole[0]->pointer())[0][0],1);
-        dpim       += C_DDOT(nmo_*nmo_,&(Dim->pointer())[0][0],1,&(dipole[1]->pointer())[0][0],1);
-        dpim       += C_DDOT(nmo_*nmo_,&(Dim->pointer())[0][0],1,&(dipole[2]->pointer())[0][0],1);
+        double dpre = C_DDOT(nmo_*nmo_,&(Dre->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
+        dpre       += C_DDOT(nmo_*nmo_,&(Dre->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
+        dpre       += C_DDOT(nmo_*nmo_,&(Dre->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
+        double dpim = C_DDOT(nmo_*nmo_,&(Dim->pointer())[0][0],1,&(dipole_[0]->pointer())[0][0],1);
+        dpim       += C_DDOT(nmo_*nmo_,&(Dim->pointer())[0][0],1,&(dipole_[1]->pointer())[0][0],1);
+        dpim       += C_DDOT(nmo_*nmo_,&(Dim->pointer())[0][0],1,&(dipole_[2]->pointer())[0][0],1);
 
         // time-dependent dipole
         td_dipole[fftw_iter][0] = dpre;
@@ -383,16 +289,13 @@ double TDHF::compute_energy() {
 
         double en = C_DDOT(nmo_*nmo_,&Fre->pointer()[0][0],1,&Dre->pointer()[0][0],1)
                   + C_DDOT(nmo_*nmo_,&Fim->pointer()[0][0],1,&Dim->pointer()[0][0],1)
-                  + C_DDOT(nmo_*nmo_,&Dre->pointer()[0][0],1,&T->pointer()[0][0],1)
-                  + C_DDOT(nmo_*nmo_,&Dre->pointer()[0][0],1,&V->pointer()[0][0],1);
+                  + C_DDOT(nmo_*nmo_,&Dre->pointer()[0][0],1,&T_->pointer()[0][0],1)
+                  + C_DDOT(nmo_*nmo_,&Dre->pointer()[0][0],1,&V_->pointer()[0][0],1);
         en += enuc_;
 
         outfile->Printf("@TDHF TIME %20.12lf %20.12lf %20.12lf %20.12lf %20.12lf\n",iter*time_step, dpre, dpim, field, en);
 
     }
-
-    free(factorb);
-    free(factorB);
 
     free(tempre);
     free(tempim);
