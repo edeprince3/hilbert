@@ -1,0 +1,41 @@
+# PYTHONPATH must include directory above plugin directory.
+#     Define either externally or here, then import plugin.
+sys.path.insert(0, '../../..')
+import hilbert
+
+molecule mol {
+#H 0 0 0
+#H 0 0 1
+O
+H 1 1.0
+H 1 1.0 2 104.5
+#no_reorient
+#nocom
+symmetry c1
+}
+
+set {
+  basis sto-3g #cc-pvdz
+  scf_type pk 
+  reference rhf
+  e_convergence 1e-10
+  d_convergence 1e-10 
+} 
+
+# frequency: 2.0 eV
+w = 0.07349864501573
+
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+g = 0.00 / np.sqrt(2.0 * w)
+
+set {
+  maxiter 500
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
+  laser_amp 0.001
+  total_time 1000.0
+  polarization [0, 0, 1]
+}
+
+energy('rt-tdhf')

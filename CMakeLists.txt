@@ -15,6 +15,17 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 include(psi4OptionsTools)
 
 find_package(psi4 REQUIRED)
+
+# FFTW
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(FFTW REQUIRED fftw3)
+
+include_directories(${FFTW_INCLUDE_DIRS})
+link_directories(${FFTW_LIBRARY_DIRS})
+add_definitions(${FFTW_CFLAGS_OTHER})
+
+# pybind
+
 find_package(pybind11 REQUIRED)
 
 # Include QED-CC CMake configurations if requested
@@ -23,6 +34,9 @@ include(${PROJECT_SOURCE_DIR}/cmake/cc_cavity.cmake)
 
 #### groups for different calculation types ###
 
+set(rt_tdhf
+	src/rt_tdhf/tdhf.cc
+	)
 set(polaritonic_scf
         src/polaritonic_scf/hf.cc
         src/polaritonic_scf/rhf.cc
@@ -161,6 +175,7 @@ add_psi4_plugin(hilbert
         src/plugin.cc
         src/python_api/python_helpers.cc
 
+        ${rt_tdhf}
         ${qed_cc}
         ${polaritonic_scf}
         ${jellium}
@@ -185,6 +200,10 @@ target_include_directories(hilbert PRIVATE "${PROJECT_SOURCE_DIR}/src")
 
 target_link_libraries(hilbert PUBLIC sdp)
 target_link_libraries(hilbert PUBLIC LBFGS::lib)
+
+# link against fftw
+target_link_libraries(hilbert PUBLIC ${FFTW_LIBRARIES})
+
 
 if(WITH_TA)
   target_link_libraries(hilbert PUBLIC mpi4py::mpi4py tiledarray)

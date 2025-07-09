@@ -86,6 +86,62 @@ def init_cc_cavity(name, **kwargs):
         from hilbert import ta_finalize
         ta_finalize()
 
+def run_rt_tdhf(name, **kwargs):
+    r"""Function encoding sequence of PSI module and plugin calls so that
+    rt-tdhf can be called via :py:func:`~driver.energy`. For post-scf plugins.
+
+    >>> energy('rt-tdhf')
+
+    """
+    lowername = name.lower()
+    kwargs = p4util.kwargs_lower(kwargs)
+
+    optstash = p4util.OptionsState(
+        ['SCF', 'DF_INTS_IO'])
+
+    psi4.core.set_local_option('SCF', 'DF_INTS_IO', 'SAVE')
+
+    reference = psi4.core.get_global_option('REFERENCE').lower()
+
+    psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'RT-TDHF')
+
+    # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
+    # Fock matrices, and more
+    #print('Attention! This SCF may be density-fitted.')
+    ref_wfn = kwargs.get('ref_wfn', None)
+    #if ref_wfn is None:
+    #    ref_wfn = psi4.driver.scf_helper(name, **kwargs)
+    if ref_wfn is None:
+        if ( lowername == 'rt-tddft'):
+            func = psi4.core.get_option('HILBERT','QED_DFT_FUNCTIONAL')
+            en, ref_wfn = psi4.driver.energy(func, **kwargs, return_wfn=True)
+        else :
+            ref_wfn = psi4.driver.scf_helper(name, **kwargs)
+
+    scf_aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_SCF",
+                                        psi4.core.get_option("SCF", "DF_BASIS_SCF"),
+                                        "JKFIT", psi4.core.get_global_option('BASIS'),
+                                        puream=ref_wfn.basisset().has_puream())
+    ref_wfn.set_basisset("DF_BASIS_SCF", scf_aux_basis)
+
+    aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_CC",
+                                        psi4.core.get_global_option("DF_BASIS_CC"),
+                                        "RIFIT", psi4.core.get_global_option("BASIS"),
+                                        puream=ref_wfn.basisset().has_puream())
+    ref_wfn.set_basisset("DF_BASIS_CC", aux_basis)
+
+    # Ensure IWL files have been written when not using DF/CD
+    scf_type = psi4.core.get_option('SCF', 'SCF_TYPE')
+    if ( scf_type == 'PK' or scf_type == 'DIRECT' ):
+        proc_util.check_iwl_file_from_scf_type(psi4.core.get_option('SCF', 'SCF_TYPE'), ref_wfn)
+
+    # Call the Psi4 plugin
+    # Please note that setting the reference wavefunction in this way is ONLY for plugins
+    rhf_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
+
+    optstash.restore()
+
+    return rhf_wfn
 
 def run_qed_scf(name, **kwargs):
     r"""Function encoding sequence of PSI module and plugin calls so that
@@ -1077,3 +1133,5 @@ psi4.driver.procedures['gradient']['qed-dft'] = run_qed_scf_gradient
 # mcpdft
 psi4.driver.procedures['energy']['mcpdft'] = run_mcpdft
 
+# rt-tdhf
+psi4.driver.procedures['energy']['rt-tdhf'] = run_rt_tdhf

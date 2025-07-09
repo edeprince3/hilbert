@@ -47,6 +47,7 @@
 #include <polaritonic_scf/rtddft.h>
 #include <polaritonic_scf/utddft.h>
 #include <misc/backtransform_tpdm.h>
+#include <rt_tdhf/tdhf.h>
 
 #ifdef WITH_TA
 #include <tiledarray.h>
@@ -84,7 +85,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_RTDDFT POLARITONIC_UTDDFT POLARITONIC_RPA MCPDFT CC_CAVITY");
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_RTDDFT POLARITONIC_UTDDFT POLARITONIC_RPA MCPDFT CC_CAVITY RT-TDHF");
 
         /*- Do DIIS? -*/
         options.add_bool("DIIS", true);
@@ -353,6 +354,29 @@ int read_options(std::string name, Options& options)
         and could get expensive, default = false -*/
         options.add_bool("JELLIUM_CIS_SMART_GUESS", false);
 
+        /*- SUBSECTION REAL-TIME TDHF -*/
+
+        /*- total time in a.u. -*/
+        options.add_double("TOTAL_TIME", 100.0);
+
+        /*- time step in a.u. -*/
+        options.add_double("TIME_STEP", 0.05);
+
+        /*- pulse shape -*/
+        options.add_str("LASER_SHAPE", "SIN_SQUARED", "SIN_SQUARED TRAPEZOID CONTINUOUS");
+
+        /*- amplitude of pulse in a.u.-*/
+        options.add_double("LASER_AMP", 0.01);
+
+        /*- frequency of pulse in a.u. (default is the 1 fs pulse) -*/
+        options.add_double("LASER_FREQ", 0.1519829846);
+
+        /*- width of pulse in a.u. (1 fs default) -*/
+        options.add_double("LASER_TIME", 0.413414);
+
+        /*- polarization (default x+y+z). -*/
+        options.add("POLARIZATION",new ArrayType());
+
         /*- SUBSECTION POLARITONIC SCF -*/
 
         /*- do compute static polarizability / hyperpolarizability QED-HF and QED-DFT -*/
@@ -489,6 +513,12 @@ int read_options(std::string name, Options& options)
 extern "C" PSI_API
 SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 {
+
+    if ( options.get_str("HILBERT_METHOD") == "RT-TDHF") {
+        std::shared_ptr<TDHF> tdhf (new TDHF(ref_wfn, options));
+        double energy = tdhf->compute_energy();
+        return ref_wfn;
+    }
 
     if ( options.get_str("HILBERT_METHOD") == "DOCI") {
 
