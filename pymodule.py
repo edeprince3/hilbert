@@ -902,7 +902,10 @@ def run_mcpdft(name, **kwargs):
     Jb.transform(new_wfn.Cb())
 
     coulomb_energy = Da.vector_dot(Ja)
+    coulomb_energy += Da.vector_dot(Jb)
+    coulomb_energy += Db.vector_dot(Ja)
     coulomb_energy += Db.vector_dot(Jb)
+    coulomb_energy *= 0.5
 
     # xc contribution to the energy
 
