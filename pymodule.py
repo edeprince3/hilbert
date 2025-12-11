@@ -70,6 +70,10 @@ def run_qed_scf(name, **kwargs):
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RTDDFT')
         else:
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UTDDFT')
+    elif ( lowername == 'qed-rpa' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RPA')
+    elif ( lowername == 'qed-rdfrpa' ):
+        psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RDFRPA')
 
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
     # Fock matrices, and more
@@ -141,9 +145,9 @@ def run_qed_scf_gradient(name, **kwargs):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RCIS')
     elif ( lowername == 'qed-ccsd' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UCCSD')
-    elif ( lowername == 'polaritonic-rpa' ):
+    elif ( lowername == 'qed-rpa' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RPA')
-    elif ( lowername == 'polaritonic-rdfrpa' ):
+    elif ( lowername == 'qed-rdfrpa' ):
         psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RDFRPA')
     elif ( lowername == 'qed-tddft' ):
         if ( reference == 'rks' or reference == 'rhf'):
@@ -993,8 +997,8 @@ psi4.driver.procedures['energy']['v2rdm-casscf'] = run_v2rdm_casscf
 psi4.driver.procedures['gradient']['v2rdm-casscf'] = run_v2rdm_casscf_gradient
 
 # polaritonic rpa
-psi4.driver.procedures['energy']['polaritonic-rpa'] = run_qed_scf
-psi4.driver.procedures['energy']['polaritonic-rdfrpa'] = run_qed_scf
+psi4.driver.procedures['energy']['qed-rpa'] = run_qed_scf
+psi4.driver.procedures['energy']['qed-rdfrpa'] = run_qed_scf
 
 # qed-scf,dft,cc,tddft
 psi4.driver.procedures['energy']['qed-scf'] = run_qed_scf
@@ -1007,5 +1011,4 @@ psi4.driver.procedures['gradient']['qed-dft'] = run_qed_scf_gradient
 
 # mcpdft
 psi4.driver.procedures['energy']['mcpdft'] = run_mcpdft
->>>>>>> master
 
