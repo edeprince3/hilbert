@@ -5,7 +5,7 @@ include(FetchContent)
 
 message(STATUS "liblbfgs will be built at compile time")
 FetchContent_Declare(liblbfgs_external
-    GIT_REPOSITORY https://github.com/chokkan/liblbfgs.git
+    GIT_REPOSITORY https://github.com/edeprince3/liblbfgs.git
 
 )
 FetchContent_MakeAvailable(liblbfgs_external)

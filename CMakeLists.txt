@@ -14,7 +14,7 @@ set(hilbert_URL          "https://github.com/edeprince3/hilbert")
 set(hilbert_LICENSE      "GPL-3.0+")
 set(CMAKE_CXX_STANDARD 17)
 
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
