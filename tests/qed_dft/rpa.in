@@ -15,17 +15,18 @@ symmetry c1
 }
 
 set {
-  basis cc-pvdz
-  scf_type df 
+  basis sto-3g
+  scf_type cd
   df_ints_io save
   e_convergence 1e-12
   d_convergence 1e-12
+  r_convergence 1e-12
+  cholesky_tolerance 1e-12
 } 
 
 w = 0.265754876050
-g = 0.05 / np.sqrt(2.0 * w )
-#w = 1.0
-#g = 0.0
+lam = 0.05
+g = lam / np.sqrt(2.0 * w )
 
 set hilbert {
   maxiter 500
@@ -47,10 +48,9 @@ en,wfn = energy('hf',return_wfn=True)
 my_file=wfn.get_scratch_filename(180) + '.npy'
 wfn.to_file(my_file)
 
-
 set qed_use_relaxed_orbitals true 
 set use_coherent_state_basis true
-set rpa_exchange true
+set rpa_exchange false
 set scf maxiter=0
 set tdscf_tda false
 
@@ -58,9 +58,10 @@ set guess read
 set scf fail_on_maxiter=False
 ehxx = energy('scf')
 
-crpa, wfn_rpa = energy('polaritonic-rpa', ref_wfn=wfn, return_wfn=True)
+crpa, wfn_rpa = energy('qed-rpa', ref_wfn=wfn, return_wfn=True)
 
 ecrpa=variable("RPA_CORRELATION_ENERGY")
+#print(ecrpa)
 
 psi4.print_out("\n")
 psi4.print_out("RPA Energies in au\n\n")
@@ -68,8 +69,8 @@ psi4.print_out("RPA correlation energy:  %20.12f\n" % (ecrpa))
 psi4.print_out("HXX energy:              %20.12f\n" % (ehxx))
 psi4.print_out("RPA total energy:        %20.12f\n" % (ecrpa + ehxx))
 
-set num_roots 6
-energy('polaritonic-tddft', ref_wfn=wfn)
+#set num_roots 6
+#energy('qed-tddft', ref_wfn=wfn)
 #
 #set TDSCF_STATES 4
 #set tdscf_maxiter 400
