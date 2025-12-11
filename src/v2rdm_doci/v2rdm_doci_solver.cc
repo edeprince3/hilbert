@@ -81,19 +81,29 @@ static void evaluate_ATu(double* ATu, double* u, void * data) {
 
 }
 
-static void bpsdp_monitor(int oiter, int iiter, double energy_primal, double energy_dual, double mu, double primal_error, double dual_error, void * data) {
+// BPSDP monitor callback function
+static void bpsdp_monitor(int print_level, int oiter, int iiter, double energy_primal, double energy_dual, double mu, double primal_error, double dual_error, void * data) {
 
-    outfile->Printf("      %5i %5i %11.6lf %11.6lf %11.6le %7.3lf %10.5le %10.5le\n",
-        oiter,iiter,energy_primal,energy_dual,fabs(energy_primal-energy_dual),mu,primal_error,dual_error);
-
+    if ( print_level > 0 ) {
+        if ( oiter % print_level == 0 ) {
+            outfile->Printf("      %5i %5i %11.6lf %11.6lf %11.6le %7.3lf %10.5le %10.5le\n",
+                oiter,iiter,energy_primal,energy_dual,fabs(energy_primal-energy_dual),mu,primal_error,dual_error);
+            fflush(stdout);
+        }
+    }
 }
-static void rrsdp_monitor(int oiter, int iiter, double lagrangian, double objective, double mu, double error, double zero, void * data) {
 
-    outfile->Printf("    %12i %12i %12.6lf %12.6lf %12.2le %12.3le\n",
+// RRSDP monitor callback function
+static void rrsdp_monitor(int print_level, int oiter, int iiter, double lagrangian, double objective, double mu, double error, double zero, void * data) {
+
+    if ( print_level > 0 ) {
+        if ( oiter % print_level == 0 ) {
+            outfile->Printf("    %12i %12i %12.6lf %12.6lf %12.2le %12.3le\n",
                 oiter,iiter,lagrangian,objective,mu,error);
-
+            fflush(stdout);
+        }
+    }
 }
-
 
 v2RDM_DOCISolver::v2RDM_DOCISolver(SharedWavefunction reference_wavefunction,Options & options):
     Wavefunction(options){
@@ -1100,7 +1110,8 @@ double v2RDM_DOCISolver::compute_energy() {
     do { 
 
         print_header();
-        sdp_->solve(x->pointer(), b->pointer(), c->pointer(), dimensions_, options_.get_int("ORBOPT_FREQUENCY"), evaluate_Au, evaluate_ATu, sdp_monitor, (void*)this);
+        sdp_->solve(x->pointer(), b->pointer(), c->pointer(), dimensions_, options_.get_int("ORBOPT_FREQUENCY"), evaluate_Au, evaluate_ATu, sdp_monitor, 1, (void*)this);
+
 
 
         if ( options_.get_bool("OPTIMIZE_ORBITALS") ) {

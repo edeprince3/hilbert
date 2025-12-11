@@ -235,10 +235,10 @@ void PolaritonicRDFRPA::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
     }
 
     // orbital energies
-    epsilon_a_= SharedVector(new Vector(nirrep_, nmopi_));
-    epsilon_a_->copy(reference_wavefunction_->epsilon_a().get());
-    epsilon_b_= SharedVector(new Vector(nirrep_, nmopi_));
-    epsilon_b_->copy(reference_wavefunction_->epsilon_b().get());
+    epsilon_a_ = std::make_shared<Vector>(nmopi_);
+    epsilon_a_->copy(*reference_wavefunction_->epsilon_a().get());
+    epsilon_b_ = std::make_shared<Vector>(nmopi_);
+    epsilon_b_->copy(*reference_wavefunction_->epsilon_b().get());
 
     diag_ = (double*)malloc(o_*v_*sizeof(double));
 

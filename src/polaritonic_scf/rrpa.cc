@@ -195,10 +195,10 @@ void PolaritonicRRPA::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
     }
 
     // orbital energies
-    epsilon_a_= SharedVector(new Vector(nirrep_, nmopi_));
-    epsilon_a_->copy(reference_wavefunction_->epsilon_a().get());
-    epsilon_b_= SharedVector(new Vector(nirrep_, nmopi_));
-    epsilon_b_->copy(reference_wavefunction_->epsilon_b().get());
+    epsilon_a_ = std::make_shared<Vector>(nmopi_);
+    epsilon_a_->copy(*reference_wavefunction_->epsilon_a().get());
+    epsilon_b_ = std::make_shared<Vector>(nmopi_);
+    epsilon_b_->copy(*reference_wavefunction_->epsilon_b().get());
 
 }
 
@@ -422,7 +422,6 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
                          size_t bj = b * o_ + j;
 
                          H->pointer()[ai][bj]             +=  2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_];
-
                          H->pointer()[ai + off][bj + off] += -2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_];
 
                          if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
@@ -436,7 +435,7 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
 
                             H->pointer()[ai + off][bj] +=  2.0 * lambda_z * lambda_z * dz[i][a+o_] * dz[j][b+o_]; //dz[b+o_][j];
 
-                             if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
+                            if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
                                  H->pointer()[ai][bj + off] -= -      lambda_z * lambda_z * dz[i][b+o_] * dz[j][a+o_]; //dz[b+o_][j];
                                  H->pointer()[ai + off][bj] -=        lambda_z * lambda_z * dz[i][b+o_] * dz[j][a+o_]; //dz[b+o_][j];
                             }
