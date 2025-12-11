@@ -217,14 +217,15 @@ void PolaritonicRDFRPA::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
         //outfile->Printf("        Time for integral transformation:  %7.2lf s\n",end-start);
         //outfile->Printf("\n");
 
-
         siap_ = (double*)malloc(o_*v_*nQ_*sizeof(double));
         memset((void*)siap_,'\0',o_*v_*nQ_*sizeof(double));
 
+        tst_ = (std::shared_ptr<Matrix>)(new Matrix(nQ_,o_*v_));
         for (size_t Q = 0; Q < nQ_; Q++) {
             for (size_t i = 0; i < o_; i++) {
                 for (size_t a = 0; a < v_; a++) {
                     siap_[Q*o_*v_+i*v_+a] = Qov[Q*o_*v_+i*v_+a];
+                    tst_->pointer()[Q][i*v_+a] = Qov[Q*o_*v_+i*v_+a];
                 }
             }
         }
@@ -248,8 +249,6 @@ void PolaritonicRDFRPA::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
             diag_[ai] = epsilon_a_->pointer()[a + o_] - epsilon_a_->pointer()[i];
         }
     }
-
-
 }
 
 double PolaritonicRDFRPA::compute_energy() {
@@ -299,10 +298,8 @@ double PolaritonicRDFRPA::compute_energy() {
         throw PsiException("polaritonic TDDFT does not work with N_PHOTON_STATES > 2",__FILE__,__LINE__);
     }
 
-
     std::shared_ptr<Vector> diag_matrix = build_diag_matrix();
     std::shared_ptr<Matrix> grid = build_grid();
-
     if (n_output_ > 1)  {
         outfile->Printf("     =====> orbital energy differences <=====\n");
         for (size_t i = 0; i < o_ * v_ ; i++) {
@@ -329,7 +326,6 @@ double PolaritonicRDFRPA::compute_energy() {
     Qmat_ = (double*)malloc(nQ_*nQ_*sizeof(double));
     memset((void*)Qmat_,'\0',nQ_*nQ_*sizeof(double));
     std::shared_ptr<Matrix> tstcopy = (std::shared_ptr<Matrix>)(new Matrix(nQ_,o_*v_));
-
 
     // compute Qmat_ for each grid point and accumulate Ecrpa
     double ecrpa = 0.0;
@@ -360,9 +356,9 @@ double PolaritonicRDFRPA::compute_energy() {
             }
         }
         if (n_output_ > 2) {
-              outfile->Printf("   =====> tstcopy after scaling <=====\n");
-              tstcopy->print();
-            }
+            outfile->Printf("   =====> tstcopy after scaling <=====\n");
+            tstcopy->print();
+        }
 
         // accumulate contribution on Qmat_
         // scaling factor for 3 index integrals
@@ -408,6 +404,7 @@ double PolaritonicRDFRPA::compute_energy() {
 
     }
     outfile->Printf("     =====> RPA correlation energy <=====\n");
+    //printf("%20.12lf\n", ecrpa);
     outfile->Printf("%20.12lf \n",ecrpa);
 
 }
