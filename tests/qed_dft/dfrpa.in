@@ -59,6 +59,6 @@ set guess read
 set scf fail_on_maxiter=False
 ehxx = energy('scf')
 
-crpa, wfn_rpa = energy('polaritonic-rdfrpa', ref_wfn=wfn, return_wfn=True)
+crpa, wfn_rpa = energy('qed-rdfrpa', ref_wfn=wfn, return_wfn=True)
 
 
