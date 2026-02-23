@@ -111,9 +111,9 @@ void PolaritonicUCCSD::common_init() {
     same_a_b_dens_ = false;
 
     // include amplitudes for photon transitions?
-    include_u0_ = options_.get_bool("POLARITONIC_CC_INCLUDE_U0");
-    include_u1_ = options_.get_bool("POLARITONIC_CC_INCLUDE_U1");
-    include_u2_ = options_.get_bool("POLARITONIC_CC_INCLUDE_U2");
+    include_u0_ = options_.get_bool("QED_CC_INCLUDE_U0");
+    include_u1_ = options_.get_bool("QED_CC_INCLUDE_U1");
+    include_u2_ = options_.get_bool("QED_CC_INCLUDE_U2");
 
     // molecular hamiltonian
     if ( !is_hubbard_ ) {
@@ -460,12 +460,14 @@ std::shared_ptr<Matrix> PolaritonicUCCSD::hubbard_hartree_fock() {
 
     free(eri);
 
-    if ( iter > maxiter ) {
-        throw PsiException("Maximum number of iterations exceeded!",__FILE__,__LINE__);
-    }
-
     outfile->Printf("\n");
-    outfile->Printf("    Hubbard SCF iterations converged!\n");
+    if ( iter > maxiter && options_.get_bool("FAIL_ON_MAXITER") ){
+        throw PsiException("Maximum number of iterations exceeded!",__FILE__,__LINE__);
+    } else if ( iter > maxiter ) {
+        outfile->Printf("    Hubbard SCF iterations did not converge!\n");
+    } else {
+        outfile->Printf("    Hubbard SCF iterations converged!\n");
+    }
     outfile->Printf("\n");
 
     outfile->Printf("    * Hubbard SCF total energy: %20.12lf\n",energy);
@@ -1844,9 +1846,9 @@ double PolaritonicUCCSD::compute_energy() {
     double ec = cc_iterations();
 
     // CCSD iterations with photon
-    include_u0_ = options_.get_bool("POLARITONIC_CC_INCLUDE_U0");;
-    include_u1_ = options_.get_bool("POLARITONIC_CC_INCLUDE_U1");;
-    include_u2_ = options_.get_bool("POLARITONIC_CC_INCLUDE_U2");;
+    include_u0_ = options_.get_bool("QED_CC_INCLUDE_U0");;
+    include_u1_ = options_.get_bool("QED_CC_INCLUDE_U1");;
+    include_u2_ = options_.get_bool("QED_CC_INCLUDE_U2");;
 
     if ( include_u0_ || include_u1_ || include_u2_ ) {
 
@@ -1925,12 +1927,14 @@ double PolaritonicUCCSD::cc_iterations() {
 
     }while(fabs(dele) > e_convergence || tnorm > r_convergence );
 
-    if ( iter > maxiter ) {
-        throw PsiException("Maximum number of iterations exceeded!",__FILE__,__LINE__);
-    }
-
     outfile->Printf("\n");
-    outfile->Printf("    CCSD iterations converged!\n");
+    if ( iter > maxiter && options_.get_bool("FAIL_ON_MAXITER") ){
+        throw PsiException("Maximum number of iterations exceeded!",__FILE__,__LINE__);
+    } else if ( iter > maxiter ) {
+        outfile->Printf("    CCSD iterations did not converge!\n");
+    } else {
+        outfile->Printf("    CCSD iterations converged!\n");
+    }
     outfile->Printf("\n");
 
     return ec;

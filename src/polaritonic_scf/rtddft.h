@@ -52,11 +52,13 @@ class PolaritonicRTDDFT: public PolaritonicHF {
     void common_init(std::shared_ptr<Wavefunction> dummy_wfn);
 
     double compute_energy();
+    void compute_static_responses();
 
     void build_sigma_generalized(int N, int maxdim, int L, double **Q, double **sigmah, double **sigmas);
 
   protected:
 
+    void build_Au_Bu_response(int N, int L, double *u, double *ABu);
     void build_Au_Bu(int N, int L, double *u, double *Au, double *Bu);
 
     void build_sigma_m(int N, int L, double *x, double *y, double *m, double *sigma_m_r, double *sigma_m_l);

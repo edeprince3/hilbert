@@ -30,7 +30,7 @@
 namespace hilbert{
 
 /// transform three-index integrals to MO basis
-void ThreeIndexIntegrals(std::shared_ptr<Wavefunction> ref, long int &nQ, long int memory);
+void ThreeIndexIntegrals(std::shared_ptr<psi::Wavefunction> ref, long int &nQ, long int memory);
 
 }
 

@@ -34,6 +34,12 @@
 #include <p2rdm/p2rdm_solver.h>
 #include <misc/real_space_density.h>
 
+#ifdef WITH_TA
+    #include <mpi.h>
+    #include <mpi4py/mpi4py.h>
+    #include <tiledarray.h>
+#endif
+
 namespace hilbert{
 
 class RealSpaceDensityHelper{
@@ -67,7 +73,7 @@ class RealSpaceDensityHelper{
 
   protected:
 
-    /// the RealSpaceDensity class 
+    /// the RealSpaceDensity class
     std::shared_ptr<RealSpaceDensity> real_space_density;
 
 };
@@ -82,7 +88,7 @@ class DOCIHelper{
 
   protected:
 
-    /// the DOCISolver 
+    /// the DOCISolver
     std::shared_ptr<DOCISolver> doci;
 
 };
@@ -98,7 +104,7 @@ class pp2RDMHelper{
 
   protected:
 
-    /// the pp2RDMSolver 
+    /// the pp2RDMSolver
     std::shared_ptr<pp2RDMSolver> pp2rdm;
 
 };
@@ -114,7 +120,7 @@ class p2RDMHelper{
 
   protected:
 
-    /// the p2RDMSolver 
+    /// the p2RDMSolver
     std::shared_ptr<p2RDMSolver> p2rdm;
 
 };
@@ -130,7 +136,7 @@ class v2RDM_DOCIHelper{
 
   protected:
 
-    /// the v2RDMSolver 
+    /// the v2RDMSolver
     std::shared_ptr<v2RDM_DOCISolver> v2rdm_doci;
 
 };
@@ -180,13 +186,52 @@ class v2RDMHelper{
 
   protected:
 
-    /// the v2RDMSolver 
+    /// the v2RDMSolver
     std::shared_ptr<v2RDMSolver> v2rdm;
 
     /// Find out which orbitals belong where
     void orbital_locations(const std::string &orbital_name, int *start, int *end);
 
 };
+
+#ifdef WITH_TA
+
+class CavityHelper {
+    public:
+    CavityHelper() = default;
+    ~CavityHelper() = default;
+
+    static inline MPI_Comm comm_ = MPI_COMM_WORLD;
+    static inline bool initialized_ = false;
+    static inline bool finalized_ = false;
+
+    static void ta_initialize(){
+        if (CavityHelper::comm_ == MPI_COMM_NULL) {
+            throw PsiException("MPI communicator not set or set incorrectly. Use set_comm() to set it.", __FILE__, __LINE__);
+        } else if (CavityHelper::initialized_) {
+            return;
+        } else if (CavityHelper::finalized_) {
+            throw PsiException("TA already finalized; cannot re-initialize.", __FILE__, __LINE__);
+        }
+        int argc = 1; char **argv = nullptr;
+        TA::initialize(argc, argv, CavityHelper::comm_);
+        CavityHelper::initialized_ = true;
+    }
+
+    static void ta_finalize(){
+        if (CavityHelper::comm_ == MPI_COMM_NULL) {
+            throw PsiException("MPI communicator not set. Use set_comm() to set it.", __FILE__, __LINE__);
+        } else if (!CavityHelper::initialized_) {
+            throw PsiException("TA not initialized; cannot finalize.", __FILE__, __LINE__);
+        } else if (CavityHelper::finalized_) {
+            return;
+        }
+        TA::finalize();
+        CavityHelper::finalized_ = true;
+    }
+};
+
+#endif
 
 }
 

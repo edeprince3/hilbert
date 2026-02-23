@@ -1,7 +1,7 @@
 #
 # @BEGIN LICENSE
 #
-# Hilbert: a space for quantum chemistry plugins to Psi4 
+# Hilbert: a space for quantum chemistry plugins to Psi4
 #
 # Copyright (c) 2020 by its authors (LICENSE).
 #
@@ -22,15 +22,70 @@
 # along with this program.  If not, see http://www.gnu.org/licenses/.
 #
 # @END LICENSE
-# 
+#
 
 import numpy as np
+import os
 
 import psi4
 import psi4.driver.p4util as p4util
 from psi4.driver.procrouting import proc_util
 from psi4.driver.procrouting import proc
 from psi4.driver.p4util.exceptions import ValidationError
+
+def init_cc_cavity(name, **kwargs):
+
+    # set method to CC_CAVITY
+    psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'CC_CAVITY')
+
+    # determine level of theory from name
+    if 'ccsd-00' in name:
+        psi4.core.set_local_option('HILBERT', 'QED_CC_TYPE', 'CCSD-00')
+    elif 'ccsd-21' in name:
+        psi4.core.set_local_option('HILBERT', 'QED_CC_TYPE', 'CCSD-21')
+    elif 'ccsd-22' in name:
+        psi4.core.set_local_option('HILBERT', 'QED_CC_TYPE', 'CCSD-22')
+
+    # check if coupling strength is zero
+    if np.allclose(psi4.core.get_option('HILBERT', 'CAVITY_COUPLING_STRENGTH'), 0.0):
+        psi4.core.set_local_option('HILBERT', 'QED_CC_TYPE', 'CCSD-00')
+        psi4.core.set_local_option('HILBERT', 'CAVITY_FREQUENCY', [0.0, 0.0, 1000.0])
+
+    # determine if using eom-cc or ground-state CC
+    if 'eom' in name:
+        psi4.core.set_local_option('HILBERT', 'PERFORM_EOM', True)
+
+        # check if 'eom-ea' is in the name and set EOM_TYPE to EA if so
+        if 'eom-ea' in name:
+            psi4.core.set_local_option('HILBERT', 'EOM_TYPE', 'EA')
+    else:
+        psi4.core.set_local_option('HILBERT', 'PERFORM_EOM', False)
+
+    # set the number of threads for MADNESS with TiledArray
+    try:
+        mad_num_threads = str(psi4.core.get_local_option('HILBERT', 'MAD_NUM_THREADS'))
+    except:
+        # check if the number of threads is set in the environment; if not, set to 1
+        mad_num_threads = os.environ.get('MAD_NUM_THREADS', 1)
+
+    # set environment variable for MAD_NUM_THREADS
+    os.environ['MAD_NUM_THREADS'] = mad_num_threads
+
+    # get MPI communicator
+    try:
+        from mpi4py import MPI
+        from hilbert import set_comm
+        set_comm(MPI.COMM_WORLD)
+    except ImportError:
+        raise Exception('Hilbert is not compiled with TA support. Please recompile with `-D WITH_TA` cmake flag.')
+
+    # upon exit, finalize MPI
+    from atexit import register
+    @register
+    def cleanup():
+        from hilbert import ta_finalize
+        ta_finalize()
+
 
 def run_qed_scf(name, **kwargs):
     r"""Function encoding sequence of PSI module and plugin calls so that
@@ -70,6 +125,8 @@ def run_qed_scf(name, **kwargs):
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RTDDFT')
         else:
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UTDDFT')
+    elif ( 'qed-ccsd' in lowername): # cc_cavity
+        init_cc_cavity(name, **kwargs)
 
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
     # Fock matrices, and more
@@ -92,7 +149,8 @@ def run_qed_scf(name, **kwargs):
 
     aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_CC",
                                         psi4.core.get_global_option("DF_BASIS_CC"),
-                                        "RIFIT", psi4.core.get_global_option("BASIS"))
+                                        "RIFIT", psi4.core.get_global_option("BASIS"),
+                                        puream=ref_wfn.basisset().has_puream())
     ref_wfn.set_basisset("DF_BASIS_CC", aux_basis)
 
     # Ensure IWL files have been written when not using DF/CD
@@ -146,6 +204,9 @@ def run_qed_scf_gradient(name, **kwargs):
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_RTDDFT')
         else:
             psi4.core.set_local_option('HILBERT', 'HILBERT_METHOD', 'POLARITONIC_UTDDFT')
+    elif ( 'qed-ccsd' in lowername): # cc_cavity
+        init_cc_cavity(name, **kwargs)
+
 
     # Compute a SCF reference, a wavefunction is return which holds the molecule used, orbitals
     # Fock matrices, and more
@@ -176,8 +237,9 @@ def run_qed_scf_gradient(name, **kwargs):
     ref_wfn.set_basisset("DF_BASIS_SCF", scf_aux_basis)
 
     aux_basis = psi4.core.BasisSet.build(ref_wfn.molecule(), "DF_BASIS_CC",
-                                        psi4.core.get_global_option("DF_BASIS_CC"),
-                                        "RIFIT", psi4.core.get_global_option("BASIS"))
+                                         psi4.core.get_global_option("DF_BASIS_CC"),
+                                         "RIFIT", psi4.core.get_global_option("BASIS"),
+                                         puream=ref_wfn.basisset().has_puream())
     ref_wfn.set_basisset("DF_BASIS_CC", aux_basis)
 
     # Ensure IWL files have been written when not using DF/CD
@@ -711,7 +773,7 @@ def run_mcpdft(name, **kwargs):
         print('    error: mc-pdft requires the python interface to libxc. see https://gitlab.com/libxc/libxc/-/tree/devel#python-library')
         print('')
         exit()
-        
+
 
     functional_name_dict = {
         'svwn' : ['lda_x', 'lda_c_vwn_rpa'],
@@ -740,7 +802,7 @@ def run_mcpdft(name, **kwargs):
     base_wfn = psi4.core.Wavefunction.build(ref_molecule, psi4.core.get_global_option('BASIS'))
     new_wfn = proc.scf_wavefunction_factory(func, base_wfn, 'UKS')
 
-    # push reference orbitals onto new wave function 
+    # push reference orbitals onto new wave function
     for irrep in range (0,ref_wfn.Ca().nirrep()):
         new_wfn.Ca().nph[irrep][:,:] = ref_wfn.Ca().nph[irrep][:,:]
         new_wfn.Cb().nph[irrep][:,:] = ref_wfn.Cb().nph[irrep][:,:]
@@ -772,7 +834,7 @@ def run_mcpdft(name, **kwargs):
 
     opdm_a = kwargs.get('opdm_a', None)
     opdm_b = kwargs.get('opdm_b', None)
-    if opdm_a is None or opdm_b is None: 
+    if opdm_a is None or opdm_b is None:
         rho_helper.read_opdm()
     else:
         rho_helper.set_opdm(opdm_a, opdm_b)
@@ -781,8 +843,8 @@ def run_mcpdft(name, **kwargs):
     rho_helper.build_rho()
 
     # need Da and Db to build T+V+J. rho_helper has them in the MO basis
-    Da = rho_helper.Da() 
-    Db = rho_helper.Db() 
+    Da = rho_helper.Da()
+    Db = rho_helper.Db()
 
     # T + V
     mints = psi4.core.MintsHelper(new_wfn.basisset())
@@ -840,7 +902,10 @@ def run_mcpdft(name, **kwargs):
     Jb.transform(new_wfn.Cb())
 
     coulomb_energy = Da.vector_dot(Ja)
+    coulomb_energy += Da.vector_dot(Jb)
+    coulomb_energy += Db.vector_dot(Ja)
     coulomb_energy += Db.vector_dot(Jb)
+    coulomb_energy *= 0.5
 
     # xc contribution to the energy
 
@@ -853,7 +918,7 @@ def run_mcpdft(name, **kwargs):
     rho_a_x = np.asarray(rho_helper.rho_a_x())
     rho_a_y = np.asarray(rho_helper.rho_a_y())
     rho_a_z = np.asarray(rho_helper.rho_a_z())
-    
+
     rho_b_x = np.asarray(rho_helper.rho_b_x())
     rho_b_y = np.asarray(rho_helper.rho_b_y())
     rho_b_z = np.asarray(rho_helper.rho_b_z())
@@ -989,11 +1054,26 @@ psi4.driver.procedures['energy']['v2rdm-casscf'] = run_v2rdm_casscf
 psi4.driver.procedures['gradient']['v2rdm-casscf'] = run_v2rdm_casscf_gradient
 
 # qed-scf,dft,cc,tddft
-psi4.driver.procedures['energy']['qed-scf'] = run_qed_scf
-psi4.driver.procedures['energy']['qed-dft'] = run_qed_scf
+psi4.driver.procedures['energy']['qed-scf']   = run_qed_scf
+psi4.driver.procedures['energy']['qed-dft']   = run_qed_scf
 psi4.driver.procedures['energy']['qed-tddft'] = run_qed_scf
-psi4.driver.procedures['energy']['qed-ccsd'] = run_qed_scf
+psi4.driver.procedures['energy']['qed-ccsd']  = run_qed_scf
 
+# qed-ccsd with tiled-array
+psi4.driver.procedures['energy']['qed-ccsd-00']     = run_qed_scf
+psi4.driver.procedures['energy']['qed-ccsd-21']     = run_qed_scf
+psi4.driver.procedures['energy']['qed-ccsd-22']     = run_qed_scf
+
+# eom qed methods
+psi4.driver.procedures['energy']['eom-ee-qed-ccsd-00'] = run_qed_scf
+psi4.driver.procedures['energy']['eom-ea-qed-ccsd-00'] = run_qed_scf
+psi4.driver.procedures['energy']['eom-qed-ccsd-00']    = run_qed_scf
+
+psi4.driver.procedures['energy']['eom-ee-qed-ccsd-21'] = run_qed_scf
+psi4.driver.procedures['energy']['eom-ea-qed-ccsd-21'] = run_qed_scf
+psi4.driver.procedures['energy']['eom-qed-ccsd-21']    = run_qed_scf 
+
+# gradients for qed-scf,dft
 psi4.driver.procedures['gradient']['qed-scf'] = run_qed_scf_gradient
 psi4.driver.procedures['gradient']['qed-dft'] = run_qed_scf_gradient
 
