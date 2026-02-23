@@ -395,7 +395,7 @@ double PolaritonicUKS::compute_energy() {
         dipole_Ka->zero();
         dipole_Kb->zero();
 
-        if ( n_photon_states_ > 1 ) {
+        if ( n_photon_states_ > 1 || options_.get_bool("USE_COHERENT_STATE_BASIS") ) {
 
             update_cavity_terms();
 
