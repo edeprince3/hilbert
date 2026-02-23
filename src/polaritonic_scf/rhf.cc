@@ -390,7 +390,7 @@ double PolaritonicRHF::compute_energy() {
     epsilon_a_->print();
 
     // copy alpha to beta 
-    epsilon_b_->copy(*reference_wavefunction_->epsilon_b().get());
+    epsilon_b_->copy(*epsilon_a_.get());
     Cb_->copy(Ca_);
     Fb_->copy(Fa_);
     Db_->copy(Da_);
