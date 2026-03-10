@@ -457,6 +457,8 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
     
     //for (size_t I = 0; I < n_photon_states_ ; I++) {
         // couple |0,1> to |ia,0>
+    int coupling_off = 0;
+    if ( coupling_off == 0 ) {
         for (size_t a = 0; a < v_; a++) {
              for (size_t i = 0; i < o_; i++) {
                  size_t ai = a * o_ + i;
@@ -491,6 +493,7 @@ std::shared_ptr<Matrix> PolaritonicRRPA::build_rpa_matrix(bool is_tda) {
                  }
             }
         }
+    } 
     //}
 
 

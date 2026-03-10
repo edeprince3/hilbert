@@ -46,6 +46,10 @@ class PolaritonicRDFRPA: public PolaritonicHF {
 
     double compute_energy();
 
+  private:
+
+    std::vector<double> project_dipole_into_aux(const std::vector<double>& mu_ai);
+
   protected:
 
     std::shared_ptr<Vector> build_diag_matrix();

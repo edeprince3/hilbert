@@ -26,6 +26,7 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <algorithm>
 #include <psi4/psi4-dec.h>
 #include <psi4/liboptions/liboptions.h>
 #include <psi4/libpsio/psio.hpp>
@@ -59,6 +60,12 @@
 #include <misc/threeindexintegrals.h>
 #include <misc/nonsym_davidson_solver.h>
 //#include <mkl_blas.h>
+
+//extern "C" {
+//void dpotrf(char* uplo, int* n, double* a, int* lda, int* info);
+//void dpotrs(char* uplo, int* n, int* nrhs, double* a, int* lda,
+//                 double* b, int* ldb, int* info);
+//}
 
 using namespace psi;
 using namespace fnocc;
@@ -298,9 +305,40 @@ double PolaritonicRDFRPA::compute_energy() {
         throw PsiException("polaritonic TDDFT does not work with N_PHOTON_STATES > 2",__FILE__,__LINE__);
     }
 
+    // RI-projected  dipole integrals in MO basis
+    std::vector<double> mu_ai(o_*v_);
+
+    for (size_t i = 0; i < o_; i++) {
+        for (size_t a = 0; a < v_; a++) {
+            size_t ai = i * v_ + a;
+            mu_ai[ai] = dz[i][a+o_];
+        }
+    } 
+    // project into auxiliary basis
+    std::vector<double> mu_Q = project_dipole_into_aux(mu_ai);
+
+    // Static DSE contribution
+    Matrix KDSE(nQ_,nQ_);
+    KDSE.zero();
+    // what is the correct prefactor? 
+    // the DSE contribution should be scaled properly
+    // should it be only lambda^2/omega? 
+    //double dse_prefac = lambda_z * lambda_z / (cavity_frequency_[2] * cavity_frequency_[2]);
+    double dse_prefac = lambda_z * lambda_z; // / (4.0 * cavity_frequency_[2]);
+    for (size_t Q = 0; Q < nQ_; Q++) {
+        for (size_t P = 0; P < nQ_; P++) {
+          KDSE.pointer()[Q][P] =  dse_prefac * mu_Q[Q] * mu_Q[P];
+        }
+    }
+
+    // build diagonal matrix for quadrature
     std::shared_ptr<Vector> diag_matrix = build_diag_matrix();
+
+    // build grid points and weights for quadrature
     std::shared_ptr<Matrix> grid = build_grid();
-    if (n_output_ > 1)  {
+
+    // print out grid points and weights for debugging
+    if (n_output_ > 2)  {
         outfile->Printf("     =====> orbital energy differences <=====\n");
         for (size_t i = 0; i < o_ * v_ ; i++) {
             outfile->Printf("%20.12lf \n",diag_[i]);
@@ -319,6 +357,7 @@ double PolaritonicRDFRPA::compute_energy() {
         }
     }
 
+    // allocate temporary arrays for RPA calculation
     tmp1_ = (double*)malloc(nQ_*o_*v_*sizeof(double));
     memset((void*)tmp1_,'\0',nQ_*o_*v_*sizeof(double));
     int * int1_ = (int*)malloc(nQ_*sizeof(int));
@@ -343,7 +382,7 @@ double PolaritonicRDFRPA::compute_energy() {
         // copy 3-index integrals to local variable tstcopy
         tstcopy->zero();
         tstcopy->copy(tst_);
-        // scale 3 index integrals
+        // scale 3 index integrals with e-e contribution
         for (size_t ivir = 0; ivir < v_ ; ivir++) {
             for (size_t iocc = 0; iocc < o_ ; iocc++) {
                 size_t ai = iocc * v_ + ivir;
@@ -363,6 +402,7 @@ double PolaritonicRDFRPA::compute_energy() {
         // accumulate contribution on Qmat_
         // scaling factor for 3 index integrals
         double scal2 = 2.0*2.0;
+        // this is the e-e contribution to Q
         tmp2->gemm(false,true,scal2,tstcopy,tstcopy,1.0);
 
         if (n_output_ > 2) {
@@ -370,6 +410,20 @@ double PolaritonicRDFRPA::compute_energy() {
             tmp2->print();
         }
 
+        // add QED-kernel contribution to Q: static DSE term + photon coupling term
+        double denom = cavity_frequency_[2]*cavity_frequency_[2] + grid->pointer()[i][0]*grid->pointer()[i][0];
+        double prefac = - lambda_z * lambda_z / denom;
+        //double prefac = lambda_z * lambda_z / denom;
+        for (size_t Q = 0; Q < nQ_; Q++) {
+            for (size_t P = 0; P < nQ_; P++) {
+                // photon coupling term in the length gauge
+                tmp2->pointer()[Q][P] += prefac * mu_Q[Q] * mu_Q[P];
+                // static DSE term
+                tmp2->pointer()[Q][P] += KDSE.pointer()[Q][P];
+            }
+        }
+        
+        // accumulate the correlation energy
         std::shared_ptr<Matrix> evecs = (std::shared_ptr<Matrix>)(new Matrix(nQ_,nQ_));
         std::shared_ptr<Vector> evals = (std::shared_ptr<Vector>) (new Vector(nQ_));
         tmp2->diagonalize(evecs,evals);
@@ -393,19 +447,24 @@ double PolaritonicRDFRPA::compute_energy() {
         tmp2->diagonalize(evecs,evals);
         //evals->print();
 
+        // accumulate log of eigenvalues for RPA energy
         double ecln = 0.0;
         double epnt_copy = ecrpa_pnt;
         for (size_t Q = 0; Q < nQ_; Q++) {
             ecln +=  log(evals->pointer()[Q]);
         }
         ecrpa_pnt +=  ecln;
+        // scale with quadrature weight and prefactors
         ecrpa_pnt = ecrpa_pnt/(4*M_PI) * grid->pointer()[i][1];
+        // accumulate contribution to total RPA correlation energy
         ecrpa += ecrpa_pnt;
 
     }
     outfile->Printf("     =====> RPA correlation energy <=====\n");
     //printf("%20.12lf\n", ecrpa);
     outfile->Printf("%20.12lf \n",ecrpa);
+
+    return ecrpa;
 
 }
 
@@ -514,6 +573,87 @@ std::shared_ptr<Matrix> PolaritonicRDFRPA::build_grid() {
         return grid;
 
 }
+
+// function to project dipole integrals into auxiliary basis and apply regularization
+std::vector<double> PolaritonicRDFRPA::project_dipole_into_aux(
+        const std::vector<double>& mu_ai) {
+
+    int ov = o_ * v_;
+
+    // --- 1. Build G = S S^T ---
+    std::shared_ptr<Matrix> G(new Matrix(nQ_, nQ_));
+    G->zero();
+    G->gemm(false, true, 1.0, tst_, tst_, 0.0);
+
+    // --- 2. Build b = S * mu_ai ---
+    std::vector<double> b(nQ_, 0.0);
+    for (int Q = 0; Q < nQ_; ++Q)
+        for (int ai = 0; ai < ov; ++ai)
+            b[Q] += siap_[Q * ov + ai] * mu_ai[ai];
+
+    // --- 3. Identify active Q (nonzero rows of S) ---
+    std::vector<int> active;
+    double row_tol = 1e-6;  // stricter for minimal bases
+    for (int Q = 0; Q < nQ_; ++Q) {
+        double norm = 0.0;
+        for (int ai = 0; ai < ov; ++ai)
+            norm += tst_->get(Q, ai) * tst_->get(Q, ai);
+        if (norm > row_tol)
+            active.push_back(Q);
+    }
+
+    int nA = active.size();
+
+    // --- 4. Build reduced G and b ---
+    auto Gred = std::make_shared<Matrix>(nA, nA);
+    Gred->zero();
+    for (int i = 0; i < nA; ++i)
+        for (int j = 0; j < nA; ++j)
+            Gred->set(i, j, G->get(active[i], active[j]));
+
+    std::vector<double> bred(nA);
+    for (int i = 0; i < nA; ++i)
+        bred[i] = b[active[i]];
+
+    // --- 5. Eigen-decompose Gred ---
+    auto evals = std::make_shared<Vector>(nA);
+    auto U     = std::make_shared<Matrix>(nA, nA);
+    Gred->diagonalize(U, evals);
+
+    // --- 6. Transform b into eigenbasis: c = U^T b ---
+    std::vector<double> c(nA, 0.0);
+    for (int i = 0; i < nA; ++i)
+        for (int j = 0; j < nA; ++j)
+            c[i] += U->get(j, i) * bred[j];
+
+    // --- 7. Regularized inverse ---
+    double lam_max = 0.0;
+    for (int i = 0; i < nA; ++i)
+        lam_max = std::max(lam_max, std::fabs(evals->pointer()[i]));
+
+    double rel_tol = 1e-6;
+    for (int i = 0; i < nA; ++i) {
+        double lam = evals->pointer()[i];
+        if (std::fabs(lam) > rel_tol * lam_max)
+            c[i] /= lam;
+        else
+            c[i] = 0.0;
+    }
+
+    // --- 8. Back-transform: mu_red = U c ---
+    std::vector<double> mu_red(nA, 0.0);
+    for (int i = 0; i < nA; ++i)
+        for (int j = 0; j < nA; ++j)
+            mu_red[i] += U->get(i, j) * c[j];
+
+    // --- 9. Expand to full mu_Q ---
+    std::vector<double> mu_Q(nQ_, 0.0);
+    for (int i = 0; i < nA; ++i)
+        mu_Q[active[i]] = mu_red[i];
+
+    return mu_Q;
+}
+
 
 // function to compute RPA correlation energy
 //std::shared_ptr<Matrix> PolaritonicRDFRPA::rpa_ecorr() {
