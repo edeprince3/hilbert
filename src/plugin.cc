@@ -138,18 +138,6 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION ORBITAL OPTIMIZATION -*/
 
-        options.add_bool("MOLDEN_WRITE", false);
-        /*- Do write a MOLDEN file for guess orbitals?  If so, the filename will
-        end in .guess.molden, and the prefix is determined by 
-        |globals__writer_file_label| (if set), or else by the name of the output
-        file plus the name of the current molecule. -*/
-
-        options.add_bool("GUESS_ORBITALS_WRITE", false);
-        /*- Do write a ORBOPT output file?  If so, the filename will end in
-        .molden, and the prefix is determined by |globals__writer_file_label|
-        (if set), or else by the name of the output file plus the name of
-        the current molecule. -*/
-
         /*- flag to optimize orbitals using a one-step type approach -*/
         options.add_bool("ORBOPT_ONE_STEP",true);
 

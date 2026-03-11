@@ -633,9 +633,6 @@ class v2RDMSolver: public Wavefunction{
     /// write active 3RDM to disk
     void WriteActive3PDM();
 
-    /// write molden file
-    void WriteMoldenFile();
-
     /// read 3RDM from disk
     void Read3PDM();
 

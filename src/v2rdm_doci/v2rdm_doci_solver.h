@@ -310,9 +310,6 @@ class v2RDM_DOCISolver: public Wavefunction{
     /// read 2RDM from disk
     void ReadTPDM();
 
-    /// write molden file
-    void WriteMoldenFile();
-
     /// orbital lagrangian
     double * X_;
 
