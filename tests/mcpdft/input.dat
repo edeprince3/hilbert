@@ -13,7 +13,7 @@ n 1 1.1
 
 set {
   basis cc-pvdz
-  scf_type df
+  scf_type disk_df
   d_convergence      1e-10
   maxiter 500
   restricted_docc [ 2, 0, 0, 0, 0, 2, 0, 0 ]
@@ -34,10 +34,7 @@ set hilbert {
   optimize_orbitals true
   mu_update_frequency 500
 
-  mcpdft_reference v2rdm
-  mcpdft_type df
   mcpdft_functional blyp
-  mcpdft_method mcpdft
 }
 
 # run v2rdm-casscf

@@ -61,15 +61,17 @@ OrbitalOptimizer::OrbitalOptimizer(std::shared_ptr<Wavefunction> reference_wavef
     frzvpi_ = reference_wavefunction->frzvpi();
     nmopi_  = reference_wavefunction->nmopi();
 
-    if ( reference_wavefunction->options().get_str("SCF_TYPE") == "DF" ) {
+    if ( reference_wavefunction->options().get_str("SCF_TYPE") == "DISK_DF" ) {
         std::shared_ptr<BasisSet> primary = reference_wavefunction->basisset();
         std::shared_ptr<BasisSet> auxiliary = reference_wavefunction->get_basisset("DF_BASIS_SCF");
         nQ_ = auxiliary->nbf();
-    }else if ( reference_wavefunction->options().get_str("SCF_TYPE") == "CD" ) {
+    }else if ( reference_wavefunction->options().get_str("SCF_TYPE") == "DISK_CD" ) {
         std::shared_ptr<PSIO> psio(new PSIO());
         psio->open(PSIF_DFSCF_BJ,PSIO_OPEN_OLD);
         psio->read_entry(PSIF_DFSCF_BJ, "length", (char*)&nQ_, sizeof(long int));
         psio->close(PSIF_DFSCF_BJ,1);
+    }else if ( reference_wavefunction->options().get_str("SCF_TYPE") == "DF" || reference_wavefunction->options().get_str("SCF_TYPE") == "CD") {
+        throw PsiException("invalid SCF_TYPE. try DISK_DF, DISK_CD, or PK",__FILE__,__LINE__);
     }
 
     // restricted doubly occupied orbitals per irrep (optimized)

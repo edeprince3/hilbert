@@ -114,7 +114,7 @@ int read_options(std::string name, Options& options)
         /*- What algorithm to use for the SCF computation. See Table :ref:`SCF
         Convergence & Algorithm <table:conv_scf>` for default algorithm for
         different calculation types. -*/
-        options.add_str("SCF_TYPE", "DF", "DF CD");
+        options.add_str("SCF_TYPE", "DISK_DF", "DISK_DF DISK_CD PK");
 
         /*- SUBSECTION DOCI -*/
 
@@ -396,15 +396,8 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION MCPDFT -*/
 
-       /*- MCPDFT type -*/
-        options.add_str("MCPDFT_METHOD", "MCPDFT", "MCPDFT");
         /*- MCPDFT functional -*/
         options.add_str("MCPDFT_FUNCTIONAL", "PBE");
-        /*- JK object type can be DF or PK -*/
-        options.add_str("MCPDFT_TYPE", "DF", "DF PK");
-        /*- reference type -*/
-        options.add_str("MCPDFT_REFERENCE", "V2RDM");
-
 
         /*- SUBSECTION CC_Cavity -*/
 
@@ -468,7 +461,6 @@ int read_options(std::string name, Options& options)
 
         /*- boolean for whether to compute the 2-RDM -*/
         options.add_bool("COMPUTE_2RDM", false);
-
     }
 
     return true;
