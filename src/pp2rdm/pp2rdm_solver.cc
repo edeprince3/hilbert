@@ -91,12 +91,12 @@ void  pp2RDMSolver::common_init(){
 
     is_df_ = false;
 
-    if ( options_.get_str("SCF_TYPE") == "DF" || options_.get_str("SCF_TYPE") == "CD" ) {
+    if ( options_.get_str("SCF_TYPE") == "DISK_DF" || options_.get_str("SCF_TYPE") == "DISK_CD") {
         is_df_ = true;
     }
 
     if ( !is_df_ ) {
-        throw PsiException("plugin pp2rdm only works with scf_type = df or cd, for now",__FILE__,__LINE__);
+        throw PsiException("plugin pp2rdm only works with scf_type = disk_df or disk_cd, for now",__FILE__,__LINE__);
     }
 
     shallow_copy(reference_wavefunction_);

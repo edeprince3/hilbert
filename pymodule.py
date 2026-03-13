@@ -984,8 +984,8 @@ def run_mcpdft(name, **kwargs):
     inp = {
         "rho" : combined_rho,
         "sigma" : sigma,
-        "lapl" : None,
-        "tau" : None
+        #"lapl" : None,
+        #"tau" : None
     }
 
     ex = 0.0
