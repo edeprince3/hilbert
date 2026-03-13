@@ -69,6 +69,7 @@ void export_HilbertHelper(py::module& m) {
         .def("rho_b_y", &RealSpaceDensityHelper::rho_b_y)
         .def("rho_b_z", &RealSpaceDensityHelper::rho_b_z)
         .def("xc_hole", &RealSpaceDensityHelper::xc_hole)
+        .def("slater_potential", &RealSpaceDensityHelper::slater_potential)
         .def("Da", &RealSpaceDensityHelper::Da)
         .def("Db", &RealSpaceDensityHelper::Db);
 
@@ -249,6 +250,12 @@ std::shared_ptr<Matrix> RealSpaceDensityHelper::Da() {
 }
 std::shared_ptr<Matrix> RealSpaceDensityHelper::Db() {
     return real_space_density->Db();
+}
+std::vector<double> RealSpaceDensityHelper::slater_potential(){
+    std::shared_ptr<Vector> vec = real_space_density->slater_potential();
+    double * vec_p = vec->pointer();
+    std::vector<double> return_val(vec_p,vec_p+vec->dim(0));
+    return return_val;
 }
 std::vector<double> RealSpaceDensityHelper::xc_hole(double x, double y, double z) {
     std::shared_ptr<Vector> vec = real_space_density->xc_hole(x,y,z);

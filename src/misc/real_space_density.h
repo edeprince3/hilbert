@@ -73,6 +73,9 @@ class RealSpaceDensity: public Wavefunction{
     /// return xc hole on grid 
     std::shared_ptr<Vector> xc_hole(double x, double y, double z);
 
+    /// build slater potential on a grid
+    std::shared_ptr<Vector> slater_potential();
+
     /// return on-top pair density (pi) on grid 
     std::shared_ptr<Vector> pi() { 
         BuildPiFast(tpdm_ab_);

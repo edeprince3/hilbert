@@ -935,5 +935,42 @@ std::shared_ptr<Vector> RealSpaceDensity::xc_hole(double x, double y, double z) 
     return xc_hole_;
 }
 
+std::shared_ptr<Vector> RealSpaceDensity::slater_potential(){
+
+    std::shared_ptr<Vector> vs (new Vector("Slater potential", phi_points_));
+
+    double * x_p = grid_x_->pointer();
+    double * y_p = grid_y_->pointer();
+    double * z_p = grid_z_->pointer();
+    double * w_p = grid_w_->pointer();
+
+    for (int p = 0; p < phi_points_; p++) {
+        //double x = x_p[p];
+        //double y = y_p[p];
+        //if ( fabs(x) > 1e-6 || fabs(y) > 1e-6 ){
+        //    continue;
+        //}
+        BuildExchangeCorrelationHole(p);
+        double * xc_hole_p = xc_hole_->pointer();
+        double my_vs = 0.0;
+        for (int q = 0; q < phi_points_; q++) {
+            if (p != q) {
+                double dx = x_p[p] - x_p[q];
+                double dy = y_p[p] - y_p[q];
+                double dz = z_p[p] - z_p[q];
+
+                double r2 = dx*dx + dy*dy + dz*dz;
+
+                my_vs +=  w_p[q] * xc_hole_p[q] / sqrt(r2);
+            }else {
+                //my_vs += w_p[q] * xc_hole_p[q] * 2.0 * M_PI * pow(3.0 * w_p[q] / (4.0 * M_PI), 2.0 / 3.0);
+            }
+        }
+        vs->pointer()[p] = my_vs;
+    }
+
+    return vs;
+}
+
 
 } //end namespaces

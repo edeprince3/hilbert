@@ -70,6 +70,7 @@ class RealSpaceDensityHelper{
     std::shared_ptr<Matrix> Da();
     std::shared_ptr<Matrix> Db();
     std::vector<double> xc_hole(double x, double y, double z);
+    std::vector<double> slater_potential();
 
   protected:
 
