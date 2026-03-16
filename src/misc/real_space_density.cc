@@ -27,6 +27,7 @@
 // psi4 stuff
 #include "psi4/libpsi4util/process.h"
 #include "psi4/libmints/basisset.h"
+#include "psi4/libmints/mintshelper.h"
 #include "psi4/libscf_solver/hf.h"
 
 // real_space_density 
@@ -40,6 +41,9 @@
 
 // tpdm and opdm structs live here
 #include <v2rdm_casscf/v2rdm_solver.h>
+
+// cs-ksdft
+#include <cs_ksdft/cs_solver.h>
 
 using namespace psi;
 using namespace fnocc;
@@ -384,8 +388,21 @@ void RealSpaceDensity::SetOPDM(std::vector<opdm> opdm_a, std::vector<opdm> opdm_
     SetD1(opdm_b_, Db_);
 }
 
-void RealSpaceDensity::SetTPDM(std::vector<tpdm> tpdm_ab) {
-    tpdm_ab_ = tpdm_ab;
+void RealSpaceDensity::SetTPDM(std::vector<tpdm> tpdm, std::string tpdm_type) {
+
+    std::transform(tpdm_type.begin(), tpdm_type.end(), tpdm_type.begin(),
+        [](unsigned char c){ return std::tolower(c); });
+
+    if (tpdm_type == "ab"){
+        tpdm_ab_ = tpdm;
+    }else if (tpdm_type == "aa"){
+        tpdm_aa_ = tpdm;
+    }else if (tpdm_type == "bb"){
+        tpdm_bb_ = tpdm;
+    }else {
+        throw PsiException("invalid tpdm_type",__FILE__,__LINE__);
+    }
+
 }
 
 void RealSpaceDensity::ReadOPDM() {
@@ -430,40 +447,13 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
     outfile->Printf("\n");
     outfile->Printf("    ==> Build Exchange-Correlation Hole ...");
 
-    std::shared_ptr<PSIO> psio (new PSIO());
-
-    if ( !psio->exists(PSIF_V2RDM_D2AB) ) throw PsiException("No D2ab on disk",__FILE__,__LINE__);
-    if ( !psio->exists(PSIF_V2RDM_D2AA) ) throw PsiException("No D2ab on disk",__FILE__,__LINE__);
-    if ( !psio->exists(PSIF_V2RDM_D2BB) ) throw PsiException("No D2ab on disk",__FILE__,__LINE__);
-
-    psio_address addr_ab = PSIO_ZERO;
-
-    // ab
-    psio->open(PSIF_V2RDM_D2AB,PSIO_OPEN_OLD);
-    long int nab;
-    psio->read_entry(PSIF_V2RDM_D2AB,"length",(char*)&nab,sizeof(long int));
-    tpdm * D2ab = (tpdm *)malloc(nab * sizeof(tpdm));
-    memset((void*)D2ab,'\0',nab * sizeof(tpdm));
-    psio->read_entry(PSIF_V2RDM_D2AB,"D2ab",(char*)D2ab,nab * sizeof(tpdm));
-    psio->close(PSIF_V2RDM_D2AB,1);
-
-    // aa
-    psio->open(PSIF_V2RDM_D2AA,PSIO_OPEN_OLD);
-    long int naa;
-    psio->read_entry(PSIF_V2RDM_D2AA,"length",(char*)&naa,sizeof(long int));
-    tpdm * D2aa = (tpdm *)malloc(naa * sizeof(tpdm));
-    memset((void*)D2aa,'\0',naa * sizeof(tpdm));
-    psio->read_entry(PSIF_V2RDM_D2AA,"D2aa",(char*)D2aa,naa * sizeof(tpdm));
-    psio->close(PSIF_V2RDM_D2AA,1);
-
-    // bb
-    psio->open(PSIF_V2RDM_D2BB,PSIO_OPEN_OLD);
-    long int nbb;
-    psio->read_entry(PSIF_V2RDM_D2BB,"length",(char*)&nbb,sizeof(long int));
-    tpdm * D2bb = (tpdm *)malloc(nbb * sizeof(tpdm));
-    memset((void*)D2bb,'\0',nbb * sizeof(tpdm));
-    psio->read_entry(PSIF_V2RDM_D2BB,"D2bb",(char*)D2bb,nbb * sizeof(tpdm));
-    psio->close(PSIF_V2RDM_D2BB,1);
+    if (tpdm_aa_.size() == 0){
+        throw PsiException("no aa block of tpdm. build or set tpdm.",__FILE__,__LINE__);
+    }else if (tpdm_ab_.size() == 0){
+        throw PsiException("no ab block of tpdm. build or set tpdm.",__FILE__,__LINE__);
+    }else if (tpdm_bb_.size() == 0){
+        throw PsiException("no bb block of tpdm. build or set tpdm.",__FILE__,__LINE__);
+    }
 
     double integral = 0.0;
     double * rho_p = rho_->pointer();
@@ -476,12 +466,12 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
 
         // pi(r,r') = D(mu,nu; lambda,sigma) * phi(r,mu) * phi(r',nu) * phi(r,lambda) * phi(r',sigma)
         double pi = 0.0;
-        for (int n = 0; n < nab; n++) {
+        for (size_t n = 0; n < tpdm_ab_.size(); n++) {
 
-            int i = D2ab[n].i;
-            int j = D2ab[n].j;
-            int k = D2ab[n].k;
-            int l = D2ab[n].l;
+            int i = tpdm_ab_[n].i;
+            int j = tpdm_ab_[n].j;
+            int k = tpdm_ab_[n].k;
+            int l = tpdm_ab_[n].l;
 
             int hi = symmetry_[i];
             int hj = symmetry_[j];
@@ -496,20 +486,20 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
             pi += super_phi_->pointer(hi)[p][ii] * 
                   super_phi_->pointer(hj)[q][jj] * 
                   super_phi_->pointer(hk)[p][kk] * 
-                  super_phi_->pointer(hl)[q][ll] * D2ab[n].value * 0.5;
+                  super_phi_->pointer(hl)[q][ll] * tpdm_ab_[n].value * 0.5;
 
             pi += super_phi_->pointer(hi)[q][ii] * 
                   super_phi_->pointer(hj)[p][jj] * 
                   super_phi_->pointer(hk)[q][kk] * 
-                  super_phi_->pointer(hl)[p][ll] * D2ab[n].value * 0.5;
+                  super_phi_->pointer(hl)[p][ll] * tpdm_ab_[n].value * 0.5;
 
         }
-        for (int n = 0; n < naa; n++) {
+        for (size_t n = 0; n < tpdm_aa_.size(); n++) {
 
-            int i = D2aa[n].i;
-            int j = D2aa[n].j;
-            int k = D2aa[n].k;
-            int l = D2aa[n].l;
+            int i = tpdm_aa_[n].i;
+            int j = tpdm_aa_[n].j;
+            int k = tpdm_aa_[n].k;
+            int l = tpdm_aa_[n].l;
 
             int hi = symmetry_[i];
             int hj = symmetry_[j];
@@ -524,15 +514,15 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
             pi += super_phi_->pointer(hi)[p][ii] * 
                   super_phi_->pointer(hj)[q][jj] * 
                   super_phi_->pointer(hk)[p][kk] * 
-                  super_phi_->pointer(hl)[q][ll] * D2aa[n].value * 0.5;
+                  super_phi_->pointer(hl)[q][ll] * tpdm_aa_[n].value * 0.5;
 
         }
-        for (int n = 0; n < nbb; n++) {
+        for (size_t n = 0; n < tpdm_bb_.size(); n++) {
 
-            int i = D2bb[n].i;
-            int j = D2bb[n].j;
-            int k = D2bb[n].k;
-            int l = D2bb[n].l;
+            int i = tpdm_bb_[n].i;
+            int j = tpdm_bb_[n].j;
+            int k = tpdm_bb_[n].k;
+            int l = tpdm_bb_[n].l;
 
             int hi = symmetry_[i];
             int hj = symmetry_[j];
@@ -547,7 +537,7 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
             pi += super_phi_->pointer(hi)[p][ii] * 
                   super_phi_->pointer(hj)[q][jj] * 
                   super_phi_->pointer(hk)[p][kk] * 
-                  super_phi_->pointer(hl)[q][ll] * D2bb[n].value * 0.5;
+                  super_phi_->pointer(hl)[q][ll] * tpdm_bb_[n].value * 0.5;
 
         }
         double nxc = (2.0 * pi - rho_p[p] * rho_p[q]) / rho_p[p];
@@ -565,10 +555,6 @@ void RealSpaceDensity::BuildExchangeCorrelationHole(size_t p) {
 
     //printf("integral over xc hole (should be -1): %20.12lf\n",integral);
     //exit(0);
-
-    free(D2ab);
-    free(D2aa);
-    free(D2bb);
 }
 
 // build pi. note that there is a low-memory version of this
@@ -890,26 +876,61 @@ void RealSpaceDensity::BuildRhoFast(){
     outfile->Printf("\n");
 }
 
-void RealSpaceDensity::ReadTPDM() {
+void RealSpaceDensity::ReadTPDM(std::string tpdm_type) {
+
+    std::transform(tpdm_type.begin(), tpdm_type.end(), tpdm_type.begin(),
+        [](unsigned char c){ return std::tolower(c); });
 
     std::shared_ptr<PSIO> psio (new PSIO());
 
-    if ( !psio->exists(PSIF_V2RDM_D2AB) ) throw PsiException("No D2ab on disk",__FILE__,__LINE__);
-    
-    psio_address addr_ab = PSIO_ZERO;
+    if (tpdm_type == "ab"){
 
-    // ab
-    psio->open(PSIF_V2RDM_D2AB,PSIO_OPEN_OLD);
+        if ( !psio->exists(PSIF_V2RDM_D2AB) ) throw PsiException("No D2ab on disk",__FILE__,__LINE__);
+        
+        psio->open(PSIF_V2RDM_D2AB,PSIO_OPEN_OLD);
 
-    long int nab;
-    psio->read_entry(PSIF_V2RDM_D2AB,"length",(char*)&nab,sizeof(long int));
+        long int n;
+        psio->read_entry(PSIF_V2RDM_D2AB, "length", (char*)&n, sizeof(long int));
 
-    tpdm_ab_.resize(nab);
-    memset((void*)&tpdm_ab_[0],'\0',nab * sizeof(tpdm));
+        tpdm_ab_.resize(n);
+        memset((void*)&tpdm_ab_[0], '\0',n * sizeof(tpdm));
 
-    psio->read_entry(PSIF_V2RDM_D2AB,"D2ab",(char*)&tpdm_ab_[0],nab * sizeof(tpdm));
+        psio->read_entry(PSIF_V2RDM_D2AB, "D2ab",(char*)&tpdm_ab_[0], n * sizeof(tpdm));
+        psio->close(PSIF_V2RDM_D2AB,1);
 
-    psio->close(PSIF_V2RDM_D2AB,1);
+    }else if (tpdm_type == "aa"){
+
+        if ( !psio->exists(PSIF_V2RDM_D2AA) ) throw PsiException("No D2aa on disk",__FILE__,__LINE__);
+        
+        psio->open(PSIF_V2RDM_D2AA,PSIO_OPEN_OLD);
+
+        long int n;
+        psio->read_entry(PSIF_V2RDM_D2AA, "length", (char*)&n, sizeof(long int));
+
+        tpdm_aa_.resize(n);
+        memset((void*)&tpdm_aa_[0], '\0',n * sizeof(tpdm));
+
+        psio->read_entry(PSIF_V2RDM_D2AA, "D2aa",(char*)&tpdm_aa_[0], n * sizeof(tpdm));
+        psio->close(PSIF_V2RDM_D2AA,1);
+
+    }else if (tpdm_type == "bb"){
+
+        if ( !psio->exists(PSIF_V2RDM_D2BB) ) throw PsiException("No D2bb on disk",__FILE__,__LINE__);
+        
+        psio->open(PSIF_V2RDM_D2BB,PSIO_OPEN_OLD);
+
+        long int n;
+        psio->read_entry(PSIF_V2RDM_D2BB, "length", (char*)&n, sizeof(long int));
+
+        tpdm_bb_.resize(n);
+        memset((void*)&tpdm_bb_[0], '\0',n * sizeof(tpdm));
+
+        psio->read_entry(PSIF_V2RDM_D2BB, "D2bb",(char*)&tpdm_bb_[0], n * sizeof(tpdm));
+        psio->close(PSIF_V2RDM_D2BB,1);
+
+    }else {
+        throw PsiException("invalid tpdm_type",__FILE__,__LINE__);
+    }
 }
 
 std::shared_ptr<Vector> RealSpaceDensity::xc_hole(double x, double y, double z) {
@@ -945,11 +966,11 @@ std::shared_ptr<Vector> RealSpaceDensity::slater_potential(){
     double * w_p = grid_w_->pointer();
 
     for (int p = 0; p < phi_points_; p++) {
-        //double x = x_p[p];
-        //double y = y_p[p];
-        //if ( fabs(x) > 1e-6 || fabs(y) > 1e-6 ){
-        //    continue;
-        //}
+        double x = x_p[p];
+        double y = y_p[p];
+        if ( fabs(x) > 1e-6 || fabs(y) > 1e-6 ){
+            continue;
+        }
         BuildExchangeCorrelationHole(p);
         double * xc_hole_p = xc_hole_->pointer();
         double my_vs = 0.0;
@@ -972,5 +993,44 @@ std::shared_ptr<Vector> RealSpaceDensity::slater_potential(){
     return vs;
 }
 
+/// compute and return closest Kohn-Sham orbitals to a given reference density
+void RealSpaceDensity::ks_orbitals(){
+
+    if ( nirrep_ > 1 ) {
+        throw PsiException("cannot determine ks orbitals for symmetry other than c1", __FILE__,__LINE__);
+    }
+
+    // grab the kinetic energy integrals from MintsHelper:
+    std::shared_ptr<MintsHelper> mints (new MintsHelper(reference_wavefunction_));
+
+    // one-electron kinetic energy integrals
+    std::shared_ptr<Matrix> T = mints->so_kinetic();
+
+    // MO basis
+    T->transform(Ca_);
+    Ca_->print_out();
+
+    std::shared_ptr<cs_solver> cs (new cs_solver(options_));
+
+    std::vector<double> T_vec(T->pointer()[0], T->pointer()[0] + nso_*nso_);
+    std::vector<double> phi_vec(super_phi_->pointer()[0], super_phi_->pointer()[0] + phi_points_*nso_);
+    std::vector<double> rho_vec(rho_->pointer(), rho_->pointer() + phi_points_);
+    std::vector<double> x_vec(grid_x_->pointer(), grid_x_->pointer() + phi_points_);
+    std::vector<double> y_vec(grid_y_->pointer(), grid_y_->pointer() + phi_points_);
+    std::vector<double> z_vec(grid_z_->pointer(), grid_z_->pointer() + phi_points_);
+    std::vector<double> w_vec(grid_w_->pointer(), grid_w_->pointer() + phi_points_);
+
+    cs->solve(nalpha_, 
+              nbeta_, 
+              T_vec,
+              phi_vec,
+              rho_vec,
+              {x_vec, y_vec, z_vec, w_vec});
+
+    std::vector<std::shared_ptr<Matrix>> C;
+    //C.push_back(Ca_);
+    //C.push_back(Cb_);
+    //return C;
+}
 
 } //end namespaces

@@ -49,9 +49,9 @@ class RealSpaceDensityHelper{
     RealSpaceDensityHelper(SharedWavefunction reference_wavefunction,Options & options);
     ~RealSpaceDensityHelper();
     void read_opdm();
-    void read_tpdm();
+    void read_tpdm(std::string tpdm_type);
     void set_opdm(std::vector<opdm> opdm_a, std::vector<opdm> opdm_b);
-    void set_tpdm(std::vector<tpdm> tpdm_ab);
+    void set_tpdm(std::vector<tpdm> tpdm_ab, std::string tpdm_type);
     void build_rho();
     std::vector<double> grid_x();
     std::vector<double> grid_y();
@@ -71,6 +71,7 @@ class RealSpaceDensityHelper{
     std::shared_ptr<Matrix> Db();
     std::vector<double> xc_hole(double x, double y, double z);
     std::vector<double> slater_potential();
+    void ks_orbitals();
 
   protected:
 

@@ -116,6 +116,17 @@ int read_options(std::string name, Options& options)
         different calculation types. -*/
         options.add_str("SCF_TYPE", "DISK_DF", "DISK_DF DISK_CD PK");
 
+        /*- SUBSECTION CS_KSDFT -*/
+
+        /*- maximum number of lbfgs iterations -*/
+        options.add_int("LBFGS_MAXITER", 50000);
+
+        /*- Do check derivatives of the objective function? -*/
+        options.add_bool("CHECK_DERIVATIVES",false);
+
+        /*- density constraint -*/
+        options.add_str("DENSITY_CONSTRAINT", "L2_NORM", "L2_NORM POINTWISE");
+
         /*- SUBSECTION DOCI -*/
 
        /*- maximum size of Davidson subspace (will be multiplied by number of desired roots) -*/

@@ -73,6 +73,9 @@ class RealSpaceDensity: public Wavefunction{
     /// return xc hole on grid 
     std::shared_ptr<Vector> xc_hole(double x, double y, double z);
 
+    /// return closest Kohn-Sham orbitals to a given reference density
+    void ks_orbitals();
+
     /// build slater potential on a grid
     std::shared_ptr<Vector> slater_potential();
 
@@ -124,10 +127,10 @@ class RealSpaceDensity: public Wavefunction{
     void SetOPDM(std::vector<opdm> opdm_a, std::vector<opdm> opdm_b);
 
     /// read alpha-beta tpdm elements from disk
-    void ReadTPDM();
+    void ReadTPDM(std::string tpdm_type);
 
     /// set alpha-beta tpdm elements from input
-    void SetTPDM(std::vector<tpdm> tpdm_ab);
+    void SetTPDM(std::vector<tpdm> tpdm_ab, std::string tpdm_type);
 
     /// set the MO-basis density matrix values from std::vector<opdm>
     void SetD1(std::vector<opdm> my_opdm, std::shared_ptr<Matrix> D1);
@@ -146,8 +149,14 @@ class RealSpaceDensity: public Wavefunction{
     /// nonzero elements of beta opdm
     std::vector<opdm> opdm_b_;
 
+    /// nonzero elements of alpha-alpha block of tpdm
+    std::vector<tpdm> tpdm_aa_;
+
     /// nonzero elements of alpha-beta block of tpdm
     std::vector<tpdm> tpdm_ab_;
+
+    /// nonzero elements of beta-beta block of tpdm
+    std::vector<tpdm> tpdm_bb_;
 
     /// dft potential object
     std::shared_ptr<VBase> potential_;

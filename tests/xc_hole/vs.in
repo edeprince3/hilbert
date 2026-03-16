@@ -10,8 +10,10 @@ import hilbert
 
 molecule n2 {
 0 1
-n 0.0 0.0 0.0
-n 0.0 0.0 1.1
+li 0.0 0.0 0.0
+h 0.0 0.0 9
+symmetry c1
+units bohr
 }
 
 set {
@@ -19,8 +21,11 @@ set {
   scf_type disk_df
   d_convergence      1e-10
   maxiter 500
-  restricted_docc [ 2, 0, 0, 0, 0, 2, 0, 0 ]
-  active          [ 1, 0, 1, 1, 0, 1, 1, 1 ]
+  restricted_docc [ 1 ]
+  active          [ 2 ]
+  #restricted_docc [ 1, 0, 0, 0]
+  #active          [ 2, 0, 0, 0]
+  DFT_SPHERICAL_POINTS 74
 }
 
 set hilbert {
@@ -33,23 +38,20 @@ set hilbert {
   tpdm_write_full true
 }
 
-
 #set dft_spherical_points 5810
 #set dft_radial_points 100
 
 en,wfn = energy('v2rdm-casscf',return_wfn=True)
 
-density = hilbert.ks_inversion(ref_wfn=wfn)
+ks = hilbert.ks_inversion(ref_wfn=wfn)
 
-x = density.grid_x()
-y = density.grid_y()
-z = density.grid_z()
-rho = density.rho()
-rho_a = density.rho_a()
-rho_b = density.rho_b()
-xc_hole = density.xc_hole(0.0,0.0,0.0)
-for i in range(0,len(xc_hole)):
-    if ( abs(x[i]) < 1e-6 ):
-        print(y[i],z[i],rho[i],rho_a[i],rho_b[i],xc_hole[i])
+x = ks.grid_x()
+y = ks.grid_y()
+z = ks.grid_z()
+rho_a = ks.rho_a()
+rho_b = ks.rho_b()
 
+vs = ks.slater_potential()
+
+C = ks.ks_orbitals()
 

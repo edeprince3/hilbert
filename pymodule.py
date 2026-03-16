@@ -717,8 +717,8 @@ def run_jellium_scf(name, **kwargs):
 
     return jellium_scf_wfn
 
-def density_analysis(**kwargs):
-    r"""Function to evaluate real-space density"""
+def ks_inversion(**kwargs):
+    r"""tools for the Kohn-Sham inversion problem"""
 
     kwargs = p4util.kwargs_lower(kwargs)
 
@@ -747,13 +747,31 @@ def density_analysis(**kwargs):
     options = psi4.core.get_options()
     options.set_current_module('HILBERT')
 
-    # build real-space density
     import hilbert
-    real_space_density = hilbert.RealSpaceDensityHelper(new_wfn,options)
-    real_space_density.read_opdm()
-    real_space_density.build_rho()
+    rho_helper = hilbert.RealSpaceDensityHelper(new_wfn, options)
 
-    return real_space_density
+    # get MO-basis opdm from disk or user input
+    opdm_a = kwargs.get('opdm_a', None)
+    opdm_b = kwargs.get('opdm_b', None)
+    if opdm_a is None or opdm_b is None:
+        rho_helper.read_opdm()
+    else:
+        rho_helper.set_opdm(opdm_a, opdm_b)
+
+    # build real-space density from OPDM
+    rho_helper.build_rho()
+
+    # get MO-basis alpha-beta block of tpdm from disk or user input
+    tpdm_types = ['ab', 'aa', 'bb']
+    for tpdm_type in tpdm_types:
+        tpdm = kwargs.get('tpdm_' + tpdm_type, None)
+        if tpdm is None:
+            rho_helper.read_tpdm(tpdm_type)
+        else:
+            rho_helper.set_tpdm(tpdm, tpdm_type)
+
+
+    return rho_helper
 
 def run_mcpdft(name, **kwargs):
     r"""Function encoding sequence of PSI module and plugin calls so that
@@ -928,12 +946,11 @@ def run_mcpdft(name, **kwargs):
     rho_z = rho_a_z + rho_b_z
 
     # get MO-basis alpha-beta block of tpdm from disk or user input
-
     tpdm_ab = kwargs.get('tpdm_ab', None)
     if tpdm_ab is None:
-        rho_helper.read_tpdm()
+        rho_helper.read_tpdm('ab')
     else:
-        rho_helper.set_tpdm(tpdm_ab)
+        rho_helper.set_tpdm(tpdm_ab, 'ab')
 
     # on-top pair density in real space
     pi = np.asarray(rho_helper.pi())

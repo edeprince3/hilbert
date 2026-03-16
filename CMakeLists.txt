@@ -155,6 +155,9 @@ set(misc
         src/misc/davidson_solver.cc
         src/misc/nonsym_davidson_solver.cc
 )
+set(cs_ksdft
+        src/cs_ksdft/cs_solver.cc
+)
 
 add_psi4_plugin(hilbert
 
@@ -171,6 +174,7 @@ add_psi4_plugin(hilbert
         ${focas}
         ${v2rdm_doci}
         ${v2rdm_casscf}
+        ${cs_ksdft}
         )
 
 # external projects 
