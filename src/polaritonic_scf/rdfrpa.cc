@@ -81,8 +81,6 @@ PolaritonicRDFRPA::~PolaritonicRDFRPA() {
 
     free(diag_);
     free(siap_);
-    free(tmp1_);
-    free(Qmat_);
 
 
 }
@@ -158,11 +156,8 @@ void PolaritonicRDFRPA::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
         tst_ = tmpov;
         //DEBUG
         /*
-        std::shared_ptr<Matrix> tmp1 = (std::shared_ptr<Matrix>)(new Matrix(o_*v_,o_*v_));
         std::shared_ptr<Matrix> tmp2 = (std::shared_ptr<Matrix>)(new Matrix(nQ_,nQ_));
-        tmp1->gemm(true,false,1.0,tmpov,tmpov,0.0);
         tmp2->gemm(false,true,1.0,tmpov,tmpov,0.0);
-        tmp1->print();
         tmp2->print();
         std::shared_ptr<Matrix> evecs = (std::shared_ptr<Matrix>)(new Matrix(nQ_,nQ_));
         std::shared_ptr<Vector> evals = (std::shared_ptr<Vector>) (new Vector(nQ_));
@@ -305,37 +300,13 @@ double PolaritonicRDFRPA::compute_energy() {
         throw PsiException("polaritonic TDDFT does not work with N_PHOTON_STATES > 2",__FILE__,__LINE__);
     }
 
-    // RI-projected  dipole integrals in MO basis
-    std::vector<double> mu_ai(o_*v_);
-
-    for (size_t i = 0; i < o_; i++) {
-        for (size_t a = 0; a < v_; a++) {
-            size_t ai = i * v_ + a;
-            mu_ai[ai] = dz[i][a+o_];
-        }
-    } 
-    // project into auxiliary basis
-    std::vector<double> mu_Q = project_dipole_into_aux(mu_ai);
-
-    // Static DSE contribution
-    Matrix KDSE(nQ_,nQ_);
-    KDSE.zero();
-    // what is the correct prefactor? 
-    // the DSE contribution should be scaled properly
-    // should it be only lambda^2/omega? 
-    //double dse_prefac = lambda_z * lambda_z / (cavity_frequency_[2] * cavity_frequency_[2]);
-    double dse_prefac = lambda_z * lambda_z; // / (4.0 * cavity_frequency_[2]);
-    for (size_t Q = 0; Q < nQ_; Q++) {
-        for (size_t P = 0; P < nQ_; P++) {
-          KDSE.pointer()[Q][P] =  dse_prefac * mu_Q[Q] * mu_Q[P];
-        }
-    }
 
     // build diagonal matrix for quadrature
     std::shared_ptr<Vector> diag_matrix = build_diag_matrix();
 
     // build grid points and weights for quadrature
-    std::shared_ptr<Matrix> grid = build_grid();
+    double tol = 1e-8;
+    auto grid = build_minimax_grid(tol);
 
     // print out grid points and weights for debugging
     if (n_output_ > 2)  {
@@ -357,31 +328,70 @@ double PolaritonicRDFRPA::compute_energy() {
         }
     }
 
+    // Static DSE contribution
+    std::vector<double> mu_ai(o_*v_);
+
+    for (size_t i = 0; i < o_; i++) {
+        for (size_t a = 0; a < v_; a++) {
+            size_t ai = i * v_ + a;
+            mu_ai[ai] = dz[i][a+o_];
+        }
+    } 
+
+    // prefactor for DSE contribution
+    double omega_c = cavity_frequency_[2];
+    double alpha_DSE = lambda_z * lambda_z / (2.0 * omega_c * omega_c);
+
+    // build synthetic DSE matrix in auxiliary basis
+    std::vector<double> S_DSE(o_*v_);
+    for (size_t ai = 0; ai < o_*v_; ++ai)
+      // factor 0.5 cancel later scaling of 3-index integrals with factor 2
+      //S_DSE[ai] = std::sqrt(0.5 * alpha_DSE) * mu_ai[ai];
+      S_DSE[ai] = lambda_z * mu_ai[ai];
+
+
+    //extend DF tensor by one row
+    auto tst_ext = std::make_shared<Matrix>(nQ_ + 1, o_*v_);
+    tst_ext->zero();
+
+
+    // manually copy original DF rows
+    for (size_t Q = 0; Q < nQ_; ++Q)
+      for (size_t ai = 0; ai < o_*v_; ++ai)
+        tst_ext->set(Q, ai, tst_->get(Q, ai));
+
+    outfile->Printf("DEBUG: tst_ext nrow = %d, ncol = %d (expected %d x %d)\n",
+                tst_ext->nrow(), tst_ext->ncol(), nQ_ + 1, o_*v_);
+
+    // add DSE row
+    for (size_t ai = 0; ai < o_*v_; ++ai)
+      tst_ext->set(nQ_, ai, S_DSE[ai]);
+
+
+    // DEBUG
+    //outfile->Printf(" Do we get here? \n");
+
+    // after filling S_DSE and tst_ext
+    //outfile->Printf("DEBUG: built S_DSE and tst_ext\n");
+    //outfile->Printf("DEBUG: tst_ dims      = %d x %d\n", tst_->nrow(), tst_->ncol());
+    //outfile->Printf("DEBUG: tst_ext dims   = %d x %d\n", tst_ext->nrow(), tst_ext->ncol());
+    //outfile->Printf("DEBUG: expected dims  = %d x %d\n", nQ_ + 1, o_*v_);
+
     // allocate temporary arrays for RPA calculation
-    tmp1_ = (double*)malloc(nQ_*o_*v_*sizeof(double));
-    memset((void*)tmp1_,'\0',nQ_*o_*v_*sizeof(double));
     int * int1_ = (int*)malloc(nQ_*sizeof(int));
     memset((void*)int1_,'\0',nQ_*sizeof(int));
-    Qmat_ = (double*)malloc(nQ_*nQ_*sizeof(double));
-    memset((void*)Qmat_,'\0',nQ_*nQ_*sizeof(double));
-    std::shared_ptr<Matrix> tstcopy = (std::shared_ptr<Matrix>)(new Matrix(nQ_,o_*v_));
+    std::shared_ptr<Matrix> tstcopy = (std::shared_ptr<Matrix>)(new Matrix(nQ_ + 1, o_*v_));
 
     // compute Qmat_ for each grid point and accumulate Ecrpa
     double ecrpa = 0.0;
     // loop over grid points
     for (int i = 0; i < n_grid_points_; ++i) {
 
-        //std::shared_ptr<Matrix> tmp1 = (std::shared_ptr<Matrix>)(new Matrix(o_*v_,o_*v_));
-        std::shared_ptr<Matrix> tmp2 = (std::shared_ptr<Matrix>)(new Matrix(nQ_,nQ_));
-        //tmp1->gemm(true,false,1.0,tst_,tst_,0.0);
-        //tmp2->gemm(false,true,1.0,tst_,tst_,0.0);
-        //tmp1->print();
-        //tmp2->print();
-        //tst_->print();
+        std::shared_ptr<Matrix> tmp2 = (std::shared_ptr<Matrix>)(new Matrix(nQ_ +1 ,nQ_ + 1));
         tmp2->zero();
         // copy 3-index integrals to local variable tstcopy
         tstcopy->zero();
-        tstcopy->copy(tst_);
+        tstcopy->copy(tst_ext);
         // scale 3 index integrals with e-e contribution
         for (size_t ivir = 0; ivir < v_ ; ivir++) {
             for (size_t iocc = 0; iocc < o_ ; iocc++) {
@@ -394,6 +404,7 @@ double PolaritonicRDFRPA::compute_energy() {
                 tstcopy->scale_column(0,ai,scal);
             }
         }
+
         if (n_output_ > 2) {
             outfile->Printf("   =====> tstcopy after scaling <=====\n");
             tstcopy->print();
@@ -402,7 +413,7 @@ double PolaritonicRDFRPA::compute_energy() {
         // accumulate contribution on Qmat_
         // scaling factor for 3 index integrals
         double scal2 = 2.0*2.0;
-        // this is the e-e contribution to Q
+        // this is the e-e contribution to Q + static DSE
         tmp2->gemm(false,true,scal2,tstcopy,tstcopy,1.0);
 
         if (n_output_ > 2) {
@@ -410,34 +421,34 @@ double PolaritonicRDFRPA::compute_energy() {
             tmp2->print();
         }
 
+        // compute trace of Qmat_ (unscreened)
+        double trace_Q = 0.0;
+        for (size_t Q = 0; Q < nQ_ + 1; Q++) {
+            trace_Q += tmp2->pointer()[Q][Q];
+        }
+        // -Tr(Q)
+        double ecrpa_pnt = 0.0;
+        ecrpa_pnt = -trace_Q;
+
         // add QED-kernel contribution to Q: static DSE term + photon coupling term
-        double denom = cavity_frequency_[2]*cavity_frequency_[2] + grid->pointer()[i][0]*grid->pointer()[i][0];
-        double prefac = - lambda_z * lambda_z / denom;
-        //double prefac = lambda_z * lambda_z / denom;
-        for (size_t Q = 0; Q < nQ_; Q++) {
-            for (size_t P = 0; P < nQ_; P++) {
-                // photon coupling term in the length gauge
-                tmp2->pointer()[Q][P] += prefac * mu_Q[Q] * mu_Q[P];
-                // static DSE term
-                tmp2->pointer()[Q][P] += KDSE.pointer()[Q][P];
-            }
+        double freq = grid->pointer()[i][0]; // omega
+        double denom = std::sqrt(cavity_frequency_[2]*cavity_frequency_[2] + grid->pointer()[i][0]*grid->pointer()[i][0]);
+        double Sph = freq / denom;
+
+        // scale last row and last column
+        for (size_t Q = 0; Q < nQ_ + 1; ++Q) {
+          tmp2->pointer()[Q][nQ_] *= Sph;   // column
+          tmp2->pointer()[nQ_][Q] *= Sph;   // row
         }
         
         // accumulate the correlation energy
-        std::shared_ptr<Matrix> evecs = (std::shared_ptr<Matrix>)(new Matrix(nQ_,nQ_));
-        std::shared_ptr<Vector> evals = (std::shared_ptr<Vector>) (new Vector(nQ_));
-        tmp2->diagonalize(evecs,evals);
-        //evals->print();
-        double erpa = 0.0;
-        for (size_t i = 0; i < nQ_; i++) {
-            erpa += evals->pointer()[i];
-        }
-        outfile->Printf("    =====> tr(Qmat) for gridpoint %i <=====\n", i);
-        outfile->Printf("%20.12lf \n",erpa);
+        auto evecs = std::make_shared<Matrix>(nQ_ + 1, nQ_ + 1);
+        auto evals = std::make_shared<Vector>(nQ_ + 1);
+
         // compute RPA correlation energy
-        double ecrpa_pnt = 0.0;
-        for (size_t Q = 0; Q < nQ_; Q++) {
-            ecrpa_pnt -= tmp2->pointer()[Q][Q];
+        // form Q_eff + 1
+        for (size_t Q = 0; Q < nQ_ + 1; Q++) {
+            //ecrpa_pnt -= tmp2->pointer()[Q][Q];
             tmp2->pointer()[Q][Q] += 1.0;
         }
 //        tmp2->print();
@@ -449,10 +460,10 @@ double PolaritonicRDFRPA::compute_energy() {
 
         // accumulate log of eigenvalues for RPA energy
         double ecln = 0.0;
-        double epnt_copy = ecrpa_pnt;
-        for (size_t Q = 0; Q < nQ_; Q++) {
+        for (size_t Q = 0; Q < nQ_ + 1; Q++) {
             ecln +=  log(evals->pointer()[Q]);
         }
+        // Tr(ln(Q_eff+1))
         ecrpa_pnt +=  ecln;
         // scale with quadrature weight and prefactors
         ecrpa_pnt = ecrpa_pnt/(4*M_PI) * grid->pointer()[i][1];
@@ -574,84 +585,90 @@ std::shared_ptr<Matrix> PolaritonicRDFRPA::build_grid() {
 
 }
 
-// function to project dipole integrals into auxiliary basis and apply regularization
-std::vector<double> PolaritonicRDFRPA::project_dipole_into_aux(
-        const std::vector<double>& mu_ai) {
+// function to build the grid points and weights for quadrature using minimax algorithm
+// should be more efficient than Curtis-Clenshaw
+// adapts to meet tolerance
+// based on the GreenX formulation
 
-    int ov = o_ * v_;
+std::shared_ptr<Matrix> PolaritonicRDFRPA::build_minimax_grid(double tol) {
 
-    // --- 1. Build G = S S^T ---
-    std::shared_ptr<Matrix> G(new Matrix(nQ_, nQ_));
-    G->zero();
-    G->gemm(false, true, 1.0, tst_, tst_, 0.0);
+    // 1. Compute Δ_max
+    double Delta_max = 0.0;
+    for (size_t ai = 0; ai < o_*v_; ++ai)
+        Delta_max = std::max(Delta_max, diag_[ai]);
 
-    // --- 2. Build b = S * mu_ai ---
-    std::vector<double> b(nQ_, 0.0);
-    for (int Q = 0; Q < nQ_; ++Q)
-        for (int ai = 0; ai < ov; ++ai)
-            b[Q] += siap_[Q * ov + ai] * mu_ai[ai];
+    // 2. Precompute diagonal-approximation reference energy
+    std::shared_ptr<Vector> diag_matrix = build_diag_matrix();
+    double E_ref = 0.0;
+    for (size_t ai = 0; ai < o_*v_; ++ai) {
+        double D = diag_[ai];
+        double K = diag_matrix->pointer()[ai];
+        E_ref += std::sqrt(D*D + 2.0*D*K) - D - K;
+    }
+    E_ref *= 0.25;
 
-    // --- 3. Identify active Q (nonzero rows of S) ---
-    std::vector<int> active;
-    double row_tol = 1e-6;  // stricter for minimal bases
-    for (int Q = 0; Q < nQ_; ++Q) {
-        double norm = 0.0;
-        for (int ai = 0; ai < ov; ++ai)
-            norm += tst_->get(Q, ai) * tst_->get(Q, ai);
-        if (norm > row_tol)
-            active.push_back(Q);
+    // 3. Adaptive loop over N
+    size_t N = 4;  // starting guess
+    while (true) {
+
+        // 3a. Compute Λ(N)
+        double Lambda = Delta_max * std::tan(M_PI / (4.0 * N));
+
+        // 3b. Build minimax nodes and weights
+        std::vector<double> omega(N), weight(N);
+        for (size_t j = 0; j < N; ++j) {
+            double theta = (M_PI / (2.0 * N)) * (2.0*(j+1) - 1.0);
+            omega[j]  = Lambda * std::tan(theta);
+            weight[j] = (M_PI / (2.0 * N)) * (Lambda / (std::cos(theta)*std::cos(theta)));
+        }
+
+        // 3c. Evaluate diagonal-approximation energy on this grid
+        double E_test = 0.0;
+        for (size_t j = 0; j < N; ++j) {
+            double w = weight[j];
+            double f = omega[j];
+            double f2 = f*f;
+            double contrib = 0.0;
+            for (size_t ai = 0; ai < o_*v_; ++ai) {
+                double D = diag_[ai];
+                double K = diag_matrix->pointer()[ai];
+                double fac = 2.0 * D / (D*D + f2);
+                double tmp = fac * K;
+                contrib += tmp - std::log(1.0 + tmp);
+                outfile->Printf("D=%lf  K=%lf\n", D, K);
+            }
+            E_test += w * contrib;
+        }
+        E_test *= -0.25 / M_PI;
+
+        // 3d. Check error
+        if (std::abs(E_test - E_ref) < tol)
+            break;
+
+        outfile->Printf("N=%zu  E_ref=%20.12lf  E_test=%20.12lf  err=%20.12lf\n",
+            N, E_ref, E_test, fabs(E_test - E_ref));
+
+        // Otherwise increase N
+        N *= 2;
+        if (N > 128)
+            throw std::runtime_error("Minimax grid failed to converge.");
+
     }
 
-    int nA = active.size();
+    // 4. Build final grid matrix
+    std::shared_ptr<Matrix> grid(new Matrix(N, 2));
+    double Lambda = Delta_max * std::tan(M_PI / (4.0 * N));
+    for (size_t j = 0; j < N; ++j) {
+        double theta = (M_PI / (2.0 * N)) * (2.0*(j+1) - 1.0);
+        double omega_j  = Lambda * std::tan(theta);
+        double weight_j = (M_PI / (2.0 * N)) * (Lambda / (std::cos(theta)*std::cos(theta)));
 
-    // --- 4. Build reduced G and b ---
-    auto Gred = std::make_shared<Matrix>(nA, nA);
-    Gred->zero();
-    for (int i = 0; i < nA; ++i)
-        for (int j = 0; j < nA; ++j)
-            Gred->set(i, j, G->get(active[i], active[j]));
-
-    std::vector<double> bred(nA);
-    for (int i = 0; i < nA; ++i)
-        bred[i] = b[active[i]];
-
-    // --- 5. Eigen-decompose Gred ---
-    auto evals = std::make_shared<Vector>(nA);
-    auto U     = std::make_shared<Matrix>(nA, nA);
-    Gred->diagonalize(U, evals);
-
-    // --- 6. Transform b into eigenbasis: c = U^T b ---
-    std::vector<double> c(nA, 0.0);
-    for (int i = 0; i < nA; ++i)
-        for (int j = 0; j < nA; ++j)
-            c[i] += U->get(j, i) * bred[j];
-
-    // --- 7. Regularized inverse ---
-    double lam_max = 0.0;
-    for (int i = 0; i < nA; ++i)
-        lam_max = std::max(lam_max, std::fabs(evals->pointer()[i]));
-
-    double rel_tol = 1e-6;
-    for (int i = 0; i < nA; ++i) {
-        double lam = evals->pointer()[i];
-        if (std::fabs(lam) > rel_tol * lam_max)
-            c[i] /= lam;
-        else
-            c[i] = 0.0;
+        // reverse order to match your Curtis–Clenshaw convention
+        grid->pointer()[N-1-j][0] = omega_j;
+        grid->pointer()[N-1-j][1] = weight_j;
     }
 
-    // --- 8. Back-transform: mu_red = U c ---
-    std::vector<double> mu_red(nA, 0.0);
-    for (int i = 0; i < nA; ++i)
-        for (int j = 0; j < nA; ++j)
-            mu_red[i] += U->get(i, j) * c[j];
-
-    // --- 9. Expand to full mu_Q ---
-    std::vector<double> mu_Q(nQ_, 0.0);
-    for (int i = 0; i < nA; ++i)
-        mu_Q[active[i]] = mu_red[i];
-
-    return mu_Q;
+    return grid;
 }
 
 

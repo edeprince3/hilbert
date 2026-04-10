@@ -56,6 +56,8 @@ class PolaritonicRDFRPA: public PolaritonicHF {
 
     std::shared_ptr<Matrix> build_grid();
 
+    std::shared_ptr<Matrix> build_minimax_grid(double tol);
+
     std::shared_ptr<Matrix> tst_;
 
     long int nQ_;
