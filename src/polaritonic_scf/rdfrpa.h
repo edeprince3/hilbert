@@ -43,8 +43,15 @@ class PolaritonicRDFRPA: public PolaritonicHF {
     ~PolaritonicRDFRPA();
 
     void common_init(std::shared_ptr<Wavefunction> dummy_wfn);
+    // batched version
+    void common_init_batched(std::shared_ptr<Wavefunction> dummy_wfn);
 
+    // dispatch function for energy computation
     double compute_energy();
+    // unbatched version
+      double compute_energy_unbatched();
+    // batched version
+    double compute_energy_batched();
 
   private:
 
@@ -61,6 +68,8 @@ class PolaritonicRDFRPA: public PolaritonicHF {
     std::shared_ptr<Matrix> tst_;
 
     long int nQ_;
+    long int nQ_eff_;
+    long int ia_batch_size_;
     long int o_; 
     long int v_;
 

@@ -255,6 +255,22 @@ void PolaritonicRDFRPA::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
 
 double PolaritonicRDFRPA::compute_energy() {
 
+    bool batched = options_.get_bool("BATCHED_DFRPA");
+
+    // if batched option is set, compute RPA energy using a batched approach that avoids explicit diagonalization of Qmat_ for each grid point
+    if (batched) {
+         outfile->Printf("Batched DFRPA version (not fully tested yet, use with caution!)\n");
+         double ecrpa =  compute_energy_batched();
+          return ecrpa;
+    }
+
+    // otherwise compute RPA energy using unbatched approach that diagonalizes Qmat_ for each grid point
+    return compute_energy_unbatched();
+
+}
+
+double PolaritonicRDFRPA::compute_energy_unbatched() {
+
     outfile->Printf("\n");
     outfile->Printf("    No. basis functions:            %5i\n",nso_);
     outfile->Printf("    No. electrons:                  %5i\n",nalpha_ + nbeta_);
@@ -305,8 +321,12 @@ double PolaritonicRDFRPA::compute_energy() {
     std::shared_ptr<Vector> diag_matrix = build_diag_matrix();
 
     // build grid points and weights for quadrature
-    double tol = 1e-8;
-    auto grid = build_minimax_grid(tol);
+    // Curtis–Clenshaw quadrature based on diagonal approximation to RPA energy expression
+    auto grid = build_grid();
+    // alternative: minimax quadrature based on diagonal approximation to RPA energy expression
+    // needs debugging! 
+//    double tol = 1e-8;
+//   auto grid = build_minimax_grid(tol);
 
     // print out grid points and weights for debugging
     if (n_output_ > 2)  {
