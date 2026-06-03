@@ -211,7 +211,7 @@ namespace TA_Helper {
             auto off_it = Off.begin(); // create iterator for Off
 
             // fill tensor with data
-            array.template init_elements([data, NL_size, NR_size, dim_sizes_L, dim_sizes_R, off_it](
+            array.init_elements([data, NL_size, NR_size, dim_sizes_L, dim_sizes_R, off_it](
                                                  const typename TArrayD::index &I) { // fill tensor with data
                                              size_t indexL = 0, indexR = 0;
                                              for (size_t i = 0; i < NL_size; i++)
