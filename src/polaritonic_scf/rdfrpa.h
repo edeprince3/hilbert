@@ -29,6 +29,7 @@
 
 #include "hf.h"
 #include "rtddft.h"
+#include <psi4/lib3index/dfhelper.h>
 
 using namespace psi;
 
@@ -49,7 +50,7 @@ class PolaritonicRDFRPA: public PolaritonicHF {
     // dispatch function for energy computation
     double compute_energy();
     // unbatched version
-      double compute_energy_unbatched();
+    double compute_energy_unbatched();
     // batched version
     double compute_energy_batched();
 
@@ -66,6 +67,8 @@ class PolaritonicRDFRPA: public PolaritonicHF {
     std::shared_ptr<Matrix> build_minimax_grid(double tol);
 
     std::shared_ptr<Matrix> tst_;
+    
+    std::shared_ptr<psi::DFHelper> df_helper_;
 
     long int nQ_;
     long int nQ_eff_;

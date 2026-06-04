@@ -385,6 +385,9 @@ int read_options(std::string name, Options& options)
         /*- include exchange in RPA ground state energy? -*/
         options.add_bool("RPA_EXCHANGE", false);
 
+        /* - use batched version for DFRPA? -*/
+        options.add_bool("BATCHED_DFRPA", false);
+
         /*- SUBSECTION MCPDFT -*/
 
        /*- MCPDFT type -*/
