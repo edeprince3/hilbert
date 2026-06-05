@@ -609,7 +609,22 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
 
         if ( options.get_bool("COMPUTE_STATIC_RESPONSE") ) {
             std::shared_ptr<PolaritonicUTDDFT> utddft (new PolaritonicUTDDFT((std::shared_ptr<Wavefunction>)uks,options,ref_wfn));
-            utddft->compute_static_responses();
+            if (options["OMEGA"].has_changed()){
+                //for (size_t i = 0; i < options["OMEGA"].size(); i++) {
+                //    utddft->compute_first_order_response_function(options["OMEGA"][i].to_double());
+                //}
+                std::vector<std::vector<double>> amps_0 = utddft->compute_first_order_response_function(options["OMEGA"][0].to_double());
+                std::vector<std::vector<double>> amps_pw = utddft->compute_first_order_response_function(options["OMEGA"][1].to_double());
+                std::vector<std::vector<double>> amps_mw;
+                std::vector<std::vector<double>> amps_mtw = utddft->compute_first_order_response_function(-2 * options["OMEGA"][1].to_double());
+                amps_mw.push_back(amps_pw[1]);
+                amps_mw.push_back(amps_pw[0]);
+                utddft->compute_hyperpolarizability(amps_0, amps_0, amps_0);
+                utddft->compute_hyperpolarizability(amps_0, amps_pw, amps_mw);
+                utddft->compute_hyperpolarizability(amps_mtw, amps_pw, amps_pw);
+            }else {
+                utddft->compute_static_responses();
+            }
         }
 
         return (std::shared_ptr<Wavefunction>)uks;
