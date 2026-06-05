@@ -36,7 +36,7 @@ N      0.00000000    -2.71003942     0.00000000
 set {
   ints_tolerance 0.0
   basis cc-pvdz
-  scf_type df
+  scf_type disk_df
   d_convergence 1e-8
   maxiter 500
   reference rohf

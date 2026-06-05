@@ -32,7 +32,7 @@
 // for dft
 #include "psi4/libfock/v.h"
 #include "psi4/libfunctional/superfunctional.h"
-#include "psi4/libscf_solver/hf.h"
+//#include "psi4/libscf_solver/hf.h"
 
 // jk object
 #include <psi4/libfock/jk.h>

@@ -265,7 +265,7 @@ double PolaritonicRHF::compute_energy() {
 
         std::shared_ptr<Matrix> oei (new Matrix(h));
 
-        if ( n_photon_states_ > 1 ) {
+        if ( n_photon_states_ > 1 || options_.get_bool("USE_COHERENT_STATE_BASIS") ) {
 
             update_cavity_terms();
 
@@ -390,7 +390,7 @@ double PolaritonicRHF::compute_energy() {
     epsilon_a_->print();
 
     // copy alpha to beta 
-    epsilon_b_->copy(*reference_wavefunction_->epsilon_b().get());
+    epsilon_b_->copy(*epsilon_a_.get());
     Cb_->copy(Ca_);
     Fb_->copy(Fa_);
     Db_->copy(Da_);

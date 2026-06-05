@@ -17,7 +17,7 @@ set {
 
   reference rhf
   basis 6-31g
-  scf_type df
+  scf_type disk_df
 
   e_convergence 1e-10
   r_convergence 1e-8

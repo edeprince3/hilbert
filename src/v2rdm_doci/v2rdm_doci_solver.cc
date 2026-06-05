@@ -129,8 +129,11 @@ v2RDM_DOCISolver::~v2RDM_DOCISolver()
 void  v2RDM_DOCISolver::common_init(){
 
     is_df_ = false;
-    if ( options_.get_str("SCF_TYPE") == "DF" || options_.get_str("SCF_TYPE") == "CD" ) {
+
+    if ( options_.get_str("SCF_TYPE") == "DISK_DF" || options_.get_str("SCF_TYPE") == "DISK_CD") {
         is_df_ = true;
+    }else if ( options_.get_str("SCF_TYPE") == "DF" || options_.get_str("SCF_TYPE") == "CD") {
+        throw PsiException("invalid SCF_TYPE. try DISK_DF, DISK_CD, or PK",__FILE__,__LINE__);
     }
 
     shallow_copy(reference_wavefunction_);
@@ -1159,10 +1162,6 @@ double v2RDM_DOCISolver::compute_energy() {
         UpdateTransformationMatrix(reference_wavefunction_,newMO_,Ca_,Cb_,orbopt_transformation_matrix_);
     }
 
-    if ( options_.get_bool("MOLDEN_WRITE") ) {
-        WriteMoldenFile();
-    }
-
     if ( options_.get_bool("SEMICANONICALIZE_ORBITALS") ) {
         if ( options_.get_str("DERTYPE") == "FIRST" ) {
             outfile->Printf("\n");
@@ -1223,65 +1222,6 @@ double v2RDM_DOCISolver::compute_energy() {
     outfile->Printf("\n");
 
     return energy_primal + enuc_ + efzc_;
-}
-
-void v2RDM_DOCISolver::WriteMoldenFile() {
-
-    throw PsiException("function WriteMoldenFile() is currently broken",__FILE__,__LINE__);
-
-/*
-    std::shared_ptr<Matrix> D (new Matrix(nirrep_,nmopi_,nmopi_));
-    std::shared_ptr<Matrix> eigvec (new Matrix(nirrep_,nmopi_,nmopi_));
-    std::shared_ptr<Vector> eigval (new Vector("Natural Orbital Occupation Numbers (spin free)",nirrep_,nmopi_));
-    for (int h = 0; h < nirrep_; h++) {
-        for (int i = 0; i < frzcpi_[h] + rstcpi_[h]; i++) {
-            D->pointer(h)[i][i] = 2.0;
-        }
-        for (int i = rstcpi_[h] + frzcpi_[h]; i < nmopi_[h] - rstvpi_[h] - frzvpi_[h]; i++) {
-            for (int j = rstcpi_[h] + frzcpi_[h]; j < nmopi_[h]-rstvpi_[h]-frzvpi_[h]; j++) {
-                D->pointer(h)[i][j]  = 2.0 * x->pointer()[d1off[h]+(i-rstcpi_[h]-frzcpi_[h])*amopi_[h]+(j-rstcpi_[h]-frzcpi_[h])];
-            }
-        }
-    }
-    std::shared_ptr<Matrix> saved ( new Matrix(D) );
-    D->diagonalize(eigvec,eigval,descending);
-    eigval->print();
-
-    std::shared_ptr<Matrix> Cno (new Matrix(Ca_));
-
-    //Ca_->print();
-    // build AO/NO transformation matrix 
-    for (int h = 0; h < nirrep_; h++) {
-        for (int mu = 0; mu < nsopi_[h]; mu++) {
-            double *  temp = (double*)malloc(nmopi_[h]*sizeof(double));
-            double ** cp   = Cno->pointer(h);
-            double ** ep   = eigvec->pointer(h);
-            for (int i = 0; i < nmopi_[h]; i++) {
-                double dum = 0.0;
-                for (int j = 0; j < nmopi_[h]; j++) {
-                    dum += cp[mu][j] * ep[j][i];
-                }
-                temp[i] = dum;
-            }
-            for (int i = 0; i < nmopi_[h]; i++) {
-                cp[mu][i] = temp[i];
-            }
-            free(temp);
-        }
-    }
-
-    // Print a molden file
-    if ( options_["RESTART_FROM_CHECKPOINT_FILE"].has_changed() ) {
-        throw PsiException("printing orbitals is currently disabled when restarting v2rdm jobs.  sorry!",__FILE__,__LINE__);
-    }
-    //std::shared_ptr<MoldenWriter> molden(new MoldenWriter((std::shared_ptr<Wavefunction>)this));
-    std::shared_ptr<MoldenWriter> molden(new MoldenWriter(reference_wavefunction_));
-    std::shared_ptr<Vector> zero (new Vector("",nirrep_,nmopi_));
-    zero->zero();
-    std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".molden";
-    molden->write(filename,Cno,Cno,zero, zero,eigval,eigval,true);
-*/
-
 }
 
 void v2RDM_DOCISolver::NaturalOrbitals() {

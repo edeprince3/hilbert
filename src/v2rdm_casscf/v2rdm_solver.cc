@@ -29,7 +29,6 @@
 #include <math.h>
 
 #include <psi4/libmints/mintshelper.h>
-#include <psi4/libmints/writer.h>
 #include <psi4/libmints/writer_file_prefix.h>
 #include <psi4/libtrans/integraltransform.h>
 #include <psi4/libtrans/mospace.h>
@@ -323,8 +322,10 @@ void  v2RDMSolver::common_init(){
     outfile->Printf("\n");
 
     is_df_ = false;
-    if ( options_.get_str("SCF_TYPE") == "DF" || options_.get_str("SCF_TYPE") == "CD" ) {
+    if ( options_.get_str("SCF_TYPE") == "DISK_DF" || options_.get_str("SCF_TYPE") == "DISK_CD") {
         is_df_ = true;
+    }else if ( options_.get_str("SCF_TYPE") == "DF" || options_.get_str("SCF_TYPE") == "CD") {
+        throw PsiException("invalid SCF_TYPE. try DISK_DF, DISK_CD, or PK",__FILE__,__LINE__);
     }
 
     // initialization depends on hamiltonian type
@@ -1274,31 +1275,6 @@ double v2RDMSolver::compute_energy() {
     double start_total_time = omp_get_wtime();
 
     // print guess orbitals in molden format
-    if ( options_.get_bool("GUESS_ORBITALS_WRITE") && !is_hubbard_ && !is_external_hamiltonian_) {
-
-        std::shared_ptr<MoldenWriter> molden(new MoldenWriter(reference_wavefunction_));
-        std::shared_ptr<Vector> zero = std::make_shared<Vector>(nmopi_);
-        zero->zero();
-        std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".guess.molden";
-
-        Ca_ = SharedMatrix(reference_wavefunction_->Ca());
-        Cb_ = SharedMatrix(reference_wavefunction_->Cb());
-
-        SharedVector occupation_a = std::make_shared<Vector>(nmopi_);
-        SharedVector occupation_b = std::make_shared<Vector>(nmopi_);
-
-        for (int h = 0; h < nirrep_; h++) {
-            for (int i = 0; i < nalphapi_[h]; i++) {
-                occupation_a->set(h, i, 1.0);
-            }
-            for (int i = 0; i < nbetapi_[h]; i++) {
-                occupation_b->set(h, i, 1.0);
-            }
-        }
-
-        molden->write(filename, Ca_, Cb_, zero, zero, occupation_a, occupation_b, true);
-    }
-
     // hartree-fock guess
     Guess();
 
@@ -1477,9 +1453,6 @@ double v2RDMSolver::compute_energy() {
             ComputeNaturalOrbitals();
         }  
 
-    }
-    if ( options_.get_bool("MOLDEN_WRITE") && !is_hubbard_ && !is_external_hamiltonian_ ) {
-        WriteMoldenFile();
     }
     if ( options_.get_bool("EXTENDED_KOOPMANS") && !is_hubbard_ && !is_external_hamiltonian_ ) {
         ExtendedKoopmans();
@@ -1663,89 +1636,6 @@ void v2RDMSolver::EnergyByComponent(double &kinetic, double &potential, double &
     }
 }
 
-
-void v2RDMSolver::WriteMoldenFile() {
-
-    // it is possible the 1-RDM is already in the NO basis:
-    if ( options_.get_bool("NAT_ORBS") || options_.get_bool("FCIDUMP") || options_.get_bool("EXTENDED_KOOPMANS") ) {
-
-        std::shared_ptr<Vector> eigval = std::make_shared<Vector>("Natural Orbital Occupation Numbers (spin free)",nmopi_);
-        for (int h = 0; h < nirrep_; h++) {
-            for (int i = 0; i < frzcpi_[h] + rstcpi_[h]; i++) {
-                eigval->pointer(h)[i] = 1.0;
-            }
-            for (int i = rstcpi_[h] + frzcpi_[h]; i < nmopi_[h] - rstvpi_[h] - frzvpi_[h]; i++) {
-                eigval->pointer(h)[i]  = 0.5 * x->pointer()[d1aoff[h]+(i-rstcpi_[h]-frzcpi_[h])*amopi_[h]+(i-rstcpi_[h]-frzcpi_[h])];
-                eigval->pointer(h)[i] += 0.5 * x->pointer()[d1aoff[h]+(i-rstcpi_[h]-frzcpi_[h])*amopi_[h]+(i-rstcpi_[h]-frzcpi_[h])];
-            }
-        }
-        // Print a molden file
-        if ( options_["RESTART_FROM_CHECKPOINT_FILE"].has_changed() ) {
-            throw PsiException("printing orbitals is currently disabled when restarting v2rdm jobs.  i can't remember why, though... sorry!",__FILE__,__LINE__);
-        }
-        //std::shared_ptr<MoldenWriter> molden(new MoldenWriter((std::shared_ptr<Wavefunction>)this));
-        std::shared_ptr<MoldenWriter> molden(new MoldenWriter(reference_wavefunction_));
-        std::shared_ptr<Vector> zero = std::make_shared<Vector>(nmopi_);
-        zero->zero();
-        std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".molden";
-        molden->write(filename,Ca_,Ca_,zero, zero,eigval,eigval,true);
-
-    // otherwise, we need to compute the natural orbitals:
-    }else {
-        std::shared_ptr<Matrix> D (new Matrix(nirrep_,nmopi_,nmopi_));
-        std::shared_ptr<Matrix> eigvec (new Matrix(nirrep_,nmopi_,nmopi_));
-        std::shared_ptr<Vector> eigval = std::make_shared<Vector>("Natural Orbital Occupation Numbers (spin free)",nmopi_);
-        for (int h = 0; h < nirrep_; h++) {
-            for (int i = 0; i < frzcpi_[h] + rstcpi_[h]; i++) {
-                D->pointer(h)[i][i] = 1.0;
-            }
-            for (int i = rstcpi_[h] + frzcpi_[h]; i < nmopi_[h] - rstvpi_[h] - frzvpi_[h]; i++) {
-                for (int j = rstcpi_[h] + frzcpi_[h]; j < nmopi_[h]-rstvpi_[h]-frzvpi_[h]; j++) {
-                    D->pointer(h)[i][j]  = 0.5 * x->pointer()[d1aoff[h]+(i-rstcpi_[h]-frzcpi_[h])*amopi_[h]+(j-rstcpi_[h]-frzcpi_[h])];
-                    D->pointer(h)[i][j] += 0.5 * x->pointer()[d1boff[h]+(i-rstcpi_[h]-frzcpi_[h])*amopi_[h]+(j-rstcpi_[h]-frzcpi_[h])];
-                }
-            }
-        }
-        std::shared_ptr<Matrix> saved ( new Matrix(D) );
-        D->diagonalize(eigvec,eigval,descending);
-        //eigval->print();
-
-        std::shared_ptr<Matrix> Cno (new Matrix(Ca_));
-
-        //Ca_->print();
-        // build AO/NO transformation matrix 
-        for (int h = 0; h < nirrep_; h++) {
-            for (int mu = 0; mu < nsopi_[h]; mu++) {
-                double *  temp = (double*)malloc(nmopi_[h]*sizeof(double));
-                double ** cp   = Cno->pointer(h);
-                double ** ep   = eigvec->pointer(h);
-                for (int i = 0; i < nmopi_[h]; i++) {
-                    double dum = 0.0;
-                    for (int j = 0; j < nmopi_[h]; j++) {
-                        dum += cp[mu][j] * ep[j][i];
-                    }
-                    temp[i] = dum;
-                }
-                for (int i = 0; i < nmopi_[h]; i++) {
-                    cp[mu][i] = temp[i];
-                }
-                free(temp);
-            }
-        }
-
-        // Print a molden file
-        if ( options_["RESTART_FROM_CHECKPOINT_FILE"].has_changed() ) {
-            throw PsiException("printing orbitals is currently disabled when restarting v2rdm jobs.  i can't remember why, though... sorry!",__FILE__,__LINE__);
-        }
-        //std::shared_ptr<MoldenWriter> molden(new MoldenWriter((std::shared_ptr<Wavefunction>)this));
-        std::shared_ptr<MoldenWriter> molden(new MoldenWriter(reference_wavefunction_));
-        std::shared_ptr<Vector> zero = std::make_shared<Vector>(nmopi_);
-        zero->zero();
-        std::string filename = get_writer_file_prefix(reference_wavefunction_->molecule()->name()) + ".molden";
-        molden->write(filename,Cno,Cno,zero, zero,eigval,eigval,true);
-    }
-
-}
 
 void v2RDMSolver::FinalizeOPDM() {
     // nee

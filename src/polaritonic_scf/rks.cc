@@ -348,7 +348,7 @@ double PolaritonicRKS::compute_energy() {
         dipole_Ja->zero();
         dipole_Ka->zero();
 
-        if ( n_photon_states_ > 1 ) {
+        if ( n_photon_states_ > 1 || options_.get_bool("USE_COHERENT_STATE_BASIS") ) {
 
             update_cavity_terms();
 
@@ -530,6 +530,12 @@ double PolaritonicRKS::compute_energy() {
 
     // print orbital energies
     epsilon_a_->print();
+
+    // copy alpha to beta 
+    epsilon_b_->copy(*epsilon_a_.get());
+    Cb_->copy(Ca_);
+    Fb_->copy(Fa_);
+    Db_->copy(Da_);
 
     return energy_;
 

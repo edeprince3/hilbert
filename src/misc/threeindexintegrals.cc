@@ -61,16 +61,18 @@ void ThreeIndexIntegrals(std::shared_ptr<Wavefunction> ref, long int &nQ, long i
     // read integrals that were written to disk in the scf
     std::shared_ptr<PSIO> psio(new PSIO());
 
-    if ( ref->options().get_str("SCF_TYPE") == "DF" ) {
+    if ( ref->options().get_str("SCF_TYPE") == "DISK_DF" ) {
         std::shared_ptr<BasisSet> primary = ref->basisset(); 
         std::shared_ptr<BasisSet> auxiliary = ref->get_basisset("DF_BASIS_SCF");
 
         nQ = auxiliary->nbf();
         Process::environment.globals["NAUX (SCF)"] = nQ;
-    }else if ( ref->options().get_str("SCF_TYPE") == "CD" ) {
+    }else if ( ref->options().get_str("SCF_TYPE") == "DISK_CD" ) {
         psio->open(PSIF_DFSCF_BJ,PSIO_OPEN_OLD);
         psio->read_entry(PSIF_DFSCF_BJ, "length", (char*)&nQ, sizeof(long int));
         psio->close(PSIF_DFSCF_BJ,1);
+    }else {
+        throw PsiException("invalid SCF_TYPE. try DISK_DF or DISK_CD",__FILE__,__LINE__);
     }
 
     // 100 mb extra to account for all mapping arrays already 

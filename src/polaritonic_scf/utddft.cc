@@ -60,7 +60,6 @@
 #include <misc/diis.h>
 
 #include <algorithm>
-
 using namespace psi;
 using namespace fnocc;
 
@@ -76,10 +75,16 @@ PolaritonicUTDDFT::~PolaritonicUTDDFT() {
 
 void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
 
-    // UTDDFT only works with TDA for now
-    if ( !options_.get_bool("TDSCF_TDA") ) {
-        //throw PsiException("polaritonic rtddft only works with TDA df for now",__FILE__,__LINE__);
-    }
+    outfile->Printf("\n");
+    outfile->Printf("\n");
+    outfile->Printf( "        *******************************************************\n");
+    outfile->Printf( "        *                                                     *\n");
+    outfile->Printf( "        *                                                     *\n");
+    outfile->Printf( "        *    Polaritonic Unrestricted TDDFT                   *\n");
+    outfile->Printf( "        *                                                     *\n");
+    outfile->Printf( "        *                                                     *\n");
+    outfile->Printf( "        *******************************************************\n");
+    outfile->Printf("\n");
 
     // check SCF type
     if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" && options_.get_str("SCF_TYPE") != "PK") {
@@ -1914,7 +1919,7 @@ double PolaritonicUTDDFT::compute_energy() {
         HCavity_z->pointer()[1][1] = cavity_frequency_[2];
     }
     if ( n_photon_states_ > 2 ) {
-        throw PsiException("polaritonic TDDFT does not work with N_PHOTON_STATES > 2",__FILE__,__LINE__);
+        throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
 
     // ok, try solving iteratively with davison
@@ -2269,7 +2274,7 @@ void PolaritonicUTDDFT::build_sigma_generalized(int N, int maxdim, int L, double
 void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double *Bu){
 
     if ( n_photon_states_ > 2 ) {
-        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+        throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
 
     int oa = nalpha_;
@@ -2979,7 +2984,7 @@ void PolaritonicUTDDFT::build_Au_Bu_response(int N, double *u, double *ABu){
 void PolaritonicUTDDFT::build_gm(int N, int L, double *m, double *gm) {
 
     if ( n_photon_states_ > 2 ) {
-        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+        throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
 
     int oa = nalpha_;
@@ -3025,7 +3030,7 @@ void PolaritonicUTDDFT::build_gm(int N, int L, double *m, double *gm) {
 void PolaritonicUTDDFT::build_sigma_m(int N, int L, double *x, double *y, double *m, double *sigma_m_r, double *sigma_m_l) {
 
     if ( n_photon_states_ > 2 ) {
-        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+        throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
 
     int oa = nalpha_;
@@ -3114,7 +3119,7 @@ double * PolaritonicUTDDFT::build_hamiltonian_diagonals(){
 
     // now, |0,1> diagonals
     if ( n_photon_states_ > 2 ) {
-        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+        throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
 
     int off = 2 * (oa * va + ob * vb);
@@ -3155,7 +3160,7 @@ double * PolaritonicUTDDFT::build_overlap_diagonals(){
 
     // now, |0,1> diagonals
     if ( n_photon_states_ > 2 ) {
-        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+        throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
 
     int off = 2 * (oa * va + ob * vb);
