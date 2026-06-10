@@ -54,6 +54,9 @@ class PolaritonicRDFRPA: public PolaritonicHF {
     // batched version
     double compute_energy_batched();
 
+    // batchsize
+    int determine_optimal_batch_size();
+
   private:
 
     std::vector<double> project_dipole_into_aux(const std::vector<double>& mu_ai);

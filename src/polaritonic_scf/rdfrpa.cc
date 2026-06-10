@@ -325,8 +325,8 @@ double PolaritonicRDFRPA::compute_energy_unbatched() {
     auto grid = build_grid();
     // alternative: minimax quadrature based on diagonal approximation to RPA energy expression
     // needs debugging! 
-//    double tol = 1e-8;
-//   auto grid = build_minimax_grid(tol);
+//    double tol = 1e-6;
+//    auto grid = build_minimax_grid(tol);
 
     // print out grid points and weights for debugging
     if (n_output_ > 2)  {
@@ -617,6 +617,8 @@ std::shared_ptr<Matrix> PolaritonicRDFRPA::build_minimax_grid(double tol) {
     for (size_t ai = 0; ai < o_*v_; ++ai)
         Delta_max = std::max(Delta_max, diag_[ai]);
 
+    if (Delta_max == 0.0) Delta_max = 1.0; // avoid division by zero
+
     // 2. Precompute diagonal-approximation reference energy
     std::shared_ptr<Vector> diag_matrix = build_diag_matrix();
     double E_ref = 0.0;
@@ -628,67 +630,140 @@ std::shared_ptr<Matrix> PolaritonicRDFRPA::build_minimax_grid(double tol) {
     E_ref *= 0.25;
 
     // 3. Adaptive loop over N
+    double u_max = 4.0; // max u value for grid (maps to large frequencies)
     size_t N = 4;  // starting guess
     while (true) {
+        std::vector<double> omega;
+        std::vector<double> weight;
 
-        // 3a. Compute Λ(N)
-        double Lambda = Delta_max * std::tan(M_PI / (4.0 * N));
-
-        // 3b. Build minimax nodes and weights
-        std::vector<double> omega(N), weight(N);
-        for (size_t j = 0; j < N; ++j) {
-            double theta = (M_PI / (2.0 * N)) * (2.0*(j+1) - 1.0);
-            omega[j]  = Lambda * std::tan(theta);
-            weight[j] = (M_PI / (2.0 * N)) * (Lambda / (std::cos(theta)*std::cos(theta)));
+        // 3a. Adaptive loop over N (uniform spacing step 'h' mapped
+        // exponentially to [0,∞))
+        // expand the limits symmetrically around zero to capture negative
+        // frequencies as well
+        double h = u_max / static_cast<int>(N); // uniform spacing in t-space
+        int steps = static_cast<int>(N);
+        for (int j = -steps; j <= steps; ++j) {
+            double t_j = j * h;
+            double sinh_t = std::sinh(t_j);
+            double cosh_t = std::cosh(t_j);
+            double omega_j = Delta_max * std::exp(sinh_t);
+            double weight_j = h * Delta_max * std::exp(sinh_t) * cosh_t;
+            omega.push_back(omega_j);
+            weight.push_back(weight_j);
         }
 
-        // 3c. Evaluate diagonal-approximation energy on this grid
+
+        // 3b. Evaluate diagonal-approximation energy on this grid
         double E_test = 0.0;
-        for (size_t j = 0; j < N; ++j) {
+        size_t grid_size = omega.size();
+
+        for (size_t j = 0; j < grid_size; ++j) {
             double w = weight[j];
-            double f = omega[j];
-            double f2 = f*f;
+            double f2 = omega[j] * omega[j];
             double contrib = 0.0;
+
             for (size_t ai = 0; ai < o_*v_; ++ai) {
                 double D = diag_[ai];
                 double K = diag_matrix->pointer()[ai];
-                double fac = 2.0 * D / (D*D + f2);
-                double tmp = fac * K;
-                contrib += tmp - std::log(1.0 + tmp);
-                outfile->Printf("D=%lf  K=%lf\n", D, K);
+                double argument = (2.0 * D * K) / (D*D + f2);
+
+                // use series expansion for small argument to avoid numerical
+                // issues
+                if (std::abs(argument) < 1e-4) {
+                  double term2 = argument * argument;
+                  double term3 = term2 * argument;
+                  double term4 = term3 * argument;
+                  contrib += - term2/2.0 + term3/3.0 - term4/4.0;
+                } else {
+                contrib += std::log(1.0 + argument) - argument;
+                //outfile->Printf("D=%lf  K=%lf\n", D, K);
+                }
             }
             E_test += w * contrib;
         }
-        E_test *= -0.25 / M_PI;
+        E_test *= 0.25 / M_PI;
 
-        // 3d. Check error
-        if (std::abs(E_test - E_ref) < tol)
+        double current_error = std::abs(E_test - E_ref);
+
+        outfile->Printf("Minimax Adaptive: N=%zu  E_ref=%20.12lf  E_test=%20.12lf  err=%20.12lf\n", N, E_ref, E_test, current_error);
+
+        // 3c. Check error
+        if (current_error < tol)
             break;
 
-        outfile->Printf("N=%zu  E_ref=%20.12lf  E_test=%20.12lf  err=%20.12lf\n",
-            N, E_ref, E_test, fabs(E_test - E_ref));
-
         // Otherwise increase N
-        N *= 2;
-        if (N > 128)
-            throw std::runtime_error("Minimax grid failed to converge.");
+        N += 8; // increase by 8 points (4 on each side) for next iteration
+        if (N > 64)
+            throw PsiException("grid construction failed to converge within reasonable N", __FILE__, __LINE__);
 
     }
 
     // 4. Build final grid matrix
-    std::shared_ptr<Matrix> grid(new Matrix(N, 2));
-    double Lambda = Delta_max * std::tan(M_PI / (4.0 * N));
-    for (size_t j = 0; j < N; ++j) {
-        double theta = (M_PI / (2.0 * N)) * (2.0*(j+1) - 1.0);
-        double omega_j  = Lambda * std::tan(theta);
-        double weight_j = (M_PI / (2.0 * N)) * (Lambda / (std::cos(theta)*std::cos(theta)));
+    
+    auto grid_matrix = std::make_shared<Matrix>("Optimized Grid", N, 2);
 
-        // reverse order to match your Curtis–Clenshaw convention
-        grid->pointer()[N-1-j][0] = omega_j;
-        grid->pointer()[N-1-j][1] = weight_j;
+    // Populate grid matrix with points and weights, putting in reverse order to
+    // match Curtis–Clenshaw convention
+    double h = u_max /((N-1)/2); // uniform spacing in t-space
+    int half_steps = (N - 1) / 2;
+    int idx = 0;
+
+    for (int j = -half_steps; j <= half_steps; ++j) {
+        double t_j = j * h;
+        double sinh_t = std::sinh(t_j);
+        double cosh_t = std::cosh(t_j);
+        double omega_j = Delta_max * std::exp(sinh_t);
+        double weight_j = h * Delta_max * std::exp(sinh_t) * cosh_t;
+
+        grid_matrix->pointer()[N-1-j][0] = omega_j;
+        grid_matrix->pointer()[N-1-j][1] = weight_j;
+        idx++;
     }
 
-    return grid;
+    return grid_matrix;
+}
+
+// function to compute batchsize based on available memory and size of system
+//
+int PolaritonicRDFRPA::determine_optimal_batch_size() {
+    // 1. Get total memory allocated to Psi4 (in bytes)
+    // df_helper_->get_memory() returns the size in bytes (e.g., 2GB = 2,147,483,648)
+    size_t total_psi4_mem = df_helper_->get_memory();
+
+    // 2. Set aside a safety margin (e.g., 25%) for static matrices and overhead
+    // This prevents the batch calculation from pushing the node into out-of-memory paging
+    double safety_factor = 0.75;
+    size_t available_mem = static_cast<size_t>(total_psi4_mem * safety_factor);
+
+    // 3. Compute memory footprint of a single (ia) column block
+    int nQ_eff = nQ_ + 1;
+    size_t bytes_per_ia = 2 * nQ_eff * sizeof(double); 
+
+    // 4. Calculate how many ia elements can fit in that pool
+    size_t calculated_batch = available_mem / bytes_per_ia;
+
+    // 5. Impose sanity bounds
+    int total_ov = o_ * v_;
+    int optimal_batch_size = static_cast<int>(calculated_batch);
+
+    // Bound: Cannot be larger than the actual total number of orbital pairs
+    if (optimal_batch_size > total_ov) {
+        optimal_batch_size = total_ov;
+    }
+
+    // Bound: Must be at least 1 to prevent division by zero or empty loops on tiny-memory profiles
+    if (optimal_batch_size < 1) {
+        optimal_batch_size = 1;
+    }
+
+    // Print a breakdown to the output file so you can audit it
+    outfile->Printf("\n  ==> Dynamic Batch Size Allocation <==\n");
+    outfile->Printf("  Total Psi4 Memory Allowed: %12.3f MB\n", total_psi4_mem / (1024.0 * 1024.0));
+    outfile->Printf("  Available Batch Memory:    %12.3f MB\n", available_mem / (1024.0 * 1024.0));
+    outfile->Printf("  Total (ia) Pairs to Process: %d\n", total_ov);
+    outfile->Printf("  Calculated Optimal Batch Size: %d\n\n", optimal_batch_size);
+
+    return optimal_batch_size;
 }
 
 // batched version of RPA
@@ -800,7 +875,12 @@ double PolaritonicRDFRPA::compute_energy_batched() {
     int o = nalpha_;
     int v = nso_ - nalpha_;
     int ov_total = o * v;
-    int ia_batch_size = 100; // size of batch for processing (ia|ia) elements, can be tuned for performance
+    // set batchsize manually
+//    int ia_batch_size = 100; // size of batch for processing (ia|ia) elements, can be tuned for performance
+//  use function to determine batchsize based on available memory and system
+//  size
+    int ia_batch_size = determine_optimal_batch_size();
+
     int nQ_eff = nQ_ + 1; // size of effective Q matrix including photon contribution
     
 
@@ -904,8 +984,10 @@ double PolaritonicRDFRPA::compute_energy_batched() {
 
           //outfile->Printf("     =====> ov_total <=====\n");
           //outfile->Printf("%10i \n",ov_total);
-          outfile->Printf("     =====> batchsize <=====\n");
-          outfile->Printf("%10i, %4i, %4i \n",batch_size, i, ia_start);
+          if (n_output_ > 2) {
+            outfile->Printf("     =====> batchsize <=====\n");
+            outfile->Printf("%10i, %4i, %4i \n",batch_size, i, ia_start);
+          }
 
           // obtain 3-index integrals for current batch 
           auto Qov_batch_scaled = std::make_shared<Matrix>(nQ_eff, batch_size);

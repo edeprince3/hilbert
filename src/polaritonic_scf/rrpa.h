@@ -50,6 +50,9 @@ class PolaritonicRRPA: public PolaritonicHF {
 
     std::shared_ptr<Matrix> build_rpa_matrix(bool is_tda);
 
+    // control output (for debugging, to be done properly)
+    long int n_output_ = 2;
+
     long int nQ_; 
     long int o_; 
     long int v_; 

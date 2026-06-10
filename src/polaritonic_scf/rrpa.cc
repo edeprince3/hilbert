@@ -322,9 +322,11 @@ double PolaritonicRRPA::compute_energy() {
     free(skip);
 
 
-    outfile->Printf("\n");
-    outfile->Printf("    ==> excitation energies <==\n");
-    outfile->Printf("\n");
+    if (n_output_ > 2 ) {
+      outfile->Printf("\n");
+      outfile->Printf("    ==> excitation energies <==\n");
+      outfile->Printf("\n");
+    }
     double correlation_energy = 0.0;
     for (size_t i = 0; i < o_ * v_ + 1; i++) {
         double rpa = rpa_excitation_energies->pointer()[i];
