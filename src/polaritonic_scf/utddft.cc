@@ -75,17 +75,6 @@ PolaritonicUTDDFT::~PolaritonicUTDDFT() {
 
 void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
 
-    outfile->Printf("\n");
-    outfile->Printf("\n");
-    outfile->Printf( "        *******************************************************\n");
-    outfile->Printf( "        *                                                     *\n");
-    outfile->Printf( "        *                                                     *\n");
-    outfile->Printf( "        *    Polaritonic Unrestricted TDDFT                   *\n");
-    outfile->Printf( "        *                                                     *\n");
-    outfile->Printf( "        *                                                     *\n");
-    outfile->Printf( "        *******************************************************\n");
-    outfile->Printf("\n");
-
     // check SCF type
     if ( options_.get_str("SCF_TYPE") != "DF" && options_.get_str("SCF_TYPE") != "CD" && options_.get_str("SCF_TYPE") != "PK") {
         throw PsiException("invalid SCF_TYPE for qed-utddft",__FILE__,__LINE__);
@@ -215,7 +204,7 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
     outfile->Printf( "        *******************************************************\n");
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *                                                     *\n");
-    outfile->Printf( "        *    Mean-Field First-Order Wavefunction Response     *\n");
+    outfile->Printf( "        *    Unrestricted Polaritonic TDDFT Response          *\n");
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *******************************************************\n");
