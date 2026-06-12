@@ -205,14 +205,14 @@ void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
     Dipole_z_->transform(C_);
 }
 
-std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response_function(double omega) {
+std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response(double omega) {
 
     outfile->Printf("\n");
     outfile->Printf("\n");
     outfile->Printf( "        *******************************************************\n");
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *                                                     *\n");
-    outfile->Printf( "        *    Mean-Field First-Order Response Function         *\n");
+    outfile->Printf( "        *    Mean-Field First-Order Wavefunction Response     *\n");
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *                                                     *\n");
     outfile->Printf( "        *******************************************************\n");
@@ -351,7 +351,6 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
                                      + (1.0 - damp) * precon * (mua[p]->pointer()[i][a+oa] 
                                                               - ABu_ex[p*2*nmo_*nmo_ + i*nmo_+(a+oa)] 
                                                               - ABu_de[p*2*nmo_*nmo_ + (a+oa)*nmo_+i] 
-                                                              //- omega * amps1_ex[p*N+ia]
                                                               - gm_ex[p*N+ia] - gm_de[p*N+ia]);
                 }
             }
@@ -364,7 +363,6 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
                                      + (1.0 - damp) * precon * (mub[p]->pointer()[i][a+ob] 
                                                               - ABu_ex[p*2*nmo_*nmo_ + nmo_*nmo_ + i*nmo_+(a+ob)] 
                                                               - ABu_de[p*2*nmo_*nmo_ + nmo_*nmo_ + (a+ob)*nmo_+i] 
-                                                              //- omega * amps1_ex[p*N+ia]
                                                               - gm_ex[p*N+ia] - gm_de[p*N+ia]);
                 }
             }
@@ -377,7 +375,6 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
                                      + (1.0 - damp) * precon * (mua[p]->pointer()[i][a+oa] 
                                                               - ABu_de[p*2*nmo_*nmo_ + i*nmo_+(a+oa)] 
                                                               - ABu_ex[p*2*nmo_*nmo_ + (a+oa)*nmo_+i] 
-                                                              //+ omega * amps1_de[p*N+ia]
                                                               - gm_ex[p*N+ia] - gm_de[p*N+ia]);
                 }
             }
@@ -390,7 +387,6 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
                                      + (1.0 - damp) * precon * (mub[p]->pointer()[i][a+ob] 
                                                               - ABu_de[p*2*nmo_*nmo_ + nmo_*nmo_ + i*nmo_+(a+ob)] 
                                                               - ABu_ex[p*2*nmo_*nmo_ + nmo_*nmo_ + (a+ob)*nmo_+i] 
-                                                              //+ omega * amps1_de[p*N+ia]
                                                               - gm_ex[p*N+ia] - gm_de[p*N+ia]);
                 }
             }

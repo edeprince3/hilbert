@@ -1,0 +1,152 @@
+# PYTHONPATH must include directory above plugin directory.
+#     Define either externally or here, then import plugin.
+sys.path.insert(0, '../../..')
+import hilbert
+import numpy as np
+
+molecule {
+0 1
+O    0.00000   0.00000   0.12716
+H    0.75808   0.00000  -0.50864
+H   -0.75808   0.00000  -0.50864
+no_reorient
+nocom
+symmetry c1
+}
+
+set {
+  basis aug-cc-pvdz
+  scf_type df
+  e_convergence 1e-11
+  d_convergence 1e-11
+  cholesky_tolerance 1e-14
+  ints_tolerance 0.0
+  df_fitting_condition 1e-16
+  property "SHG"
+  omega [0.1]
+} 
+
+# freq: w
+w = 0.07349864501573
+
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+g = 0.05 / np.sqrt(2.0 * w)
+
+set hilbert {
+  maxiter 500
+  cavity_frequency         [0.0, 0.0, $w]
+  cavity_coupling_strength [0.0, 0.0, $g]
+  maxdim                   15
+  indim                    5
+  qed_dft_functional hf
+}
+
+set reference uks 
+energy('qed-dft')
+
+print('')
+print('    ==> SHG <==')
+print('')
+
+compare_values( -0.000000000007, psi4.variable("QED-DFT BETA(XXX)"), 8, "BETA(XXX)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(XXY)"), 8, "BETA(XXY)")
+compare_values( 17.209581794312, psi4.variable("QED-DFT BETA(XXZ)"), 8, "BETA(XXZ)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(XYX)"), 8, "BETA(XYX)")
+compare_values(  0.000000000106, psi4.variable("QED-DFT BETA(XYY)"), 8, "BETA(XYY)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(XYZ)"), 8, "BETA(XYZ)")
+compare_values( 17.209581794312, psi4.variable("QED-DFT BETA(XZX)"), 8, "BETA(XZX)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(XZY)"), 8, "BETA(XZY)")
+compare_values(  0.000000000000, psi4.variable("QED-DFT BETA(XZZ)"), 8, "BETA(XZZ)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(YXX)"), 8, "BETA(YXX)")
+compare_values(  0.000000000131, psi4.variable("QED-DFT BETA(YXY)"), 8, "BETA(YXY)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(YXZ)"), 8, "BETA(YXZ)")
+compare_values(  0.000000000131, psi4.variable("QED-DFT BETA(YYX)"), 8, "BETA(YYX)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(YYY)"), 8, "BETA(YYY)")
+compare_values(  2.831529683655, psi4.variable("QED-DFT BETA(YYZ)"), 8, "BETA(YYZ)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(YZX)"), 8, "BETA(YZX)")
+compare_values(  2.831529683655, psi4.variable("QED-DFT BETA(YZY)"), 8, "BETA(YZY)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(YZZ)"), 8, "BETA(YZZ)")
+compare_values( 17.436835184374, psi4.variable("QED-DFT BETA(ZXX)"), 8, "BETA(ZXX)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(ZXY)"), 8, "BETA(ZXY)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(ZXZ)"), 8, "BETA(ZXZ)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(ZYX)"), 8, "BETA(ZYX)")
+compare_values( -2.346090679270, psi4.variable("QED-DFT BETA(ZYY)"), 8, "BETA(ZYY)")
+compare_values(  0.000000000000, psi4.variable("QED-DFT BETA(ZYZ)"), 8, "BETA(ZYZ)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(ZZX)"), 8, "BETA(ZZX)")
+compare_values(  0.000000000000, psi4.variable("QED-DFT BETA(ZZY)"), 8, "BETA(ZZY)")
+compare_values(  8.227139769341, psi4.variable("QED-DFT BETA(ZZZ)"), 8, "BETA(ZZZ)")
+
+set {
+    property "OR"
+}
+energy('qed-dft')
+
+print('')
+print('    ==> OR <==')
+print('')
+
+compare_values( -0.000000000006, psi4.variable("QED-DFT BETA(XXX)"), 8, "BETA(XXX)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(XXY)"), 8, "BETA(XXY)")
+compare_values( 14.347456089883, psi4.variable("QED-DFT BETA(XXZ)"), 8, "BETA(XXZ)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(XYX)"), 8, "BETA(XYX)")
+compare_values(  0.000000000099, psi4.variable("QED-DFT BETA(XYY)"), 8, "BETA(XYY)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(XYZ)"), 8, "BETA(XYZ)")
+compare_values( 14.347456089883, psi4.variable("QED-DFT BETA(XZX)"), 8, "BETA(XZX)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(XZY)"), 8, "BETA(XZY)")
+compare_values( -0.000000000003, psi4.variable("QED-DFT BETA(XZZ)"), 8, "BETA(XZZ)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(YXX)"), 8, "BETA(YXX)")
+compare_values(  0.000000000093, psi4.variable("QED-DFT BETA(YXY)"), 8, "BETA(YXY)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(YXZ)"), 8, "BETA(YXZ)")
+compare_values(  0.000000000093, psi4.variable("QED-DFT BETA(YYX)"), 8, "BETA(YYX)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(YYY)"), 8, "BETA(YYY)")
+compare_values( -0.338555841999, psi4.variable("QED-DFT BETA(YYZ)"), 8, "BETA(YYZ)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(YZX)"), 8, "BETA(YZX)")
+compare_values( -0.338555841999, psi4.variable("QED-DFT BETA(YZY)"), 8, "BETA(YZY)")
+compare_values(  0.000000000000, psi4.variable("QED-DFT BETA(YZZ)"), 8, "BETA(YZZ)")
+compare_values( 15.086643887950, psi4.variable("QED-DFT BETA(ZXX)"), 8, "BETA(ZXX)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(ZXY)"), 8, "BETA(ZXY)")
+compare_values( -0.000000000003, psi4.variable("QED-DFT BETA(ZXZ)"), 8, "BETA(ZXZ)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(ZYX)"), 8, "BETA(ZYX)")
+compare_values(  0.846239150139, psi4.variable("QED-DFT BETA(ZYY)"), 8, "BETA(ZYY)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(ZYZ)"), 8, "BETA(ZYZ)")
+compare_values( -0.000000000003, psi4.variable("QED-DFT BETA(ZZX)"), 8, "BETA(ZZX)")
+compare_values( -0.000000000000, psi4.variable("QED-DFT BETA(ZZY)"), 8, "BETA(ZZY)")
+compare_values(  6.660814887013, psi4.variable("QED-DFT BETA(ZZZ)"), 8, "BETA(ZZZ)")
+
+set {
+    property "POCKELS"
+}
+energy('qed-dft')
+
+print('')
+print('    ==> POCKELS <==')
+print('')
+
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(XXX)"), 8, "BETA(XXX)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(XXY)"), 8, "BETA(XXY)")
+compare_values(15.086643887950, psi4.variable("QED-DFT BETA(XXZ)"), 8, "BETA(XXZ)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(XYX)"), 8, "BETA(XYX)")
+compare_values( 0.000000000093, psi4.variable("QED-DFT BETA(XYY)"), 8, "BETA(XYY)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(XYZ)"), 8, "BETA(XYZ)")
+compare_values(14.347456089883, psi4.variable("QED-DFT BETA(XZX)"), 8, "BETA(XZX)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(XZY)"), 8, "BETA(XZY)")
+compare_values(-0.000000000003, psi4.variable("QED-DFT BETA(XZZ)"), 8, "BETA(XZZ)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(YXX)"), 8, "BETA(YXX)")
+compare_values( 0.000000000093, psi4.variable("QED-DFT BETA(YXY)"), 8, "BETA(YXY)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(YXZ)"), 8, "BETA(YXZ)")
+compare_values( 0.000000000099, psi4.variable("QED-DFT BETA(YYX)"), 8, "BETA(YYX)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(YYY)"), 8, "BETA(YYY)")
+compare_values( 0.846239150139, psi4.variable("QED-DFT BETA(YYZ)"), 8, "BETA(YYZ)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(YZX)"), 8, "BETA(YZX)")
+compare_values(-0.338555841999, psi4.variable("QED-DFT BETA(YZY)"), 8, "BETA(YZY)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(YZZ)"), 8, "BETA(YZZ)")
+compare_values(14.347456089883, psi4.variable("QED-DFT BETA(ZXX)"), 8, "BETA(ZXX)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(ZXY)"), 8, "BETA(ZXY)")
+compare_values(-0.000000000003, psi4.variable("QED-DFT BETA(ZXZ)"), 8, "BETA(ZXZ)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(ZYX)"), 8, "BETA(ZYX)")
+compare_values(-0.338555841999, psi4.variable("QED-DFT BETA(ZYY)"), 8, "BETA(ZYY)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(ZYZ)"), 8, "BETA(ZYZ)")
+compare_values(-0.000000000003, psi4.variable("QED-DFT BETA(ZZX)"), 8, "BETA(ZZX)")
+compare_values( 0.000000000000, psi4.variable("QED-DFT BETA(ZZY)"), 8, "BETA(ZZY)")
+compare_values( 6.660814887013, psi4.variable("QED-DFT BETA(ZZZ)"), 8, "BETA(ZZZ)")

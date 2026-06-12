@@ -25,11 +25,13 @@
  */
 
 #include <psi4/psi4-dec.h>
+#include <psi4/physconst.h>
 #include <psi4/libpsi4util/PsiOutStream.h>
 #include <psi4/liboptions/liboptions.h>
 #include <psi4/libmints/wavefunction.h>
 #include <psi4/libpsio/psio.hpp>
 #include <psi4/libpsi4util/process.h>
+
 
 #include <v2rdm_casscf/v2rdm_solver.h>
 #include <v2rdm_doci/v2rdm_doci_solver.h>
@@ -343,9 +345,6 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION POLARITONIC SCF -*/
 
-        /*- do compute static polarizability / hyperpolarizability QED-HF and QED-DFT -*/
-        options.add_bool("COMPUTE_STATIC_RESPONSE", false);
-
         /*- functional for cavity QED-DFT -*/
         options.add_str("QED_DFT_FUNCTIONAL", "B3LYP");
 
@@ -393,6 +392,9 @@ int read_options(std::string name, Options& options)
 
         /*- number of roots -*/
         options.add_int("NUMBER_ROOTS", 5);
+
+        /*- response properties -*/
+        options.add_str("PROPERTY", "POLARIABILITY", "POLARIZABILITY SHG OR POCKELS");
 
         /*- SUBSECTION MCPDFT -*/
 
@@ -587,23 +589,90 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         std::shared_ptr<PolaritonicUKS> uks (new PolaritonicUKS(ref_wfn,options));
         double energy = uks->compute_energy();
 
-        if ( options.get_bool("COMPUTE_STATIC_RESPONSE") ) {
+        // response properties
+        if ( options["PROPERTY"].has_changed() ) {
+
+            int n_omega = 0;
+            std::vector<double> omega;
+            std::string units = "AU";
+
+            // grab the field freqs from input -- a few units are converted to E_h
+            int count = (int)options["OMEGA"].size();
+            if (count == 0) {  // Assume 0.0 E_h for field energy
+                n_omega = 1;
+                omega.push_back(0.0);
+            } else if (count == 1) {  // Assume E_h for field energy and read value
+                n_omega = 1;
+                omega.push_back(options["OMEGA"][0].to_double());
+            } else if (count >= 2) {
+                n_omega = count - 1;
+                units = options["OMEGA"][count - 1].to_string();
+                for (int i = 0; i < count-1; i++) {
+                    double tmp_omega = options["OMEGA"][i].to_double();
+
+                    if (units == "HZ" || units == "Hz" || units == "hz") {
+                        tmp_omega *= pc_h / pc_hartree2J;
+                    }else if (units == "AU" || units == "Au" || units == "au") { // do nothing
+                    }else if (units == "NM" || units == "nm") {
+                        tmp_omega = (pc_c * pc_h * 1e9) / (tmp_omega * pc_hartree2J);
+                    }else if (units == "EV" || units == "ev" || units == "eV") {
+                        tmp_omega /= pc_hartree2ev;
+                    }else {
+                        throw PsiException("Error in unit for input field frequencies, should be au, Hz, nm, or eV", __FILE__, __LINE__);
+                    }
+                    omega.push_back(tmp_omega);
+                                           
+                }
+            }
+
             std::shared_ptr<PolaritonicUTDDFT> utddft (new PolaritonicUTDDFT((std::shared_ptr<Wavefunction>)uks,options,ref_wfn));
-            if (options["OMEGA"].has_changed()){
-                //for (size_t i = 0; i < options["OMEGA"].size(); i++) {
-                //    utddft->compute_first_order_response_function(options["OMEGA"][i].to_double());
-                //}
-                std::vector<std::vector<double>> amps_0 = utddft->compute_first_order_response_function(options["OMEGA"][0].to_double());
-                std::vector<std::vector<double>> amps_pw = utddft->compute_first_order_response_function(options["OMEGA"][1].to_double());
-                std::vector<std::vector<double>> amps_mw;
-                std::vector<std::vector<double>> amps_mtw = utddft->compute_first_order_response_function(-2 * options["OMEGA"][1].to_double());
-                amps_mw.push_back(amps_pw[1]);
-                amps_mw.push_back(amps_pw[0]);
-                utddft->compute_hyperpolarizability(amps_0, amps_0, amps_0);
-                utddft->compute_hyperpolarizability(amps_0, amps_pw, amps_mw);
-                utddft->compute_hyperpolarizability(amps_mtw, amps_pw, amps_pw);
+
+            if ( options.get_str("PROPERTY") == "POLARIZABILITY" ) {
+                for (auto my_omega: omega) {
+                    if (fabs(my_omega) < 1e-14) {
+                        utddft->compute_static_responses();
+                    }else {
+                        std::vector<std::vector<double>> amps = utddft->compute_first_order_response(my_omega);
+                    }
+                }
+            }else if ( options.get_str("PROPERTY") == "SHG" ) {
+                for (auto my_omega: omega) {
+                    if (fabs(my_omega) < 1e-14) {
+                        utddft->compute_static_responses();
+                    }else {
+                        std::vector<std::vector<double>> amps_pw = utddft->compute_first_order_response(my_omega);
+                        std::vector<std::vector<double>> amps_mtw = utddft->compute_first_order_response(-2 * my_omega);
+                        utddft->compute_hyperpolarizability(amps_mtw, amps_pw, amps_pw);
+                    }
+                }
+            }else if ( options.get_str("PROPERTY") == "OR" ) {
+                for (auto my_omega: omega) {
+                    if (fabs(my_omega) < 1e-14) {
+                        utddft->compute_static_responses();
+                    }else {
+                        std::vector<std::vector<double>> amps_0 = utddft->compute_first_order_response(0.0);
+                        std::vector<std::vector<double>> amps_pw = utddft->compute_first_order_response(my_omega);
+                        std::vector<std::vector<double>> amps_mw;
+                        amps_mw.push_back(amps_pw[1]); 
+                        amps_mw.push_back(amps_pw[0]);
+                        utddft->compute_hyperpolarizability(amps_0, amps_pw, amps_mw);
+                    }
+                }
+            }else if ( options.get_str("PROPERTY") == "POCKELS" ) {
+                for (auto my_omega: omega) {
+                    if (fabs(my_omega) < 1e-14) {
+                        utddft->compute_static_responses();
+                    }else {
+                        std::vector<std::vector<double>> amps_0 = utddft->compute_first_order_response(0.0);
+                        std::vector<std::vector<double>> amps_pw = utddft->compute_first_order_response(my_omega);
+                        std::vector<std::vector<double>> amps_mw;
+                        amps_mw.push_back(amps_pw[1]); 
+                        amps_mw.push_back(amps_pw[0]);
+                        utddft->compute_hyperpolarizability(amps_mw, amps_pw, amps_0);
+                    }
+                }
             }else {
-                utddft->compute_static_responses();
+                throw PsiException("unsupported PROPERTY for polaritonic DFT",__FILE__,__LINE__);
             }
         }
 

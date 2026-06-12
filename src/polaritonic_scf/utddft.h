@@ -54,7 +54,7 @@ class PolaritonicUTDDFT: public PolaritonicHF {
     double compute_energy();
 
     void compute_static_responses();
-    std::vector<std::vector<double>> compute_first_order_response_function(double omega);
+    std::vector<std::vector<double>> compute_first_order_response(double omega);
 
     void compute_hyperpolarizability(std::vector<std::vector<double>>amps_wx, 
                                      std::vector<std::vector<double>>amps_wy,
