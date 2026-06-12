@@ -394,7 +394,7 @@ int read_options(std::string name, Options& options)
         options.add_int("NUMBER_ROOTS", 5);
 
         /*- response properties -*/
-        options.add_str("PROPERTY", "POLARIABILITY", "POLARIZABILITY SHG OR POCKELS");
+        options.add_str("PROPERTY", "POLARIABILITY", "POLARIZABILITY HYPERPOLARIZABILITY SHG OR POCKELS");
 
         /*- SUBSECTION MCPDFT -*/
 
