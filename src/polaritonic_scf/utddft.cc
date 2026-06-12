@@ -287,12 +287,10 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
 
     double * AB_X = (double*)malloc(3*2*nmo_*nmo_*sizeof(double));
     memset((void*)AB_X, '\0', 3*2*nmo_*nmo_ * sizeof(double));
-    double * AB_Y;
+    double * AB_Y = AB_X;
     if ( have_Y ) {
         AB_Y = (double*)malloc(3*2*nmo_*nmo_*sizeof(double));
         memset((void*)AB_Y, '\0', 3*2*nmo_*nmo_ * sizeof(double));
-    }else {
-        AB_Y = AB_X;
     }
 
     double * ea = epsilon_a_->pointer();
@@ -319,19 +317,15 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
     double *gm_ex = (double*)malloc(3*N*L*sizeof(double));
     memset((void*)gm_ex,'\0',3*N*L*sizeof(double));
 
-    double *gm_de;
+    double *gm_de = gm_ex;
     if ( have_Y ) {
         gm_de = (double*)malloc(3*N*L*sizeof(double));
         memset((void*)gm_de,'\0',3*N*L*sizeof(double));
-    }else {
-        gm_de = gm_ex;
     }
 
     double *sigma_m_r = (double*)malloc(3*L*sizeof(double));
-    double *sigma_m_l = (double*)malloc(3*L*sizeof(double));
 
     memset((void*)sigma_m_r,'\0',3*L*sizeof(double));
-    memset((void*)sigma_m_l,'\0',3*L*sizeof(double));
 
     double * alpha = (double*)malloc(9*sizeof(double));
     memset((void*)alpha, '\0', 9*sizeof(double));
@@ -426,7 +420,7 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
             }
 
             // photon part ... note the sigma vector is the same, regardless of Xp or Yp
-            build_sigma_m(N, L, &X[p*N], &Y[p*N], &X[p*N + (oa*va+ob*vb)], &sigma_m_r[p], &sigma_m_l[p]);
+            build_sigma_m(N, L, &X[p*N], &Y[p*N], &X[p*N + (oa*va+ob*vb)], &sigma_m_r[p]);
 
             X[p*N + (oa*va+ob*vb)] = -sigma_m_r[p] / (cavity_frequency_[2] + omega); 
             if ( have_Y ) {
@@ -488,7 +482,7 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
         }
 
         // photon part
-        build_sigma_m(N, L, &X[p*N], &Y[p*N], &X[p*N + (oa*va+ob*vb)], &sigma_m_r[p], &sigma_m_l[p]);
+        build_sigma_m(N, L, &X[p*N], &Y[p*N], &X[p*N + (oa*va+ob*vb)], &sigma_m_r[p]);
 
         X[p*N + (oa*va+ob*vb)] = - sigma_m_r[p] / (cavity_frequency_[2] + omega);
         Y[p*N + (oa*va+ob*vb)] = - sigma_m_r[p] / (cavity_frequency_[2] - omega);
@@ -532,7 +526,6 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
         free(gm_de);
     }
     free(sigma_m_r);
-    free(sigma_m_l);
     free(old_X_and_Y);
     free(X_and_Y_error);
 
@@ -1592,14 +1585,12 @@ void PolaritonicUTDDFT::build_sigma_generalized(int N, int maxdim, int L, double
     double *m = (double*)malloc(L*sizeof(double));
     double *gm = (double*)malloc(N*L*sizeof(double));
     double *sigma_m_h = (double*)malloc(L*sizeof(double));
-    double *sigma_m_s = (double*)malloc(L*sizeof(double));
     double *n = (double*)malloc(L*sizeof(double));
     double *gn = (double*)malloc(N*L*sizeof(double));
 
     memset((void*)m,'\0',L*sizeof(double));
     memset((void*)gm,'\0',N*L*sizeof(double));
     memset((void*)sigma_m_h,'\0',L*sizeof(double));
-    memset((void*)sigma_m_s,'\0',L*sizeof(double));
     memset((void*)n,'\0',L*sizeof(double));
     memset((void*)gn,'\0',N*L*sizeof(double));
 
@@ -1626,7 +1617,7 @@ void PolaritonicUTDDFT::build_sigma_generalized(int N, int maxdim, int L, double
     build_Au_Bu(N, L, y, Ay, By);
     build_gm(N, L, m, gm);
     build_gm(N, L, n, gn);
-    build_sigma_m(N, L, x, y, m, sigma_m_h, sigma_m_s); // sigma_m_s need to be overwritten
+    build_sigma_m(N, L, x, y, m, sigma_m_h);
 
     // x, y
     for (int i = 0; i < oa*va; i++) {
@@ -1664,7 +1655,6 @@ void PolaritonicUTDDFT::build_sigma_generalized(int N, int maxdim, int L, double
     free(By);
     free(m);
     free(sigma_m_h);
-    free(sigma_m_s);
     free(gm);
     free(n);
     free(gn);
@@ -2388,6 +2378,12 @@ void PolaritonicUTDDFT::build_Au_Bu_response(int N, double *u, double *ABu){
     free(tmpb_b);
 }
 
+
+/**
+ *
+ * build coupling part of electronic sigma vector 
+ *
+ */
 void PolaritonicUTDDFT::build_gm(int N, int L, double *m, double *gm) {
 
     if ( n_photon_states_ > 2 ) {
@@ -2434,7 +2430,12 @@ void PolaritonicUTDDFT::build_gm(int N, int L, double *m, double *gm) {
     }
 }
 
-void PolaritonicUTDDFT::build_sigma_m(int N, int L, double *x, double *y, double *m, double *sigma_m_r, double *sigma_m_l) {
+/**
+ *
+ * build photon sigma vector
+ *
+ */
+void PolaritonicUTDDFT::build_sigma_m(int N, int L, double *x, double *y, double *m, double *sigma_m_r) {
 
     if ( n_photon_states_ > 2 ) {
         throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
@@ -2461,7 +2462,6 @@ void PolaritonicUTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
 
         // |0,1> diagonal
         sigma_m_r[I] = 0.0;//cavity_frequency_[2] * m[I];
-        sigma_m_l[I] = 0.0;//cavity_frequency_[2] * m[I];
 
         // couple |0,1> to |ia,0> (alpha)
         for (int i = 0; i < oa; i++) {
@@ -2471,9 +2471,7 @@ void PolaritonicUTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
 
                 // <ia| H |0,1>
                 double factor = -coupling_factor_z * dz[i][a + oa + ob];
-                    
                 sigma_m_r[I] += factor * ( x[I*N + ia] + y[I*N + ia] );
-                sigma_m_l[I] += factor * ( x[I*N + ia] - y[I*N + ia] );
             }
         }
         // couple |0,1> to |ia,0> (beta)
@@ -2484,9 +2482,7 @@ void PolaritonicUTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
 
                 // <ia| H |0,1>
                 double factor = -coupling_factor_z * dz[i + oa][a + oa + ob + va];
-                    
                 sigma_m_r[I] += factor * ( x[I*N + ia + oa*va] + y[I*N + ia + oa*va] );
-                sigma_m_l[I] += factor * ( x[I*N + ia + oa*va] - y[I*N + ia + oa*va] );
             }
         }
     }

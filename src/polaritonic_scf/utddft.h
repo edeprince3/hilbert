@@ -68,7 +68,7 @@ class PolaritonicUTDDFT: public PolaritonicHF {
     void build_Au_Bu(int N, int L, double *u, double *Au, double *Bu);
     void build_Au_Bu_response(int N, double *u, double *ABu);
 
-    void build_sigma_m(int N, int L, double *x, double *y, double *m, double *sigma_m_r, double *sigma_m_l);
+    void build_sigma_m(int N, int L, double *x, double *y, double *m, double *sigma_m_r);
 
     void build_gm(int N, int L, double *m, double *gm);
 
