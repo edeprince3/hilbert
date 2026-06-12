@@ -637,6 +637,10 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
     std::vector<std::vector<double>>amps_wz,
     std::string type, double omega) {
 
+    if ( !is_hf_ ) {
+        throw PsiException("unsupported QED-DFT functional for hyperpolarizabilities. Use QED_DFT_FUNCTIONAL HF", __FILE__, __LINE__);
+    }
+
     // dimension of the problem
     int oa = nalpha_;
     int ob = nbeta_;
