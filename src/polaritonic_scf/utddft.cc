@@ -488,38 +488,6 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
         Y[p*N + (oa*va+ob*vb)] = - sigma_m[p] / (cavity_frequency_[2] - omega);
     }
 
-    outfile->Printf("\n");
-    outfile->Printf("    ==> Polarizability <==\n");
-    outfile->Printf("\n");
-    std::vector<std::string> dir {"X", "Y", "Z"};
-    for (int p = 0; p < 3; p++) {
-        for (int q = p; q < 3; q++) {
-            alpha[p*3 + q] = 0.0;
-            for (int i = 0; i < oa; i++) {
-                for (int a = 0; a < va; a++) {
-                    int ia = i * va + a;
-                    alpha[p*3 + q] += mua[p]->pointer()[i][a+oa] * X[q*N+ia];
-                    alpha[p*3 + q] += mua[p]->pointer()[i][a+oa] * Y[q*N+ia];
-                }
-            }
-            for (int i = 0; i < ob; i++) {
-                for (int a = 0; a < vb; a++) {
-                    int ia = oa*va + i * vb + a;
-                    alpha[p*3 + q] += mub[p]->pointer()[i][a+ob] * X[q*N+ia];
-                    alpha[p*3 + q] += mub[p]->pointer()[i][a+ob] * Y[q*N+ia];
-                }
-            }
-            outfile->Printf("    ALPHA(%s%s) %20.12lf\n", dir[p].c_str(), dir[q].c_str(), alpha[p*3 + q]);
-
-            // add polarizabilities to psi variables
-            std::string label = "QED-DFT ALPHA(";
-            label += dir[p] + dir[q] + ")";
-            std::transform(label.begin(), label.end(), label.begin(),
-                [](unsigned char c) { return std::toupper(c); });
-            Process::environment.globals[label] = alpha[p*3 + q];
-        }
-    }
-
     free(alpha);
     free(gm_ex);
     if ( have_Y ) {
@@ -543,6 +511,68 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
     }
 
     return ret_X_and_Y;
+}
+
+void PolaritonicUTDDFT::compute_polarizability(std::vector<double>X, std::vector<double>Y, double omega){
+
+    outfile->Printf("\n");
+    outfile->Printf("    ==> Polarizability <==\n");
+    outfile->Printf("\n");
+    outfile->Printf("    omega: %12.8lf\n", omega);
+    outfile->Printf("\n");
+    outfile->Printf("\n");
+
+    // dimension of the problem
+    int oa = nalpha_;
+    int ob = nbeta_;
+    int va = nso_ - oa;
+    int vb = nso_ - ob;
+
+    int N = 1*(oa*va+ob*vb) + 1;
+
+    // dipole integrals 
+    std::vector<std::shared_ptr<Matrix>> mua;
+    for (int i = 0; i < 3; i++) {                          
+        std::shared_ptr<Matrix> tmp = dipole_[i]->clone(); 
+        mua.push_back(tmp);                                
+        mua[i]->transform(Ca_);
+    }           
+                
+    std::vector<std::shared_ptr<Matrix>> mub;
+    for (int i = 0; i < 3; i++) {
+        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
+        mub.push_back(tmp);
+        mub[i]->transform(Cb_);
+    }
+
+    std::vector<std::string> dir {"X", "Y", "Z"};
+    for (int p = 0; p < 3; p++) {
+        for (int q = p; q < 3; q++) {
+            double alpha = 0.0;
+            for (int i = 0; i < oa; i++) {
+                for (int a = 0; a < va; a++) {
+                    int ia = i * va + a;
+                    alpha += mua[p]->pointer()[i][a+oa] * X[q*N+ia];
+                    alpha += mua[p]->pointer()[i][a+oa] * Y[q*N+ia];
+                }
+            }
+            for (int i = 0; i < ob; i++) {
+                for (int a = 0; a < vb; a++) {
+                    int ia = oa*va + i * vb + a;
+                    alpha += mub[p]->pointer()[i][a+ob] * X[q*N+ia];
+                    alpha += mub[p]->pointer()[i][a+ob] * Y[q*N+ia];
+                }
+            }
+            outfile->Printf("    ALPHA(%s%s) %20.12lf\n", dir[p].c_str(), dir[q].c_str(), alpha);
+
+            // add polarizabilities to psi variables
+            std::string label = "QED-DFT ALPHA(";
+            label += dir[p] + dir[q] + ")";
+            std::transform(label.begin(), label.end(), label.begin(),
+                [](unsigned char c) { return std::toupper(c); });
+            Process::environment.globals[label] = alpha;
+        }
+    }
 }
 
 void PolaritonicUTDDFT::compute_properties(){
@@ -583,17 +613,23 @@ void PolaritonicUTDDFT::compute_properties(){
     if ( options_.get_str("PROPERTY") == "POLARIZABILITY" ) {
         for (auto my_omega: omega) {
             std::vector<std::vector<double>> amps = compute_first_order_response(my_omega);
+            compute_polarizability(amps[0], amps[1], my_omega);
         }
     }else if ( options_.get_str("PROPERTY") == "HYPERPOLARIZABILITY" ) {
         for (auto my_omega: omega) {
+            if (fabs(my_omega) > 1e-14) {
+                throw PsiException("For frequency-dependent hyperpolarizabilities, use PROPERTY = SHG, OR, or POCKELS", __FILE__, __LINE__);
+            }
             std::vector<std::vector<double>> amps = compute_first_order_response(my_omega);
-            compute_hyperpolarizability(amps, amps, amps);
+            compute_polarizability(amps[0], amps[1], my_omega);
+            compute_hyperpolarizability(amps, amps, amps, "STATIC", my_omega);
         }
     }else if ( options_.get_str("PROPERTY") == "SHG" ) {
         for (auto my_omega: omega) {
             std::vector<std::vector<double>> amps_pw = compute_first_order_response(my_omega);
             std::vector<std::vector<double>> amps_mtw = compute_first_order_response(-2 * my_omega);
-            compute_hyperpolarizability(amps_mtw, amps_pw, amps_pw);
+            compute_polarizability(amps_pw[0], amps_pw[1], my_omega);
+            compute_hyperpolarizability(amps_mtw, amps_pw, amps_pw, "SHG", my_omega);
         }
     }else if ( options_.get_str("PROPERTY") == "OR" ) {
         for (auto my_omega: omega) {
@@ -602,7 +638,8 @@ void PolaritonicUTDDFT::compute_properties(){
             std::vector<std::vector<double>> amps_mw;
             amps_mw.push_back(amps_pw[1]);
             amps_mw.push_back(amps_pw[0]);
-            compute_hyperpolarizability(amps_0, amps_pw, amps_mw);
+            compute_polarizability(amps_pw[0], amps_pw[1], my_omega);
+            compute_hyperpolarizability(amps_0, amps_pw, amps_mw, "OR", my_omega);
         }
     }else if ( options_.get_str("PROPERTY") == "POCKELS" ) {
         for (auto my_omega: omega) {
@@ -611,7 +648,8 @@ void PolaritonicUTDDFT::compute_properties(){
             std::vector<std::vector<double>> amps_mw;
             amps_mw.push_back(amps_pw[1]);
             amps_mw.push_back(amps_pw[0]);
-            compute_hyperpolarizability(amps_mw, amps_pw, amps_0);
+            compute_polarizability(amps_pw[0], amps_pw[1], my_omega);
+            compute_hyperpolarizability(amps_mw, amps_pw, amps_0, "POCKELS", my_omega);
         }
     }else {
         throw PsiException("unsupported PROPERTY for polaritonic DFT",__FILE__,__LINE__);
@@ -622,7 +660,8 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
 
     std::vector<std::vector<double>>amps_wx, 
     std::vector<std::vector<double>>amps_wy, 
-    std::vector<std::vector<double>>amps_wz) {
+    std::vector<std::vector<double>>amps_wz,
+    std::string type, double omega) {
 
     // dimension of the problem
     int oa = nalpha_;
@@ -634,6 +673,9 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
 
     outfile->Printf("\n");
     outfile->Printf("    ==>  Hyperpolarizability <==\n");
+    outfile->Printf("\n");
+    outfile->Printf("    type:  %12s\n", type.c_str());
+    outfile->Printf("    omega: %12.8lf\n", omega);
     outfile->Printf("\n");
 
     // dipole integrals
