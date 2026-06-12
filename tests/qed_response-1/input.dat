@@ -46,7 +46,20 @@ set reference uks
 energy('qed-dft')
 
 print_variables()
+
+print('')
+print('    ==> ALPHA <==')
+print('')
+compare_values( 9.532777853490, psi4.variable("QED-DFT ALPHA(XX)"), 8, "ALPHA(XX)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT ALPHA(XY)"), 8, "ALPHA(XY)")
+compare_values(-0.000000000002, psi4.variable("QED-DFT ALPHA(XZ)"), 8, "ALPHA(XZ)")
+compare_values( 7.412366037850, psi4.variable("QED-DFT ALPHA(YY)"), 8, "ALPHA(YY)")
+compare_values( 0.000000000000, psi4.variable("QED-DFT ALPHA(YZ)"), 8, "ALPHA(YZ)")
+compare_values( 8.452179498148, psi4.variable("QED-DFT ALPHA(ZZ)"), 8, "ALPHA(ZZ)")
           
+print('')
+print('    ==> BETA <==')
+print('')
 compare_values(-0.000000000006, psi4.variable("QED-DFT BETA(XXX)"), 8, "BETA(XXX)")
 compare_values(-0.000000000000, psi4.variable("QED-DFT BETA(XXY)"), 8, "BETA(XXY)")
 compare_values(13.867469894813, psi4.variable("QED-DFT BETA(XXZ)"), 8, "BETA(XXZ)")

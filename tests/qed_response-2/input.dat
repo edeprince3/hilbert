@@ -22,7 +22,7 @@ set {
   cholesky_tolerance 1e-14
   ints_tolerance 0.0
   df_fitting_condition 1e-16
-  property "SHG"
+  property "POLARIZABILITY"
   omega [0.1]
 } 
 
@@ -43,6 +43,21 @@ set hilbert {
 }
 
 set reference uks 
+energy('qed-dft')
+
+print('')
+print('    ==> POLARIZABILITY <==')
+print('')
+compare_values( 9.765870349298, psi4.variable("QED-DFT ALPHA(XX)"), 8, "ALPHA(XX)")
+compare_values(-0.000000000000, psi4.variable("QED-DFT ALPHA(XY)"), 8, "ALPHA(XY)")
+compare_values(-0.000000000002, psi4.variable("QED-DFT ALPHA(XZ)"), 8, "ALPHA(XZ)")
+compare_values( 7.665892372965, psi4.variable("QED-DFT ALPHA(YY)"), 8, "ALPHA(YY)")
+compare_values( 0.000000000000, psi4.variable("QED-DFT ALPHA(YZ)"), 8, "ALPHA(YZ)")
+compare_values( 8.288304710289, psi4.variable("QED-DFT ALPHA(ZZ)"), 8, "ALPHA(ZZ)")
+
+set {
+    property "SHG"
+}
 energy('qed-dft')
 
 print('')
