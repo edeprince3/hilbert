@@ -306,19 +306,17 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
     }
 
     // photon parts
-    int L = 1;
+    double *gm_X = (double*)malloc(3*N*sizeof(double));
+    memset((void*)gm_X,'\0',3*N*sizeof(double));
 
-    double *gm_ex = (double*)malloc(3*N*L*sizeof(double));
-    memset((void*)gm_ex,'\0',3*N*L*sizeof(double));
-
-    double *gm_de = gm_ex;
+    double *gm_Y = gm_X;
     if ( have_Y ) {
-        gm_de = (double*)malloc(3*N*L*sizeof(double));
-        memset((void*)gm_de,'\0',3*N*L*sizeof(double));
+        gm_Y = (double*)malloc(3*N*sizeof(double));
+        memset((void*)gm_Y,'\0',3*N*sizeof(double));
     }
 
-    double *sigma_m = (double*)malloc(3*L*sizeof(double));
-    memset((void*)sigma_m,'\0',3*L*sizeof(double));
+    double *sigma_m = (double*)malloc(3*sizeof(double));
+    memset((void*)sigma_m,'\0',3*sizeof(double));
 
     std::shared_ptr<DIIS> diis (new DIIS(X_dim + Y_dim));
 
@@ -343,12 +341,12 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
         }
         for (int p = 0; p < 3; p++) {
 
-            build_Au_Bu_response(N, &X[p*N], &AB_X[p*2*nmo_*nmo_]);
-            build_gm(N, 1, &X[p*N + (oa*va+ob*vb)], &gm_ex[p*N]);
+            build_Au_Bu(N, 1, &X[p*N], &AB_X[p*2*nmo_*nmo_]);
+            build_gm(N, 1, &X[p*N + (oa*va+ob*vb)], &gm_X[p*N]);
 
             if ( have_Y ) {
-                build_Au_Bu_response(N, &Y[p*N], &AB_Y[p*2*nmo_*nmo_]);
-                build_gm(N, 1, &Y[p*N + (oa*va+ob*vb)], &gm_de[p*N]);
+                build_Au_Bu(N, 1, &Y[p*N], &AB_Y[p*2*nmo_*nmo_]);
+                build_gm(N, 1, &Y[p*N + (oa*va+ob*vb)], &gm_Y[p*N]);
             }
 
             // X, alpha
@@ -360,7 +358,7 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
                               + (1.0 - damp) * precon * (mua[p]->pointer()[i][a+oa] 
                                                        - AB_X[p*2*nmo_*nmo_ + i*nmo_+(a+oa)] 
                                                        - AB_Y[p*2*nmo_*nmo_ + (a+oa)*nmo_+i] 
-                                                       - gm_ex[p*N+ia] - gm_de[p*N+ia]);
+                                                       - gm_X[p*N+ia] - gm_Y[p*N+ia]);
                 }
             }
             // X, beta
@@ -372,7 +370,7 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
                               + (1.0 - damp) * precon * (mub[p]->pointer()[i][a+ob] 
                                                        - AB_X[p*2*nmo_*nmo_ + nmo_*nmo_ + i*nmo_+(a+ob)] 
                                                        - AB_Y[p*2*nmo_*nmo_ + nmo_*nmo_ + (a+ob)*nmo_+i] 
-                                                       - gm_ex[p*N+ia] - gm_de[p*N+ia]);
+                                                       - gm_X[p*N+ia] - gm_Y[p*N+ia]);
                 }
             }
             if ( have_Y ) {
@@ -385,7 +383,7 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
                                   + (1.0 - damp) * precon * (mua[p]->pointer()[i][a+oa] 
                                                            - AB_Y[p*2*nmo_*nmo_ + i*nmo_+(a+oa)] 
                                                            - AB_X[p*2*nmo_*nmo_ + (a+oa)*nmo_+i] 
-                                                           - gm_ex[p*N+ia] - gm_de[p*N+ia]);
+                                                           - gm_X[p*N+ia] - gm_Y[p*N+ia]);
                     }
                 }
                 // Y, beta
@@ -397,7 +395,7 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
                                   + (1.0 - damp) * precon * (mub[p]->pointer()[i][a+ob] 
                                                            - AB_Y[p*2*nmo_*nmo_ + nmo_*nmo_ + i*nmo_+(a+ob)] 
                                                            - AB_X[p*2*nmo_*nmo_ + nmo_*nmo_ + (a+ob)*nmo_+i] 
-                                                           - gm_ex[p*N+ia] - gm_de[p*N+ia]);
+                                                           - gm_X[p*N+ia] - gm_Y[p*N+ia]);
                     }
                 }
             }
@@ -411,7 +409,7 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
             }
 
             // photon part ... note the sigma vector is the same, regardless of Xp or Yp
-            build_sigma_m(N, L, &X[p*N], &Y[p*N], &X[p*N + (oa*va+ob*vb)], &sigma_m[p]);
+            build_sigma_m(N, 1, &X[p*N], &Y[p*N], &X[p*N + (oa*va+ob*vb)], &sigma_m[p]);
 
             X[p*N + (oa*va+ob*vb)] = -sigma_m[p] / (cavity_frequency_[2] + omega); 
             if ( have_Y ) {
@@ -451,21 +449,21 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
     outfile->Printf("\n");
     
     for (int p = 0; p < 3; p++) {
-        build_Au_Bu_response(N, &X[p*N], &AB_X[p*2*nmo_*nmo_]);
+        build_Au_Bu(N, 1, &X[p*N], &AB_X[p*2*nmo_*nmo_]);
         if ( have_Y ) {
-            build_Au_Bu_response(N, &Y[p*N], &AB_Y[p*2*nmo_*nmo_]);
+            build_Au_Bu(N, 1, &Y[p*N], &AB_Y[p*2*nmo_*nmo_]);
         }
 
         // photon part
-        build_sigma_m(N, L, &X[p*N], &Y[p*N], &X[p*N + (oa*va+ob*vb)], &sigma_m[p]);
+        build_sigma_m(N, 1, &X[p*N], &Y[p*N], &X[p*N + (oa*va+ob*vb)], &sigma_m[p]);
 
         X[p*N + (oa*va+ob*vb)] = - sigma_m[p] / (cavity_frequency_[2] + omega);
         Y[p*N + (oa*va+ob*vb)] = - sigma_m[p] / (cavity_frequency_[2] - omega);
     }
 
-    free(gm_ex);
+    free(gm_X);
     if ( have_Y ) {
-        free(gm_de);
+        free(gm_Y);
     }
     free(sigma_m);
     free(old_X_and_Y);
@@ -697,14 +695,14 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
 
     for (int p = 0; p < 3; p++) {
 
-        build_Au_Bu_response(N, &amps_wx[0].data()[p*N], &AX_wx[p*2*nmo_*nmo_]);
-        build_Au_Bu_response(N, &amps_wx[1].data()[p*N], &AY_wx[p*2*nmo_*nmo_]);
+        build_Au_Bu(N, 1, &amps_wx[0].data()[p*N], &AX_wx[p*2*nmo_*nmo_]);
+        build_Au_Bu(N, 1, &amps_wx[1].data()[p*N], &AY_wx[p*2*nmo_*nmo_]);
 
-        build_Au_Bu_response(N, &amps_wy[0].data()[p*N], &AX_wy[p*2*nmo_*nmo_]);
-        build_Au_Bu_response(N, &amps_wy[1].data()[p*N], &AY_wy[p*2*nmo_*nmo_]);
+        build_Au_Bu(N, 1, &amps_wy[0].data()[p*N], &AX_wy[p*2*nmo_*nmo_]);
+        build_Au_Bu(N, 1, &amps_wy[1].data()[p*N], &AY_wy[p*2*nmo_*nmo_]);
 
-        build_Au_Bu_response(N, &amps_wz[0].data()[p*N], &AX_wz[p*2*nmo_*nmo_]);
-        build_Au_Bu_response(N, &amps_wz[1].data()[p*N], &AY_wz[p*2*nmo_*nmo_]);
+        build_Au_Bu(N, 1, &amps_wz[0].data()[p*N], &AX_wz[p*2*nmo_*nmo_]);
+        build_Au_Bu(N, 1, &amps_wz[1].data()[p*N], &AY_wz[p*2*nmo_*nmo_]);
     }
 
     // add DSE contributions to the 3rd contraction of the 3rd derivative tensor against the amplitidues computed above 
@@ -1588,19 +1586,15 @@ void PolaritonicUTDDFT::build_sigma_generalized(int N, int maxdim, int L, double
     // sigmah_m =  gx + gy +  wm
     // sigmah_n =  gx + gy       +  wn
 
-    double * Ax = (double*)malloc(N*L*sizeof(double));
-    double * Bx = (double*)malloc(N*L*sizeof(double));
-    double * Ay = (double*)malloc(N*L*sizeof(double));
-    double * By = (double*)malloc(N*L*sizeof(double));
-    double * x  = (double*)malloc(N*L*sizeof(double));
-    double * y  = (double*)malloc(N*L*sizeof(double));
+    double * AB_X = (double*)malloc(2*nmo_*nmo_*L*sizeof(double));
+    double * AB_Y = (double*)malloc(2*nmo_*nmo_*L*sizeof(double));
+    double * X  = (double*)malloc(N*L*sizeof(double));
+    double * Y  = (double*)malloc(N*L*sizeof(double));
 
-    memset((void*)Ax,'\0',N*L*sizeof(double));
-    memset((void*)Bx,'\0',N*L*sizeof(double));
-    memset((void*)Ay,'\0',N*L*sizeof(double));
-    memset((void*)By,'\0',N*L*sizeof(double));
-    memset((void*)x, '\0',N*L*sizeof(double));
-    memset((void*)y, '\0',N*L*sizeof(double));
+    memset((void*)AB_X,'\0',2*nmo_*nmo_*L*sizeof(double));
+    memset((void*)AB_Y,'\0',2*nmo_*nmo_*L*sizeof(double));
+    memset((void*)X, '\0',N*L*sizeof(double));
+    memset((void*)Y, '\0',N*L*sizeof(double));
 
     double *m = (double*)malloc(L*sizeof(double));
     double *gm = (double*)malloc(N*L*sizeof(double));
@@ -1619,43 +1613,58 @@ void PolaritonicUTDDFT::build_sigma_generalized(int N, int maxdim, int L, double
     int ob = nbeta_;
     int vb = nso_ - ob;
 
+    double * ea = epsilon_a_->pointer();
+    double * eb = epsilon_b_->pointer();
+
     // unpack input vectors
     for (int I = 0; I < L; I++) {
         for (int j = 0; j < oa*va; j++) {
-            x[I*N+j] = Q[I][j];
-            y[I*N+j] = Q[I][j + oa*va];
+            X[I*N+j] = Q[I][j];
+            Y[I*N+j] = Q[I][j + oa*va];
         }
         for (int j = 0; j < ob*vb; j++) {
-            x[I*N + oa*va + j] = Q[I][2*oa*va + j];
-            y[I*N + oa*va + j] = Q[I][2*oa*va + j + ob*vb];
+            X[I*N + oa*va + j] = Q[I][2*oa*va + j];
+            Y[I*N + oa*va + j] = Q[I][2*oa*va + j + ob*vb];
         }
         m[I] = Q[I][2*(oa*va+ob*vb)];
         n[I] = Q[I][2*(oa*va+ob*vb)+1];
     }
 
-    build_Au_Bu(N, L, x, Ax, Bx);
-    build_Au_Bu(N, L, y, Ay, By);
+    build_Au_Bu(N, L, X, AB_X);
+    build_Au_Bu(N, L, Y, AB_Y);
     build_gm(N, L, m, gm);
     build_gm(N, L, n, gn);
-    build_sigma_m(N, L, x, y, m, sigma_m_h);
+    build_sigma_m(N, L, X, Y, m, sigma_m_h);
 
-    // x, y
-    for (int i = 0; i < oa*va; i++) {
-        for (int I = 0; I < L; I++) {
-            sigmah[i        ][I] =  Ax[I*N + i] + By[I*N + i] + gm[I*N + i] + gn[I*N + i];
-            sigmah[i + oa*va][I] =  Bx[I*N + i] + Ay[I*N + i] + gm[I*N + i] + gn[I*N + i];
+    for (int I = 0; I < L; I++) {
+        // X, Y
+        for (int i = 0; i < oa; i++) {
+            for (int a = 0; a < va; a++) {
+                int ia = i * va + a;
+                sigmah[ia        ][I] = AB_X[I*2*nmo_*nmo_ + i*nmo_+(a+oa)] + AB_Y[I*2*nmo_*nmo_ + (a+oa)*nmo_+i] + gm[I*N + ia] + gn[I*N + ia];
+                sigmah[ia + oa*va][I] = AB_Y[I*2*nmo_*nmo_ + i*nmo_+(a+oa)] + AB_X[I*2*nmo_*nmo_ + (a+oa)*nmo_+i] + gm[I*N + ia] + gn[I*N + ia];
 
-            sigmas[i        ][I] =  x[I*N + i];
-            sigmas[i + oa*va][I] = -y[I*N + i];
+                // orbital energy contributions are missing from build_Au_Bu function
+                sigmah[ia        ][I] += X[I*N + ia] * (ea[a+oa] - ea[i]);
+                sigmah[ia + oa*va][I] += Y[I*N + ia] * (ea[a+oa] - ea[i]);
+
+                sigmas[ia        ][I] =  X[I*N + ia];
+                sigmas[ia + oa*va][I] = -Y[I*N + ia];
+            }
         }
-    }
-    for (int i = 0; i < ob*vb; i++) {
-        for (int I = 0; I < L; I++) {
-            sigmah[2*oa*va + i        ][I] =  Ax[I*N + oa*va + i] + By[I*N + oa*va + i] + gm[I*N + oa*va + i] + gn[I*N + oa*va + i];
-            sigmah[2*oa*va + i + ob*vb][I] =  Bx[I*N + oa*va + i] + Ay[I*N + oa*va + i] + gm[I*N + oa*va + i] + gn[I*N + oa*va + i];
+        for (int i = 0; i < ob; i++) {
+            for (int a = 0; a < vb; a++) {
+                int ia = i * vb + a;
+                sigmah[2*oa*va + ia        ][I] =  AB_X[I*2*nmo_*nmo_ + nmo_*nmo_ + i*nmo_+(a+ob)] + AB_Y[I*2*nmo_*nmo_ + nmo_*nmo_ + (a+ob)*nmo_+i] + gm[I*N + oa*va + ia] + gn[I*N + oa*va + ia];
+                sigmah[2*oa*va + ia + ob*vb][I] =  AB_Y[I*2*nmo_*nmo_ + nmo_*nmo_ + i*nmo_+(a+ob)] + AB_X[I*2*nmo_*nmo_ + nmo_*nmo_ + (a+ob)*nmo_+i] + gm[I*N + oa*va + ia] + gn[I*N + oa*va + ia];
 
-            sigmas[2*oa*va + i        ][I] =  x[I*N + oa*va + i];
-            sigmas[2*oa*va + i + ob*vb][I] = -y[I*N + oa*va + i];
+                // orbital energy contributions are missing from build_Au_Bu function
+                sigmah[2*oa*va + ia        ][I] += X[I*N + oa*va + ia] * (eb[a+ob] - eb[i]);
+                sigmah[2*oa*va + ia + ob*vb][I] += Y[I*N + oa*va + ia] * (eb[a+ob] - eb[i]);
+
+                sigmas[2*oa*va + ia        ][I] =  X[I*N + oa*va + ia];
+                sigmas[2*oa*va + ia + ob*vb][I] = -Y[I*N + oa*va + ia];
+            }
         }
     }
     // m, n
@@ -1667,12 +1676,10 @@ void PolaritonicUTDDFT::build_sigma_generalized(int N, int maxdim, int L, double
         sigmas[2*(oa*va + ob*vb) + 1][I] = -n[I];
     }
 
-    free(x);
-    free(y);
-    free(Ax);
-    free(Bx);
-    free(Ay);
-    free(By);
+    free(X);
+    free(Y);
+    free(AB_X);
+    free(AB_Y);
     free(m);
     free(sigma_m_h);
     free(gm);
@@ -1688,18 +1695,19 @@ void PolaritonicUTDDFT::build_sigma_generalized(int N, int maxdim, int L, double
 // Yihan calls this TDDFT-JC
 // note that Au will contain contribution from m
 
-void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double *Bu){
+// note also that this function does not include the orbital energy contributions 
+// from the A matrix
+
+void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *ABu){
 
     if ( n_photon_states_ > 2 ) {
-        throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
+        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
 
     int oa = nalpha_;
     int ob = nbeta_;
     int va = nso_ - oa;
     int vb = nso_ - ob;
-
-    double * c = (double*)malloc(N*sizeof(double));
 
     double ** cap = Ca_->pointer();
     double ** cbp = Cb_->pointer();
@@ -1727,10 +1735,8 @@ void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
     // J/K-like contributions
     for (int I = 0; I < L; I++) {
 
-        // unpack a vector
-        for (int j = 0; j < N; j++) {
-            c[j] = u[I*N+j];
-        }
+        // point to current vector
+        double * c = &u[I*N];
 
         // push density matrices on JK object
         // we need density matrices for alpha as well as
@@ -1824,7 +1830,6 @@ void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
 
             Dx.push_back(Dx_b);
         }
-
     }
 
     // form J/K
@@ -1850,10 +1855,8 @@ void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
 
     for (int I = 0; I < L; I++) {
 
-        // unpack a vector
-        for (int j = 0; j < N; j++) {
-            c[j] = u[I*N+j];
-        }
+        // point to current vector
+        double * c = &u[I*N];
 
         // a <- a+b coulomb
         std::shared_ptr<Matrix> sa (new Matrix(jk_->J()[count]));
@@ -1900,40 +1903,13 @@ void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
         double ** sbp = sb->pointer();
 
         // alpha
-        for (int i = 0; i < oa; i++) {
-            for (int a = 0; a < va; a++) {
-                int ia = i * va + a;
+        C_DCOPY(nmo_*nmo_, &sap[0][0], 1, &ABu[I*2*nmo_*nmo_], 1);
 
-                Au[I*N+ia] = sap[i][a+oa];
-                Bu[I*N+ia] = sap[a+oa][i];
-            }
-        }
         // beta
-        for (int i = 0; i < ob; i++) {
-            for (int a = 0; a < vb; a++) {
-                int ia = i * vb + a;
-
-                Au[I*N+ia + oa*va] = sbp[i][a+ob];
-                Bu[I*N+ia + oa*va] = sbp[a+ob][i];
-            }
-        }
-
-        // singles diagonals (alpha)
-        for (int i = 0; i < oa; i++) {
-            for (int a = 0; a < va; a++) {
-                int ia = i * va + a;
-                Au[I*N+ia] += c[ia] * (ea[a+oa] - ea[i]);
-            }
-        }
-        // singles diagonals (beta)
-        for (int i = 0; i < ob; i++) {
-            for (int a = 0; a < vb; a++) {
-                int ia = i * vb + a;
-                Au[I*N+ia + oa*va] += c[ia + oa*va] * (eb[a+ob] - eb[i]);
-            }
-        }
+        C_DCOPY(nmo_*nmo_, &sbp[0][0], 1, &ABu[I*2*nmo_*nmo_ + nmo_*nmo_], 1);
 
         // dipole self energy (for singles)
+
         // J-like contribution from dipole self energy (alpha)
         double dipole_Ja = 0.0;
         for (int i = 0; i < oa; i++) {
@@ -2009,6 +1985,8 @@ void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
             }
         }
 
+        // ia and ai parts for second derivatives
+
         // alpha
         for (int i = 0; i < oa; i++) {
             for (int a = 0; a < va; a++) {
@@ -2026,11 +2004,11 @@ void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
                     dipole_Ka_B += tmpa_b[i*oa + j] * dz[a + oa + ob][j];
                 }
 
-                int ia = i * va + a;
+                int ia = I * 2 * nmo_ * nmo_ + i * nmo_ + (a + oa);
+                int ai = I * 2 * nmo_ * nmo_ + (a + oa) * nmo_ + i;
 
-                Au[I*N + ia] += lambda_z * lambda_z * (dipole_J_ia - dipole_Ka_A);
-                Bu[I*N + ia] += lambda_z * lambda_z * (dipole_J_ia - dipole_Ka_B);
-
+                ABu[ia] += lambda_z * lambda_z * (dipole_J_ia - dipole_Ka_A);
+                ABu[ai] += lambda_z * lambda_z * (dipole_J_ia - dipole_Ka_B);
             }
         }
         // beta
@@ -2050,348 +2028,14 @@ void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
                     dipole_Kb_B += tmpb_b[i*ob + j] * dz[a + oa + ob + va][j + oa];
                 }
 
-                int ia = i * vb + a;
+                int ia = I * 2 * nmo_ * nmo_ + i * nmo_ + (a + ob) + nmo_ * nmo_;
+                int ai = I * 2 * nmo_ * nmo_ + (a + ob) * nmo_ + i + nmo_ * nmo_;
 
-                Au[I*N + ia + oa*va] += lambda_z * lambda_z * (dipole_J_ia - dipole_Kb_A);
-                Bu[I*N + ia + oa*va] += lambda_z * lambda_z * (dipole_J_ia - dipole_Kb_B);
+                ABu[ia] += lambda_z * lambda_z * (dipole_J_ia - dipole_Kb_A);
+                ABu[ai] += lambda_z * lambda_z * (dipole_J_ia - dipole_Kb_B);
             }
         }
     }
-    free(tmpa_a);
-    free(tmpa_b);
-    free(tmpb_a);
-    free(tmpb_b);
-    free(c);
-}
-
-void PolaritonicUTDDFT::build_Au_Bu_response(int N, double *u, double *ABu){
-
-    if ( n_photon_states_ > 2 ) {
-        throw PsiException("qed-utddft only works for n_photon_states <= 2",__FILE__,__LINE__);
-    }
-
-    int oa = nalpha_;
-    int ob = nbeta_;
-    int va = nso_ - oa;
-    int vb = nso_ - ob;
-
-    double ** cap = Ca_->pointer();
-    double ** cbp = Cb_->pointer();
-
-    std::vector<SharedMatrix>& C_left  = jk_->C_left();
-    std::vector<SharedMatrix>& C_right = jk_->C_right();
-    C_left.clear();
-    C_right.clear();
-
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
-
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
-
-    double ** dx = Dipole_x_->pointer();
-    double ** dy = Dipole_y_->pointer();
-    double ** dz = Dipole_z_->pointer();
-
-    std::vector<std::shared_ptr<Matrix> > Vx;
-    std::vector<std::shared_ptr<Matrix> > Dx;
-
-    // J/K-like contributions
-
-    // push density matrices on JK object
-    // we need density matrices for alpha as well as
-    // alpha plus a photon
-
-    // Da(mu,nu) = ca(j,b) Ca(mu,j) Ca(nu,b) = Ca(mu,j) Ca'(nu,j)
-    // Ca'(nu,j) = ca(j,b) Ca(nu,b)
-
-    // etc.
-
-    // singles
-
-    // alpha
-    std::shared_ptr<Matrix> cra (new Matrix(Ca_) );
-    std::shared_ptr<Matrix> cla (new Matrix(Ca_) );
-
-    double ** clap = cla->pointer();
-    double ** crap = cra->pointer();
-
-    cra->zero();
-    cla->zero();
-
-    for (int mu = 0; mu < nso_; mu++) {
-        for (int i = 0; i < oa; i++) {
-
-            // left is plain orbitals
-            clap[mu][i] = cap[mu][i];
-
-            // right is modified orbitals
-            double dum = 0.0;
-            for (int a = 0; a < va; a++) {
-                int ia = i * va + a;
-                dum += cap[mu][a+oa] * u[ia];
-            }
-            crap[mu][i] = dum;
-
-        }
-    }
-
-    // push alpha orbitals onto JK object
-    C_left.push_back(cla);
-    C_right.push_back(cra);
-
-    // build pseudo densities for xc contribution
-    if (needs_xc_) {
-
-        auto Dx_a = linalg::doublet(cla, cra, false, true);
-
-        Vx.push_back(std::make_shared<Matrix>("Vax temp", Dx_a->rowspi(), Dx_a->colspi(), Dx_a->symmetry()));
-
-        Dx.push_back(Dx_a);
-    }
-
-    // beta
-    std::shared_ptr<Matrix> crb (new Matrix(Cb_) );
-    std::shared_ptr<Matrix> clb (new Matrix(Cb_) );
-
-    double ** clbp = clb->pointer();
-    double ** crbp = crb->pointer();
-
-    crb->zero();
-    clb->zero();
-
-    for (int mu = 0; mu < nso_; mu++) {
-        for (int i = 0; i < ob; i++) {
-
-            // left is plain orbitals
-            clbp[mu][i] = cbp[mu][i];
-
-            // right is modified orbitals
-            double dum = 0.0;
-            for (int a = 0; a < vb; a++) {
-                int ia = i * vb + a;
-                dum += cbp[mu][a+ob] * u[oa*va + ia];
-            }
-            crbp[mu][i] = dum;
-
-        }
-    }
-
-    // push beta orbitals onto JK object
-    C_left.push_back(clb);
-    C_right.push_back(crb);
-
-    // build pseudo densities for xc contribution
-    if (needs_xc_) {
-
-        auto Dx_b = linalg::doublet(clb, crb, false, true);
-
-        Vx.push_back(std::make_shared<Matrix>("Vbx temp", Dx_b->rowspi(), Dx_b->colspi(), Dx_b->symmetry()));
-
-        Dx.push_back(Dx_b);
-    }
-
-    // form J/K
-    jk_->compute();
-
-    // form xc contributions
-    if ( needs_xc_ ) {
-        potential_->compute_Vx(Dx, Vx);
-    }
-
-    // now, accumulate sigma vectors
-
-    // offset for j/k matrices
-    int count = 0;
-
-    double * ea = epsilon_a_->pointer();
-    double * eb = epsilon_b_->pointer();
-
-    double * tmpa_a = (double*)malloc(oa*va*sizeof(double));
-    double * tmpa_b = (double*)malloc(oa*oa*sizeof(double));
-    double * tmpb_a = (double*)malloc(ob*vb*sizeof(double));
-    double * tmpb_b = (double*)malloc(ob*ob*sizeof(double));
-
-    // a <- a+b coulomb
-    std::shared_ptr<Matrix> sa (new Matrix(jk_->J()[count]));
-    sa->add(jk_->J()[count+1]);
-
-    // b <- a+b coulomb
-    std::shared_ptr<Matrix> sb (new Matrix(jk_->J()[count]));
-    sb->add(jk_->J()[count+1]);
-
-    // xc?
-    // a <- a
-    // b <- b
-    if ( needs_xc_ ) {
-        sa->axpy(1.0, Vx[count]);
-        sb->axpy(1.0, Vx[count+1]);
-    }
-
-    // exact exchange?
-    // a <- a
-    // b <- b
-    if (is_x_hybrid_) {
-        sa->axpy(-x_alpha_,jk_->K()[count]);
-        sb->axpy(-x_alpha_,jk_->K()[count+1]);
-    }
-
-    // LRC functional?
-    // a <- a
-    // b <- b
-    if (is_x_lrc_) {
-        double beta = 1.0 - x_alpha_;
-        sa->axpy(-beta,jk_->wK()[count]);
-        sb->axpy(-beta,jk_->wK()[count+1]);
-    }
-
-    // update counter
-    count += 2;
-
-    // transform jk, e.g., j(a,i) = j(mu,nu) c(mu,a) c(nu,i)
-
-    sa->transform(Ca_);
-    sb->transform(Cb_);
-
-    double ** sap = sa->pointer();
-    double ** sbp = sb->pointer();
-
-    // alpha
-    C_DCOPY(nmo_*nmo_, &sap[0][0], 1, &ABu[0], 1);
-
-    // beta
-    C_DCOPY(nmo_*nmo_, &sbp[0][0], 1, &ABu[nmo_*nmo_], 1);
-
-    // dipole self energy (for singles)
-
-    // J-like contribution from dipole self energy (alpha)
-    double dipole_Ja = 0.0;
-    for (int i = 0; i < oa; i++) {
-        for (int a = 0; a < va; a++) {
-            int ia = i * va + a;
-            dipole_Ja += u[ia] * dz[i][a + oa + ob];
-        }
-    }
-    double dipole_Jb = 0.0;
-    for (int i = 0; i < ob; i++) {
-        for (int a = 0; a < vb; a++) {
-            int ia = i * vb + a;
-            dipole_Jb += u[ia + oa*va] * dz[i + oa][a + oa + ob + va];
-        }
-    }
-
-    // intermediate for K-like contribution from dipole self energy
-
-    // ignore if following QED-TDDFT outlined in J. Chem. Phys. 155, 064107 (2021)
-    memset((void*)tmpa_a,'\0',oa*va*sizeof(double));
-    memset((void*)tmpa_b,'\0',oa*oa*sizeof(double));
-    memset((void*)tmpb_a,'\0',ob*vb*sizeof(double));
-    memset((void*)tmpb_b,'\0',ob*ob*sizeof(double));
-
-    if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
-
-        // A term (alpha)
-        for (int i = 0; i < oa; i++) {
-            for (int a = 0; a < va; a++) {
-                double dum_a = 0.0;
-                for (int j = 0; j < oa; j++) {
-                    int ja = j * va + a;
-                    dum_a += u[ja] * dz[i][j];
-                }
-                tmpa_a[a*oa+i] = dum_a;
-            }
-        }
-
-        // A term (beta)
-        for (int i = 0; i < ob; i++) {
-            for (int a = 0; a < vb; a++) {
-                double dum_a = 0.0;
-                for (int j = 0; j < ob; j++) {
-                    int ja = j * vb + a;
-                    dum_a += u[ja + oa*va] * dz[i + oa][j + oa];
-                }
-                tmpb_a[a*ob+i] = dum_a;
-            }
-        }
-
-        // B term (alpha)
-        for (int i = 0; i < oa; i++) {
-            for (int j = 0; j < oa; j++) {
-                double dum_b = 0.0;
-                for (int b = 0; b < va; b++) {
-                    int jb = j * va + b;
-                    dum_b += u[jb] * dz[b + oa + ob][i];
-                }
-                tmpa_b[i*oa+j] = dum_b;
-            }
-        }
-
-        // B term (beta)
-        for (int i = 0; i < ob; i++) {
-            for (int j = 0; j < ob; j++) {
-                double dum_b = 0.0;
-                for (int b = 0; b < vb; b++) {
-                    int jb = j * vb + b;
-                    dum_b += u[jb + oa*va] * dz[b + oa + ob + va][i + oa];
-                }
-                tmpb_b[i*ob+j] = dum_b;
-            }
-        }
-    }
-
-    // ia and ai parts for second derivatives
-
-    // alpha
-    for (int i = 0; i < oa; i++) {
-        for (int a = 0; a < va; a++) {
-
-            double dipole_J_ia = (dipole_Ja + dipole_Jb) * dz[i][a + oa + ob];
-
-            // A term
-            double dipole_Ka_A = 0.0;
-            for (int b = 0; b < va; b++) {
-                dipole_Ka_A += tmpa_a[b*oa + i] * dz[a + oa + ob][b + oa + ob];
-            }
-            // B term
-            double dipole_Ka_B = 0.0;
-            for (int j = 0; j < oa; j++) {
-                dipole_Ka_B += tmpa_b[i*oa + j] * dz[a + oa + ob][j];
-            }
-
-            int ia = i * nmo_ + (a + oa);
-            int ai = (a + oa) * nmo_ + i;
-
-            ABu[ia] += lambda_z * lambda_z * (dipole_J_ia - dipole_Ka_A);
-            ABu[ai] += lambda_z * lambda_z * (dipole_J_ia - dipole_Ka_B);
-        }
-    }
-    // beta
-    for (int i = 0; i < ob; i++) {
-        for (int a = 0; a < vb; a++) {
-
-            double dipole_J_ia = (dipole_Ja + dipole_Jb) * dz[i + oa][a + oa + ob + va];
-
-            // A term
-            double dipole_Kb_A = 0.0;
-            for (int b = 0; b < vb; b++) {
-                dipole_Kb_A += tmpb_a[b*ob + i] * dz[a + oa + ob + va][b + oa + ob + va];
-            }
-            // B term
-            double dipole_Kb_B = 0.0;
-            for (int j = 0; j < ob; j++) {
-                dipole_Kb_B += tmpb_b[i*ob + j] * dz[a + oa + ob + va][j + oa];
-            }
-
-            int ia = i * nmo_ + (a + ob) + nmo_*nmo_;
-            int ai = (a + ob) * nmo_ + i + nmo_*nmo_;
-
-            ABu[ia] += lambda_z * lambda_z * (dipole_J_ia - dipole_Kb_A);
-            ABu[ai] += lambda_z * lambda_z * (dipole_J_ia - dipole_Kb_B);
-        }
-    }
-
     free(tmpa_a);
     free(tmpa_b);
     free(tmpb_a);

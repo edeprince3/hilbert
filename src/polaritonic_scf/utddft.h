@@ -68,8 +68,7 @@ class PolaritonicUTDDFT: public PolaritonicHF {
                                      std::vector<std::vector<double>>amps_wz,
                                      std::string type, double omega);
 
-    void build_Au_Bu(int N, int L, double *u, double *Au, double *Bu);
-    void build_Au_Bu_response(int N, double *u, double *ABu);
+    void build_Au_Bu(int N, int L, double *u, double *ABu);
 
     void build_sigma_m(int N, int L, double *x, double *y, double *m, double *sigma_m);
 
