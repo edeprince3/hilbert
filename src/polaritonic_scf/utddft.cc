@@ -207,6 +207,9 @@ void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
 
 std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response(double omega) {
 
+    double d_convergence = options_.get_double("D_CONVERGENCE");
+    int maxiter = options_.get_int("MAXITER");
+
     outfile->Printf("\n");
     outfile->Printf("\n");
     outfile->Printf( "        *******************************************************\n");
@@ -223,6 +226,8 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
     outfile->Printf("    No. alpha electrons:            %5i\n",nalpha_);
     outfile->Printf("    No. beta electrons:             %5i\n",nbeta_);
     outfile->Printf("    Omega:           %20.12lf\n",omega);
+    outfile->Printf("    d_convergence:             %10.3le\n",d_convergence);
+    outfile->Printf("    maxiter:                        %5i\n",maxiter);
     outfile->Printf("\n");
 
     if ( n_photon_states_ > 1 ) {
@@ -324,23 +329,20 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
     }
 
     double *sigma_m = (double*)malloc(3*L*sizeof(double));
-
     memset((void*)sigma_m,'\0',3*L*sizeof(double));
-
-    double * alpha = (double*)malloc(9*sizeof(double));
-    memset((void*)alpha, '\0', 9*sizeof(double));
 
     std::shared_ptr<DIIS> diis (new DIIS(X_dim + Y_dim));
 
     outfile->Printf("\n");
     outfile->Printf("    ==> First-Order Response Equations <==\n");
     outfile->Printf("\n");
-    outfile->Printf("        omega = %20.12lf\n", omega);
-    outfile->Printf("\n");
 
     int iter = 0;
     double err = 0.0;
-    int maxiter = options_.get_int("MAXITER");
+    outfile->Printf("    ");
+    outfile->Printf(" Iter ");
+    outfile->Printf("                dX/Y ");
+    outfile->Printf("\n");
     do {
         double damp = 0.5;
         if (iter > 10) {
@@ -426,22 +428,6 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
             if ( have_Y ) {
                 Y[p*N + (oa*va+ob*vb)] = -sigma_m[p] / (cavity_frequency_[2] - omega); 
             }
-            
-            alpha[p*3 + p] = 0.0;
-            for (int i = 0; i < oa; i++) {
-                for (int a = 0; a < va; a++) {
-                    int ia = i * va + a;
-                    alpha[p*3 + p] += mua[p]->pointer()[i][a+oa] * X[p*N+ia];
-                    alpha[p*3 + p] += mua[p]->pointer()[i][a+oa] * Y[p*N+ia];
-                }
-            }
-            for (int i = 0; i < ob; i++) {
-                for (int a = 0; a < vb; a++) {
-                    int ia = oa*va + i * vb + a;
-                    alpha[p*3 + p] += mub[p]->pointer()[i][a+ob] * X[p*N+ia];
-                    alpha[p*3 + p] += mub[p]->pointer()[i][a+ob] * Y[p*N+ia];
-                }
-            }
         }
 
         err = C_DDOT(N, X_error, 1, X_error, 1);
@@ -455,8 +441,8 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
         diis->WriteErrorVector(X_and_Y_error);
         diis->Extrapolate(X_and_Y);
 
-        outfile->Printf("%5i %20.12lf %20.12lf %20.12lf %20.12lf\n", iter, alpha[0*3+0], alpha[1*3+1], alpha[2*3+2], err);
-        if ( err < options_.get_double("D_CONVERGENCE") ) {
+        outfile->Printf("    %5i %20.12lf\n", iter, err);
+        if ( err < d_convergence ) {
             break;
         }
 
@@ -488,7 +474,6 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
         Y[p*N + (oa*va+ob*vb)] = - sigma_m[p] / (cavity_frequency_[2] - omega);
     }
 
-    free(alpha);
     free(gm_ex);
     if ( have_Y ) {
         free(gm_de);
