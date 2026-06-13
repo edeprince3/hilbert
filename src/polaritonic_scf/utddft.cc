@@ -599,29 +599,48 @@ void PolaritonicUTDDFT::compute_properties(){
     }else if ( options_.get_str("PROPERTY") == "SHG" ) {
         for (auto my_omega: omega) {
             std::vector<std::vector<double>> amps_pw = compute_first_order_response(my_omega);
-            std::vector<std::vector<double>> amps_mtw = compute_first_order_response(-2 * my_omega);
             compute_polarizability(amps_pw[0], amps_pw[1], my_omega);
+            std::vector<std::vector<double>> amps_mtw = compute_first_order_response(-2 * my_omega);
+            compute_polarizability(amps_mtw[0], amps_mtw[1], -2 * my_omega);
             compute_hyperpolarizability(amps_mtw, amps_pw, amps_pw, "SHG", my_omega);
         }
     }else if ( options_.get_str("PROPERTY") == "OR" ) {
         for (auto my_omega: omega) {
             std::vector<std::vector<double>> amps_0 = compute_first_order_response(0.0);
+            compute_polarizability(amps_0[0], amps_0[1], 0.0);
             std::vector<std::vector<double>> amps_pw = compute_first_order_response(my_omega);
-            std::vector<std::vector<double>> amps_mw;
-            amps_mw.push_back(amps_pw[1]);
-            amps_mw.push_back(amps_pw[0]);
             compute_polarizability(amps_pw[0], amps_pw[1], my_omega);
+            std::vector<std::vector<double>> amps_mw = {amps_pw[1], amps_pw[0]};
             compute_hyperpolarizability(amps_0, amps_pw, amps_mw, "OR", my_omega);
         }
     }else if ( options_.get_str("PROPERTY") == "POCKELS" ) {
         for (auto my_omega: omega) {
             std::vector<std::vector<double>> amps_0 = compute_first_order_response(0.0);
+            compute_polarizability(amps_0[0], amps_0[1], 0.0);
             std::vector<std::vector<double>> amps_pw = compute_first_order_response(my_omega);
-            std::vector<std::vector<double>> amps_mw;
-            amps_mw.push_back(amps_pw[1]);
-            amps_mw.push_back(amps_pw[0]);
             compute_polarizability(amps_pw[0], amps_pw[1], my_omega);
+            std::vector<std::vector<double>> amps_mw = {amps_pw[1], amps_pw[0]};
             compute_hyperpolarizability(amps_mw, amps_pw, amps_0, "POCKELS", my_omega);
+        }
+    }else if ( options_.get_str("PROPERTY") == "ALL" ) {
+        for (auto my_omega: omega) {
+            if (fabs(my_omega) < 1e-14) {
+                std::vector<std::vector<double>> amps = compute_first_order_response(my_omega);
+                compute_polarizability(amps[0], amps[1], my_omega);
+                compute_hyperpolarizability(amps, amps, amps, "STATIC", my_omega);
+            }else {
+                std::vector<std::vector<double>> amps_0 = compute_first_order_response(0.0);
+                compute_polarizability(amps_0[0], amps_0[1], 0.0);
+                std::vector<std::vector<double>> amps_pw = compute_first_order_response(my_omega);
+                compute_polarizability(amps_pw[0], amps_pw[1], my_omega);
+                std::vector<std::vector<double>> amps_mtw = compute_first_order_response(-2 * my_omega);
+                compute_polarizability(amps_mtw[0], amps_mtw[1], -2 * my_omega);
+                std::vector<std::vector<double>> amps_mw = {amps_pw[1], amps_pw[0]};
+
+                compute_hyperpolarizability(amps_0, amps_pw, amps_mw, "OR", my_omega);
+                compute_hyperpolarizability(amps_mw, amps_pw, amps_0, "POCKELS", my_omega);
+                compute_hyperpolarizability(amps_mtw, amps_pw, amps_pw, "SHG", my_omega);
+            }
         }
     }else {
         throw PsiException("unsupported PROPERTY for polaritonic DFT",__FILE__,__LINE__);
