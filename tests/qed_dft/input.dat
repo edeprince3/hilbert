@@ -62,7 +62,8 @@ set reference uks
 activate(mol2)
 set basis def2-tzvppd
 set hilbert {
-    rotate_polarization_axis "ZXY"
+    cavity_frequency         [0.0, $w, 0.0]
+    cavity_coupling_strength [0.0, $g, 0.0]
 }
 energy('qed-dft')
 
@@ -72,7 +73,8 @@ set reference uks
 activate(mol3)
 set basis def2-tzvppd
 set hilbert {
-    rotate_polarization_axis "YZX"
+    cavity_frequency         [$w, 0.0, 0.0]
+    cavity_coupling_strength [$g, 0.0, 0.0]
 }
 energy('qed-dft')
 

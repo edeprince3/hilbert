@@ -379,9 +379,6 @@ int read_options(std::string name, Options& options)
         /*- do relax orbitals in QED-SCF [unlike QED-TDDFT described in J. Chem. Phys. 155, 064107 (2021)?] -*/
         options.add_bool("QED_USE_RELAXED_ORBITALS", true);
 
-        /*- change cavity mode polarization by redefining x, y, and z -*/
-        options.add_str("ROTATE_POLARIZATION_AXIS", "XYZ", "XYZ YZX ZXY XZY YXZ ZYX");
-
         /*- residual norm -*/
         options.add_double("RESIDUAL_NORM",1.0e-5);
 

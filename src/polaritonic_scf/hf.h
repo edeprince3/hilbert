@@ -55,8 +55,6 @@ class PolaritonicHF: public Wavefunction {
         throw PsiException("compute_energy has not been implemented for this Polaritonic HF solver",__FILE__,__LINE__);
     }
 
-    void update_charge(int charge);
-
     /// nuclear repulsion energy
     double enuc_;
 
