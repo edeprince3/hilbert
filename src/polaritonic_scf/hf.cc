@@ -116,6 +116,28 @@ void PolaritonicHF::common_init() {
     initialize_cavity();
 }
 
+void PolaritonicHF::update_charge(int charge) {
+    // update electron count for anion
+    
+    molecule_->set_molecular_charge(molecule_->molecular_charge() + charge);
+    
+    // update spin count (keep nalpha_ >= nbeta_)
+    nalpha_ -= charge;
+    if (nalpha_ < nbeta_)
+        std::swap(nalpha_, nbeta_);
+    
+    same_a_b_dens_ = nalpha_ == nbeta_;
+    
+    // calculate new multiplicity
+    multiplicity_ = abs(nalpha_ - nbeta_) + 1;
+    
+    molecule_->set_multiplicity(multiplicity_);
+
+    // update geometry
+    molecule_->update_geometry();
+
+}
+
 std::shared_ptr<Matrix> PolaritonicHF::OrbitalGradient(std::shared_ptr<Matrix> D,
                                                        std::shared_ptr<Matrix> F,
                                                        std::shared_ptr<Matrix> Shalf) {
@@ -541,9 +563,9 @@ void PolaritonicHF::evaluate_dipole_variance() {
     outfile->Printf("\n");
     outfile->Printf("    ==> dipole integrals <== \n");
     outfile->Printf("\n");
-    outfile->Printf("    <mu_x> = %20.12lf\n",dipole_mo_x);
-    outfile->Printf("    <mu_y> = %20.12lf\n",dipole_mo_y);
-    outfile->Printf("    <mu_z> = %20.12lf\n",dipole_mo_z);
+    outfile->Printf("    <mu_x> = %20.12lf\n", dipole_mo_x);
+    outfile->Printf("    <mu_y> = %20.12lf\n", dipole_mo_y);
+    outfile->Printf("    <mu_z> = %20.12lf\n", dipole_mo_z);
     outfile->Printf("\n");
 
     double one_electron_xx = 0.0;
