@@ -61,23 +61,21 @@ set reference uhf
 en = energy('qed-ccsd') 
 
 ref = -76.234654403463
-compare_values(ref, en, 8, "UCCSD total energy (xyz)") # TEST
+compare_values(ref, en, 8, "UCCSD total energy (z-pol)") # TEST
 
 
 activate(mol2)
 set basis cc-pvdz
 set hilbert {
-    cavity_frequency         $w
     cavity_coupling_strength [0.0, $g, 0.0]
 }
 en = energy('qed-ccsd') 
-compare_values(ref, en, 8, "UCCSD total energy (zxy)") # TEST
+compare_values(ref, en, 8, "UCCSD total energy (y-pol)") # TEST
 
-activate(mol2)
+activate(mol3)
 set basis cc-pvdz
 set hilbert {
-    cavity_frequency         $w
-    cavity_coupling_strength [0.0, $g, 0.0]
+    cavity_coupling_strength [$g, 0.0, 0.0]
 }
 en = energy('qed-ccsd') 
-compare_values(ref, en, 8, "UCCSD total energy (yzx)") # TEST
+compare_values(ref, en, 8, "UCCSD total energy (x-pol)") # TEST

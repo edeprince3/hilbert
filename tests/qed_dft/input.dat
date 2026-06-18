@@ -56,26 +56,24 @@ activate(mol1)
 set basis def2-tzvppd
 energy('qed-dft')
 
-compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QED-DFT total energy (xyz)") # TEST
+compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QED-DFT total energy (z-pol)") # TEST
 
 set reference uks
 activate(mol2)
 set basis def2-tzvppd
 set hilbert {
-    cavity_frequency         $w
     cavity_coupling_strength [0.0, $g, 0.0]
 }
 energy('qed-dft')
 
-compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QED-DFT total energy (zxy)") # TEST
+compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QED-DFT total energy (y-pol)") # TEST
 
 set reference uks
 activate(mol3)
 set basis def2-tzvppd
 set hilbert {
-    cavity_frequency         $w
     cavity_coupling_strength [$g, 0.0, 0.0]
 }
 energy('qed-dft')
 
-compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QED-DFT total energy (yzx)") # TEST
+compare_values(ref_dft, variable("SCF TOTAL ENERGY"), 8, "QED-DFT total energy (x-pol)") # TEST
