@@ -25,11 +25,13 @@
  */
 
 #include <psi4/psi4-dec.h>
+#include <psi4/physconst.h>
 #include <psi4/libpsi4util/PsiOutStream.h>
 #include <psi4/liboptions/liboptions.h>
 #include <psi4/libmints/wavefunction.h>
 #include <psi4/libpsio/psio.hpp>
 #include <psi4/libpsi4util/process.h>
+
 
 #include <v2rdm_casscf/v2rdm_solver.h>
 #include <v2rdm_doci/v2rdm_doci_solver.h>
@@ -343,9 +345,6 @@ int read_options(std::string name, Options& options)
 
         /*- SUBSECTION POLARITONIC SCF -*/
 
-        /*- do compute static polarizability / hyperpolarizability QED-HF and QED-DFT -*/
-        options.add_bool("COMPUTE_STATIC_RESPONSE", false);
-
         /*- functional for cavity QED-DFT -*/
         options.add_str("QED_DFT_FUNCTIONAL", "B3LYP");
 
@@ -393,6 +392,9 @@ int read_options(std::string name, Options& options)
 
         /*- number of roots -*/
         options.add_int("NUMBER_ROOTS", 5);
+
+        /*- response properties -*/
+        options.add_str("PROPERTY", "POLARIZABILITY", "POLARIZABILITY HYPERPOLARIZABILITY SHG OR POCKELS ALL");
 
         /*- SUBSECTION MCPDFT -*/
 
@@ -587,9 +589,10 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         std::shared_ptr<PolaritonicUKS> uks (new PolaritonicUKS(ref_wfn,options));
         double energy = uks->compute_energy();
 
-        if ( options.get_bool("COMPUTE_STATIC_RESPONSE") ) {
+        // response properties
+        if ( options["PROPERTY"].has_changed() ) {
             std::shared_ptr<PolaritonicUTDDFT> utddft (new PolaritonicUTDDFT((std::shared_ptr<Wavefunction>)uks,options,ref_wfn));
-            utddft->compute_static_responses();
+            utddft->compute_properties();
         }
 
         return (std::shared_ptr<Wavefunction>)uks;
