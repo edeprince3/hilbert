@@ -169,12 +169,6 @@ void PolaritonicUCCSD::initialize_with_hubbard_hamiltonian() {
     if ( fabs(cavity_coupling_strength_[1]) > 1e-12 ) {
         throw PsiException("hubbard qed-cc codes currently only work with z-polarized modes",__FILE__,__LINE__);
     }   
-    if ( fabs(cavity_frequency_[0]) > 1e-12 ) {
-        throw PsiException("hubbard qed-cc codes currently only work with z-polarized modes",__FILE__,__LINE__);
-    }
-    if ( fabs(cavity_frequency_[1]) > 1e-12 ) {
-        throw PsiException("hubbard qed-cc codes currently only work with z-polarized modes",__FILE__,__LINE__);
-    }
 
     if ( ( options_.get_int("N_HUBBARD_SPINS") % 2 ) != 0 ) {
         throw PsiException("Hubbard model only works for even numbers of electrons currently.",__FILE__,__LINE__);
@@ -282,7 +276,7 @@ void PolaritonicUCCSD::initialize_with_hubbard_hamiltonian() {
     da_p[3][3] =  1.5;
 
     double ** ld = lambda_dressed_dipole_->pointer();
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_);
     for (size_t mu = 0; mu < nso_; mu++) {
         for (size_t nu = 0; nu < nso_; nu++) {
             ld[mu][nu]           = da_p[mu][nu] * lambda_z;
@@ -357,7 +351,7 @@ std::shared_ptr<Matrix> PolaritonicUCCSD::hubbard_hartree_fock() {
 
     double U = options_.get_double("HUBBARD_U");
 
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_);
 
     std::shared_ptr<Matrix> dip_a (new Matrix(nso_,nso_));
     double ** da_p = dip_a->pointer();
@@ -414,15 +408,15 @@ std::shared_ptr<Matrix> PolaritonicUCCSD::hubbard_hartree_fock() {
         std::shared_ptr<Matrix> cavity_H (new Matrix(n_photon_states_,n_photon_states_));
         double ** cavity_Hp = cavity_H->pointer();
         for (size_t A = 0; A < n_photon_states_; A++) {
-            cavity_Hp[A][A] = A * cavity_frequency_[2];
+            cavity_Hp[A][A] = A * cavity_frequency_;
         }
 
         // cavity dipole operator
         std::shared_ptr<Matrix> cavity_D (new Matrix(n_photon_states_,n_photon_states_));
         double ** cavity_Dp = cavity_D->pointer();
         for (int A=0; A<n_photon_states_-1; A++){
-            cavity_Dp[A+1][A] += cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
-            cavity_Dp[A][A+1] += cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
+            cavity_Dp[A+1][A] += cavity_frequency_ * cavity_coupling_strength_[2] * sqrt(A+1);
+            cavity_Dp[A][A+1] += cavity_frequency_ * cavity_coupling_strength_[2] * sqrt(A+1);
         }
 
         // cavity interaction
@@ -430,10 +424,10 @@ std::shared_ptr<Matrix> PolaritonicUCCSD::hubbard_hartree_fock() {
         double ** cavity_Ip = cavity_I->pointer();
         for (int A = 0; A<n_photon_states_; A++) {
             if (A < n_photon_states_ - 1) {
-                cavity_Ip[A][A+1] = -dipole * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
+                cavity_Ip[A][A+1] = -dipole * cavity_frequency_ * cavity_coupling_strength_[2] * sqrt(A+1);
             }
             if (A > 0) {
-                cavity_Ip[A][A-1] = -dipole * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A);
+                cavity_Ip[A][A-1] = -dipole * cavity_frequency_ * cavity_coupling_strength_[2] * sqrt(A);
             }
         }
 
@@ -449,7 +443,7 @@ std::shared_ptr<Matrix> PolaritonicUCCSD::hubbard_hartree_fock() {
         cavity_D->transform(eigvec);
 
         // add cavity interaction term to fock matrix
-        Fa->axpy(-cavity_Dp[0][0] * cavity_frequency_[2] * cavity_coupling_strength_[2],dip_a);
+        Fa->axpy(-cavity_Dp[0][0] * cavity_frequency_ * cavity_coupling_strength_[2],dip_a);
 
         // diagonalize F' to obtain C'
         Fa->diagonalize(Ca,eps,ascending);
@@ -459,7 +453,7 @@ std::shared_ptr<Matrix> PolaritonicUCCSD::hubbard_hartree_fock() {
 
         energy = 0.0;
         energy += Da->vector_dot(Ha);
-        energy += -2.0 * cavity_Dp[0][0] * cavity_frequency_[2] * cavity_coupling_strength_[2] * Da->vector_dot(dip_a);
+        energy += -2.0 * cavity_Dp[0][0] * cavity_frequency_ * cavity_coupling_strength_[2] * Da->vector_dot(dip_a);
         energy += Da->vector_dot(Fa);
 
         // dele
@@ -684,7 +678,7 @@ void PolaritonicUCCSD::initialize_with_molecular_hamiltonian() {
     lambda_dressed_dipole_->zero();
     double ** ld = lambda_dressed_dipole_->pointer();
     for (size_t xyz = 0; xyz < 3; xyz++) {
-        double lambda = cavity_coupling_strength_[xyz] * sqrt(2.0 * cavity_frequency_[xyz]);
+        double lambda = cavity_coupling_strength_[xyz] * sqrt(2.0 * cavity_frequency_);
         for (size_t mu = 0; mu < nso_; mu++) {
             for (size_t nu = 0; nu < nso_; nu++) {
                 ld[mu][nu]           += lambda * dipole_[xyz]->pointer()[mu][nu];
@@ -830,7 +824,7 @@ double PolaritonicUCCSD::t1_transformation_hubbard_hamiltonian(std::shared_ptr<M
 
     double ** ld = lambda_dressed_dipole_->pointer();
     lambda_dressed_dipole_->zero();
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_);
     for (size_t mu = 0; mu < nso_; mu++) {
         for (size_t nu = 0; nu < nso_; nu++) {
             ld[mu][nu]           = lambda_z * da_p[mu][nu];
@@ -1014,7 +1008,7 @@ double PolaritonicUCCSD::t1_transformation_molecular_hamiltonian(std::shared_ptr
     lambda_dressed_dipole_->zero();
     double ** ld = lambda_dressed_dipole_->pointer();
     for (size_t xyz = 0; xyz < 3; xyz++) {
-        double lambda = cavity_coupling_strength_[xyz] * sqrt(2.0 * cavity_frequency_[xyz]);
+        double lambda = cavity_coupling_strength_[xyz] * sqrt(2.0 * cavity_frequency_);
         for (size_t mu = 0; mu < nso_; mu++) {
             for (size_t nu = 0; nu < nso_; nu++) {
                 ld[mu][nu]           += lambda * dipole_[xyz]->pointer()[mu][nu];
@@ -1659,7 +1653,7 @@ void PolaritonicUCCSD::residual_u1() {
     memset((void*)ru1_,'\0',o_*v_*sizeof(double));
 
     std::shared_ptr<Matrix> dip (new Matrix(lambda_dressed_dipole_));
-    dip->scale(sqrt(0.5 * cavity_frequency_[2]));
+    dip->scale(sqrt(0.5 * cavity_frequency_));
     double ** dp = dip->pointer();
 
     double ** fp = F_->pointer();
@@ -1673,7 +1667,7 @@ void PolaritonicUCCSD::residual_u1() {
     }
     // + 1.00000 u1(e,m) w0
     // TODO: generalize for x,y,z
-    double w0 = cavity_frequency_[2];
+    double w0 = cavity_frequency_;
     C_DAXPY(o_*v_,w0,u1_,1,ru1_,1);
 
     // - 1.00000 F(i,m) u1(e,i)
@@ -2118,13 +2112,13 @@ void PolaritonicUCCSD::residual_u2() {
 
     // + 1.00000 u2(e,f,m,n) w0
     // TODO: generalize for x,y,z
-    double w0 = cavity_frequency_[2];
+    double w0 = cavity_frequency_;
     C_DAXPY(o_*o_*v_*v_,w0,u2_,1,ru2_,1);
 
     double ** fp = F_->pointer();
 
     std::shared_ptr<Matrix> dip (new Matrix(lambda_dressed_dipole_));
-    dip->scale(sqrt(0.5 * cavity_frequency_[2]));
+    dip->scale(sqrt(0.5 * cavity_frequency_));
     double ** dp = dip->pointer();
 
     // + F(i,m) u2(e,f,n,i)
@@ -3726,13 +3720,13 @@ void PolaritonicUCCSD::residual_u2() {
 void PolaritonicUCCSD::residual_u0() {
 
     // TODO: generalize for x,y,z
-    double w0 = cavity_frequency_[2];
+    double w0 = cavity_frequency_;
     double r0 = u0_[0] * w0;
 
     // - d+(i,i) 
 
     std::shared_ptr<Matrix> dip (new Matrix(lambda_dressed_dipole_));
-    dip->scale(sqrt(0.5 * cavity_frequency_[2]));
+    dip->scale(sqrt(0.5 * cavity_frequency_));
     double ** dp = dip->pointer();
 
     for (size_t i = 0; i < o_; i++) {
@@ -3741,9 +3735,9 @@ void PolaritonicUCCSD::residual_u0() {
 
     // molecular hamiltonian treated in coherent state basis .... TODO ... generalize for x, y, z
     if ( !is_hubbard_ ) {
-        double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-        double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-        double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+        double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+        double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+        double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
         if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
             // + 1.00000 b+
             r0 += coupling_factor_x * e_dip_x_;
@@ -4018,7 +4012,7 @@ void PolaritonicUCCSD::residual_t1() {
     // cavity terms:
 
     std::shared_ptr<Matrix> dip (new Matrix(lambda_dressed_dipole_));
-    dip->scale(sqrt(0.5 * cavity_frequency_[2]));
+    dip->scale(sqrt(0.5 * cavity_frequency_));
     double ** dp = dip->pointer();
 
     if ( include_u0_ ) {
@@ -4058,9 +4052,9 @@ void PolaritonicUCCSD::residual_t1() {
 
         // molecular hamiltonian treated in coherent state basis
         if ( !is_hubbard_ ) {
-            double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-            double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-            double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+            double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+            double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+            double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
             if ( options_.get_bool("QED_USE_RELAXED_ORBITALS")) {
                 // + 1.00000 u1(e,m) b- 
                 dii += coupling_factor_x * e_dip_x_;
@@ -4473,7 +4467,7 @@ void PolaritonicUCCSD::residual_t2() {
     if ( include_u1_ ) {
 
         std::shared_ptr<Matrix> dip (new Matrix(lambda_dressed_dipole_));
-        dip->scale(sqrt(0.5 * cavity_frequency_[2]));
+        dip->scale(sqrt(0.5 * cavity_frequency_));
         double ** dp = dip->pointer();
 
         // + d-(e,n) u1(f,m)
@@ -4592,7 +4586,7 @@ void PolaritonicUCCSD::residual_t2() {
     if ( include_u2_ ) {
 
         std::shared_ptr<Matrix> dip (new Matrix(lambda_dressed_dipole_));
-        dip->scale(sqrt(0.5 * cavity_frequency_[2]));
+        dip->scale(sqrt(0.5 * cavity_frequency_));
         double ** dp = dip->pointer();
 
         // - d-(i,i) u2(e,f,m,n)
@@ -4602,9 +4596,9 @@ void PolaritonicUCCSD::residual_t2() {
         }
         // molecular hamiltonian treated in coherent state basis
         if ( !is_hubbard_ ) {
-            double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-            double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-            double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+            double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+            double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+            double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
             if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
                 // + u2(e,f,m,n) b- 
                 dii += coupling_factor_x * e_dip_x_;
@@ -4663,7 +4657,7 @@ void PolaritonicUCCSD::residual_t2() {
     if ( include_u0_ ) {
 
         std::shared_ptr<Matrix> dip (new Matrix(lambda_dressed_dipole_));
-        dip->scale(sqrt(0.5 * cavity_frequency_[2]));
+        dip->scale(sqrt(0.5 * cavity_frequency_));
         double ** dp = dip->pointer();
 
         // + u0 P(m,n) d-(i,n) t2(e,f,m,i)
@@ -4756,7 +4750,7 @@ double PolaritonicUCCSD::update_amplitudes() {
     }
     if ( include_u1_ ) {
         // u1
-        double w0 = cavity_frequency_[2];
+        double w0 = cavity_frequency_;
         for (size_t a = 0; a < v_; a++) {
             double da = epsilon_[a+o_];
             for (size_t i = 0; i < o_; i++) {
@@ -4773,7 +4767,7 @@ double PolaritonicUCCSD::update_amplitudes() {
         // du0 = u0(k+1) - u(k) = -ru0 / w0 - u0(k)
 
         // TODO: generalize for x,y,z
-        double w0 = cavity_frequency_[2];
+        double w0 = cavity_frequency_;
         //ru0_[0] = -ru0_[0] / w0 - u0_[0];
         ru0_[0] /= -w0;
 
@@ -4825,7 +4819,7 @@ double PolaritonicUCCSD::correlation_energy() {
     if ( include_u0_ ) {
 
         std::shared_ptr<Matrix> dip (new Matrix(lambda_dressed_dipole_));
-        dip->scale(sqrt(0.5 * cavity_frequency_[2]));
+        dip->scale(sqrt(0.5 * cavity_frequency_));
         double ** dp = dip->pointer();
 
         // - 1.00000 d-(i,i) u0 
@@ -4835,9 +4829,9 @@ double PolaritonicUCCSD::correlation_energy() {
 
         // molecular hamiltonian treated in coherent state basis
         if ( !is_hubbard_ ) {
-            double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-            double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-            double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+            double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+            double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+            double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
             if ( options_.get_bool("QED_USE_RELAXED_ORBITALS") ) {
                 // + 1.00000 u0 b- 
                 ec += u0_[0] * coupling_factor_x * e_dip_x_;
@@ -4856,7 +4850,7 @@ double PolaritonicUCCSD::correlation_energy() {
     if ( include_u1_ ) {
 
         std::shared_ptr<Matrix> dip (new Matrix(lambda_dressed_dipole_));
-        dip->scale(sqrt(0.5 * cavity_frequency_[2]));
+        dip->scale(sqrt(0.5 * cavity_frequency_));
         double ** dp = dip->pointer();
 
         // - 1.00000 d-(i,a) u1(a,i) 

@@ -49,7 +49,7 @@ def init_cc_cavity(name, **kwargs):
     # check if coupling strength is zero
     if np.allclose(psi4.core.get_option('HILBERT', 'CAVITY_COUPLING_STRENGTH'), 0.0):
         psi4.core.set_local_option('HILBERT', 'QED_CC_TYPE', 'CCSD-00')
-        psi4.core.set_local_option('HILBERT', 'CAVITY_FREQUENCY', [0.0, 0.0, 1000.0])
+        psi4.core.set_local_option('HILBERT', 'CAVITY_FREQUENCY', 1000.0)
 
     # determine if using eom-cc or ground-state CC
     if 'eom' in name:
@@ -306,7 +306,7 @@ def run_qed_scf_gradient(name, **kwargs):
     # test exchange energy from dressed RDM
     g = psi4.core.get_option("HILBERT","CAVITY_COUPLING_STRENGTH")
     w = psi4.core.get_option("HILBERT","CAVITY_FREQUENCY")
-    lambda_z = g[2] * np.sqrt(2.0 * w[2])
+    lambda_z = g[2] * np.sqrt(2.0 * w)
 
     en  = 0.5 * lambda_z * lambda_z * np.einsum('pq,pq',tmpa,mu_z)
     en += 0.5 * lambda_z * lambda_z * np.einsum('pq,pq',tmpb,mu_z)

@@ -358,7 +358,7 @@ int read_options(std::string name, Options& options)
         options.add_bool("USE_QUADRUPOLE_INTEGRALS", true);
 
         /*- cavity excitation energy for the modes along the x, y and z axis (a.u.) -*/
-        options.add("CAVITY_FREQUENCY",new ArrayType());
+        options.add_double("CAVITY_FREQUENCY", 1.0);
 
         /*- cavity coupling strength (a.u.) -*/
         options.add("CAVITY_COUPLING_STRENGTH",new ArrayType());

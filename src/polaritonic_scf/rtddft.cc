@@ -168,13 +168,9 @@ double PolaritonicRTDDFT::compute_energy() {
     int o = nalpha_;
     int v = nso_ - nalpha_;
 
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
-
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
 
     double ** dx = dipole_[0]->pointer();
     double ** dy = dipole_[1]->pointer();
@@ -183,7 +179,7 @@ double PolaritonicRTDDFT::compute_energy() {
     std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
     HCavity_z->zero();
     if ( n_photon_states_ > 1 ) {
-        HCavity_z->pointer()[1][1] = cavity_frequency_[2];
+        HCavity_z->pointer()[1][1] = cavity_frequency_;
     }
     if ( n_photon_states_ > 2 ) {
         throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
@@ -467,10 +463,10 @@ void PolaritonicRTDDFT::build_sigma_generalized(int N, int maxdim, int L, double
     }
     // m, n
     for (int I = 0; I < L; I++) {
-        sigmah[2*o*v  ][I] =  sigma_m[I] + cavity_frequency_[2] * m[I];
+        sigmah[2*o*v  ][I] =  sigma_m[I] + cavity_frequency_ * m[I];
         sigmas[2*o*v  ][I] =  m[I]; 
 
-        sigmah[2*o*v+1][I] =  sigma_m[I] + cavity_frequency_[2] * n[I]; 
+        sigmah[2*o*v+1][I] =  sigma_m[I] + cavity_frequency_ * n[I]; 
         sigmas[2*o*v+1][I] = -n[I];
     }
 
@@ -513,13 +509,13 @@ void PolaritonicRTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
     C_left.clear();
     C_right.clear();
 
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
 
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_);
+    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_);
 
     double ** dx = dipole_[0]->pointer();
     double ** dy = dipole_[1]->pointer();
@@ -760,13 +756,9 @@ void PolaritonicRTDDFT::build_gm(int N, int L, double *m, double *gm) {
     int o = nalpha_;
     int v = nso_ - nalpha_;
 
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
-
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
 
     double ** dx = dipole_[0]->pointer();
     double ** dy = dipole_[1]->pointer();
@@ -800,13 +792,9 @@ void PolaritonicRTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
     int o = nalpha_;
     int v = nso_ - nalpha_;
 
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
-
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
 
     double ** dx = dipole_[0]->pointer();
     double ** dy = dipole_[1]->pointer();
@@ -815,7 +803,7 @@ void PolaritonicRTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
     for (int I = 0; I < L; I++) {
 
         // |0,1> diagonal
-        sigma_m[I] = 0.0;//cavity_frequency_[2] * m[I];
+        sigma_m[I] = 0.0; //cavity_frequency_ * m[I];
 
         // couple |0,1> to |ia,0>
 
@@ -858,8 +846,8 @@ double * PolaritonicRTDDFT::build_hamiltonian_diagonals(){
         throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
     int off = 2 * o * v;
-    H[off  ] = cavity_frequency_[2];
-    H[off+1] = cavity_frequency_[2];
+    H[off  ] = cavity_frequency_;
+    H[off+1] = cavity_frequency_;
 
     //for (int i = 0; i < dim; i++) {
     //    H[i] *= H[i];

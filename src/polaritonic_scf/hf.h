@@ -64,7 +64,7 @@ class PolaritonicHF: public Wavefunction {
     double average_electric_dipole_self_energy_;
 
     /// parameters for the cavity
-    double * cavity_frequency_;
+    double cavity_frequency_;
     double * cavity_coupling_strength_;
     std::string axis_order_;
 

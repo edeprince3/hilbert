@@ -214,13 +214,13 @@ double PolaritonicRCIS::compute_energy() {
     double ** hp = ham->pointer();
     double * ep = epsilon_a_->pointer();
 
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
 
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_);
+    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_);
 
     double ** dx = dipole_[0]->pointer();
     double ** dy = dipole_[1]->pointer();
@@ -229,7 +229,7 @@ double PolaritonicRCIS::compute_energy() {
     std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
     HCavity_z->zero();
     if ( n_photon_states_ > 1 ) {
-        HCavity_z->pointer()[1][1] = cavity_frequency_[2];
+        HCavity_z->pointer()[1][1] = cavity_frequency_;
     }
     if ( n_photon_states_ > 2 ) {
         throw PsiException("polaritonic CIS does not work with N_PHOTON_STATES > 2",__FILE__,__LINE__);

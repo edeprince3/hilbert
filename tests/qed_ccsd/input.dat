@@ -47,7 +47,7 @@ g = 0.05 / np.sqrt(2.0 * w)
 
 set hilbert {
   maxiter 500
-  cavity_frequency         [0.0, 0.0, $w]
+  cavity_frequency         $w
   cavity_coupling_strength [0.0, 0.0, $g]
 
   qed_cc_include_u0 true
@@ -67,7 +67,7 @@ compare_values(ref, en, 8, "UCCSD total energy (xyz)") # TEST
 activate(mol2)
 set basis cc-pvdz
 set hilbert {
-    cavity_frequency         [$w, $w, $w]
+    cavity_frequency         $w
     cavity_coupling_strength [0.0, $g, 0.0]
 }
 en = energy('qed-ccsd') 
@@ -76,7 +76,7 @@ compare_values(ref, en, 8, "UCCSD total energy (zxy)") # TEST
 activate(mol2)
 set basis cc-pvdz
 set hilbert {
-    cavity_frequency         [$w, $w, $w]
+    cavity_frequency         $w
     cavity_coupling_strength [0.0, $g, 0.0]
 }
 en = energy('qed-ccsd') 

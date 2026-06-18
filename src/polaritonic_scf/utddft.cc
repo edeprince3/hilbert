@@ -223,18 +223,14 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
         update_cavity_terms();
     }
 
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
-
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
 
     std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
     HCavity_z->zero();
     if ( n_photon_states_ > 1 ) {
-        HCavity_z->pointer()[1][1] = cavity_frequency_[2];
+        HCavity_z->pointer()[1][1] = cavity_frequency_;
     }
     if ( n_photon_states_ > 2 ) {
         throw PsiException("polaritonic response properties do not work with N_PHOTON_STATES > 2",__FILE__,__LINE__);
@@ -411,9 +407,9 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
             // photon part ... note the sigma vector is the same, regardless of Xp or Yp
             build_sigma_m(N, 1, &X[p*N], &Y[p*N], &X[p*N + (oa*va+ob*vb)], &sigma_m[p]);
 
-            X[p*N + (oa*va+ob*vb)] = -sigma_m[p] / (cavity_frequency_[2] + omega); 
+            X[p*N + (oa*va+ob*vb)] = -sigma_m[p] / (cavity_frequency_ + omega); 
             if ( have_Y ) {
-                Y[p*N + (oa*va+ob*vb)] = -sigma_m[p] / (cavity_frequency_[2] - omega); 
+                Y[p*N + (oa*va+ob*vb)] = -sigma_m[p] / (cavity_frequency_ - omega); 
             }
         }
 
@@ -457,8 +453,8 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
         // photon part
         build_sigma_m(N, 1, &X[p*N], &Y[p*N], &X[p*N + (oa*va+ob*vb)], &sigma_m[p]);
 
-        X[p*N + (oa*va+ob*vb)] = - sigma_m[p] / (cavity_frequency_[2] + omega);
-        Y[p*N + (oa*va+ob*vb)] = - sigma_m[p] / (cavity_frequency_[2] - omega);
+        X[p*N + (oa*va+ob*vb)] = - sigma_m[p] / (cavity_frequency_ + omega);
+        Y[p*N + (oa*va+ob*vb)] = - sigma_m[p] / (cavity_frequency_ - omega);
     }
 
     free(gm_X);
@@ -704,13 +700,13 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
     memset((void*)AX_wz, '\0', 3*2*nmo_*nmo_ * sizeof(double));
     memset((void*)AY_wz, '\0', 3*2*nmo_*nmo_ * sizeof(double));
 
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
 
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_);
+    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_);
 
     for (int p = 0; p < 3; p++) {
 
@@ -1338,13 +1334,9 @@ double PolaritonicUTDDFT::compute_energy() {
         update_cavity_terms();
     }
 
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
-
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
 
     double ** dx = Dipole_x_->pointer();
     double ** dy = Dipole_y_->pointer();
@@ -1353,7 +1345,7 @@ double PolaritonicUTDDFT::compute_energy() {
     std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
     HCavity_z->zero();
     if ( n_photon_states_ > 1 ) {
-        HCavity_z->pointer()[1][1] = cavity_frequency_[2];
+        HCavity_z->pointer()[1][1] = cavity_frequency_;
     }
     if ( n_photon_states_ > 2 ) {
         throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
@@ -1688,10 +1680,10 @@ void PolaritonicUTDDFT::build_sigma_generalized(int N, int maxdim, int L, double
     }
     // m, n
     for (int I = 0; I < L; I++) {
-        sigmah[2*(oa*va + ob*vb)    ][I] =  sigma_m_h[I] + cavity_frequency_[2] * m[I];
+        sigmah[2*(oa*va + ob*vb)    ][I] =  sigma_m_h[I] + cavity_frequency_ * m[I];
         sigmas[2*(oa*va + ob*vb)    ][I] =  m[I]; 
 
-        sigmah[2*(oa*va + ob*vb) + 1][I] =  sigma_m_h[I] + cavity_frequency_[2] * n[I]; 
+        sigmah[2*(oa*va + ob*vb) + 1][I] =  sigma_m_h[I] + cavity_frequency_ * n[I]; 
         sigmas[2*(oa*va + ob*vb) + 1][I] = -n[I];
     }
 
@@ -1736,13 +1728,13 @@ void PolaritonicUTDDFT::build_Au_Bu(int N, int L, double *u, double *ABu){
     C_left.clear();
     C_right.clear();
 
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
+    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
 
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_);
+    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_);
+    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_);
 
     double ** dx = Dipole_x_->pointer();
     double ** dy = Dipole_y_->pointer();
@@ -2078,13 +2070,9 @@ void PolaritonicUTDDFT::build_gm(int N, int L, double *m, double *gm) {
     int va = nso_ - oa;
     int vb = nso_ - ob;
 
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
-
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
 
     double ** dx = Dipole_x_->pointer();
     double ** dy = Dipole_y_->pointer();
@@ -2129,13 +2117,9 @@ void PolaritonicUTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
     int va = nso_ - oa;
     int vb = nso_ - ob;
 
-    double coupling_factor_x = cavity_frequency_[0] * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_[1] * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_[2] * cavity_coupling_strength_[2];
-
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
+    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
+    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
 
     double ** dx = Dipole_x_->pointer();
     double ** dy = Dipole_y_->pointer();
@@ -2144,7 +2128,7 @@ void PolaritonicUTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
     for (int I = 0; I < L; I++) {
 
         // |0,1> diagonal
-        sigma_m[I] = 0.0;//cavity_frequency_[2] * m[I];
+        sigma_m[I] = 0.0; //cavity_frequency_ * m[I];
 
         // couple |0,1> to |ia,0> (alpha)
         for (int i = 0; i < oa; i++) {
@@ -2209,8 +2193,8 @@ double * PolaritonicUTDDFT::build_hamiltonian_diagonals(){
     }
 
     int off = 2 * (oa * va + ob * vb);
-    H[off  ] = cavity_frequency_[2];
-    H[off+1] = cavity_frequency_[2];
+    H[off  ] = cavity_frequency_;
+    H[off+1] = cavity_frequency_;
 
     return H;
 }
