@@ -148,6 +148,22 @@ void PolaritonicRTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
     jk_->set_omega(x_omega_);
 
     jk_->initialize();
+
+    // dipole integrals in the MO basis
+    mua_.clear();
+    for (int i = 0; i < 3; i++) {
+        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
+        mua_.push_back(tmp);
+        mua_[i]->transform(Ca_);
+    }
+
+    // lambda dressed dipole integrals in the MO basis
+    lambda_dressed_mua_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
+    for (int i = 0; i < 3; i++) {
+        double lambda = cavity_coupling_strength_[i] * sqrt(2.0 * cavity_frequency_);
+        lambda_dressed_mua_->axpy(lambda, dipole_[i]->clone());
+    }
+    lambda_dressed_mua_->transform(Ca_);
 }
 
 double PolaritonicRTDDFT::compute_energy() {
@@ -160,21 +176,8 @@ double PolaritonicRTDDFT::compute_energy() {
         update_cavity_terms();
     }
 
-    // transform dipole integrals to MO basis
-    dipole_[0]->transform(Ca_);
-    dipole_[1]->transform(Ca_);
-    dipole_[2]->transform(Ca_);
-
     int o = nalpha_;
     int v = nso_ - nalpha_;
-
-    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
-
-    double ** dx = dipole_[0]->pointer();
-    double ** dy = dipole_[1]->pointer();
-    double ** dz = dipole_[2]->pointer();
 
     std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
     HCavity_z->zero();
@@ -310,9 +313,9 @@ double PolaritonicRTDDFT::compute_energy() {
         for (int j = 0; j < o; j++) {
             for (int b = 0; b < v; b++) {
                 double cr = (rerp[state][j*v+b] + rerp[state][j*v+b+o*v])/nrm;
-                mu_x_r += dx[j][b+o] * cr;
-                mu_y_r += dy[j][b+o] * cr;
-                mu_z_r += dz[j][b+o] * cr;
+                mu_x_r += mua_[0]->pointer()[j][b+o] * cr;
+                mu_y_r += mua_[1]->pointer()[j][b+o] * cr;
+                mu_z_r += mua_[2]->pointer()[j][b+o] * cr;
             }
         }
         double w = revalp[state];
@@ -509,20 +512,10 @@ void PolaritonicRTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
     C_left.clear();
     C_right.clear();
 
-    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
-
-    double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_);
-    double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_);
-    double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_);
-
-    double ** dx = dipole_[0]->pointer();
-    double ** dy = dipole_[1]->pointer();
-    double ** dz = dipole_[2]->pointer();
-
     std::vector<std::shared_ptr<Matrix> > Vx;
     std::vector<std::shared_ptr<Matrix> > Dx;
+
+    double ** mua_p = lambda_dressed_mua_->pointer();
 
     // J/K-like contributions
     for (int I = 0; I < L; I++) {
@@ -672,7 +665,7 @@ void PolaritonicRTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
             for (int a = 0; a < v; a++) {
                 int ia = i * v + a;
 
-                dipole_Ja += c[ia] * dz[i][a+o];
+                dipole_Ja += c[ia] * mua_p[i][a+o];
             }
         }
 
@@ -691,7 +684,7 @@ void PolaritonicRTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
                     for (int j = 0; j < o; j++) {
                         int ja = j * v + a;
 
-                        dum_a += c[ja] * dz[i][j];
+                        dum_a += c[ja] * mua_p[i][j];
                     }
 
                     tmp_a[a*o+i] = dum_a;
@@ -705,7 +698,7 @@ void PolaritonicRTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
                     for (int b = 0; b < v; b++) {
                         int jb = j * v + b;
 
-                        dum_b += c[jb] * dz[b+o][i];
+                        dum_b += c[jb] * mua_p[b+o][i];
                     }
 
                     tmp_b[i*o+j] = dum_b;
@@ -716,23 +709,23 @@ void PolaritonicRTDDFT::build_Au_Bu(int N, int L, double *u, double *Au, double 
         for (int i = 0; i < o; i++) {
             for (int a = 0; a < v; a++) {
 
-                double dipole_Ja_ia = dipole_Ja * dz[i][a+o];
+                double dipole_Ja_ia = dipole_Ja * mua_p[i][a+o];
 
                 // A term
                 double dipole_Ka_A = 0.0;
                 for (int b = 0; b < v; b++) {
-                    dipole_Ka_A += tmp_a[b*o+i] * dz[a+o][b+o];
+                    dipole_Ka_A += tmp_a[b*o+i] * mua_p[a+o][b+o];
                 }
                 // B term
                 double dipole_Ka_B = 0.0;
                 for (int j = 0; j < o; j++) {
-                    dipole_Ka_B += tmp_b[i*o+j] * dz[a+o][j];
+                    dipole_Ka_B += tmp_b[i*o+j] * mua_p[a+o][j];
                 }
 
                 int ia = i * v + a;
 
-                Au[I*N+ia] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia - dipole_Ka_A);
-                Bu[I*N+ia] += lambda_z * lambda_z * (dipole_Ja_ia + dipole_Ja_ia - dipole_Ka_B);
+                Au[I*N+ia] += (dipole_Ja_ia + dipole_Ja_ia - dipole_Ka_A);
+                Bu[I*N+ia] += (dipole_Ja_ia + dipole_Ja_ia - dipole_Ka_B);
             }
         }
 
@@ -756,13 +749,7 @@ void PolaritonicRTDDFT::build_gm(int N, int L, double *m, double *gm) {
     int o = nalpha_;
     int v = nso_ - nalpha_;
 
-    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
-
-    double ** dx = dipole_[0]->pointer();
-    double ** dy = dipole_[1]->pointer();
-    double ** dz = dipole_[2]->pointer();
+    double ** mua_p = lambda_dressed_mua_->pointer();
 
     for (int I = 0; I < L; I++) {
 
@@ -772,7 +759,7 @@ void PolaritonicRTDDFT::build_gm(int N, int L, double *m, double *gm) {
                 int ia = i * v + a;
 
                 // <ia| H |0,1>
-                gm[I*N+ia] = -sqrt(2.0) * coupling_factor_z * dz[i][a+o] * m[I];
+                gm[I*N+ia] = -sqrt(2.0) * sqrt(0.5 * cavity_frequency_) * mua_p[i][a+o] * m[I];
             }
         }
     }
@@ -792,13 +779,7 @@ void PolaritonicRTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
     int o = nalpha_;
     int v = nso_ - nalpha_;
 
-    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
-
-    double ** dx = dipole_[0]->pointer();
-    double ** dy = dipole_[1]->pointer();
-    double ** dz = dipole_[2]->pointer();
+    double ** mua_p = lambda_dressed_mua_->pointer();
 
     for (int I = 0; I < L; I++) {
 
@@ -813,7 +794,7 @@ void PolaritonicRTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
                 int ia = i * v + a;
 
                 // <ia| H |0,1>
-                double factor = -sqrt(2.0)*coupling_factor_z * dz[i][a+o];
+                double factor = -sqrt(2.0) * sqrt(0.5 * cavity_frequency_) * mua_p[i][a+o];
                 sigma_m[I] += factor * ( x[I*N+ia] + y[I*N+ia] );
             }
         }
