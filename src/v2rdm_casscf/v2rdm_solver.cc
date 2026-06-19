@@ -322,10 +322,10 @@ void  v2RDMSolver::common_init(){
     outfile->Printf("\n");
 
     is_df_ = false;
-    if ( options_.get_str("SCF_TYPE") == "DISK_DF" || options_.get_str("SCF_TYPE") == "DISK_CD") {
+    if ( options_.get_str("SCF_TYPE") == "DISK_DF" || options_.get_str("SCF_TYPE") == "CD") {
         is_df_ = true;
-    }else if ( options_.get_str("SCF_TYPE") == "DF" || options_.get_str("SCF_TYPE") == "CD") {
-        throw PsiException("invalid SCF_TYPE. try DISK_DF, DISK_CD, or PK",__FILE__,__LINE__);
+    }else if ( options_.get_str("SCF_TYPE") == "DF" ) {
+        throw PsiException("invalid SCF_TYPE. try DISK_DF, CD, or PK",__FILE__,__LINE__);
     }
 
     // initialization depends on hamiltonian type

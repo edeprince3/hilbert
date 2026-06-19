@@ -67,12 +67,12 @@ void ThreeIndexIntegrals(std::shared_ptr<Wavefunction> ref, long int &nQ, long i
 
         nQ = auxiliary->nbf();
         Process::environment.globals["NAUX (SCF)"] = nQ;
-    }else if ( ref->options().get_str("SCF_TYPE") == "DISK_CD" ) {
+    }else if ( ref->options().get_str("SCF_TYPE") == "CD" ) {
         psio->open(PSIF_DFSCF_BJ,PSIO_OPEN_OLD);
         psio->read_entry(PSIF_DFSCF_BJ, "length", (char*)&nQ, sizeof(long int));
         psio->close(PSIF_DFSCF_BJ,1);
     }else {
-        throw PsiException("invalid SCF_TYPE. try DISK_DF or DISK_CD",__FILE__,__LINE__);
+        throw PsiException("invalid SCF_TYPE. try DISK_DF or CD",__FILE__,__LINE__);
     }
 
     // 100 mb extra to account for all mapping arrays already 
