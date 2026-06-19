@@ -2053,13 +2053,8 @@ void PolaritonicUTDDFT::build_gm(int N, int L, double *m, double *gm) {
     int va = nso_ - oa;
     int vb = nso_ - ob;
 
-    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
-
-    double ** dx = Dipole_x_->pointer();
-    double ** dy = Dipole_y_->pointer();
-    double ** dz = Dipole_z_->pointer();
+    double ** mua_p = lambda_dressed_mua_->pointer();
+    double ** mub_p = lambda_dressed_mub_->pointer();
 
     for (int I = 0; I < L; I++) {
 
@@ -2069,7 +2064,7 @@ void PolaritonicUTDDFT::build_gm(int N, int L, double *m, double *gm) {
                 int ia = i * va + a;
 
                 // <ia| H |0,1>
-                gm[I*N + ia] = -coupling_factor_z * dz[i][a + oa + ob] * m[I];
+                gm[I*N + ia] = -sqrt(0.5 * cavity_frequency_) * mua_p[i][a + oa] * m[I];
             }
         }
         // couple |0,1> to |ia,0> (beta)
@@ -2078,7 +2073,7 @@ void PolaritonicUTDDFT::build_gm(int N, int L, double *m, double *gm) {
                 int ia = i * vb + a;
 
                 // <ia| H |0,1>
-                gm[I*N + ia + oa*va] = -coupling_factor_z * dz[i + oa][a + oa + ob + va] * m[I];
+                gm[I*N + ia + oa*va] = -sqrt(0.5 * cavity_frequency_) * mub_p[i][a + ob] * m[I];
             }
         }
     }
@@ -2100,13 +2095,8 @@ void PolaritonicUTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
     int va = nso_ - oa;
     int vb = nso_ - ob;
 
-    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
-
-    double ** dx = Dipole_x_->pointer();
-    double ** dy = Dipole_y_->pointer();
-    double ** dz = Dipole_z_->pointer();
+    double ** mua_p = lambda_dressed_mua_->pointer();
+    double ** mub_p = lambda_dressed_mub_->pointer();
 
     for (int I = 0; I < L; I++) {
 
@@ -2120,7 +2110,7 @@ void PolaritonicUTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
                 int ia = i * va + a;
 
                 // <ia| H |0,1>
-                double factor = -coupling_factor_z * dz[i][a + oa + ob];
+                double factor = -sqrt(0.5 * cavity_frequency_) * mua_p[i][a + oa];
                 sigma_m[I] += factor * ( x[I*N + ia] + y[I*N + ia] );
             }
         }
@@ -2131,7 +2121,7 @@ void PolaritonicUTDDFT::build_sigma_m(int N, int L, double *x, double *y, double
                 int ia = i * vb + a;
 
                 // <ia| H |0,1>
-                double factor = -coupling_factor_z * dz[i + oa][a + oa + ob + va];
+                double factor = -sqrt(0.5 * cavity_frequency_) * mub_p[i][a + ob];
                 sigma_m[I] += factor * ( x[I*N + ia + oa*va] + y[I*N + ia + oa*va] );
             }
         }
