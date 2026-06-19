@@ -28,6 +28,7 @@
 #include <omp.h>
 #include <iomanip>
 #include <cmath>
+#include <sstream>
 
 using namespace std;
 
@@ -136,4 +137,3 @@ namespace hilbert {
 
 
 }
-
