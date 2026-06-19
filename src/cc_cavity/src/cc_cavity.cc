@@ -136,9 +136,9 @@ void CC_Cavity::initialize() {
   cc_type_ += options_.get_str("QED_CC_TYPE");
 
   // set coupling factors
-  lambda_[0] = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_[0]);
-  lambda_[1] = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_[1]);
-  lambda_[2] = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
+  lambda_[0] = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_);
+  lambda_[1] = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_);
+  lambda_[2] = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_);
 
   /// initialize containers
 
@@ -424,8 +424,7 @@ void CC_Cavity::print_dimensions() {
     Printf("  V_cav (nm3) = %10.8lf\n", V_cav);
     Printf("  lambda      = x: %10.8lf y: %10.8lf z: %10.8lf\n", lambda_[0],
            lambda_[1], lambda_[2]);
-    Printf("  hw          = x: %10.4lf y: %10.8lf z: %10.8lf\n",
-           cavity_frequency_[0], cavity_frequency_[1], cavity_frequency_[2]);
+    Printf("  hw          = %10.8lf\n", cavity_frequency_);
     Printf("  electric dipole moments: x: %10.8lf y: %10.8lf z: %10.8lf\n",
            e_dip_x_, e_dip_y_, e_dip_z_);
     Printf("  average electric dipole self-energy: %10.8lf\n",

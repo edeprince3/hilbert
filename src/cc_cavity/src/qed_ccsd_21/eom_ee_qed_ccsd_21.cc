@@ -60,7 +60,7 @@ namespace hilbert {
         double cc_energy_ = cc_wfn_->cc_energy_;
         double enuc = cc_wfn_->enuc_;
         double dse = cc_wfn_->average_electric_dipole_self_energy_;
-        double w0 = cc_wfn_->cavity_frequency_[2];
+        double w0 = cc_wfn_->cavity_frequency_;
         double const *epsilon_ = cc_wfn_->epsilon_;
 
         int oa = (int)oa_, ob = (int)ob_, // occupied alpha/beta
@@ -340,7 +340,7 @@ namespace hilbert {
         /// add coherent state basis terms
 
         // Get cavity information
-        double w0 = cc_wfn_->cavity_frequency_[2];
+        double w0 = cc_wfn_->cavity_frequency_;
         double coupling_factor_z = w0 * cc_wfn_->cavity_coupling_strength_[2];
 
         double coherent_scalar;

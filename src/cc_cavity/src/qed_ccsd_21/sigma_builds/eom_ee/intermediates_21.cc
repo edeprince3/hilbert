@@ -33,7 +33,7 @@ double* hilbert::EOM_EE_QED_CCSD_21::build_ss_diagonal() {
     if (!cc_wfn_->has_t1_integrals_) cc_wfn_->transform_integrals(true);
 
     // Get cavity information
-    double w0 = cc_wfn_->cavity_frequency_[2];
+    double w0 = cc_wfn_->cavity_frequency_;
     double coupling_factor_z = w0 * cc_wfn_->cavity_coupling_strength_[2];
 
     // get dipole integrals
@@ -558,7 +558,7 @@ void hilbert::EOM_EE_QED_CCSD_21::build_common_ops() {
     if (!cc_wfn_->has_t1_integrals_) cc_wfn_->transform_integrals(true);
 
     // Get cavity information
-    double w0 = cc_wfn_->cavity_frequency_[2];
+    double w0 = cc_wfn_->cavity_frequency_;
     double coupling_factor_z = w0 * cc_wfn_->cavity_coupling_strength_[2];
 
     // get dipole integrals

@@ -91,9 +91,9 @@ namespace hilbert {
 
         // e-(n-<d>) contribution 0.5 * 2 (lambda . de) ( lambda . (dn - <d>) )
 
-        double lambda_x = cc_wfn_->cavity_coupling_strength_[0] * sqrt(2.0 * cc_wfn_->cavity_frequency_[0]);
-        double lambda_y = cc_wfn_->cavity_coupling_strength_[1] * sqrt(2.0 * cc_wfn_->cavity_frequency_[1]);
-        double lambda_z = cc_wfn_->cavity_coupling_strength_[2] * sqrt(2.0 * cc_wfn_->cavity_frequency_[2]);
+        double lambda_x = cc_wfn_->cavity_coupling_strength_[0] * sqrt(2.0 * cc_wfn_->cavity_frequency_);
+        double lambda_y = cc_wfn_->cavity_coupling_strength_[1] * sqrt(2.0 * cc_wfn_->cavity_frequency_);
+        double lambda_z = cc_wfn_->cavity_coupling_strength_[2] * sqrt(2.0 * cc_wfn_->cavity_frequency_);
 
         // e contribution: lambda . de
         size_t nso = cc_wfn_->nso();
@@ -168,7 +168,7 @@ namespace hilbert {
     double *EOM_EA_QED_CCSD_21::build_preconditioner() {
 
         // get properties from the CC_Cavity object
-        double w0 = cc_wfn_->cavity_frequency_[2];
+        double w0 = cc_wfn_->cavity_frequency_;
         double const *epsilon_ = cc_wfn_->epsilon_;
 
         // adjust the energy of the CCSD wavefunction to include the anion dipole self energy
@@ -331,7 +331,7 @@ namespace hilbert {
         world_.gop.fence();
 
         // Get cavity information
-        double w0 = cc_wfn_->cavity_frequency_[2];
+        double w0 = cc_wfn_->cavity_frequency_;
         double coupling_factor_z = w0 * cc_wfn_->cavity_coupling_strength_[2];
 
         double coherent_scalar;

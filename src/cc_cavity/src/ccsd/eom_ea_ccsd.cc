@@ -57,7 +57,7 @@ namespace hilbert {
     double *EOM_EA_CCSD::build_preconditioner() {
 
         // get properties from the CC_Cavity object
-        double const *cavity_frequency_ = cc_wfn_->cavity_frequency_;
+        double cavity_frequency_ = cc_wfn_->cavity_frequency_;
         double &enuc_ = cc_wfn_->enuc_;
         double const *epsilon_ = cc_wfn_->epsilon_;
 

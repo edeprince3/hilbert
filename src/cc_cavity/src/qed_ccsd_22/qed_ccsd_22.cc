@@ -81,7 +81,7 @@ namespace hilbert {
         size_t va = va_;
 
         /// du = -residual / (eps + w)
-        double w0 = cavity_frequency_[2];
+        double w0 = cavity_frequency_;
 
         // t0_2
         foreach_inplace(residuals_["t0_2"], [w0](auto &tile) {
@@ -261,7 +261,7 @@ namespace hilbert {
         scalars_["crt0_2"]  = 0.0;
         scalars_["t0_1"]    = t0_1;
         scalars_["t0_2"]    = t0_2;
-        scalars_["w0"]      = cavity_frequency_[2];
+        scalars_["w0"]      = cavity_frequency_;
 
         // compute residuals
         resid_22_1();
@@ -281,7 +281,7 @@ namespace hilbert {
         double &crt0_2  = scalars_["crt0_2"];
 
         // process residuals
-        double coherent_scalar = cavity_frequency_[2] * cavity_coupling_strength_[2];
+        double coherent_scalar = cavity_frequency_ * cavity_coupling_strength_[2];
         if ( options_.get_bool("QED_USE_RELAXED_ORBITALS"))
              coherent_scalar *=    e_dip_z_;
         else coherent_scalar *= -nuc_dip_z_;

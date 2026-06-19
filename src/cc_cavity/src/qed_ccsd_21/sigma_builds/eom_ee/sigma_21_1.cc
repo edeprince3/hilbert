@@ -30,7 +30,7 @@
 void hilbert::EOM_EE_QED_CCSD_21::sigma_ee_21_1() {
 
     // Get cavity information
-    double w0 = cc_wfn_->cavity_frequency_[2];
+    double w0 = cc_wfn_->cavity_frequency_;
     double coupling_factor_z = w0 * cc_wfn_->cavity_coupling_strength_[2];
 
     // get effective dipole integrals

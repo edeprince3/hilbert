@@ -86,7 +86,7 @@ namespace hilbert {
         size_t va = va_;
 
         /// du = -residual / (eps + w)
-        double w0 = cavity_frequency_[2];
+        double w0 = cavity_frequency_;
 
         // t0_1
         foreach_inplace(residuals_["t0_1"], [w0](auto &tile) {
@@ -230,7 +230,7 @@ namespace hilbert {
         // build effective dipole integrals
 
         // Get cavity information
-        double w0 = cavity_frequency_[2];
+        double w0 = cavity_frequency_;
         double coupling_factor_z = w0 * cavity_coupling_strength_[2];
 
         // build dipole integrals
@@ -278,7 +278,7 @@ namespace hilbert {
         scalars_["rt0_1"]   = 0.0;
         scalars_["crt0_1"]  = 0.0;
         scalars_["t0_1"]    = t0_1;
-        scalars_["w0"]      = cavity_frequency_[2];
+        scalars_["w0"]      = cavity_frequency_;
 
         // compute residuals
         resid_21_1();
@@ -294,7 +294,7 @@ namespace hilbert {
         double &crt0_1  = scalars_["crt0_1"];
 
         // process residuals
-        double coherent_scalar = cavity_frequency_[2] * cavity_coupling_strength_[2];
+        double coherent_scalar = cavity_frequency_ * cavity_coupling_strength_[2];
         if ( options_.get_bool("QED_USE_RELAXED_ORBITALS"))
              coherent_scalar *=    e_dip_z_;
         else coherent_scalar *= -nuc_dip_z_;
