@@ -139,6 +139,33 @@ void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
 
     jk_->initialize();
 
+    // dipole integrals in the MO basis
+    mua_.clear();
+    for (int i = 0; i < 3; i++) { 
+        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
+        mua_.push_back(tmp);
+        mua_[i]->transform(Ca_);
+    }       
+    mub_.clear();
+    for (int i = 0; i < 3; i++) {
+        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
+        mub_.push_back(tmp); 
+        mub_[i]->transform(Cb_); 
+    }
+
+    // lambda dressed dipole integrals in the MO basis
+    lambda_dressed_mua_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
+    lambda_dressed_mub_ = (std::shared_ptr<Matrix>)(new Matrix(nso_,nso_));
+    for (int i = 0; i < 3; i++) {
+        double lambda = cavity_coupling_strength_[i] * sqrt(2.0 * cavity_frequency_);
+        lambda_dressed_mua_->axpy(lambda, dipole_[i]->clone());
+        lambda_dressed_mub_->axpy(lambda, dipole_[i]->clone());
+    }
+    lambda_dressed_mua_->transform(Ca_);
+    lambda_dressed_mub_->transform(Cb_);
+
+    // TODO: remove all spin-orbital basis quantities
+
     // alpha + beta MO transformation matrix
     C_ = (std::shared_ptr<Matrix>)(new Matrix(2*nso_,2*nmo_));
     C_->zero();
@@ -669,31 +696,6 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
     outfile->Printf("    omega: %12.8lf\n", omega);
     outfile->Printf("\n");
 
-    // dipole integrals
-    std::vector<std::shared_ptr<Matrix>> mua;
-    for (int i = 0; i < 3; i++) {
-        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
-        mua.push_back(tmp);
-        mua[i]->transform(Ca_);
-    }
-    std::vector<std::shared_ptr<Matrix>> mub;
-    for (int i = 0; i < 3; i++) {
-        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
-        mub.push_back(tmp);
-        mub[i]->transform(Cb_);
-    }
-
-    // lambda dressed dipole integrals
-    std::shared_ptr<Matrix> lambda_dressed_mua (new Matrix(nso_,nso_));
-    std::shared_ptr<Matrix> lambda_dressed_mub (new Matrix(nso_,nso_));
-    for (int i = 0; i < 3; i++) {
-        double lambda = cavity_coupling_strength_[i] * sqrt(2.0 * cavity_frequency_);
-        lambda_dressed_mua->axpy(lambda, dipole_[i]->clone());
-        lambda_dressed_mub->axpy(lambda, dipole_[i]->clone());
-    }
-    lambda_dressed_mua->transform(Ca_);
-    lambda_dressed_mub->transform(Cb_);
-
     int L = 1;
 
     double * AX_wx = (double*)malloc(3*2*nmo_*nmo_*sizeof(double));
@@ -736,7 +738,7 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
             double dipole_Ja_Y_wz = 0.0;
             for (int j = 0; j < oa; j++) {
                 for (int a = 0; a < va; a++) {
-                    double dja = lambda_dressed_mua->pointer()[j][a+oa];
+                    double dja = lambda_dressed_mua_->pointer()[j][a+oa];
                     int aj = j * va + a;
                     dipole_Ja_X_wx += dja * amps_wx[0][p*N + aj];
                     dipole_Ja_X_wy += dja * amps_wy[0][p*N + aj];
@@ -755,7 +757,7 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
             double dipole_Jb_Y_wz = 0.0;
             for (int j = 0; j < ob; j++) {
                 for (int a = 0; a < vb; a++) {
-                    double dja = lambda_dressed_mub->pointer()[j][a+ob];
+                    double dja = lambda_dressed_mub_->pointer()[j][a+ob];
                     int aj = j * vb + a + oa*va;
                     dipole_Jb_X_wx += dja * amps_wx[0][p*N + aj];
                     dipole_Jb_X_wy += dja * amps_wy[0][p*N + aj];
@@ -768,7 +770,7 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
 
             for (int k = 0; k < oa; k++) {
                 for (int i = 0; i < oa; i++) {
-                    double dki = lambda_dressed_mua->pointer()[k][i];
+                    double dki = lambda_dressed_mua_->pointer()[k][i];
 
                     AX_wx[p*2*nmo_*nmo_ + i * nmo_ + k] += dki * (dipole_Ja_X_wx + dipole_Jb_X_wx);
                     AX_wy[p*2*nmo_*nmo_ + i * nmo_ + k] += dki * (dipole_Ja_X_wy + dipole_Jb_X_wy);
@@ -782,7 +784,7 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
 
             for (int k = 0; k < ob; k++) {
                 for (int i = 0; i < ob; i++) {
-                    double dki = lambda_dressed_mub->pointer()[k][i];
+                    double dki = lambda_dressed_mub_->pointer()[k][i];
 
                     AX_wx[p*2*nmo_*nmo_ + i * nmo_ + k + nmo_*nmo_] += dki * (dipole_Ja_X_wx + dipole_Jb_X_wx);
                     AX_wy[p*2*nmo_*nmo_ + i * nmo_ + k + nmo_*nmo_] += dki * (dipole_Ja_X_wy + dipole_Jb_X_wy);
@@ -796,7 +798,7 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
 
             for (int a = 0; a < va; a++) {
                 for (int c = 0; c < va; c++) {
-                    double dac = lambda_dressed_mua->pointer()[a+oa][c+oa];
+                    double dac = lambda_dressed_mua_->pointer()[a+oa][c+oa];
 
                     AX_wx[p*2*nmo_*nmo_ + (a+oa) * nmo_ + (c+oa)] += dac * (dipole_Ja_X_wx + dipole_Jb_X_wx);
                     AX_wy[p*2*nmo_*nmo_ + (a+oa) * nmo_ + (c+oa)] += dac * (dipole_Ja_X_wy + dipole_Jb_X_wy);
@@ -810,7 +812,7 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
 
             for (int a = 0; a < vb; a++) {
                 for (int c = 0; c < vb; c++) {
-                    double dac = lambda_dressed_mub->pointer()[a+ob][c+ob];
+                    double dac = lambda_dressed_mub_->pointer()[a+ob][c+ob];
                     AX_wx[p*2*nmo_*nmo_ + (a+ob) * nmo_ + (c+ob) + nmo_*nmo_] += dac * (dipole_Ja_X_wx + dipole_Jb_X_wx);
                     AX_wy[p*2*nmo_*nmo_ + (a+ob) * nmo_ + (c+ob) + nmo_*nmo_] += dac * (dipole_Ja_X_wy + dipole_Jb_X_wy);
                     AX_wz[p*2*nmo_*nmo_ + (a+ob) * nmo_ + (c+ob) + nmo_*nmo_] += dac * (dipole_Ja_X_wz + dipole_Jb_X_wz);
@@ -833,9 +835,9 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
                     double dum_Y_q = 0.0;
                     double dum_Y_r = 0.0;
                     for (int j = 0; j < oa; j++) {
-                        double dji = lambda_dressed_mua->pointer()[j][i];
+                        double dji = lambda_dressed_mua_->pointer()[j][i];
                         for (int a = 0; a < va; a++) {
-                            double dip = dji * lambda_dressed_mua->pointer()[k][a+oa];
+                            double dip = dji * lambda_dressed_mua_->pointer()[k][a+oa];
                             int aj = j * va + a;
                             dum_X_p += dip * amps_wx[0][p*N + aj];
                             dum_X_q += dip * amps_wy[0][p*N + aj];
@@ -866,9 +868,9 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
                     double dum_Y_q = 0.0;
                     double dum_Y_r = 0.0;
                     for (int j = 0; j < ob; j++) {
-                        double dji = lambda_dressed_mub->pointer()[j][i];
+                        double dji = lambda_dressed_mub_->pointer()[j][i];
                         for (int a = 0; a < vb; a++) {
-                            double dip = dji * lambda_dressed_mub->pointer()[k][a+ob];
+                            double dip = dji * lambda_dressed_mub_->pointer()[k][a+ob];
                             int aj = j * vb + a + oa*va;
                             dum_X_p += dip * amps_wx[0][p*N + aj];
                             dum_X_q += dip * amps_wy[0][p*N + aj];
@@ -899,9 +901,9 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
                     double dum_Y_q = 0.0;
                     double dum_Y_r = 0.0;
                     for (int i = 0; i < oa; i++) {
-                        double dic = lambda_dressed_mua->pointer()[i][c+oa];
+                        double dic = lambda_dressed_mua_->pointer()[i][c+oa];
                         for (int b = 0; b < va; b++) {
-                            double dip =  dic * lambda_dressed_mua->pointer()[a+oa][b+oa];
+                            double dip =  dic * lambda_dressed_mua_->pointer()[a+oa][b+oa];
                             int bi = i * va + b;
                             dum_X_p += dip * amps_wx[0][p*N + bi];
                             dum_X_q += dip * amps_wy[0][p*N + bi];
@@ -933,9 +935,9 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
                     double dum_Y_q = 0.0;
                     double dum_Y_r = 0.0;
                     for (int i = 0; i < ob; i++) {
-                        double dic = lambda_dressed_mub->pointer()[i][c+ob];
+                        double dic = lambda_dressed_mub_->pointer()[i][c+ob];
                         for (int b = 0; b < vb; b++) {
-                            double dip =  dic * lambda_dressed_mub->pointer()[a+ob][b+ob];
+                            double dip =  dic * lambda_dressed_mub_->pointer()[a+ob][b+ob];
                             int bi = i * vb + b + oa*va;
                             dum_X_p += dip * amps_wx[0][p*N + bi];
                             dum_X_q += dip * amps_wy[0][p*N + bi];
@@ -1160,17 +1162,17 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
                             XY_qr += 0.5 * amps_wy[0][q*N + ja] * amps_wz[1][r*N + ia];
                             YX_qr += 0.5 * amps_wy[1][q*N + ja] * amps_wz[0][r*N + ia];
                         }
-                        beta += 2 * (XY_qr + YX_qr) * mua[p]->pointer()[j][i];
-                        beta += 2 * (XY_pr + YX_pr) * mua[q]->pointer()[j][i];
-                        beta += 2 * (XY_pq + YX_pq) * mua[r]->pointer()[j][i];
+                        beta += 2 * (XY_qr + YX_qr) * mua_[p]->pointer()[j][i];
+                        beta += 2 * (XY_pr + YX_pr) * mua_[q]->pointer()[j][i];
+                        beta += 2 * (XY_pq + YX_pq) * mua_[r]->pointer()[j][i];
 
                         // more terms because we get terms from b and b^ in H
-                        beta += +2 * (XY_qr + YX_qr) * amps_wx[0][p*N + (oa*va+ob*vb)] * lambda_dressed_mua->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
-                        beta += +2 * (XY_qr + YX_qr) * amps_wx[1][p*N + (oa*va+ob*vb)] * lambda_dressed_mua->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
-                        beta += +2 * (XY_pr + YX_pr) * amps_wy[0][q*N + (oa*va+ob*vb)] * lambda_dressed_mua->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
-                        beta += +2 * (XY_pr + YX_pr) * amps_wy[1][q*N + (oa*va+ob*vb)] * lambda_dressed_mua->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
-                        beta += +2 * (XY_pq + YX_pq) * amps_wz[0][r*N + (oa*va+ob*vb)] * lambda_dressed_mua->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
-                        beta += +2 * (XY_pq + YX_pq) * amps_wz[1][r*N + (oa*va+ob*vb)] * lambda_dressed_mua->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
+                        beta += +2 * (XY_qr + YX_qr) * amps_wx[0][p*N + (oa*va+ob*vb)] * lambda_dressed_mua_->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
+                        beta += +2 * (XY_qr + YX_qr) * amps_wx[1][p*N + (oa*va+ob*vb)] * lambda_dressed_mua_->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
+                        beta += +2 * (XY_pr + YX_pr) * amps_wy[0][q*N + (oa*va+ob*vb)] * lambda_dressed_mua_->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
+                        beta += +2 * (XY_pr + YX_pr) * amps_wy[1][q*N + (oa*va+ob*vb)] * lambda_dressed_mua_->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
+                        beta += +2 * (XY_pq + YX_pq) * amps_wz[0][r*N + (oa*va+ob*vb)] * lambda_dressed_mua_->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
+                        beta += +2 * (XY_pq + YX_pq) * amps_wz[1][r*N + (oa*va+ob*vb)] * lambda_dressed_mua_->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
                     }
                 }
 
@@ -1195,17 +1197,17 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
                             XY_qr += 0.5 * amps_wy[0][q*N + ia] * amps_wz[1][r*N + ib];
                             YX_qr += 0.5 * amps_wy[1][q*N + ia] * amps_wz[0][r*N + ib];
                         }
-                        beta -= 2 * (XY_qr + YX_qr) * mua[p]->pointer()[a+oa][b+oa];
-                        beta -= 2 * (XY_pr + YX_pr) * mua[q]->pointer()[a+oa][b+oa];
-                        beta -= 2 * (XY_pq + YX_pq) * mua[r]->pointer()[a+oa][b+oa];
+                        beta -= 2 * (XY_qr + YX_qr) * mua_[p]->pointer()[a+oa][b+oa];
+                        beta -= 2 * (XY_pr + YX_pr) * mua_[q]->pointer()[a+oa][b+oa];
+                        beta -= 2 * (XY_pq + YX_pq) * mua_[r]->pointer()[a+oa][b+oa];
 
                         // more terms because we get terms from b and b^ in H
-                        beta -= +2 * (XY_qr + YX_qr) * amps_wx[0][p*N + (oa*va+ob*vb)] * lambda_dressed_mua->pointer()[a+oa][b+oa] * sqrt(0.5 * cavity_frequency_);
-                        beta -= +2 * (XY_qr + YX_qr) * amps_wx[1][p*N + (oa*va+ob*vb)] * lambda_dressed_mua->pointer()[a+oa][b+oa] * sqrt(0.5 * cavity_frequency_);
-                        beta -= +2 * (XY_pr + YX_pr) * amps_wy[0][q*N + (oa*va+ob*vb)] * lambda_dressed_mua->pointer()[a+oa][b+oa] * sqrt(0.5 * cavity_frequency_);
-                        beta -= +2 * (XY_pr + YX_pr) * amps_wy[1][q*N + (oa*va+ob*vb)] * lambda_dressed_mua->pointer()[a+oa][b+oa] * sqrt(0.5 * cavity_frequency_);
-                        beta -= +2 * (XY_pq + YX_pq) * amps_wz[0][r*N + (oa*va+ob*vb)] * lambda_dressed_mua->pointer()[a+oa][b+oa] * sqrt(0.5 * cavity_frequency_);
-                        beta -= +2 * (XY_pq + YX_pq) * amps_wz[1][r*N + (oa*va+ob*vb)] * lambda_dressed_mua->pointer()[a+oa][b+oa] * sqrt(0.5 * cavity_frequency_);
+                        beta -= +2 * (XY_qr + YX_qr) * amps_wx[0][p*N + (oa*va+ob*vb)] * lambda_dressed_mua_->pointer()[a+oa][b+oa] * sqrt(0.5 * cavity_frequency_);
+                        beta -= +2 * (XY_qr + YX_qr) * amps_wx[1][p*N + (oa*va+ob*vb)] * lambda_dressed_mua_->pointer()[a+oa][b+oa] * sqrt(0.5 * cavity_frequency_);
+                        beta -= +2 * (XY_pr + YX_pr) * amps_wy[0][q*N + (oa*va+ob*vb)] * lambda_dressed_mua_->pointer()[a+oa][b+oa] * sqrt(0.5 * cavity_frequency_);
+                        beta -= +2 * (XY_pr + YX_pr) * amps_wy[1][q*N + (oa*va+ob*vb)] * lambda_dressed_mua_->pointer()[a+oa][b+oa] * sqrt(0.5 * cavity_frequency_);
+                        beta -= +2 * (XY_pq + YX_pq) * amps_wz[0][r*N + (oa*va+ob*vb)] * lambda_dressed_mua_->pointer()[a+oa][b+oa] * sqrt(0.5 * cavity_frequency_);
+                        beta -= +2 * (XY_pq + YX_pq) * amps_wz[1][r*N + (oa*va+ob*vb)] * lambda_dressed_mua_->pointer()[a+oa][b+oa] * sqrt(0.5 * cavity_frequency_);
                     }
                 }
 
@@ -1230,17 +1232,17 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
                             XY_qr += 0.5 * amps_wy[0][q*N + ja] * amps_wz[1][r*N + ia];
                             YX_qr += 0.5 * amps_wy[1][q*N + ja] * amps_wz[0][r*N + ia];
                         }
-                        beta += 2 * (XY_qr + YX_qr) * mub[p]->pointer()[j][i];
-                        beta += 2 * (XY_pr + YX_pr) * mub[q]->pointer()[j][i];
-                        beta += 2 * (XY_pq + YX_pq) * mub[r]->pointer()[j][i];
+                        beta += 2 * (XY_qr + YX_qr) * mub_[p]->pointer()[j][i];
+                        beta += 2 * (XY_pr + YX_pr) * mub_[q]->pointer()[j][i];
+                        beta += 2 * (XY_pq + YX_pq) * mub_[r]->pointer()[j][i];
 
                         // more terms because we get terms from b and b^ in H
-                        beta += +2 * (XY_qr + YX_qr) * amps_wx[0][p*N + (oa*va+ob*vb)] * lambda_dressed_mub->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
-                        beta += +2 * (XY_qr + YX_qr) * amps_wx[1][p*N + (oa*va+ob*vb)] * lambda_dressed_mub->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
-                        beta += +2 * (XY_pr + YX_pr) * amps_wy[0][q*N + (oa*va+ob*vb)] * lambda_dressed_mub->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
-                        beta += +2 * (XY_pr + YX_pr) * amps_wy[1][q*N + (oa*va+ob*vb)] * lambda_dressed_mub->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
-                        beta += +2 * (XY_pq + YX_pq) * amps_wz[0][r*N + (oa*va+ob*vb)] * lambda_dressed_mub->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
-                        beta += +2 * (XY_pq + YX_pq) * amps_wz[1][r*N + (oa*va+ob*vb)] * lambda_dressed_mub->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
+                        beta += +2 * (XY_qr + YX_qr) * amps_wx[0][p*N + (oa*va+ob*vb)] * lambda_dressed_mub_->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
+                        beta += +2 * (XY_qr + YX_qr) * amps_wx[1][p*N + (oa*va+ob*vb)] * lambda_dressed_mub_->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
+                        beta += +2 * (XY_pr + YX_pr) * amps_wy[0][q*N + (oa*va+ob*vb)] * lambda_dressed_mub_->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
+                        beta += +2 * (XY_pr + YX_pr) * amps_wy[1][q*N + (oa*va+ob*vb)] * lambda_dressed_mub_->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
+                        beta += +2 * (XY_pq + YX_pq) * amps_wz[0][r*N + (oa*va+ob*vb)] * lambda_dressed_mub_->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
+                        beta += +2 * (XY_pq + YX_pq) * amps_wz[1][r*N + (oa*va+ob*vb)] * lambda_dressed_mub_->pointer()[j][i] * sqrt(0.5 * cavity_frequency_);
                     }
                 }
 
@@ -1264,17 +1266,17 @@ void PolaritonicUTDDFT::compute_hyperpolarizability(
                             XY_qr += 0.5 * amps_wy[0][q*N + ia] * amps_wz[1][r*N + ib];
                             YX_qr += 0.5 * amps_wy[1][q*N + ia] * amps_wz[0][r*N + ib];
                         }
-                        beta -= 2 * (XY_qr + YX_qr) * mub[p]->pointer()[a+ob][b+ob];
-                        beta -= 2 * (XY_pr + YX_pr) * mub[q]->pointer()[a+ob][b+ob];
-                        beta -= 2 * (XY_pq + YX_pq) * mub[r]->pointer()[a+ob][b+ob];
+                        beta -= 2 * (XY_qr + YX_qr) * mub_[p]->pointer()[a+ob][b+ob];
+                        beta -= 2 * (XY_pr + YX_pr) * mub_[q]->pointer()[a+ob][b+ob];
+                        beta -= 2 * (XY_pq + YX_pq) * mub_[r]->pointer()[a+ob][b+ob];
 
                         // more terms because we get terms from b and b^ in H
-                        beta -= +2 * (XY_qr + YX_qr) * amps_wx[0][p*N + (oa*va+ob*vb)] * lambda_dressed_mub->pointer()[a+ob][b+ob] * sqrt(0.5 * cavity_frequency_);
-                        beta -= +2 * (XY_qr + YX_qr) * amps_wx[1][p*N + (oa*va+ob*vb)] * lambda_dressed_mub->pointer()[a+ob][b+ob] * sqrt(0.5 * cavity_frequency_);
-                        beta -= +2 * (XY_pr + YX_pr) * amps_wy[0][q*N + (oa*va+ob*vb)] * lambda_dressed_mub->pointer()[a+ob][b+ob] * sqrt(0.5 * cavity_frequency_);
-                        beta -= +2 * (XY_pr + YX_pr) * amps_wy[1][q*N + (oa*va+ob*vb)] * lambda_dressed_mub->pointer()[a+ob][b+ob] * sqrt(0.5 * cavity_frequency_);
-                        beta -= +2 * (XY_pq + YX_pq) * amps_wz[0][r*N + (oa*va+ob*vb)] * lambda_dressed_mub->pointer()[a+ob][b+ob] * sqrt(0.5 * cavity_frequency_);
-                        beta -= +2 * (XY_pq + YX_pq) * amps_wz[1][r*N + (oa*va+ob*vb)] * lambda_dressed_mub->pointer()[a+ob][b+ob] * sqrt(0.5 * cavity_frequency_);
+                        beta -= +2 * (XY_qr + YX_qr) * amps_wx[0][p*N + (oa*va+ob*vb)] * lambda_dressed_mub_->pointer()[a+ob][b+ob] * sqrt(0.5 * cavity_frequency_);
+                        beta -= +2 * (XY_qr + YX_qr) * amps_wx[1][p*N + (oa*va+ob*vb)] * lambda_dressed_mub_->pointer()[a+ob][b+ob] * sqrt(0.5 * cavity_frequency_);
+                        beta -= +2 * (XY_pr + YX_pr) * amps_wy[0][q*N + (oa*va+ob*vb)] * lambda_dressed_mub_->pointer()[a+ob][b+ob] * sqrt(0.5 * cavity_frequency_);
+                        beta -= +2 * (XY_pr + YX_pr) * amps_wy[1][q*N + (oa*va+ob*vb)] * lambda_dressed_mub_->pointer()[a+ob][b+ob] * sqrt(0.5 * cavity_frequency_);
+                        beta -= +2 * (XY_pq + YX_pq) * amps_wz[0][r*N + (oa*va+ob*vb)] * lambda_dressed_mub_->pointer()[a+ob][b+ob] * sqrt(0.5 * cavity_frequency_);
+                        beta -= +2 * (XY_pq + YX_pq) * amps_wz[1][r*N + (oa*va+ob*vb)] * lambda_dressed_mub_->pointer()[a+ob][b+ob] * sqrt(0.5 * cavity_frequency_);
                     }
                 }
 
@@ -1322,21 +1324,6 @@ double PolaritonicUTDDFT::compute_energy() {
     if ( n_photon_states_ > 1 ) {
         update_cavity_terms();
     }
-
-    // dipole integrals
-    std::vector<std::shared_ptr<Matrix>> mua;
-    for (int i = 0; i < 3; i++) {
-        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
-        mua.push_back(tmp);
-        mua[i]->transform(Ca_);
-    }
-    std::vector<std::shared_ptr<Matrix>> mub;
-    for (int i = 0; i < 3; i++) {
-        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
-        mub.push_back(tmp);
-        mub[i]->transform(Cb_);
-    }
-
 
     std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
     HCavity_z->zero();
@@ -1481,17 +1468,17 @@ double PolaritonicUTDDFT::compute_energy() {
         for (int j = 0; j < oa; j++) {
             for (int b = 0; b < va; b++) {
                 double cr = (rerp[state][j*va + b] + rerp[state][j*va + b + oa*va])/nrm;
-                mu_x_r += mua[0]->pointer()[j][b + oa] * cr;
-                mu_y_r += mua[1]->pointer()[j][b + oa] * cr;
-                mu_z_r += mua[2]->pointer()[j][b + oa] * cr;
+                mu_x_r += mua_[0]->pointer()[j][b + oa] * cr;
+                mu_y_r += mua_[1]->pointer()[j][b + oa] * cr;
+                mu_z_r += mua_[2]->pointer()[j][b + oa] * cr;
             }
         }
         for (int j = 0; j < ob; j++) {
             for (int b = 0; b < vb; b++) {
                 double cr = (rerp[state][j*vb + b + 2 * oa*va] + rerp[state][j*vb + b + ob*vb + 2 * oa*va])/nrm;
-                mu_x_r += mub[0]->pointer()[j][b + ob] * cr;
-                mu_y_r += mub[1]->pointer()[j][b + ob] * cr;
-                mu_z_r += mub[2]->pointer()[j][b + ob] * cr;
+                mu_x_r += mub_[0]->pointer()[j][b + ob] * cr;
+                mu_y_r += mub_[1]->pointer()[j][b + ob] * cr;
+                mu_z_r += mub_[2]->pointer()[j][b + ob] * cr;
             }
         }
         double w = revalp[state];
