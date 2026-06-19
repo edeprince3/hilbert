@@ -1,11 +1,55 @@
-src/psi4numpy/polaritonic_scf/.ipynb_checkpoints/*
-src/psi4numpy/polaritonic_scf/__pycache__/*
-src/psi4numpy/polaritonic_scf/*.clean
+# macOS and editor files
 .DS_Store
-src/.DS_SStore
-src/psi4numpy)polaritonic_scf/.DS_Store
-src/psi4numpy_polaritonic_scf/.ipynb_checkpoints/*
-.ipynb_checkpoints/*
+*.swp
+*.swo
+
+# Python cache and test state
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Jupyter scratch output
+.ipynb_checkpoints/
+src/psi4numpy/polaritonic_scf/.ipynb_checkpoints/
+src/psi4numpy_polaritonic_scf/.ipynb_checkpoints/
+
+# CMake and Ninja state
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+Testing/
+.ninja_deps
+.ninja_log
+build.ninja
+/objdir/
+/build/
+/build-*/
+
+# FetchContent and install artifacts created by local builds.
+/_deps/
+/include/
+/lib/
+/cmake/vg/
+/cmake/vg-subbuild/
+
+# Compiled artifacts
+*.a
+*.dylib
+*.dll
+*.exe
+*.mod
+*.o
+*.out
+*.so
+*.dSYM/
+
+# Psi4 and Hilbert run output
+*.clean
 *.dat
 *.log
-src/psi4numpy_polaritonic_scf/nax_forjay/*
+NULL
+
+# Local scratch directories used by older examples
+src/psi4numpy/polaritonic_scf/__pycache__/
+src/psi4numpy_polaritonic_scf/nax_forjay/

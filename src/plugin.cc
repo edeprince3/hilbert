@@ -115,7 +115,7 @@ int read_options(std::string name, Options& options)
         /*- What algorithm to use for the SCF computation. See Table :ref:`SCF
         Convergence & Algorithm <table:conv_scf>` for default algorithm for
         different calculation types. -*/
-        options.add_str("SCF_TYPE", "DISK_DF", "DISK_DF DISK_CD PK");
+        options.add_str("SCF_TYPE", "DISK_DF", "DISK_DF CD PK");
 
         /*- SUBSECTION DOCI -*/
 

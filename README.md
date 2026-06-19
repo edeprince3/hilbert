@@ -32,3 +32,8 @@ Your best bet in getting started is to simply follow the tests provided in edepr
 
 **TiledArray**
 To use the TiledArray library for the QED-CC codes, please refer to [here](src/cc_cavity/README.md)
+
+**macOS Apple Silicon build notes**
+
+For a worked conda-based recipe using Psi4, MPI, TiledArray, and the QED-CC
+build path on Apple Silicon, see [BUILD_MACOS.md](BUILD_MACOS.md).

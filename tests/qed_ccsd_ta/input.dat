@@ -23,7 +23,7 @@ set {
   reference rhf # all calculations use a spin-orbital basis
   
   # CD algorithm is recommended for QED-CC calculations. DF is also supported, but not PK. 
-  scf_type cd 
+  scf_type df 
   cholesky_tolerance 1e-12
   diis_max_vecs 25
   
