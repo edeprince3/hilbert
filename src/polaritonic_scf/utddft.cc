@@ -1323,13 +1323,20 @@ double PolaritonicUTDDFT::compute_energy() {
         update_cavity_terms();
     }
 
-    double coupling_factor_x = cavity_frequency_ * cavity_coupling_strength_[0];
-    double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
-    double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
+    // dipole integrals
+    std::vector<std::shared_ptr<Matrix>> mua;
+    for (int i = 0; i < 3; i++) {
+        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
+        mua.push_back(tmp);
+        mua[i]->transform(Ca_);
+    }
+    std::vector<std::shared_ptr<Matrix>> mub;
+    for (int i = 0; i < 3; i++) {
+        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
+        mub.push_back(tmp);
+        mub[i]->transform(Cb_);
+    }
 
-    double ** dx = Dipole_x_->pointer();
-    double ** dy = Dipole_y_->pointer();
-    double ** dz = Dipole_z_->pointer();
 
     std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
     HCavity_z->zero();
@@ -1474,17 +1481,17 @@ double PolaritonicUTDDFT::compute_energy() {
         for (int j = 0; j < oa; j++) {
             for (int b = 0; b < va; b++) {
                 double cr = (rerp[state][j*va + b] + rerp[state][j*va + b + oa*va])/nrm;
-                mu_x_r += dx[j][b + oa + ob] * cr;
-                mu_y_r += dy[j][b + oa + ob] * cr;
-                mu_z_r += dz[j][b + oa + ob] * cr;
+                mu_x_r += mua[0]->pointer()[j][b + oa] * cr;
+                mu_y_r += mua[1]->pointer()[j][b + oa] * cr;
+                mu_z_r += mua[2]->pointer()[j][b + oa] * cr;
             }
         }
         for (int j = 0; j < ob; j++) {
             for (int b = 0; b < vb; b++) {
                 double cr = (rerp[state][j*vb + b + 2 * oa*va] + rerp[state][j*vb + b + ob*vb + 2 * oa*va])/nrm;
-                mu_x_r += dx[j + oa][b + oa + ob + va] * cr;
-                mu_y_r += dy[j + oa][b + oa + ob + va] * cr;
-                mu_z_r += dz[j + oa][b + oa + ob + va] * cr;
+                mu_x_r += mub[0]->pointer()[j][b + ob] * cr;
+                mu_y_r += mub[1]->pointer()[j][b + ob] * cr;
+                mu_z_r += mub[2]->pointer()[j][b + ob] * cr;
             }
         }
         double w = revalp[state];
