@@ -1,0 +1,2311 @@
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 1.10 
+
+                         Git: Rev {HEAD} f2492db dirty
+
+
+    D. G. A. Smith, L. A. Burns, A. C. Simmonett, R. M. Parrish,
+    M. C. Schieber, R. Galvelis, P. Kraus, H. Kruse, R. Di Remigio,
+    A. Alenaizan, A. M. James, S. Lehtola, J. P. Misiewicz, M. Scheurer,
+    R. A. Shaw, J. B. Schriber, Y. Xie, Z. L. Glick, D. A. Sirianni,
+    J. S. O'Brien, J. M. Waldrop, A. Kumar, E. G. Hohenstein,
+    B. P. Pritchard, B. R. Brooks, H. F. Schaefer III, A. Yu. Sokolov,
+    K. Patkowski, A. E. DePrince III, U. Bozkaya, R. A. King,
+    F. A. Evangelista, J. M. Turney, T. D. Crawford, C. D. Sherrill,
+    J. Chem. Phys. 152(18) 184108 (2020). https://doi.org/10.1063/5.0006002
+
+                            Additional Code Authors
+    E. T. Seidl, C. L. Janssen, E. F. Valeev, M. L. Leininger,
+    J. F. Gonthier, R. M. Richard, H. R. McAlexander, M. Saitow, X. Wang,
+    P. Verma, M. H. Lechner, A. Jiang, S. Behnle, A. G. Heide,
+    M. F. Herbst, D. L. Poole, T. Győri, E. C. Mitchell, J. P. Pederson,
+    and A. M. Wallace
+
+             Previous Authors, Complete List of Code Contributors,
+                       and Citations for Specific Modules
+    https://github.com/psi4/psi4/blob/master/codemeta.json
+    https://github.com/psi4/psi4/graphs/contributors
+    https://psicode.org/psi4manual/master/introduction.html#citing-psifour
+
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Saturday, 20 June 2026 09:07AM
+
+    Process ID: 82707
+    Host:       Alberts-MacBook-Pro.local
+    PSIDATADIR: /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    Addons:     a̶d̶c̶c̶, a̶m̶b̶i̶t̶, b̶s̶e̶, c̶c̶t̶3̶, c̶f̶o̶u̶r̶, c̶h̶e̶m̶p̶s̶2̶, c̶p̶p̶e̶, d̶d̶x̶,
+                d̶f̶t̶d̶3̶, d̶f̶t̶d̶4̶, d̶k̶h̶, e̶c̶p̶i̶n̶t̶, e̶i̶n̶s̶u̶m̶s̶, f̶o̶r̶t̶e̶,
+                g̶a̶u̶x̶c̶, g̶c̶p̶, g̶d̶m̶a̶, g̶e̶o̶m̶e̶t̶r̶i̶c̶, g̶p̶u̶_̶d̶f̶c̶c̶,
+                i̶n̶t̶e̶g̶r̶a̶t̶o̶r̶x̶x̶, i̶p̶i̶, l̶i̶b̶e̶f̶p̶, m̶d̶i̶, m̶p̶2̶d̶, m̶r̶c̶c̶,
+                o̶o̶o̶, o̶p̶e̶n̶f̶e̶r̶m̶i̶o̶n̶p̶s̶i̶4̶, p̶c̶m̶s̶o̶l̶v̶e̶r̶,
+                p̶s̶i̶4̶f̶o̶c̶k̶c̶i̶, p̶s̶i̶x̶a̶s̶, r̶e̶s̶p̶, s̶i̶m̶i̶n̶t̶, s̶n̶s̶m̶p̶2̶,
+                v̶2̶r̶d̶m̶_̶c̶a̶s̶s̶c̶f̶
+
+  ==> Input File <==
+
+--------------------------------------------------------------------------
+sys.path.insert(0, '../../../')
+import math
+import hilbert
+
+QED_EOMCCSD_21_STO_3G = [0.0,
+                         0.099733546220,
+                         0.396703955905,
+                         0.456502109328,
+                         0.497691618101,
+                         0.501326447533,
+                         0.504402549259,
+                         0.540980583922,
+                         0.557457868902,
+                         0.580340813345]
+
+molecule {
+  0 1
+
+  O            0.000000000000     0.000000000000    -0.065655108083
+  H            0.000000000000    -0.757365949175     0.520997104927
+  H            0.000000000000     0.757365949175     0.520997104927
+  no_reorient 
+  no_com
+  symmetry c1
+}
+
+set {
+  basis sto-3g
+  
+  scf_type cd 
+  cholesky_tolerance 1e-12
+  
+  e_convergence 1e-10
+  d_convergence 1e-10
+  r_convergence 1e-8
+}
+ 
+lam = 0.05 # coupling factor (this value is for a 0.74 nm³ cavity)
+w = 0.1 # frequency of the cavity mode
+g = (lam / math.sqrt(2.0 * w)) # coupling strength
+set hilbert {
+  cavity_frequency         $w
+  cavity_coupling_strength [0.0, 0.0, $g]
+  
+  QED_USE_RELAXED_ORBITALS  true # do relax the SCF orbitals within the cavity
+  
+  NUMBER_ROOTS                10 # number of excited states to compute
+  MAXDIM                       8 # maximum dimension of the EOM-CC subspace (multiplied by NUMBER_ROOTS)
+  INDIM                        4 # initial dimension of the EOM-CC subspace (multiplied by NUMBER_ROOTS)
+  
+  EOM_MAXITER                250 # maximum number of iterations for the EOM-CC iterations
+  MAD_NUM_THREADS              1 # the number of MADNESS threads to use with mpirun 
+                                 # Note: if not using mpi or using eom, set this to 1 for best performanc
+  TILE_SIZE                   -1 # the spacing between tiles in a tiledarray (-1 places all data on a single tile)
+                                 # Note: if not using mpi or using eom, set this to -1 for best performance
+}
+
+# memory for Psi4 (note: this is for the integrals, not the CC calculation which does not restrict memory usage)
+memory 1000 MB
+
+set hilbert EOM_TYPE EE
+en, wfn = energy('eom-qed-ccsd-21', return_wfn=True) # EOM-EE-QED-CCSD-21 w/ TiledArray
+
+print_variables()
+
+for n, ref in enumerate(QED_EOMCCSD_21_STO_3G):
+    ex_en = psi4.variable(f"EOM-EE-QED-CCSD-21 ROOT 0 -> ROOT {n} EXCITATION ENERGY")
+    compare_values(ref,ex_en, 6, f"QED-EE-EOMCCSD-21 excitation energy {n}")
+--------------------------------------------------------------------------
+
+  Memory set to 953.674 MiB by Python driver.
+
+Scratch directory: /Users/deprince/psi4_scratch/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Sat Jun 20 09:07:24 2026
+
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line    81 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/sto-3g.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/sto-3g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              RHF Reference
+                        1 Threads,    953 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.065655108083    15.994914619570
+         H            0.000000000000    -0.757365949175     0.520997104927     1.007825032230
+         H            0.000000000000     0.757365949175     0.520997104927     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     27.36310  B =     14.58041  C =      9.51197 [cm^-1]
+  Rotational constants: A = 820325.17390  B = 437109.76779  C = 285161.58919 [MHz]
+  Nuclear repulsion =    9.187386457593393
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is CD.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-10
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis functions: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> Integral Setup <==
+
+  ==> CDJK: Cholesky-decomposed J/K Matrices <==
+
+    J tasked:                     Yes
+    K tasked:                     Yes
+    wK tasked:                     No
+    OpenMP threads:                 1
+    Integrals threads:              1
+    Memory [MiB]:                 715
+    Algorithm:                   Core
+    Integral Cache:              SAVE
+    Schwarz Cutoff:             1E-12
+    Cholesky tolerance:      1.00E-12
+    No. Cholesky vectors:          28
+
+  Minimum eigenvalue in the overlap matrix is 3.4273419653E-01.
+  Reciprocal condition number of the overlap matrix is 1.7758633656E-01.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A          7       7 
+   -------------------------
+    Total       7       7
+   -------------------------
+
+  ==> Iterations <==
+
+                        Total Energy        Delta E     RMS |[F,P]|
+
+   @RHF iter SAD:   -74.47369660580161   -7.44737e+01   0.00000e+00 
+   @RHF iter   1:   -74.92866633938698   -4.54970e-01   3.41908e-02 DIIS/ADIIS
+   @RHF iter   2:   -74.96199951753096   -3.33332e-02   5.03674e-03 DIIS/ADIIS
+   @RHF iter   3:   -74.96301028442907   -1.01077e-03   1.14323e-03 DIIS/ADIIS
+   @RHF iter   4:   -74.96305536693961   -4.50825e-05   4.60636e-05 DIIS
+   @RHF iter   5:   -74.96305548474538   -1.17806e-07   1.59244e-05 DIIS
+   @RHF iter   6:   -74.96305550412336   -1.93780e-08   1.56170e-07 DIIS
+   @RHF iter   7:   -74.96305550412433   -9.66338e-13   6.74938e-10 DIIS
+   @RHF iter   8:   -74.96305550412440   -7.10543e-14   2.62089e-13 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Doubly Occupied:                                                      
+
+       1A    -20.241893     2A     -1.268049     3A     -0.617442  
+       4A     -0.453000     5A     -0.391223  
+
+    Virtual:                                                              
+
+       6A      0.604952     7A      0.741324  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+    NA   [     5 ]
+    NB   [     5 ]
+
+  @RHF Final Energy:   -74.96305550412440
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              9.1873864575933926
+    One-Electron Energy =                -122.3576686335010919
+    Two-Electron Energy =                  38.2072266717833031
+    Total Energy =                        -74.9630555041243980
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Y            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Z            :         -0.2978450            0.9765223            0.6786773
+ Magnitude           :                                                    0.6786773
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on Alberts-MacBook-Pro.local at Sat Jun 20 09:07:25 2026
+Module time:
+	user time   =       0.29 seconds =       0.00 minutes
+	system time =       0.05 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
+Total time:
+	user time   =       0.29 seconds =       0.00 minutes
+	system time =       0.05 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   233 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.065655108083    15.994914619570
+         H            0.000000000000    -0.757365949175     0.520997104927     1.007825032230
+         H            0.000000000000     0.757365949175     0.520997104927     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic RHF                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.065655108083    15.994914619570
+         H            0.000000000000    -0.757365949175     0.520997104927     1.007825032230
+         H            0.000000000000     0.757365949175     0.520997104927     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+    No. basis functions:                7
+    cholesky_tolerance:             1.000000e-12
+    No. electrons:                     10
+    e_convergence:              1.000e-10
+    d_convergence:              1.000e-10
+    maxiter:                           50
+
+
+
+    Guess energy:      -74.962944614586
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -74.958642623702       0.004301990884       0.000140347232
+        1     -74.958643066685      -0.000000442983       0.000045910473
+        2     -74.958643500391      -0.000000433705       0.000017414863
+        3     -74.958643641542      -0.000000141152       0.000002453312
+        4     -74.958643764068      -0.000000122526       0.000000380840
+        5     -74.958643778264      -0.000000014195       0.000000001881
+        6     -74.958643777633       0.000000000631       0.000000001527
+        7     -74.958643777630       0.000000000003       0.000000002541
+        8     -74.958643777635      -0.000000000005       0.000000000676
+        9     -74.958643777633       0.000000000002       0.000000000453
+       10     -74.958643777633       0.000000000000       0.000000000453
+       11     -74.958643777633      -0.000000000000       0.000000000465
+       12     -74.958643777634      -0.000000000001       0.000000000725
+       13     -74.958643777632       0.000000000002       0.000000000001
+
+    SCF iterations converged!
+
+
+    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
+
+    one-electron part;        0.007422056296
+    two-electron part:       -0.003011481355
+    total:                    0.004410574940
+
+
+    ==> dipole integrals <== 
+
+    <mu_x> =       0.000000000000
+    <mu_y> =       0.000000000000
+    <mu_z> =      -0.296048834693
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       4.531069814684
+    one electron (xy):      -0.000000000000
+    one electron (xz):      -0.000000000000
+    one electron (yy):       7.334258927776
+    one electron (yz):      -0.000000000000
+    one electron (zz):       5.937645036566
+
+    two electron (xx):      -1.665896969059
+    two electron (xy):       0.000000000000
+    two electron (xz):      -0.000000000000
+    two electron (yy):      -3.196640801708
+    two electron (yz):       0.000000000000
+    two electron (zz):      -2.409185084325
+
+    total (xx):              2.865172845625
+    total (xy):              0.000000000000
+    total (xz):             -0.000000000000
+    total (yy):              4.137618126068
+    total (yz):             -0.000000000000
+    total (zz):              3.528459952240
+
+    * Polaritonic RHF total energy:     -74.958643777632
+
+ #  #
+ Irrep: 1
+      1:  -20.241224711458926
+      2:   -1.268255961028691
+      3:   -0.616658765692319
+      4:   -0.452609723175401
+      5:   -0.390498797580674
+      6:    0.606400970113259
+      7:    0.742064216586772
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000     0.000000000000    -0.065655108083    15.994914619570
+         H            0.000000000000    -0.757365949175     0.520997104927     1.007825032230
+         H            0.000000000000     0.757365949175     0.520997104927     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                      -----------                    *
+        *                       CC CAVITY                     *
+        *                      -----------                    *
+        *                                                     *
+        *******************************************************
+
+
+
+    madness threads:                    1
+    omp threads:                        1
+    No. basis functions:                7
+    No. auxiliary basis functions:     28
+    No. alpha electrons:                5
+    No. alpha virtuals:                 2
+    No. beta electrons:                 5
+    No. beta virtuals:                  2
+    e_convergence:              1.000e-10
+    r_convergence:              1.000e-08
+    maxiter:                           50
+
+
+  Included amplitudes:
+          T0,1      
+      T1  T1,1      
+      T2  T2,1      
+
+  Dimension of CC amplitudes: 641
+
+  V_cav (nm3) = 0.74485760
+  lambda      = x: 0.00000000 y: 0.00000000 z: 0.05000000
+  hw          = 0.10000000
+  electric dipole moments: x: 0.00000000 y: 0.00000000 z: -0.29604883
+  average electric dipole self-energy: 0.00010956
+  Using relaxed orbitals.
+
+    ==>  Begin QED-CCSD-21 iterations <==    
+
+ Iter           energy              dE            |dT|  |   |dT1|  |dT2| |dT0,1||dT1,1||dT2,1|
+    0    0.000000000000  0.000000000000  0.124860766739 |   9e-12  1e-01  1e-14  1e-02  0e+00
+    1   -0.035982063997 -0.035982063997  0.034384997753 |   1e-02  3e-02  5e-14  1e-03  1e-03
+    2   -0.045372630569 -0.009390566571  0.013633529188 |   5e-03  1e-02  3e-03  5e-04  5e-04
+    3   -0.049588719734 -0.004216089165  0.002980358153 |   2e-03  2e-03  3e-04  1e-04  1e-04
+    4   -0.049919076713 -0.000330356979  0.000644726300 |   5e-04  4e-04  2e-05  5e-05  4e-05
+    5   -0.049936467215 -0.000017390502  0.000165866400 |   1e-04  1e-04  3e-05  2e-05  1e-05
+    6   -0.049931821990  0.000004645226  0.000012077085 |   6e-06  1e-05  3e-07  2e-06  2e-06
+    7   -0.049931782762  0.000000039227  0.000002316583 |   7e-07  2e-06  2e-07  5e-07  4e-07
+    8   -0.049931706165  0.000000076597  0.000000432866 |   1e-07  3e-07  2e-07  7e-08  7e-08
+    9   -0.049931714079 -0.000000007914  0.000000423936 |   1e-07  4e-07  2e-07  8e-08  7e-08
+   10   -0.049931724744 -0.000000010664  0.000000143136 |   5e-08  1e-07  6e-08  3e-08  3e-08
+   11   -0.049931728176 -0.000000003432  0.000000016009 |   6e-09  1e-08  5e-09  1e-09  3e-09
+   12   -0.049931727780  0.000000000396  0.000000002748 |   3e-10  2e-09  9e-10  2e-10  7e-10
+   13   -0.049931727672  0.000000000108  0.000000000516 |   2e-10  4e-10  8e-11  1e-10  2e-10
+   14   -0.049931727720 -0.000000000049  0.000000000172 |   1e-10  1e-10  4e-11  2e-11  5e-11
+
+    QED-CCSD-21 iterations converged!
+
+    * QED-CCSD-21 total energy:     -75.008575505353
+
+
+   Norms of cluster amplitudes:
+   ------------------------------
+     T1:  0.019802084305 |  1.36 %
+     T2:  0.168390713004 | 98.15 %
+   T0,1:  0.004609126386 |  0.07 %
+   T1,1:  0.010774524690 |  0.40 %
+   T2,1:  0.001900196850 |  0.01 %
+   ------------------------------
+    Total:  0.169966172944
+
+  ==> Time spent in CC iterations <==  
+                    Total: 3.525 s
+      Residuals Equations: total =    1.241 s | average =  77.586 ms
+      Transform Integrals: total =    2.259 s | average = 141.163 ms
+        Update Amplitudes: total = 168.117 ms | average =   5.254 ms
+
+
+
+        ******************************************************
+        *                                                    *
+        *                                                    *
+        *                 EOM-EE-QED-CCSD-21                 *
+        *                                                    *
+        *                                                    *
+        ******************************************************
+
+
+  ==> EOM-EE-QED-CCSD-21 Parameters <==
+
+  Non-Symmetric Davidson Algorithm for EOM Hamiltonian Subspace
+  -- No. Requested Roots:   10
+  -- No. Possible States:   282
+  -- Initial Subspace Size: 40
+  -- Maximum Subspace Size: 80
+  -- Max Iterations:        250
+  -- Energy Convergence:    1.000e-08
+  -- Residual Convergence:  1.000e-08
+
+
+
+  Building trial independent contractions across iterations... Done.
+      Finished in 61.271 ms
+
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0       0.000000000000    0.000000000000 ------------- ------------- ------------- ------------- ------------- ------------- 
+    1       0.000000000000    0.000000000000 ------------- ------------- ------------- ------------- ------------- ------------- 
+    2       0.000000000000    0.000000000000 ------------- ------------- ------------- ------------- ------------- ------------- 
+    3       0.000000000000    0.000000000000 ------------- ------------- ------------- ------------- ------------- ------------- 
+    4       0.000000000000    0.000000000000 ------------- ------------- ------------- ------------- ------------- ------------- 
+    5       0.000000000000    0.000000000000 ------------- ------------- ------------- ------------- ------------- ------------- 
+    6       0.000000000000    0.000000000000 ------------- ------------- ------------- ------------- ------------- ------------- 
+    7       0.000000000000    0.000000000000 ------------- ------------- ------------- ------------- ------------- ------------- 
+    8       0.000000000000    0.000000000000 ------------- ------------- ------------- ------------- ------------- ------------- 
+    9       0.000000000000    0.000000000000 ------------- ------------- ------------- ------------- ------------- ------------- 
+
+  Time Elapsed:           594.994 ms
+  Iterations:             1
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  21.969 ms
+    - Total 21.969 ms
+  Eigen Solver Time:
+    - Avg.  61.565 ms
+    - Total 61.565 ms
+  Sigma Build Time:
+    - Avg.  573.025 ms
+    - Total 573.025 ms
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0     -75.008575505353     -75.008575505353 
+root    1     -74.908837559487     -74.908837559487 
+root    2     -74.582167277012     -74.582167277012 
+root    3     -74.504251987659     -74.504251987659 
+root    4     -74.487998054465     -74.487998054465 
+root    5     -74.473505629713     -74.473505629713 
+root    6     -74.472953375250     -74.472953375250 
+root    7     -74.424085567343     -74.424085567343 
+root    8     -74.419918487585     -74.419918487585 
+root    9     -74.396303404962     -74.396303404962 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.003683553561       0.314737429045
+root    2       0.171741196387       0.177052899420
+root    3       0.230083350074       0.236193568640
+root    4       0.151147032875       0.156712080868
+root    5       0.194416959388       0.201150352281
+root    6       0.178497173668       0.177190671731
+root    7       0.205672587189       0.204577566736
+root    8       0.095114568300       0.096884174244
+root    9       0.238287295498       0.245023330673
+converged 0 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 40, number of complex roots 0
+info1 0
+info2 0
+
+Iter     1 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908837559487    0.099737945866 -------------  0.0001608359  0.0000011203  0.9998385357 -0.0000006555  0.0000001636 
+    2     -74.582167277012    0.426408228342 -------------  0.9834046250  0.0090112540 -------------  0.0075841210 ------------- 
+    3     -74.504251987659    0.504323517694 -------------  0.9844870859  0.0077359212 -------------  0.0077769928 ------------- 
+    4     -74.487998054465    0.520577450889 -------------  0.9919006954 ------------- -------------  0.0080993046 ------------- 
+    5     -74.473505629713    0.535069875640 -------------  0.0073707269  0.0002892859 -------------  0.9923399872 ------------- 
+    6     -74.472953375250    0.535622130103 -------------  0.9952285922 ------------- -------------  0.0047714078 ------------- 
+    7     -74.424085567343    0.584489938010 -------------  0.9953997485 ------------- -------------  0.0046002515 ------------- 
+    8     -74.419918487585    0.588657017768 -------------  0.9951087060  0.0001054190 -------------  0.0047858749 ------------- 
+    9     -74.396303404962    0.612272100392 -------------  0.0075884117  0.0002558353 -------------  0.9921557530 ------------- 
+
+  Time Elapsed:           1.337 s
+  Iterations:             2
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  26.634 ms
+    - Total 53.267 ms
+  Eigen Solver Time:
+    - Avg.  32.500 ms
+    - Total 64.999 ms
+  Sigma Build Time:
+    - Avg.  641.902 ms
+    - Total 1.284 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1      -0.000003994514     -74.908841554001 
+root    2      -0.029313004999     -74.611480282011 
+root    3      -0.047328166039     -74.551580153698 
+root    4      -0.022493620680     -74.510491675145 
+root    5      -0.033390810760     -74.506896440473 
+root    6      -0.030258560723     -74.503211935973 
+root    7      -0.043336815070     -74.467422382414 
+root    8      -0.030779983353     -74.450698470938 
+root    9      -0.031558323681     -74.427861728643 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000721475138       0.051302121963
+root    2       0.035493194746       0.035735831687
+root    3       0.030280000287       0.029772571493
+root    4       0.037245428476       0.037461302815
+root    5       0.033962790169       0.034450285127
+root    6       0.043485422574       0.042172548475
+root    7       0.014940980269       0.015793692492
+root    8       0.028160812970       0.027708841993
+root    9       0.029505647828       0.029246842517
+converged 1 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 60, number of complex roots 0
+info1 0
+info2 0
+
+Iter     2 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841554001    0.099733951352 -------------  0.0001715940  0.0000050973  0.9998183360  0.0000041972  0.0000007755 
+    2     -74.611480282011    0.397095223343 -------------  0.9597378319  0.0345273346 -------------  0.0056137853  0.0001210482 
+    3     -74.551580153698    0.456995351655 -------------  0.9449405017  0.0494863097 -------------  0.0054441897  0.0001289989 
+    4     -74.510491675145    0.498083830209 -------------  0.0053179555  0.0004845750 -------------  0.9595693808  0.0346280888 
+    5     -74.506896440473    0.501679064880 -------------  0.9768730698  0.0158157466 -------------  0.0071782059  0.0001329777 
+    6     -74.503211935973    0.505363569380 -------------  0.9660106712  0.0302600705 -------------  0.0035923686  0.0001368896 
+    7     -74.467422382414    0.541153122940 -------------  0.9520439899  0.0447526566 -------------  0.0030147147  0.0001886388 
+    8     -74.450698470938    0.557877034415 -------------  0.0051864624  0.0002971725 -------------  0.9447810443  0.0497353207 
+    9     -74.427861728643    0.580713776710 -------------  0.9877094537  0.0077001337 -------------  0.0045727574  0.0000176552 
+
+  Time Elapsed:           2.224 s
+  Iterations:             3
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  30.984 ms
+    - Total 92.952 ms
+  Eigen Solver Time:
+    - Avg.  23.761 ms
+    - Total 71.283 ms
+  Sigma Build Time:
+    - Avg.  710.383 ms
+    - Total 2.131 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1      -0.000000408021     -74.908841962023 
+root    2      -0.000371957555     -74.611852239565 
+root    3      -0.000489976346     -74.552070130044 
+root    4      -0.000379707942     -74.510871383087 
+root    5      -0.000343270580     -74.507239711054 
+root    6      -0.000934430202     -74.504146366176 
+root    7      -0.000169993352     -74.467592375766 
+root    8      -0.000411643389     -74.451110114328 
+root    9      -0.000351813063     -74.428213541706 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000160955489       0.011631596621
+root    2       0.014787826984       0.014973085945
+root    3       0.006883395953       0.006815410646
+root    4       0.011100467525       0.011513156365
+root    5       0.011355767197       0.011475334234
+root    6       0.016782033318       0.016508384851
+root    7       0.003925950516       0.004183411535
+root    8       0.008644312681       0.007958736585
+root    9       0.014480774154       0.014261850804
+converged 1 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 78, number of complex roots 0
+Subspace too large: maxdim = 80, L = 78
+Collapsing eigenvectors.
+info1 0
+info2 0
+
+Iter     3 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841962023    0.099733543331 -------------  0.9998759886  0.0001063979 -------------  0.0000021773  0.0000154363 
+    2     -74.611852239565    0.396723265788 -------------  0.0028528767  0.0035589099  0.6494327249  0.0035463691  0.3406091193 
+    3     -74.552070130044    0.456505375309 -------------  0.0028001031  0.0039649000  0.3377372871  0.0067369536  0.6487607562 
+    4     -74.510871383087    0.497704122267 -------------  0.4455170514  0.4554247391  0.0036484337  0.0121644015  0.0832453744 
+    5     -74.507239711054    0.501335794300 -------------  0.4987144101  0.3865897872 -------------  0.0005355440  0.1141602587 
+    6     -74.504146366176    0.504429139178 -------------  0.0032810205  0.0232940392 -------------  0.4508446858  0.5225802545 
+    7     -74.467592375766    0.540983129588 -------------  0.0020149054  0.0389413771 -------------  0.5031712259  0.4558724916 
+    8     -74.451110114328    0.557465391026 -------------  0.4931417544  0.4158631002  0.0018510482  0.0000652438  0.0890788535 
+    9     -74.428213541706    0.580361963648 -------------  0.4249934111  0.4493283398 -------------  0.0042007863  0.1214774628 
+
+  Time Elapsed:           2.850 s
+  Iterations:             4
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  28.511 ms
+    - Total 114.045 ms
+  Eigen Solver Time:
+    - Avg.  20.368 ms
+    - Total 81.470 ms
+  Sigma Build Time:
+    - Avg.  683.932 ms
+    - Total 2.736 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1       0.000000001799     -74.908841960223 
+root    2      -0.000017331149     -74.611869570714 
+root    3      -0.000003147877     -74.552073277922 
+root    4      -0.000011393351     -74.510882776437 
+root    5      -0.000008841457     -74.507248552511 
+root    6      -0.000022882540     -74.504169248715 
+root    7      -0.000002304345     -74.467594680111 
+root    8      -0.000006936219     -74.451117050547 
+root    9      -0.000018348917     -74.428231890622 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000038353862       0.003038383186
+root    2       0.002629904842       0.002634477564
+root    3       0.000543694536       0.000581555211
+root    4       0.002540841792       0.002477415678
+root    5       0.001348232510       0.001372348650
+root    6       0.003824938449       0.003420102779
+root    7       0.000891744140       0.001034193697
+root    8       0.001441335067       0.001361604644
+root    9       0.003944541142       0.003788649478
+converged 1 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 38, number of complex roots 0
+info1 0
+info2 0
+
+Iter     4 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841960223    0.099733545130 -------------  0.0001720988  0.0000058188  0.9998159592  0.0000047273  0.0000013959 
+    2     -74.611869570714    0.396705934639 -------------  0.9589941687  0.0352492804 -------------  0.0056389845  0.0001175664 
+    3     -74.552073277922    0.456502227432 -------------  0.9437649326  0.0506267505 -------------  0.0054082100  0.0002001069 
+    4     -74.510882776437    0.497692728916 -------------  0.0053482877  0.0004921110 -------------  0.9587054291  0.0354541722 
+    5     -74.507248552511    0.501326952843 -------------  0.9760655150  0.0169810278 -------------  0.0068670365  0.0000864208 
+    6     -74.504169248715    0.504406256638 -------------  0.9629763185  0.0338384247 -------------  0.0031024252  0.0000828315 
+    7     -74.467594680111    0.540980825243 -------------  0.9521037550  0.0454944637 -------------  0.0023348697  0.0000669116 
+    8     -74.451117050547    0.557458454807 -------------  0.0051247080  0.0005674268 -------------  0.9434828211  0.0508250441 
+    9     -74.428231890622    0.580343614731 -------------  0.9861848184  0.0091881992 -------------  0.0045833885  0.0000435939 
+
+  Time Elapsed:           3.536 s
+  Iterations:             5
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  28.706 ms
+    - Total 143.529 ms
+  Eigen Solver Time:
+    - Avg.  16.941 ms
+    - Total 84.703 ms
+  Sigma Build Time:
+    - Avg.  678.579 ms
+    - Total 3.393 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1       0.000000001088     -74.908841959135 
+root    2      -0.000001888730     -74.611871459445 
+root    3      -0.000000114976     -74.552073392898 
+root    4      -0.000001068888     -74.510883845326 
+root    5      -0.000000470221     -74.507249022731 
+root    6      -0.000003340320     -74.504172589036 
+root    7      -0.000000170903     -74.467594851013 
+root    8      -0.000000581339     -74.451117631886 
+root    9      -0.000002624882     -74.428234515505 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000009232650       0.000592915506
+root    2       0.000370484591       0.000358907724
+root    3       0.000073604113       0.000090262467
+root    4       0.000220689526       0.000218296201
+root    5       0.000178684294       0.000179154976
+root    6       0.000510556593       0.000465291928
+root    7       0.000289086438       0.000565340772
+root    8       0.000159031683       0.000139112049
+root    9       0.000866799405       0.000889294086
+converged 1 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 56, number of complex roots 0
+info1 0
+info2 0
+
+Iter     5 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959135    0.099733546219 -------------  0.0001719808  0.0000058414  0.9998159335  0.0000048370  0.0000014074 
+    2     -74.611871459445    0.396704045909 -------------  0.9590042654  0.0352395539 -------------  0.0056389859  0.0001171948 
+    3     -74.552073392898    0.456502112455 -------------  0.9437767275  0.0506150139 -------------  0.0054078809  0.0002003776 
+    4     -74.510883845326    0.497691660028 -------------  0.0053484807  0.0004928307 -------------  0.9587023851  0.0354563036 
+    5     -74.507249022731    0.501326482622 -------------  0.9760690101  0.0170006049 -------------  0.0068444343  0.0000859507 
+    6     -74.504172589036    0.504402916318 -------------  0.9629433759  0.0339231654 -------------  0.0030578327  0.0000756260 
+    7     -74.467594851013    0.540980654340 -------------  0.9521323305  0.0454941821 -------------  0.0023089036  0.0000645838 
+    8     -74.451117631886    0.557457873467 -------------  0.0051274220  0.0005635791 -------------  0.9434760198  0.0508329791 
+    9     -74.428234515505    0.580340989849 -------------  0.9861194711  0.0092526214 -------------  0.0045793857  0.0000485217 
+
+  Time Elapsed:           4.407 s
+  Iterations:             6
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  30.239 ms
+    - Total 181.437 ms
+  Eigen Solver Time:
+    - Avg.  15.059 ms
+    - Total 90.356 ms
+  Sigma Build Time:
+    - Avg.  704.186 ms
+    - Total 4.225 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1       0.000000000002     -74.908841959133 
+root    2      -0.000000089050     -74.611871548494 
+root    3      -0.000000003020     -74.552073395918 
+root    4      -0.000000041101     -74.510883886427 
+root    5      -0.000000021837     -74.507249044568 
+root    6      -0.000000272114     -74.504172861150 
+root    7      -0.000000056988     -74.467594908002 
+root    8      -0.000000004351     -74.451117636238 
+root    9      -0.000000157248     -74.428234672752 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000001830023       0.000090461795
+root    2       0.000062868018       0.000061323401
+root    3       0.000026148562       0.000031752973
+root    4       0.000032845693       0.000033758131
+root    5       0.000117660210       0.000124564669
+root    6       0.000238431460       0.000248358796
+root    7       0.000132545802       0.000278214644
+root    8       0.000049735506       0.000042822048
+root    9       0.000366278473       0.000379536022
+converged 1 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 74, number of complex roots 0
+Subspace too large: maxdim = 80, L = 74
+Collapsing eigenvectors.
+info1 0
+info2 0
+
+Iter     6 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546220 -------------  0.0001336251  0.0000045782  0.9489287993  0.0005410703  0.0503919271 
+    2     -74.611871548494    0.396703956859 -------------  0.9575734856  0.0364483422 -------------  0.0059322108  0.0000459613 
+    3     -74.552073395918    0.456502109436 -------------  0.9435437748  0.0508463722 -------------  0.0054202899  0.0001895631 
+    4     -74.510883886427    0.497691618927 -------------  0.0049906880  0.0035258850 -------------  0.9471205279  0.0443628991 
+    5     -74.507249044568    0.501326460785 -------------  0.9757774931  0.0170841503 -------------  0.0070423084  0.0000960482 
+    6     -74.504172861150    0.504402644204 -------------  0.9643037470  0.0319485766 -------------  0.0035960397  0.0001516366 
+    7     -74.467594908002    0.540980597352 -------------  0.9542819431  0.0430316242 -------------  0.0025871122  0.0000993205 
+    8     -74.451117636238    0.557457869116 -------------  0.0050919056  0.0006099438 -------------  0.9434677232  0.0508304274 
+    9     -74.428234672752    0.580340832601 -------------  0.9854204994  0.0094083279 -------------  0.0050242932  0.0001468796 
+
+  Time Elapsed:           5.043 s
+  Iterations:             7
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  28.947 ms
+    - Total 202.631 ms
+  Eigen Solver Time:
+    - Avg.  14.146 ms
+    - Total 99.021 ms
+  Sigma Build Time:
+    - Avg.  691.523 ms
+    - Total 4.841 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1       0.000000000000     -74.908841959133 
+root    2      -0.000000000941     -74.611871549435 
+root    3      -0.000000000106     -74.552073396024 
+root    4      -0.000000000800     -74.510883887227 
+root    5      -0.000000007204     -74.507249051772 
+root    6      -0.000000057591     -74.504172918741 
+root    7      -0.000000010128     -74.467594918129 
+root    8      -0.000000000211     -74.451117636449 
+root    9      -0.000000014731     -74.428234687483 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000282131       0.000026059599
+root    2       0.000003852178       0.000003914293
+root    3       0.000001427961       0.000001617047
+root    4       0.000005314590       0.000005485891
+root    5       0.000128657418       0.000127671700
+root    6       0.000188522930       0.000197243269
+root    7       0.000059305048       0.000123536119
+root    8       0.000002385216       0.000002076319
+root    9       0.000173590494       0.000163691150
+converged 1 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 38, number of complex roots 0
+info1 0
+info2 0
+
+Iter     7 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546221 -------------  0.0001720788  0.0000058435  0.9998158067  0.0000048635  0.0000014075 
+    2     -74.611871549435    0.396703955918 -------------  0.9590052412  0.0352387639 -------------  0.0056384874  0.0001175074 
+    3     -74.552073396024    0.456502109329 -------------  0.9437744109  0.0506173465 -------------  0.0054078443  0.0002003983 
+    4     -74.510883887227    0.497691618127 -------------  0.0053489226  0.0004916144 -------------  0.9586827602  0.0354767027 
+    5     -74.507249051772    0.501326453581 -------------  0.9761055465  0.0170110328 -------------  0.0067981633  0.0000852574 
+    6     -74.504172918741    0.504402586613 -------------  0.9630321119  0.0339472564 -------------  0.0029472359  0.0000733958 
+    7     -74.467594918129    0.540980587224 -------------  0.9521841124  0.0455043896 -------------  0.0022486279  0.0000628701 
+    8     -74.451117636449    0.557457868905 -------------  0.0051272809  0.0005636377 -------------  0.9434661552  0.0508429262 
+    9     -74.428234687483    0.580340817870 -------------  0.9860729317  0.0093017018 -------------  0.0045761958  0.0000491708 
+
+  Time Elapsed:           5.733 s
+  Iterations:             8
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  29.079 ms
+    - Total 232.629 ms
+  Eigen Solver Time:
+    - Avg.  12.782 ms
+    - Total 102.253 ms
+  Sigma Build Time:
+    - Avg.  687.564 ms
+    - Total 5.501 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1      -0.000000000000     -74.908841959133 
+root    2      -0.000000000013     -74.611871549448 
+root    3      -0.000000000002     -74.552073396026 
+root    4      -0.000000000024     -74.510883887251 
+root    5      -0.000000005099     -74.507249056871 
+root    6      -0.000000028222     -74.504172946963 
+root    7      -0.000000002088     -74.467594920217 
+root    8      -0.000000000003     -74.451117636451 
+root    9      -0.000000003460     -74.428234690943 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000154095       0.000004736988
+root    2       0.000001320385       0.000001385693
+root    3       0.000000432021       0.000000461844
+root    4       0.000001959491       0.000002013845
+root    5       0.000071426696       0.000068968752
+root    6       0.000215614424       0.000226433004
+root    7       0.000035365722       0.000072492945
+root    8       0.000000596997       0.000000525833
+root    9       0.000080872211       0.000061176349
+converged 1 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 56, number of complex roots 0
+info1 0
+info2 0
+
+Iter     8 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546220 -------------  0.0001720968  0.0000058445  0.9998157861  0.0000048651  0.0000014075 
+    2     -74.611871549448    0.396703955905 -------------  0.9590052904  0.0352387165 -------------  0.0056384869  0.0001175063 
+    3     -74.552073396026    0.456502109328 -------------  0.9437745709  0.0506171859 -------------  0.0054078540  0.0002003892 
+    4     -74.510883887251    0.497691618103 -------------  0.0053489269  0.0004915940 -------------  0.9586826250  0.0354768540 
+    5     -74.507249056871    0.501326448482 -------------  0.9761340434  0.0170112045 -------------  0.0067699365  0.0000848157 
+    6     -74.504172946963    0.504402558391 -------------  0.9630678704  0.0339519532 -------------  0.0029078820  0.0000722944 
+    7     -74.467594920217    0.540980585136 -------------  0.9521900931  0.0455043698 -------------  0.0022428055  0.0000627316 
+    8     -74.451117636451    0.557457868902 -------------  0.0051273028  0.0005636069 -------------  0.9434659486  0.0508431417 
+    9     -74.428234690943    0.580340814410 -------------  0.9860676035  0.0093053000 -------------  0.0045778520  0.0000492445 
+
+  Time Elapsed:           6.601 s
+  Iterations:             9
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  30.100 ms
+    - Total 270.901 ms
+  Eigen Solver Time:
+    - Avg.  11.997 ms
+    - Total 107.973 ms
+  Sigma Build Time:
+    - Avg.  703.392 ms
+    - Total 6.331 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1       0.000000000000     -74.908841959133 
+root    2      -0.000000000000     -74.611871549448 
+root    3       0.000000000000     -74.552073396026 
+root    4      -0.000000000001     -74.510883887252 
+root    5      -0.000000000904     -74.507249057775 
+root    6      -0.000000007273     -74.504172954236 
+root    7      -0.000000000880     -74.467594921097 
+root    8       0.000000000000     -74.451117636451 
+root    9      -0.000000000779     -74.428234691723 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000041799       0.000001414183
+root    2       0.000000199135       0.000000199679
+root    3       0.000000091683       0.000000107441
+root    4       0.000000465792       0.000000475828
+root    5       0.000014651257       0.000014732348
+root    6       0.000075106785       0.000078773492
+root    7       0.000022802351       0.000045288189
+root    8       0.000000244027       0.000000213164
+root    9       0.000037552180       0.000037044424
+converged 1 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 74, number of complex roots 0
+Subspace too large: maxdim = 80, L = 74
+Collapsing eigenvectors.
+info1 0
+info2 0
+
+Iter     9 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546220 -------------  0.0001310699  0.0000045851  0.9488500982  0.0005679230  0.0504463238 
+    2     -74.611871549448    0.396703955905 -------------  0.9590053145  0.0352387013 -------------  0.0056384727  0.0001175115 
+    3     -74.552073396026    0.456502109328 -------------  0.9428360830  0.0513836753 -------------  0.0056472115  0.0001330302 
+    4     -74.510883887252    0.497691618101 -------------  0.0053681126  0.0004118534 -------------  0.9578915228  0.0363285112 
+    5     -74.507249057775    0.501326447579 -------------  0.9745256609  0.0181372713 -------------  0.0072420132  0.0000950545 
+    6     -74.504172954236    0.504402551117 -------------  0.9652338824  0.0315037702 -------------  0.0031431087  0.0001192388 
+    7     -74.467594921097    0.540980584256 -------------  0.9521896475  0.0455001098 -------------  0.0022472922  0.0000629506 
+    8     -74.451117636451    0.557457868902 -------------  0.0050561580  0.0011342283 -------------  0.9402433798  0.0535662340 
+    9     -74.428234691723    0.580340813631 -------------  0.9857285791  0.0091518057 -------------  0.0049631789  0.0001564363 
+
+  Time Elapsed:           7.230 s
+  Iterations:             10
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  29.206 ms
+    - Total 292.055 ms
+  Eigen Solver Time:
+    - Avg.  11.672 ms
+    - Total 116.719 ms
+  Sigma Build Time:
+    - Avg.  693.800 ms
+    - Total 6.938 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1       0.000000000000     -74.908841959133 
+root    2      -0.000000000000     -74.611871549449 
+root    3      -0.000000000000     -74.552073396026 
+root    4      -0.000000000000     -74.510883887252 
+root    5      -0.000000000041     -74.507249057816 
+root    6      -0.000000001446     -74.504172955682 
+root    7      -0.000000000231     -74.467594921329 
+root    8       0.000000000000     -74.451117636451 
+root    9      -0.000000000170     -74.428234691893 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000015777       0.000000286774
+root    2       0.000000024264       0.000000023844
+root    3       0.000000009628       0.000000009699
+root    4       0.000000056731       0.000000059438
+root    5       0.000007111842       0.000007166770
+root    6       0.000045013221       0.000047524244
+root    7       0.000010594052       0.000021084420
+root    8       0.000000013681       0.000000012072
+root    9       0.000022984635       0.000021770039
+converged 2 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 38, number of complex roots 0
+info1 0
+info2 0
+
+Iter    10 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546221 -------------  0.0001720977  0.0000058446  0.9998157845  0.0000048655  0.0000014077 
+    2     -74.611871549449    0.396703955905 -------------  0.9590052931  0.0352387135 -------------  0.0056384877  0.0001175057 
+    3     -74.552073396026    0.456502109328 -------------  0.9437745805  0.0506171763 -------------  0.0054078538  0.0002003894 
+    4     -74.510883887252    0.497691618101 -------------  0.0053489284  0.0004915920 -------------  0.9586825815  0.0354768981 
+    5     -74.507249057816    0.501326447537 -------------  0.9761376842  0.0170144176 -------------  0.0067631186  0.0000847796 
+    6     -74.504172955682    0.504402549671 -------------  0.9630781222  0.0339576007 -------------  0.0028927740  0.0000715031 
+    7     -74.467594921329    0.540980584025 -------------  0.9521968039  0.0455044702 -------------  0.0022363701  0.0000623557 
+    8     -74.451117636451    0.557457868902 -------------  0.0051273040  0.0005636055 -------------  0.9434659520  0.0508431385 
+    9     -74.428234691893    0.580340813461 -------------  0.9860664619  0.0093039956 -------------  0.0045802240  0.0000493185 
+
+  Time Elapsed:           7.946 s
+  Iterations:             11
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  29.144 ms
+    - Total 320.589 ms
+  Eigen Solver Time:
+    - Avg.  10.901 ms
+    - Total 119.911 ms
+  Sigma Build Time:
+    - Avg.  693.256 ms
+    - Total 7.626 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1      -0.000000000000     -74.908841959133 
+root    2       0.000000000000     -74.611871549448 
+root    3       0.000000000000     -74.552073396026 
+root    4       0.000000000000     -74.510883887252 
+root    5      -0.000000000003     -74.507249057819 
+root    6      -0.000000000317     -74.504172956000 
+root    7      -0.000000000069     -74.467594921398 
+root    8       0.000000000000     -74.451117636451 
+root    9      -0.000000000092     -74.428234691985 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000001331       0.000000069246
+root    2       0.000000002015       0.000000002004
+root    3       0.000000000757       0.000000000783
+root    4       0.000000004681       0.000000004887
+root    5       0.000001525552       0.000001542909
+root    6       0.000010014862       0.000010503363
+root    7       0.000005820030       0.000011939611
+root    8       0.000000002184       0.000000001888
+root    9       0.000009987490       0.000010040010
+converged 5 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 54, number of complex roots 0
+info1 0
+info2 0
+
+Iter    11 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546220 -------------  0.0001720977  0.0000058446  0.9998157845  0.0000048655  0.0000014077 
+    2     -74.611871549448    0.396703955905 -------------  0.9590052932  0.0352387134 -------------  0.0056384877  0.0001175057 
+    3     -74.552073396026    0.456502109328 -------------  0.9437745809  0.0506171760 -------------  0.0054078538  0.0002003894 
+    4     -74.510883887252    0.497691618102 -------------  0.0053489284  0.0004915920 -------------  0.9586825800  0.0354768996 
+    5     -74.507249057819    0.501326447534 -------------  0.9761376590  0.0170145053 -------------  0.0067630519  0.0000847838 
+    6     -74.504172956000    0.504402549354 -------------  0.9630786029  0.0339583672 -------------  0.0028915986  0.0000714313 
+    7     -74.467594921398    0.540980583956 -------------  0.9521974220  0.0455050299 -------------  0.0022352720  0.0000622761 
+    8     -74.451117636451    0.557457868902 -------------  0.0051273042  0.0005636053 -------------  0.9434659505  0.0508431401 
+    9     -74.428234691985    0.580340813369 -------------  0.9860655475  0.0093034067 -------------  0.0045817095  0.0000493363 
+
+  Time Elapsed:           8.682 s
+  Iterations:             12
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  29.486 ms
+    - Total 353.832 ms
+  Eigen Solver Time:
+    - Avg.  10.427 ms
+    - Total 125.121 ms
+  Sigma Build Time:
+    - Avg.  693.987 ms
+    - Total 8.328 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1      -0.000000000000     -74.908841959133 
+root    2      -0.000000000000     -74.611871549448 
+root    3       0.000000000000     -74.552073396025 
+root    4      -0.000000000000     -74.510883887252 
+root    5      -0.000000000001     -74.507249057820 
+root    6      -0.000000000057     -74.504172956057 
+root    7      -0.000000000025     -74.467594921423 
+root    8       0.000000000000     -74.451117636451 
+root    9      -0.000000000018     -74.428234692003 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000000872       0.000000015213
+root    2       0.000000002013       0.000000002004
+root    3       0.000000000757       0.000000000783
+root    4       0.000000004676       0.000000004881
+root    5       0.000000571042       0.000000579896
+root    6       0.000004491593       0.000004784661
+root    7       0.000003841541       0.000007835356
+root    8       0.000000002183       0.000000001887
+root    9       0.000006349610       0.000006935097
+converged 5 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 64, number of complex roots 0
+info1 0
+info2 0
+
+Iter    12 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546220 -------------  0.0001720978  0.0000058446  0.9998157844  0.0000048655  0.0000014077 
+    2     -74.611871549448    0.396703955905 -------------  0.9590052932  0.0352387134 -------------  0.0056384877  0.0001175057 
+    3     -74.552073396025    0.456502109328 -------------  0.9437745809  0.0506171760 -------------  0.0054078538  0.0002003894 
+    4     -74.510883887252    0.497691618101 -------------  0.0053489284  0.0004915920 -------------  0.9586825800  0.0354768996 
+    5     -74.507249057820    0.501326447533 -------------  0.9761376836  0.0170145575 -------------  0.0067629728  0.0000847860 
+    6     -74.504172956057    0.504402549296 -------------  0.9630790178  0.0339592560 -------------  0.0028903093  0.0000714170 
+    7     -74.467594921423    0.540980583931 -------------  0.9521985284  0.0455049462 -------------  0.0022343003  0.0000622251 
+    8     -74.451117636451    0.557457868902 -------------  0.0051273042  0.0005636053 -------------  0.9434659505  0.0508431401 
+    9     -74.428234692003    0.580340813350 -------------  0.9860649959  0.0093034226 -------------  0.0045822350  0.0000493465 
+
+  Time Elapsed:           9.563 s
+  Iterations:             13
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  30.137 ms
+    - Total 391.784 ms
+  Eigen Solver Time:
+    - Avg.  10.155 ms
+    - Total 132.010 ms
+  Sigma Build Time:
+    - Avg.  705.473 ms
+    - Total 9.171 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1      -0.000000000000     -74.908841959133 
+root    2      -0.000000000000     -74.611871549449 
+root    3      -0.000000000001     -74.552073396026 
+root    4       0.000000000000     -74.510883887252 
+root    5       0.000000000000     -74.507249057820 
+root    6      -0.000000000037     -74.504172956094 
+root    7      -0.000000000008     -74.467594921431 
+root    8      -0.000000000000     -74.451117636452 
+root    9      -0.000000000005     -74.428234692008 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000000052       0.000000001060
+root    2       0.000000002011       0.000000002004
+root    3       0.000000000759       0.000000000783
+root    4       0.000000004672       0.000000004877
+root    5       0.000000592500       0.000000593156
+root    6       0.000001100322       0.000001171365
+root    7       0.000000495546       0.000001000399
+root    8       0.000000002182       0.000000001887
+root    9       0.000001429197       0.000001373830
+converged 6 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 74, number of complex roots 0
+Subspace too large: maxdim = 80, L = 74
+Collapsing eigenvectors.
+info1 0
+info2 0
+
+Iter    13 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546220 -------------  0.0001720979  0.0000058446  0.9998157804  0.0000048655  0.0000014116 
+    2     -74.611871549449    0.396703955905 -------------  0.9590052932  0.0352387135 -------------  0.0056384877  0.0001175057 
+    3     -74.552073396026    0.456502109328 -------------  0.9437745808  0.0506171760 -------------  0.0054078538  0.0002003894 
+    4     -74.510883887252    0.497691618102 -------------  0.0053489284  0.0004915920 -------------  0.9586825804  0.0354768992 
+    5     -74.507249057820    0.501326447533 -------------  0.9761378825  0.0170144965 -------------  0.0067628360  0.0000847851 
+    6     -74.504172956094    0.504402549259 -------------  0.9630807761  0.0339592539 -------------  0.0028886143  0.0000713557 
+    7     -74.467594921431    0.540980583923 -------------  0.9521985598  0.0455054779 -------------  0.0022337488  0.0000622135 
+    8     -74.451117636452    0.557457868902 -------------  0.0051342095  0.0005045259 -------------  0.9430382120  0.0513230527 
+    9     -74.428234692008    0.580340813346 -------------  0.9860647044  0.0093034742 -------------  0.0045824672  0.0000493542 
+
+  Time Elapsed:           10.099 s
+  Iterations:             14
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  29.156 ms
+    - Total 408.186 ms
+  Eigen Solver Time:
+    - Avg.  10.030 ms
+    - Total 140.416 ms
+  Sigma Build Time:
+    - Avg.  692.172 ms
+    - Total 9.690 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1       0.000000000000     -74.908841959133 
+root    2       0.000000000000     -74.611871549448 
+root    3       0.000000000000     -74.552073396026 
+root    4      -0.000000000000     -74.510883887252 
+root    5      -0.000000000000     -74.507249057820 
+root    6      -0.000000000001     -74.504172956095 
+root    7      -0.000000000000     -74.467594921431 
+root    8       0.000000000000     -74.451117636451 
+root    9      -0.000000000000     -74.428234692008 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000000052       0.000000001057
+root    2       0.000000002674       0.000000002004
+root    3       0.000000001074       0.000000000783
+root    4       0.000000004671       0.000000004877
+root    5       0.000000248295       0.000000247017
+root    6       0.000000665587       0.000000705974
+root    7       0.000000238214       0.000000484920
+root    8       0.000000002181       0.000000001886
+root    9       0.000000724220       0.000000808640
+converged 6 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 28, number of complex roots 0
+info1 0
+info2 0
+
+Iter    14 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546220 -------------  0.0001720978  0.0000058446  0.9998157844  0.0000048655  0.0000014077 
+    2     -74.611871549448    0.396703955905 -------------  0.9590052932  0.0352387134 -------------  0.0056384877  0.0001175057 
+    3     -74.552073396026    0.456502109328 -------------  0.9437745809  0.0506171760 -------------  0.0054078538  0.0002003894 
+    4     -74.510883887252    0.497691618102 -------------  0.0053489284  0.0004915920 -------------  0.9586825800  0.0354768996 
+    5     -74.507249057820    0.501326447533 -------------  0.9761378165  0.0170145409 -------------  0.0067628585  0.0000847841 
+    6     -74.504172956095    0.504402549259 -------------  0.9630810769  0.0339589184 -------------  0.0028886569  0.0000713478 
+    7     -74.467594921431    0.540980583922 -------------  0.9521990393  0.0455049567 -------------  0.0022338013  0.0000622026 
+    8     -74.451117636451    0.557457868902 -------------  0.0051273042  0.0005636053 -------------  0.9434659505  0.0508431401 
+    9     -74.428234692008    0.580340813345 -------------  0.9860646907  0.0093035122 -------------  0.0045824475  0.0000493495 
+
+  Time Elapsed:           10.684 s
+  Iterations:             15
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  28.562 ms
+    - Total 428.431 ms
+  Eigen Solver Time:
+    - Avg.  9.495 ms
+    - Total 142.421 ms
+  Sigma Build Time:
+    - Avg.  683.704 ms
+    - Total 10.256 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1       0.000000000000     -74.908841959133 
+root    2      -0.000000000000     -74.611871549448 
+root    3      -0.000000000000     -74.552073396026 
+root    4      -0.000000000000     -74.510883887252 
+root    5      -0.000000000000     -74.507249057820 
+root    6       0.000000000000     -74.504172956095 
+root    7      -0.000000000000     -74.467594921431 
+root    8      -0.000000000000     -74.451117636452 
+root    9       0.000000000000     -74.428234692008 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000000053       0.000000001055
+root    2       0.000000002594       0.000000002004
+root    3       0.000000001435       0.000000000783
+root    4       0.000000004671       0.000000004877
+root    5       0.000000144738       0.000000145499
+root    6       0.000000081762       0.000000092593
+root    7       0.000000066618       0.000000137098
+root    8       0.000000002181       0.000000001914
+root    9       0.000000260360       0.000000295528
+converged 6 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 36, number of complex roots 0
+info1 0
+info2 0
+
+Iter    15 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546221 -------------  0.0001720978  0.0000058446  0.9998157844  0.0000048655  0.0000014077 
+    2     -74.611871549448    0.396703955905 -------------  0.9590052933  0.0352387134 -------------  0.0056384877  0.0001175057 
+    3     -74.552073396026    0.456502109328 -------------  0.9437745810  0.0506171760 -------------  0.0054078537  0.0002003894 
+    4     -74.510883887252    0.497691618101 -------------  0.0053489284  0.0004915920 -------------  0.9586825800  0.0354768996 
+    5     -74.507249057820    0.501326447533 -------------  0.9761378603  0.0170145437 -------------  0.0067628132  0.0000847828 
+    6     -74.504172956095    0.504402549259 -------------  0.9630810784  0.0339589207 -------------  0.0028886539  0.0000713470 
+    7     -74.467594921431    0.540980583922 -------------  0.9521990434  0.0455049574 -------------  0.0022337969  0.0000622023 
+    8     -74.451117636452    0.557457868902 -------------  0.0051273041  0.0005636052 -------------  0.9434659506  0.0508431401 
+    9     -74.428234692008    0.580340813346 -------------  0.9860646742  0.0093035184 -------------  0.0045824574  0.0000493499 
+
+  Time Elapsed:           11.319 s
+  Iterations:             16
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  28.278 ms
+    - Total 452.449 ms
+  Eigen Solver Time:
+    - Avg.  9.077 ms
+    - Total 145.228 ms
+  Sigma Build Time:
+    - Avg.  679.134 ms
+    - Total 10.866 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1      -0.000000000000     -74.908841959133 
+root    2       0.000000000000     -74.611871549448 
+root    3       0.000000000000     -74.552073396025 
+root    4       0.000000000000     -74.510883887252 
+root    5       0.000000000000     -74.507249057820 
+root    6      -0.000000000000     -74.504172956095 
+root    7       0.000000000000     -74.467594921431 
+root    8       0.000000000000     -74.451117636451 
+root    9       0.000000000000     -74.428234692008 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000000052       0.000000001059
+root    2       0.000000002313       0.000000002004
+root    3       0.000000002152       0.000000000783
+root    4       0.000000004671       0.000000004877
+root    5       0.000000105142       0.000000105360
+root    6       0.000000025974       0.000000026686
+root    7       0.000000029276       0.000000061335
+root    8       0.000000002181       0.000000001886
+root    9       0.000000128000       0.000000129695
+converged 6 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 44, number of complex roots 0
+info1 0
+info2 0
+
+Iter    16 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546220 -------------  0.0001720978  0.0000058446  0.9998157844  0.0000048655  0.0000014077 
+    2     -74.611871549448    0.396703955905 -------------  0.9590052932  0.0352387134 -------------  0.0056384877  0.0001175057 
+    3     -74.552073396025    0.456502109328 -------------  0.9437745808  0.0506171760 -------------  0.0054078538  0.0002003894 
+    4     -74.510883887252    0.497691618102 -------------  0.0053489284  0.0004915920 -------------  0.9586825800  0.0354768996 
+    5     -74.507249057820    0.501326447533 -------------  0.9761378775  0.0170145454 -------------  0.0067627946  0.0000847825 
+    6     -74.504172956095    0.504402549259 -------------  0.9630810899  0.0339589168 -------------  0.0028886468  0.0000713466 
+    7     -74.467594921431    0.540980583922 -------------  0.9521990470  0.0455049600 -------------  0.0022337907  0.0000622023 
+    8     -74.451117636451    0.557457868902 -------------  0.0051273042  0.0005636053 -------------  0.9434659505  0.0508431401 
+    9     -74.428234692008    0.580340813346 -------------  0.9860646601  0.0093035223 -------------  0.0045824674  0.0000493503 
+
+  Time Elapsed:           12.001 s
+  Iterations:             17
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  28.251 ms
+    - Total 480.261 ms
+  Eigen Solver Time:
+    - Avg.  8.765 ms
+    - Total 149.004 ms
+  Sigma Build Time:
+    - Avg.  677.697 ms
+    - Total 11.521 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1       0.000000000000     -74.908841959133 
+root    2      -0.000000000000     -74.611871549448 
+root    3      -0.000000000000     -74.552073396026 
+root    4      -0.000000000000     -74.510883887252 
+root    5      -0.000000000000     -74.507249057820 
+root    6       0.000000000000     -74.504172956095 
+root    7       0.000000000000     -74.467594921431 
+root    8      -0.000000000000     -74.451117636452 
+root    9      -0.000000000000     -74.428234692008 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000000051       0.000000001062
+root    2       0.000000002180       0.000000002003
+root    3       0.000000001888       0.000000000783
+root    4       0.000000004671       0.000000004886
+root    5       0.000000031841       0.000000032037
+root    6       0.000000023226       0.000000024171
+root    7       0.000000011091       0.000000022606
+root    8       0.000000002179       0.000000001885
+root    9       0.000000086291       0.000000092457
+converged 6 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 52, number of complex roots 0
+info1 0
+info2 0
+
+Iter    17 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546220 -------------  0.0001720978  0.0000058446  0.9998157844  0.0000048655  0.0000014077 
+    2     -74.611871549448    0.396703955905 -------------  0.9590052932  0.0352387134 -------------  0.0056384877  0.0001175057 
+    3     -74.552073396026    0.456502109328 -------------  0.9437745809  0.0506171760 -------------  0.0054078538  0.0002003894 
+    4     -74.510883887252    0.497691618101 -------------  0.0053489284  0.0004915920 -------------  0.9586825800  0.0354768996 
+    5     -74.507249057820    0.501326447533 -------------  0.9761378851  0.0170145446 -------------  0.0067627878  0.0000847825 
+    6     -74.504172956095    0.504402549259 -------------  0.9630810978  0.0339589192 -------------  0.0028886366  0.0000713465 
+    7     -74.467594921431    0.540980583922 -------------  0.9521990540  0.0455049593 -------------  0.0022337848  0.0000622019 
+    8     -74.451117636452    0.557457868902 -------------  0.0051273042  0.0005636052 -------------  0.9434659505  0.0508431401 
+    9     -74.428234692008    0.580340813345 -------------  0.9860646523  0.0093035224 -------------  0.0045824750  0.0000493504 
+
+  Time Elapsed:           12.731 s
+  Iterations:             18
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  28.431 ms
+    - Total 511.754 ms
+  Eigen Solver Time:
+    - Avg.  8.546 ms
+    - Total 153.835 ms
+  Sigma Build Time:
+    - Avg.  678.854 ms
+    - Total 12.219 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1       0.000000000000     -74.908841959133 
+root    2      -0.000000000000     -74.611871549448 
+root    3      -0.000000000000     -74.552073396026 
+root    4       0.000000000000     -74.510883887252 
+root    5       0.000000000000     -74.507249057820 
+root    6      -0.000000000000     -74.504172956095 
+root    7      -0.000000000000     -74.467594921431 
+root    8       0.000000000000     -74.451117636452 
+root    9       0.000000000000     -74.428234692008 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000000051       0.000000001049
+root    2       0.000000002236       0.000000002005
+root    3       0.000000002380       0.000000000783
+root    4       0.000000004674       0.000000004891
+root    5       0.000000004300       0.000000004342
+root    6       0.000000010872       0.000000011575
+root    7       0.000000003029       0.000000006118
+root    8       0.000000002183       0.000000001887
+root    9       0.000000031901       0.000000036693
+converged 8 roots
+
+ Use residual norm to control the numer of correction vectors added to new subspace
+dimension 60, number of complex roots 0
+info1 0
+info2 0
+
+Iter    18 / 250  
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546220 -------------  0.0001720978  0.0000058446  0.9998157844  0.0000048655  0.0000014077 
+    2     -74.611871549448    0.396703955905 -------------  0.9590052931  0.0352387134 -------------  0.0056384878  0.0001175057 
+    3     -74.552073396026    0.456502109328 -------------  0.9437745809  0.0506171759 -------------  0.0054078538  0.0002003894 
+    4     -74.510883887252    0.497691618101 -------------  0.0053489285  0.0004915920 -------------  0.9586825799  0.0354768996 
+    5     -74.507249057820    0.501326447533 -------------  0.9761378866  0.0170145441 -------------  0.0067627868  0.0000847825 
+    6     -74.504172956095    0.504402549259 -------------  0.9630811009  0.0339589190 -------------  0.0028886339  0.0000713462 
+    7     -74.467594921431    0.540980583922 -------------  0.9521990581  0.0455049591 -------------  0.0022337811  0.0000622017 
+    8     -74.451117636452    0.557457868902 -------------  0.0051273042  0.0005636053 -------------  0.9434659505  0.0508431401 
+    9     -74.428234692008    0.580340813345 -------------  0.9860646488  0.0093035202 -------------  0.0045824806  0.0000493504 
+
+  Time Elapsed:           13.478 s
+  Iterations:             19
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  28.685 ms
+    - Total 545.009 ms
+  Eigen Solver Time:
+    - Avg.  8.413 ms
+    - Total 159.839 ms
+  Sigma Build Time:
+    - Avg.  680.693 ms
+    - Total 12.933 s
+----------------------------------------
+
+eigenvalues
+                         error           eigenvalue
+root    0       0.000000000000     -75.008575505353 
+root    1      -0.000000000000     -74.908841959133 
+root    2       0.000000000000     -74.611871549448 
+root    3       0.000000000001     -74.552073396025 
+root    4       0.000000000000     -74.510883887252 
+root    5      -0.000000000000     -74.507249057820 
+root    6      -0.000000000000     -74.504172956095 
+root    7       0.000000000000     -74.467594921431 
+root    8       0.000000000000     -74.451117636452 
+root    9      -0.000000000000     -74.428234692008 
+
+residuals
+                right residual        left residual
+root    0       0.000000000000       0.000000000000
+root    1       0.000000000051       0.000000001049
+root    2       0.000000002317       0.000000002005
+root    3       0.000000001166       0.000000000788
+root    4       0.000000004694       0.000000004898
+root    5       0.000000004299       0.000000004341
+root    6       0.000000002135       0.000000002314
+root    7       0.000000003033       0.000000006119
+root    8       0.000000002193       0.000000001896
+root    9       0.000000005546       0.000000006655
+converged 10 roots
+energy and eigenvectors converged
+
+
+
+
+    ==>  Dominant Transitions:  <==    
+
+--> Root 0 <--
+  l0*r0
+      1: ( ) -> ( ) | l*r =       1.000000000000, l =   1.00000000, r =   1.00000000
+
+
+--> Root 1 <--
+  l0*r0 + hw
+      1: ( ) -> ( ) | l*r =       0.999815784441, l =  -0.99991445, r =  -0.99990132
+  l1*r1
+      1: ( 4a ) -> ( 6a ) | l*r =       0.000057910601, l =   0.00729655, r =   0.00793671
+      2: ( 4b ) -> ( 6b ) | l*r =       0.000057910601, l =   0.00729655, r =   0.00793671
+      3: ( 3b ) -> ( 7b ) | l*r =       0.000028012501, l =   0.00492264, r =   0.00569055
+      4: ( 3a ) -> ( 7a ) | l*r =       0.000028012501, l =   0.00492264, r =   0.00569055
+      5: ( 2b ) -> ( 6b ) | l*r =       0.000000125731, l =  -0.00056246, r =  -0.00022354
+      6: ( 2a ) -> ( 6a ) | l*r =       0.000000125731, l =  -0.00056246, r =  -0.00022354
+  l1*r1 + hw
+      1: ( 4a ) -> ( 6a ) | l*r =       0.000002376189, l =  -0.01198221, r =  -0.00019831
+      2: ( 4b ) -> ( 6b ) | l*r =       0.000002376189, l =  -0.01198221, r =  -0.00019831
+      3: ( 2b ) -> ( 6b ) | l*r =       0.000000061604, l =   0.00079250, r =   0.00007773
+      4: ( 2a ) -> ( 6a ) | l*r =       0.000000061604, l =   0.00079250, r =   0.00007773
+      5: ( 3b ) -> ( 7b ) | l*r =      -0.000000005055, l =  -0.00165056, r =   0.00000306
+      6: ( 3a ) -> ( 7a ) | l*r =      -0.000000005055, l =  -0.00165056, r =   0.00000306
+  l2*r2
+      1: ( 4a,4b ) -> ( 6a,6b ) | l*r =       0.000001255458, l =  -0.00104089, r =  -0.00120614
+      2: ( 4a,4b ) -> ( 7a,7b ) | l*r =       0.000001181824, l =  -0.00105444, r =  -0.00112081
+      3: ( 3a,4b ) -> ( 7a,6b ) | l*r =       0.000000726912, l =  -0.00081588, r =  -0.00089096
+      4: ( 4a,3b ) -> ( 6a,7b ) | l*r =       0.000000726912, l =  -0.00081588, r =  -0.00089096
+      5: ( 4a,3b ) -> ( 7a,6b ) | l*r =       0.000000505393, l =  -0.00067835, r =  -0.00074503
+      6: ( 3a,4b ) -> ( 6a,7b ) | l*r =       0.000000505393, l =  -0.00067835, r =  -0.00074503
+      7: ( 3a,3b ) -> ( 6a,6b ) | l*r =       0.000000219879, l =  -0.00044234, r =  -0.00049708
+      8: ( 4a,2b ) -> ( 7a,7b ) | l*r =       0.000000122992, l =   0.00034230, r =   0.00035931
+  l2*r2 + hw
+      1: ( 4a,4b ) -> ( 6a,6b ) | l*r =       0.000002328153, l =   0.04601070, r =   0.00005060
+      2: ( 4a,4b ) -> ( 7a,7b ) | l*r =       0.000001365341, l =   0.04122135, r =   0.00003312
+      3: ( 3a,4b ) -> ( 7a,6b ) | l*r =       0.000000831555, l =   0.04679791, r =   0.00001777
+      4: ( 4a,3b ) -> ( 6a,7b ) | l*r =       0.000000831555, l =   0.04679791, r =   0.00001777
+      5: ( 4a,3b ) -> ( 7a,6b ) | l*r =       0.000000522846, l =   0.03434953, r =   0.00001522
+      6: ( 3a,4b ) -> ( 6a,7b ) | l*r =       0.000000522846, l =   0.03434953, r =   0.00001522
+      7: ( 2a,2b ) -> ( 7a,7b ) | l*r =       0.000000047672, l =   0.01642193, r =   0.00000290
+      8: ( 4a,2b ) -> ( 7a,7b ) | l*r =       0.000000039382, l =  -0.00332050, r =  -0.00001186
+
+
+--> Root 2 <--
+  l1*r1
+      1: ( 5a ) -> ( 6a ) | l*r =       0.479502646575, l =  -0.69229339, r =  -0.69262924
+      2: ( 5b ) -> ( 6b ) | l*r =       0.479502646528, l =   0.69229339, r =   0.69262924
+  l1*r1 + hw
+      1: ( 5a ) -> ( 6a ) | l*r =       0.002819243920, l =   0.05376574, r =   0.05243569
+      2: ( 5b ) -> ( 6b ) | l*r =       0.002819243922, l =  -0.05376574, r =  -0.05243569
+  l2*r2
+      1: ( 3a,5b ) -> ( 7a,6b ) | l*r =       0.010424719614, l =  -0.10338013, r =  -0.10083872
+      2: ( 5a,3b ) -> ( 6a,7b ) | l*r =       0.010424719637, l =   0.10338013, r =   0.10083872
+      3: ( 5a,4b ) -> ( 6a,6b ) | l*r =       0.002888311043, l =   0.05403383, r =   0.05345375
+      4: ( 4a,5b ) -> ( 6a,6b ) | l*r =       0.002888311068, l =  -0.05403383, r =  -0.05345375
+      5: ( 5a,4b ) -> ( 7a,7b ) | l*r =       0.002351272721, l =   0.04575953, r =   0.05138324
+      6: ( 4a,5b ) -> ( 7a,7b ) | l*r =       0.002351272736, l =  -0.04575953, r =  -0.05138324
+      7: ( 3a,5a ) -> ( 6a,7a ) | l*r =       0.000926914921, l =  -0.03515447, r =  -0.02636692
+      8: ( 3b,5b ) -> ( 6b,7b ) | l*r =       0.000926914914, l =   0.03515447, r =   0.02636692
+  l2*r2 + hw
+      1: ( 3a,5b ) -> ( 7a,6b ) | l*r =       0.000033671071, l =   0.00441510, r =   0.00762635
+      2: ( 5a,3b ) -> ( 6a,7b ) | l*r =       0.000033671071, l =  -0.00441510, r =  -0.00762635
+      3: ( 5a,4b ) -> ( 7a,7b ) | l*r =       0.000015688945, l =  -0.00376828, r =  -0.00416342
+      4: ( 4a,5b ) -> ( 7a,7b ) | l*r =       0.000015688945, l =   0.00376828, r =   0.00416342
+      5: ( 5a,4b ) -> ( 6a,6b ) | l*r =       0.000006342267, l =  -0.00128245, r =  -0.00494543
+      6: ( 4a,5b ) -> ( 6a,6b ) | l*r =       0.000006342265, l =   0.00128245, r =   0.00494543
+      7: ( 5a,3b ) -> ( 7a,6b ) | l*r =       0.000004746625, l =  -0.00220512, r =  -0.00215254
+      8: ( 3a,5b ) -> ( 6a,7b ) | l*r =       0.000004746625, l =   0.00220512, r =   0.00215254
+
+
+--> Root 3 <--
+  l1*r1
+      1: ( 5b ) -> ( 6b ) | l*r =       0.471887290693, l =   0.68690307, r =   0.68697799
+      2: ( 5a ) -> ( 6a ) | l*r =       0.471887290179, l =   0.68690307, r =   0.68697799
+  l1*r1 + hw
+      1: ( 5a ) -> ( 6a ) | l*r =       0.002703927155, l =  -0.05258173, r =  -0.05142332
+      2: ( 5b ) -> ( 6b ) | l*r =       0.002703926661, l =  -0.05258173, r =  -0.05142331
+  l2*r2
+      1: ( 3a,5b ) -> ( 7a,6b ) | l*r =       0.009551352210, l =  -0.10029922, r =  -0.09522858
+      2: ( 5a,3b ) -> ( 6a,7b ) | l*r =       0.009551352264, l =  -0.10029922, r =  -0.09522858
+      3: ( 5a,3b ) -> ( 7a,6b ) | l*r =       0.005321278740, l =  -0.07087770, r =  -0.07507691
+      4: ( 3a,5b ) -> ( 6a,7b ) | l*r =       0.005321278799, l =  -0.07087770, r =  -0.07507691
+      5: ( 5a,4b ) -> ( 6a,6b ) | l*r =       0.004063880955, l =  -0.06286503, r =  -0.06464454
+      6: ( 4a,5b ) -> ( 6a,6b ) | l*r =       0.004063880964, l =  -0.06286503, r =  -0.06464454
+      7: ( 5a,2b ) -> ( 6a,6b ) | l*r =       0.003614718066, l =  -0.06045741, r =  -0.05978950
+      8: ( 2a,5b ) -> ( 6a,6b ) | l*r =       0.003614718078, l =  -0.06045741, r =  -0.05978950
+  l2*r2 + hw
+      1: ( 5a,3b ) -> ( 7a,6b ) | l*r =       0.000033046323, l =   0.00567762, r =   0.00582046
+      2: ( 3a,5b ) -> ( 6a,7b ) | l*r =       0.000033046323, l =   0.00567762, r =   0.00582045
+      3: ( 3a,5b ) -> ( 7a,6b ) | l*r =       0.000029611611, l =   0.00414184, r =   0.00714939
+      4: ( 5a,3b ) -> ( 6a,7b ) | l*r =       0.000029611615, l =   0.00414184, r =   0.00714939
+      5: ( 5a,2b ) -> ( 6a,6b ) | l*r =       0.000016094054, l =   0.00404046, r =   0.00398323
+      6: ( 2a,5b ) -> ( 6a,6b ) | l*r =       0.000016094055, l =   0.00404046, r =   0.00398323
+      7: ( 5a,4b ) -> ( 7a,7b ) | l*r =       0.000013310006, l =   0.00345471, r =   0.00385271
+      8: ( 4a,5b ) -> ( 7a,7b ) | l*r =       0.000013310002, l =   0.00345471, r =   0.00385271
+
+
+--> Root 4 <--
+  l1*r1
+      1: ( 5a ) -> ( 6a ) | l*r =       0.002674464505, l =   0.05154642, r =   0.05188459
+      2: ( 5b ) -> ( 6b ) | l*r =       0.002674464029, l =  -0.05154641, r =  -0.05188459
+  l1*r1 + hw
+      1: ( 5b ) -> ( 6b ) | l*r =       0.479341290077, l =  -0.69215583, r =  -0.69253378
+      2: ( 5a ) -> ( 6a ) | l*r =       0.479341289800, l =   0.69215583, r =   0.69253378
+  l2*r2
+      1: ( 3a,5b ) -> ( 7a,6b ) | l*r =       0.000130667594, l =   0.01139672, r =   0.01146536
+      2: ( 5a,3b ) -> ( 6a,7b ) | l*r =       0.000130667631, l =  -0.01139673, r =  -0.01146536
+      3: ( 5a,4b ) -> ( 6a,6b ) | l*r =       0.000054298073, l =  -0.00727430, r =  -0.00746437
+      4: ( 4a,5b ) -> ( 6a,6b ) | l*r =       0.000054298074, l =   0.00727430, r =   0.00746437
+      5: ( 3a,5a ) -> ( 6a,7a ) | l*r =       0.000039734327, l =   0.00651531, r =   0.00609861
+      6: ( 3b,5b ) -> ( 6b,7b ) | l*r =       0.000039734320, l =  -0.00651531, r =  -0.00609861
+      7: ( 5a,4b ) -> ( 7a,7b ) | l*r =       0.000012346570, l =  -0.00338379, r =  -0.00364874
+      8: ( 4a,5b ) -> ( 7a,7b ) | l*r =       0.000012346565, l =   0.00338379, r =   0.00364874
+  l2*r2 + hw
+      1: ( 3a,5b ) -> ( 7a,6b ) | l*r =       0.010497730791, l =   0.10389890, r =   0.10103794
+      2: ( 5a,3b ) -> ( 6a,7b ) | l*r =       0.010497730775, l =  -0.10389890, r =  -0.10103794
+      3: ( 5a,4b ) -> ( 6a,6b ) | l*r =       0.002910624114, l =  -0.05446497, r =  -0.05344029
+      4: ( 4a,5b ) -> ( 6a,6b ) | l*r =       0.002910624208, l =   0.05446498, r =   0.05344029
+      5: ( 5a,4b ) -> ( 7a,7b ) | l*r =       0.002347639504, l =  -0.04572784, r =  -0.05133940
+      6: ( 4a,5b ) -> ( 7a,7b ) | l*r =       0.002347639492, l =   0.04572784, r =   0.05133940
+      7: ( 3a,5a ) -> ( 6a,7a ) | l*r =       0.000951293260, l =   0.03572694, r =   0.02662678
+      8: ( 3b,5b ) -> ( 6b,7b ) | l*r =       0.000951293256, l =  -0.03572694, r =  -0.02662678
+
+
+--> Root 5 <--
+  l1*r1
+      1: ( 4a ) -> ( 6a ) | l*r =       0.464136526993, l =  -0.68076144, r =  -0.68179027
+      2: ( 4b ) -> ( 6b ) | l*r =       0.464136526824, l =   0.68076144, r =   0.68179027
+      3: ( 3a ) -> ( 7a ) | l*r =       0.020297645752, l =  -0.14375195, r =  -0.14119910
+      4: ( 3b ) -> ( 7b ) | l*r =       0.020297645746, l =   0.14375195, r =   0.14119910
+      5: ( 2a ) -> ( 6a ) | l*r =       0.003634045476, l =  -0.06039051, r =  -0.06017577
+      6: ( 2b ) -> ( 6b ) | l*r =       0.003634045484, l =   0.06039051, r =   0.06017577
+      7: ( 1a ) -> ( 6a ) | l*r =       0.000000725162, l =   0.00086282, r =   0.00084045
+      8: ( 1b ) -> ( 6b ) | l*r =       0.000000725163, l =  -0.00086282, r =  -0.00084045
+  l1*r1 + hw
+      1: ( 4b ) -> ( 6b ) | l*r =       0.003300266725, l =  -0.05843606, r =  -0.05647654
+      2: ( 4a ) -> ( 6a ) | l*r =       0.003300266563, l =   0.05843606, r =   0.05647654
+      3: ( 3a ) -> ( 7a ) | l*r =       0.000080452158, l =   0.00928255, r =   0.00866703
+      4: ( 3b ) -> ( 7b ) | l*r =       0.000080452153, l =  -0.00928255, r =  -0.00866703
+      5: ( 2a ) -> ( 6a ) | l*r =       0.000000671899, l =  -0.00072448, r =  -0.00092742
+      6: ( 2b ) -> ( 6b ) | l*r =       0.000000671899, l =   0.00072448, r =   0.00092742
+      7: ( 1a ) -> ( 6a ) | l*r =       0.000000002714, l =  -0.00005452, r =  -0.00004978
+      8: ( 1b ) -> ( 6b ) | l*r =       0.000000002714, l =   0.00005452, r =   0.00004978
+  l2*r2
+      1: ( 3a,4b ) -> ( 7a,6b ) | l*r =       0.005559904373, l =  -0.07532531, r =  -0.07381190
+      2: ( 4a,3b ) -> ( 6a,7b ) | l*r =       0.005559904365, l =   0.07532531, r =   0.07381190
+      3: ( 4a,3b ) -> ( 7a,6b ) | l*r =       0.001176887059, l =   0.03397621, r =   0.03463857
+      4: ( 3a,4b ) -> ( 6a,7b ) | l*r =       0.001176887050, l =  -0.03397621, r =  -0.03463857
+      5: ( 3a,2b ) -> ( 7a,6b ) | l*r =       0.000666119802, l =   0.02602290, r =   0.02559745
+      6: ( 2a,3b ) -> ( 6a,7b ) | l*r =       0.000666119798, l =  -0.02602290, r =  -0.02559745
+      7: ( 3a,4a ) -> ( 6a,7a ) | l*r =       0.000599612780, l =  -0.02761032, r =  -0.02171698
+      8: ( 3b,4b ) -> ( 6b,7b ) | l*r =       0.000599612789, l =   0.02761032, r =   0.02171698
+  l2*r2 + hw
+      1: ( 3a,4b ) -> ( 7a,6b ) | l*r =       0.000025848029, l =   0.00406456, r =   0.00635937
+      2: ( 4a,3b ) -> ( 6a,7b ) | l*r =       0.000025848025, l =  -0.00406456, r =  -0.00635937
+      3: ( 3a,2b ) -> ( 7a,6b ) | l*r =       0.000008339034, l =  -0.00306690, r =  -0.00271904
+      4: ( 2a,3b ) -> ( 6a,7b ) | l*r =       0.000008339034, l =   0.00306690, r =   0.00271904
+      5: ( 4a,3b ) -> ( 7a,6b ) | l*r =       0.000008275031, l =  -0.00291066, r =  -0.00284301
+      6: ( 3a,4b ) -> ( 6a,7b ) | l*r =       0.000008275032, l =   0.00291066, r =   0.00284301
+      7: ( 2a,3a ) -> ( 6a,7a ) | l*r =       0.000001305123, l =   0.00149306, r =   0.00087413
+      8: ( 2b,3b ) -> ( 6b,7b ) | l*r =       0.000001305124, l =  -0.00149306, r =  -0.00087413
+
+
+--> Root 6 <--
+  l1*r1
+      1: ( 5a ) -> ( 7a ) | l*r =       0.481540550468, l =   0.69442865, r =   0.69343416
+      2: ( 5b ) -> ( 7b ) | l*r =       0.481540550467, l =  -0.69442865, r =  -0.69343416
+  l1*r1 + hw
+      1: ( 5a ) -> ( 7a ) | l*r =       0.001444316946, l =  -0.03887642, r =  -0.03715149
+      2: ( 5b ) -> ( 7b ) | l*r =       0.001444316948, l =   0.03887642, r =   0.03715149
+  l2*r2
+      1: ( 5a,4b ) -> ( 7a,6b ) | l*r =       0.005635732584, l =  -0.07302947, r =  -0.07717067
+      2: ( 4a,5b ) -> ( 6a,7b ) | l*r =       0.005635732584, l =   0.07302947, r =   0.07717067
+      3: ( 5a,3b ) -> ( 6a,6b ) | l*r =       0.004523618261, l =  -0.06411449, r =  -0.07055532
+      4: ( 3a,5b ) -> ( 6a,6b ) | l*r =       0.004523618261, l =   0.06411449, r =   0.07055532
+      5: ( 4a,5b ) -> ( 7a,6b ) | l*r =       0.002413674779, l =   0.04760872, r =   0.05069816
+      6: ( 5a,4b ) -> ( 6a,7b ) | l*r =       0.002413674780, l =  -0.04760872, r =  -0.05069816
+      7: ( 5a,2b ) -> ( 7a,6b ) | l*r =       0.002065213763, l =  -0.04606777, r =  -0.04482991
+      8: ( 2a,5b ) -> ( 6a,7b ) | l*r =       0.002065213762, l =   0.04606777, r =   0.04482991
+  l2*r2 + hw
+      1: ( 5a,3b ) -> ( 6a,6b ) | l*r =       0.000019930071, l =   0.00442068, r =   0.00450837
+      2: ( 3a,5b ) -> ( 6a,6b ) | l*r =       0.000019930071, l =  -0.00442068, r =  -0.00450837
+      3: ( 4a,5b ) -> ( 7a,6b ) | l*r =       0.000011103901, l =  -0.00332930, r =  -0.00333521
+      4: ( 5a,4b ) -> ( 6a,7b ) | l*r =       0.000011103901, l =   0.00332930, r =   0.00333521
+      5: ( 5a,4b ) -> ( 7a,6b ) | l*r =       0.000004127239, l =   0.00083323, r =   0.00495332
+      6: ( 4a,5b ) -> ( 6a,7b ) | l*r =       0.000004127239, l =  -0.00083323, r =  -0.00495332
+      7: ( 5a,2b ) -> ( 7a,6b ) | l*r =       0.000003587322, l =   0.00193611, r =   0.00185285
+      8: ( 2a,5b ) -> ( 6a,7b ) | l*r =       0.000003587322, l =  -0.00193611, r =  -0.00185285
+
+
+--> Root 7 <--
+  l1*r1
+      1: ( 5a ) -> ( 7a ) | l*r =       0.476099529032, l =   0.69050073, r =   0.68949895
+      2: ( 5b ) -> ( 7b ) | l*r =       0.476099529028, l =   0.69050073, r =   0.68949895
+  l1*r1 + hw
+      1: ( 5a ) -> ( 7a ) | l*r =       0.001116890571, l =  -0.03429543, r =  -0.03256675
+      2: ( 5b ) -> ( 7b ) | l*r =       0.001116890573, l =  -0.03429543, r =  -0.03256675
+  l2*r2
+      1: ( 5a,3b ) -> ( 7a,7b ) | l*r =       0.007354618647, l =  -0.08570262, r =  -0.08581556
+      2: ( 3a,5b ) -> ( 7a,7b ) | l*r =       0.007354618649, l =  -0.08570262, r =  -0.08581556
+      3: ( 5a,4b ) -> ( 7a,6b ) | l*r =       0.004444761711, l =  -0.06619168, r =  -0.06714986
+      4: ( 4a,5b ) -> ( 6a,7b ) | l*r =       0.004444761711, l =  -0.06619168, r =  -0.06714986
+      5: ( 5a,3b ) -> ( 6a,6b ) | l*r =       0.003839729616, l =  -0.06004795, r =  -0.06394440
+      6: ( 3a,5b ) -> ( 6a,6b ) | l*r =       0.003839729615, l =  -0.06004795, r =  -0.06394440
+      7: ( 4a,5b ) -> ( 7a,6b ) | l*r =       0.003528165653, l =  -0.05596197, r =  -0.06304577
+      8: ( 5a,4b ) -> ( 6a,7b ) | l*r =       0.003528165652, l =  -0.05596197, r =  -0.06304577
+  l2*r2 + hw
+      1: ( 5a,3b ) -> ( 6a,6b ) | l*r =       0.000013944114, l =   0.00377137, r =   0.00369736
+      2: ( 3a,5b ) -> ( 6a,6b ) | l*r =       0.000013944114, l =   0.00377137, r =   0.00369736
+      3: ( 4a,5b ) -> ( 7a,6b ) | l*r =       0.000011373477, l =   0.00322460, r =   0.00352710
+      4: ( 5a,4b ) -> ( 6a,7b ) | l*r =       0.000011373477, l =   0.00322460, r =   0.00352710
+      5: ( 2a,5b ) -> ( 7a,6b ) | l*r =       0.000002903803, l =   0.00179550, r =   0.00161727
+      6: ( 5a,2b ) -> ( 6a,7b ) | l*r =       0.000002903803, l =   0.00179550, r =   0.00161727
+      7: ( 5a,2b ) -> ( 7a,6b ) | l*r =       0.000002652546, l =   0.00165512, r =   0.00160263
+      8: ( 2a,5b ) -> ( 6a,7b ) | l*r =       0.000002652546, l =   0.00165512, r =   0.00160263
+
+
+--> Root 8 <--
+  l1*r1
+      1: ( 5a ) -> ( 6a ) | l*r =       0.002563652108, l =  -0.05056711, r =  -0.05069801
+      2: ( 5b ) -> ( 6b ) | l*r =       0.002563652106, l =  -0.05056711, r =  -0.05069801
+  l1*r1 + hw
+      1: ( 5a ) -> ( 6a ) | l*r =       0.471732975225, l =  -0.68675560, r =  -0.68690080
+      2: ( 5b ) -> ( 6b ) | l*r =       0.471732975243, l =  -0.68675560, r =  -0.68690080
+  l2*r2
+      1: ( 3a,5b ) -> ( 7a,6b ) | l*r =       0.000119147355, l =   0.01096300, r =   0.01086813
+      2: ( 5a,3b ) -> ( 6a,7b ) | l*r =       0.000119147360, l =   0.01096300, r =   0.01086813
+      3: ( 5a,4b ) -> ( 6a,6b ) | l*r =       0.000066590757, l =   0.00802032, r =   0.00830276
+      4: ( 4a,5b ) -> ( 6a,6b ) | l*r =       0.000066590770, l =   0.00802032, r =   0.00830276
+      5: ( 3a,5a ) -> ( 6a,7a ) | l*r =       0.000032754544, l =  -0.00592720, r =  -0.00552614
+      6: ( 3b,5b ) -> ( 6b,7b ) | l*r =       0.000032754540, l =  -0.00592720, r =  -0.00552614
+      7: ( 5a,3b ) -> ( 7a,6b ) | l*r =       0.000026901209, l =   0.00503580, r =   0.00534199
+      8: ( 3a,5b ) -> ( 6a,7b ) | l*r =       0.000026901213, l =   0.00503580, r =   0.00534199
+  l2*r2 + hw
+      1: ( 3a,5b ) -> ( 7a,6b ) | l*r =       0.009618213075, l =   0.10079617, r =   0.09542241
+      2: ( 5a,3b ) -> ( 6a,7b ) | l*r =       0.009618213086, l =   0.10079617, r =   0.09542241
+      3: ( 5a,3b ) -> ( 7a,6b ) | l*r =       0.005312774698, l =   0.07082152, r =   0.07501639
+      4: ( 3a,5b ) -> ( 6a,7b ) | l*r =       0.005312774691, l =   0.07082152, r =   0.07501639
+      5: ( 5a,4b ) -> ( 6a,6b ) | l*r =       0.004092832928, l =   0.06330651, r =   0.06465105
+      6: ( 4a,5b ) -> ( 6a,6b ) | l*r =       0.004092832912, l =   0.06330651, r =   0.06465105
+      7: ( 5a,2b ) -> ( 6a,6b ) | l*r =       0.003623525110, l =   0.06052151, r =   0.05987169
+      8: ( 2a,5b ) -> ( 6a,6b ) | l*r =       0.003623525098, l =   0.06052151, r =   0.05987169
+
+
+--> Root 9 <--
+  l1*r1
+      1: ( 4b ) -> ( 7b ) | l*r =       0.387829082342, l =  -0.62287547, r =  -0.62264305
+      2: ( 4a ) -> ( 7a ) | l*r =       0.387829079661, l =   0.62287547, r =   0.62264305
+      3: ( 3a ) -> ( 6a ) | l*r =       0.104687588635, l =   0.32339057, r =   0.32371874
+      4: ( 3b ) -> ( 6b ) | l*r =       0.104687586578, l =  -0.32339057, r =  -0.32371874
+      5: ( 2a ) -> ( 7a ) | l*r =       0.000515549533, l =   0.02197325, r =   0.02346260
+      6: ( 2b ) -> ( 7b ) | l*r =       0.000515549320, l =  -0.02197324, r =  -0.02346260
+      7: ( 1a ) -> ( 7a ) | l*r =       0.000000106359, l =  -0.00031544, r =  -0.00033717
+      8: ( 1b ) -> ( 7b ) | l*r =       0.000000106359, l =   0.00031544, r =   0.00033717
+  l1*r1 + hw
+      1: ( 4a ) -> ( 7a ) | l*r =       0.001935289358, l =  -0.04492836, r =  -0.04307500
+      2: ( 4b ) -> ( 7b ) | l*r =       0.001935289353, l =   0.04492836, r =   0.04307500
+      3: ( 3b ) -> ( 6b ) | l*r =       0.000341121828, l =   0.01892290, r =   0.01802693
+      4: ( 3a ) -> ( 6a ) | l*r =       0.000341121756, l =  -0.01892290, r =  -0.01802693
+      5: ( 2a ) -> ( 7a ) | l*r =       0.000014829131, l =   0.00386391, r =   0.00383786
+      6: ( 2b ) -> ( 7b ) | l*r =       0.000014829133, l =  -0.00386391, r =  -0.00383786
+  l2*r2
+      1: ( 3a,4b ) -> ( 6a,6b ) | l*r =       0.002152974111, l =   0.04449711, r =   0.04838458
+      2: ( 4a,3b ) -> ( 6a,6b ) | l*r =       0.002152973877, l =  -0.04449711, r =  -0.04838458
+      3: ( 4a,2b ) -> ( 7a,6b ) | l*r =       0.000785432931, l =  -0.02823576, r =  -0.02781696
+      4: ( 2a,4b ) -> ( 6a,7b ) | l*r =       0.000785432870, l =   0.02823576, r =   0.02781696
+      5: ( 3a,3b ) -> ( 7a,6b ) | l*r =       0.000450354313, l =   0.02087955, r =   0.02156916
+      6: ( 3a,3b ) -> ( 6a,7b ) | l*r =       0.000450354257, l =  -0.02087955, r =  -0.02156916
+      7: ( 4a,4b ) -> ( 7a,6b ) | l*r =       0.000397144789, l =  -0.01949179, r =  -0.02037498
+      8: ( 4a,4b ) -> ( 6a,7b ) | l*r =       0.000397144799, l =   0.01949179, r =   0.02037498
+  l2*r2 + hw
+      1: ( 4a,3b ) -> ( 6a,6b ) | l*r =       0.000022844923, l =   0.00580280, r =   0.00393688
+      2: ( 3a,4b ) -> ( 6a,6b ) | l*r =       0.000022844927, l =  -0.00580280, r =  -0.00393688
+      3: ( 2a,4b ) -> ( 7a,6b ) | l*r =       0.000001897643, l =  -0.00150817, r =  -0.00125824
+      4: ( 4a,2b ) -> ( 6a,7b ) | l*r =       0.000001897644, l =   0.00150817, r =   0.00125824
+      5: ( 4a,2b ) -> ( 7a,6b ) | l*r =       0.000001857307, l =   0.00139379, r =   0.00133256
+      6: ( 2a,4b ) -> ( 6a,7b ) | l*r =       0.000001857308, l =  -0.00139379, r =  -0.00133256
+      7: ( 3a,2b ) -> ( 7a,7b ) | l*r =       0.000001733553, l =   0.00142141, r =   0.00121960
+      8: ( 2a,3b ) -> ( 7a,7b ) | l*r =       0.000001733552, l =  -0.00142141, r =  -0.00121960
+
+
+
+    ==>  EOM-EE-QED-CCSD-21 energies:  <==    
+
+state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
+    0     -75.008575505353    0.000000000000  1.0000000000 ------------- ------------- ------------- ------------- ------------- 
+    1     -74.908841959133    0.099733546220 -------------  0.0001720978  0.0000058446  0.9998157844  0.0000048655  0.0000014077 
+    2     -74.611871549448    0.396703955905 -------------  0.9590052931  0.0352387134 -------------  0.0056384878  0.0001175057 
+    3     -74.552073396026    0.456502109328 -------------  0.9437745809  0.0506171759 -------------  0.0054078538  0.0002003894 
+    4     -74.510883887252    0.497691618101 -------------  0.0053489285  0.0004915920 -------------  0.9586825799  0.0354768996 
+    5     -74.507249057820    0.501326447533 -------------  0.9761378866  0.0170145441 -------------  0.0067627868  0.0000847825 
+    6     -74.504172956095    0.504402549259 -------------  0.9630811009  0.0339589190 -------------  0.0028886339  0.0000713462 
+    7     -74.467594921431    0.540980583922 -------------  0.9521990581  0.0455049591 -------------  0.0022337811  0.0000622017 
+    8     -74.451117636452    0.557457868902 -------------  0.0051273042  0.0005636053 -------------  0.9434659505  0.0508431401 
+    9     -74.428234692008    0.580340813345 -------------  0.9860646488  0.0093035202 -------------  0.0045824806  0.0000493504 
+
+  Time Elapsed:           13.478 s
+  Iterations:             19
+----------------------------------------
+  Unpack/Pack Time:
+    - Avg.  28.685 ms
+    - Total 545.009 ms
+  Eigen Solver Time:
+    - Avg.  8.269 ms
+    - Total 165.382 ms
+  Sigma Build Time:
+    - Avg.  680.693 ms
+    - Total 12.933 s
+----------------------------------------
+
+Computing 1-RDMs and oscillator strengths...Done --> Time: 53.439 ms
+
+  ==> EOM-EE-QED-CCSD-21 Initial State Transition Dipoles <==
+
+state           omega (Eh)  Oscillator Strength |     <0|mu|n><n|mu|0> |   <0|mu_x|n>    <n|mu_x|0> |   <0|mu_y|n>    <n|mu_y|0> |   <0|mu_z|n>    <n|mu_z|0>
+    0       0.000000000000 -------------------- |       0.098133521580 | ------------  ------------ | ------------  ------------ |  -0.31326270   -0.31326270
+    1       0.099733546220       0.000023446857 |       0.000352642486 | ------------  ------------ | ------------  ------------ |  -0.01479816   -0.02383015
+    2       0.396703955905 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    3       0.456502109328       0.003229401193 |       0.010611345908 |  -0.10208270   -0.10394852 | ------------  ------------ | ------------  ------------
+    4       0.497691618101 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    5       0.501326447533 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    6       0.504402549259 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    7       0.540980583922 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    8       0.557457868902       0.000026373619 |       0.000070965772 |   0.00753356    0.00941995 | ------------  ------------ | ------------  ------------
+    9       0.580340813345 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+
+
+
+  ==> EOM-EE-QED-CCSD-21 Excited State Transition Dipoles <==
+
+state           omega (Eh)  Oscillator Strength |     <0|mu|n><n|mu|0> |   <0|mu_x|n>    <n|mu_x|0> |   <0|mu_y|n>    <n|mu_y|0> |   <0|mu_z|n>    <n|mu_z|0>
+    1       0.000000000000 -------------------- |       0.116078863699 | ------------  ------------ | ------------  ------------ |  -0.34070348   -0.34070348
+    2       0.296970409685 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    3       0.356768563107       0.000006446514 |       0.000027103765 |  -0.00506868   -0.00534730 | ------------  ------------ | ------------  ------------
+    4       0.397958071881 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    5       0.401592901313 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    6       0.404669003038 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    7       0.441247037702 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    8       0.457724322681       0.003244480184 |       0.010632426628 |  -0.10210246   -0.10413487 | ------------  ------------ | ------------  ------------
+    9       0.480607267125 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+
+  -- Excited State 2 --
+state           omega (Eh)  Oscillator Strength |     <0|mu|n><n|mu|0> |   <0|mu_x|n>    <n|mu_x|0> |   <0|mu_y|n>    <n|mu_y|0> |   <0|mu_z|n>    <n|mu_z|0>
+    2       0.000000000000 -------------------- |       0.969336483689 | ------------  ------------ | ------------  ------------ |  -0.98454887   -0.98454887
+    3       0.059798153423 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    4       0.100987662196       0.000016142380 |       0.000239767602 | ------------  ------------ | ------------  ------------ |  -0.01564664   -0.01532391
+    5       0.104622491628       0.000851212457 |       0.012204055419 |   0.11011471    0.11083038 | ------------  ------------ | ------------  ------------
+    6       0.107698593354       0.058649675012 |       0.816858510204 | ------------  ------------ |  -0.90020420   -0.90741468 | ------------  ------------
+    7       0.144276628017 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    8       0.160753912997 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    9       0.183636857440 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+
+  -- Excited State 3 --
+state           omega (Eh)  Oscillator Strength |     <0|mu|n><n|mu|0> |   <0|mu_x|n>    <n|mu_x|0> |   <0|mu_y|n>    <n|mu_y|0> |   <0|mu_z|n>    <n|mu_z|0>
+    3       0.000000000000 -------------------- |       0.949420125912 | ------------  ------------ | ------------  ------------ |  -0.97438192   -0.97438192
+    4       0.041189508774 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    5       0.044824338206 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    6       0.047900439931 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    7       0.084478474594       0.038936167337 |       0.691350681764 | ------------  ------------ |   0.83064858    0.83230225 | ------------  ------------
+    8       0.100955759574       0.000016070127 |       0.000238769842 | ------------  ------------ | ------------  ------------ |  -0.01558187   -0.01532357
+    9       0.123838704018 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+
+  -- Excited State 4 --
+state           omega (Eh)  Oscillator Strength |     <0|mu|n><n|mu|0> |   <0|mu_x|n>    <n|mu_x|0> |   <0|mu_y|n>    <n|mu_y|0> |   <0|mu_z|n>    <n|mu_z|0>
+    4       0.000000000000 -------------------- |       0.960639703720 | ------------  ------------ | ------------  ------------ |  -0.98012229   -0.98012229
+    5       0.003634829432       0.000000094264 |       0.000038900414 |   0.00619609    0.00627822 | ------------  ------------ | ------------  ------------
+    6       0.006710931157       0.000003741800 |       0.000836351805 | ------------  ------------ |   0.02900671    0.02883305 | ------------  ------------
+    7       0.043288965821 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    8       0.059766250801 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    9       0.082649195244 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+
+  -- Excited State 5 --
+state           omega (Eh)  Oscillator Strength |     <0|mu|n><n|mu|0> |   <0|mu_x|n>    <n|mu_x|0> |   <0|mu_y|n>    <n|mu_y|0> |   <0|mu_z|n>    <n|mu_z|0>
+    5       0.000000000000 -------------------- |       1.108877854431 | ------------  ------------ | ------------  ------------ |  -1.05303269   -1.05303269
+    6       0.003076101725 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    7       0.039654136389 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    8       0.056131421369 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    9       0.079014365812       0.031962156983 |       0.606766060605 | ------------  ------------ |  -0.77704915   -0.78085931 | ------------  ------------
+
+  -- Excited State 6 --
+state           omega (Eh)  Oscillator Strength |     <0|mu|n><n|mu|0> |   <0|mu_x|n>    <n|mu_x|0> |   <0|mu_y|n>    <n|mu_y|0> |   <0|mu_z|n>    <n|mu_z|0>
+    6       0.000000000000 -------------------- |       0.627229560533 | ------------  ------------ | ------------  ------------ |  -0.79197826   -0.79197826
+    7       0.036578034663 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    8       0.053055319643 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+    9       0.075938264087       0.000783100593 |       0.015468498039 |   0.12347792    0.12527340 | ------------  ------------ | ------------  ------------
+
+  -- Excited State 7 --
+state           omega (Eh)  Oscillator Strength |     <0|mu|n><n|mu|0> |   <0|mu_x|n>    <n|mu_x|0> |   <0|mu_y|n>    <n|mu_y|0> |   <0|mu_z|n>    <n|mu_z|0>
+    7       0.000000000000 -------------------- |       0.536584348091 | ------------  ------------ | ------------  ------------ |  -0.73251918   -0.73251918
+    8       0.016477284980       0.000011562883 |       0.001052620282 | ------------  ------------ |  -0.03213757   -0.03275357 | ------------  ------------
+    9       0.039360229423 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+
+  -- Excited State 8 --
+state           omega (Eh)  Oscillator Strength |     <0|mu|n><n|mu|0> |   <0|mu_x|n>    <n|mu_x|0> |   <0|mu_y|n>    <n|mu_y|0> |   <0|mu_z|n>    <n|mu_z|0>
+    8       0.000000000000 -------------------- |       0.940952541427 | ------------  ------------ | ------------  ------------ |  -0.97002708   -0.97002708
+    9       0.022882944443 -------------------- | -------------------- | ------------  ------------ | ------------  ------------ | ------------  ------------
+
+  -- Excited State 9 --
+state           omega (Eh)  Oscillator Strength |     <0|mu|n><n|mu|0> |   <0|mu_x|n>    <n|mu_x|0> |   <0|mu_y|n>    <n|mu_y|0> |   <0|mu_z|n>    <n|mu_z|0>
+    9       0.000000000000 -------------------- |       0.842036170945 | ------------  ------------ | ------------  ------------ |  -0.91762529   -0.91762529
+
+
+
+  Variable Map:
+  ----------------------------------------------------------------------------
+  "CC_CAVITY TOTAL ENERGY"                                =>     -75.008575505353
+  "CURRENT ENERGY"                                        =>     -75.008575505353
+  "CURRENT REFERENCE ENERGY"                              =>     -74.963055504124
+  "DD SOLVATION ENERGY"                                   =>       0.000000000000
+  "EOM TARGET ENERGY"                                     =>     -75.008575505353
+  "EOM-EE-QED-CCSD-21 ROOT 0 -> ROOT 0 EXCITATION ENERGY" =>       0.000000000000
+  "EOM-EE-QED-CCSD-21 ROOT 0 -> ROOT 1 EXCITATION ENERGY" =>       0.099733546220
+  "EOM-EE-QED-CCSD-21 ROOT 0 -> ROOT 2 EXCITATION ENERGY" =>       0.396703955905
+  "EOM-EE-QED-CCSD-21 ROOT 0 -> ROOT 3 EXCITATION ENERGY" =>       0.456502109328
+  "EOM-EE-QED-CCSD-21 ROOT 0 -> ROOT 4 EXCITATION ENERGY" =>       0.497691618101
+  "EOM-EE-QED-CCSD-21 ROOT 0 -> ROOT 5 EXCITATION ENERGY" =>       0.501326447533
+  "EOM-EE-QED-CCSD-21 ROOT 0 -> ROOT 6 EXCITATION ENERGY" =>       0.504402549259
+  "EOM-EE-QED-CCSD-21 ROOT 0 -> ROOT 7 EXCITATION ENERGY" =>       0.540980583922
+  "EOM-EE-QED-CCSD-21 ROOT 0 -> ROOT 8 EXCITATION ENERGY" =>       0.557457868902
+  "EOM-EE-QED-CCSD-21 ROOT 0 -> ROOT 9 EXCITATION ENERGY" =>       0.580340813345
+  "HF KINETIC ENERGY"                                     =>      74.587029169278
+  "HF POTENTIAL ENERGY"                                   =>    -149.550084673402
+  "HF TOTAL ENERGY"                                       =>     -74.963055504124
+  "HF VIRIAL RATIO"                                       =>       2.005041444056
+  "MAD_NUM_THREADS"                                       =>       1.000000000000
+  "NAUX (SCF)"                                            =>      28.000000000000
+  "NUCLEAR REPULSION ENERGY"                              =>       9.187386457593
+  "ONE-ELECTRON ENERGY"                                   =>    -122.357668633501
+  "PCM POLARIZATION ENERGY"                               =>       0.000000000000
+  "PE ENERGY"                                             =>       0.000000000000
+  "SCF ITERATION ENERGY"                                  =>     -74.963055504124
+  "SCF ITERATIONS"                                        =>       8.000000000000
+  "SCF TOTAL ENERGY"                                      =>     -74.958643777632
+  "TWO-ELECTRON ENERGY"                                   =>      38.207226671783
+
+
+
+
+  Array Variable Map:
+  ----------------------------------------------------------------------------
+  "CURRENT DIPOLE"                                        =>      -0.000000000000 ... 0.678677319389 1 by 3
+  "SCF DIPOLE"                                            =>      -0.000000000000 ... 0.678677319389 1 by 3
+  "SCF TOTAL ENERGIES"                                    =>     -74.473696605802 ... -74.963055504124 1 by 9
+
+
+    QED-EE-EOMCCSD-21 excitation energy 0.................................................PASSED
+    QED-EE-EOMCCSD-21 excitation energy 1.................................................PASSED
+    QED-EE-EOMCCSD-21 excitation energy 2.................................................PASSED
+    QED-EE-EOMCCSD-21 excitation energy 3.................................................PASSED
+    QED-EE-EOMCCSD-21 excitation energy 4.................................................PASSED
+    QED-EE-EOMCCSD-21 excitation energy 5.................................................PASSED
+    QED-EE-EOMCCSD-21 excitation energy 6.................................................PASSED
+    QED-EE-EOMCCSD-21 excitation energy 7.................................................PASSED
+    QED-EE-EOMCCSD-21 excitation energy 8.................................................PASSED
+    QED-EE-EOMCCSD-21 excitation energy 9.................................................PASSED
+
+    Psi4 stopped on: Saturday, 20 June 2026 09:07AM
+    Psi4 wall time for execution: 0:00:18.02
+
+*** Psi4 exiting successfully. Buy a developer a beer!
