@@ -281,20 +281,39 @@ namespace hilbert {
         double &crt0_2  = scalars_["crt0_2"];
 
         // process residuals
-        double coherent_scalar = cavity_frequency_ * cavity_coupling_strength_[2];
-        if ( options_.get_bool("QED_USE_RELAXED_ORBITALS"))
-             coherent_scalar *=    e_dip_z_;
-        else coherent_scalar *= -nuc_dip_z_;
-
+        double coherent_scalar_x = cavity_frequency_ * cavity_coupling_strength_[0];
+        double coherent_scalar_y = cavity_frequency_ * cavity_coupling_strength_[1];
+        double coherent_scalar_z = cavity_frequency_ * cavity_coupling_strength_[2];
+        if ( options_.get_bool("QED_USE_RELAXED_ORBITALS")) {
+             coherent_scalar_x *= e_dip_x_;
+             coherent_scalar_y *= e_dip_y_;
+             coherent_scalar_z *= e_dip_z_;
+        }else {
+            coherent_scalar_x *= -nuc_dip_x_;
+            coherent_scalar_y *= -nuc_dip_y_;
+            coherent_scalar_z *= -nuc_dip_z_;
+        }
+        
         // add coherent state basis terms
-        energy += coherent_scalar * cenergy;
-        rt0_1  += coherent_scalar * crt0_1;
-        rt0_2  += coherent_scalar * crt0_2;
+        energy += coherent_scalar_x * cenergy;
+        energy += coherent_scalar_y * cenergy;
+        energy += coherent_scalar_z * cenergy;
+        
+        rt0_1  += coherent_scalar_x * crt0_1;
+        rt0_1  += coherent_scalar_y * crt0_1;
+        rt0_1  += coherent_scalar_z * crt0_1;
+
+        rt0_2  += coherent_scalar_x * crt0_2;
+        rt0_2  += coherent_scalar_y * crt0_2;
+        rt0_2  += coherent_scalar_z * crt0_2;
+
         for (auto &[name, resid] : residuals_) {
             if (name == "t0_1" || name == "t0_2") continue; // handled separately
 
             // add coherent state terms to residuals
-            residuals_[name](idxs_[name]) += coherent_scalar * tmps_["c" + name](idxs_[name]);
+            residuals_[name](idxs_[name]) += coherent_scalar_x * tmps_["c" + name](idxs_[name]);
+            residuals_[name](idxs_[name]) += coherent_scalar_y * tmps_["c" + name](idxs_[name]);
+            residuals_[name](idxs_[name]) += coherent_scalar_z * tmps_["c" + name](idxs_[name]);
         }
 
         residuals_["t0_1"] = makeTensor(world_, {1}, &rt0_1);

@@ -32,9 +32,9 @@
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Saturday, 20 June 2026 08:33AM
+    Psi4 started on: Saturday, 20 June 2026 04:02PM
 
-    Process ID: 81245
+    Process ID: 37002
     Host:       Alberts-MacBook-Pro.local
     PSIDATADIR: /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4
     Memory:     500.0 MiB
@@ -54,16 +54,34 @@ sys.path.insert(0, '../../../')
 import math
 import hilbert
 
-molecule {
-  0 1
-  O            0.000000000000     0.000000000000    -0.065655108083
-  H            0.000000000000    -0.757365949175     0.520997104927
-  H            0.000000000000     0.757365949175     0.520997104927
-  no_reorient 
-  no_com
-  symmetry c1
+
+molecule mol1 {
+0 1
+O            0.000000000000     0.000000000000    -0.065655108083
+H            0.000000000000    -0.757365949175     0.520997104927
+H            0.000000000000     0.757365949175     0.520997104927
+no_reorient
+nocom
+symmetry c1
+}
+molecule mol2 {
+O                0.000000000000    -0.065655108083    0.000000000000
+H               -0.757365949175     0.520997104927    0.000000000000
+H                0.757365949175     0.520997104927    0.000000000000
+no_reorient
+nocom
+symmetry c1
+}
+molecule mol3 {
+O                 -0.065655108083    0.000000000000   0.000000000000
+H                  0.520997104927    0.000000000000  -0.757365949175
+H                  0.520997104927    0.000000000000   0.757365949175
+no_reorient
+nocom
+symmetry c1
 }
 
+activate(mol1)
 set {
   basis sto-3g
   
@@ -93,9 +111,24 @@ set hilbert {
 # memory for Psi4 (note: this is for the integrals, not the CC calculation which does not restrict memory usage)
 memory 1000 MB
 
-en, wfn = energy('qed-ccsd-22', return_wfn=True)   # QED-CCSD-22 w/ TiledArray
-
 ref = -75.008575675781
+en, wfn = energy('qed-ccsd-22', return_wfn=True)   # QED-CCSD-22 w/ TiledArray
+compare_values(ref, en, 8, "QED-CCSD-22 (TA) total energy (z-pol)") # TEST
+
+activate(mol2)
+set basis sto-3g
+set hilbert {
+    cavity_coupling_strength [0.0, $g, 0.0]
+}
+en, wfn = energy('qed-ccsd-22', return_wfn=True)   # QED-CCSD-22 w/ TiledArray
+compare_values(ref, en, 8, "QED-CCSD-22 (TA) total energy (z-pol)") # TEST
+
+activate(mol3)
+set basis sto-3g
+set hilbert {
+    cavity_coupling_strength [$g, 0.0, 0.0]
+}
+en, wfn = energy('qed-ccsd-22', return_wfn=True)   # QED-CCSD-22 w/ TiledArray
 compare_values(ref, en, 8, "QED-CCSD-22 (TA) total energy (z-pol)") # TEST
 
 --------------------------------------------------------------------------
@@ -111,7 +144,7 @@ Scratch directory: /Users/deprince/psi4_scratch/
     Solid Harmonics ordering:            Gaussian
 
 *** tstart() called on Alberts-MacBook-Pro.local
-*** at Sat Jun 20 08:33:49 2026
+*** at Sat Jun 20 16:02:43 2026
 
    => Loading Basis Set <=
 
@@ -275,15 +308,15 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on Alberts-MacBook-Pro.local at Sat Jun 20 08:33:49 2026
+*** tstop() called on Alberts-MacBook-Pro.local at Sat Jun 20 16:02:44 2026
 Module time:
-	user time   =       0.30 seconds =       0.00 minutes
-	system time =       0.05 seconds =       0.00 minutes
-	total time  =          0 seconds =       0.00 minutes
+	user time   =       0.29 seconds =       0.00 minutes
+	system time =       0.04 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
 Total time:
-	user time   =       0.30 seconds =       0.00 minutes
-	system time =       0.05 seconds =       0.00 minutes
-	total time  =          0 seconds =       0.00 minutes
+	user time   =       0.29 seconds =       0.00 minutes
+	system time =       0.04 seconds =       0.00 minutes
+	total time  =          1 seconds =       0.02 minutes
    => Loading Basis Set <=
 
     Name: (STO-3G AUX)
@@ -658,14 +691,1141 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     Total:  0.169968729364
 
   ==> Time spent in CC iterations <==  
-                    Total: 6.782 s
-      Residuals Equations: total =    3.627 s | average = 172.734 ms
-      Transform Integrals: total =    2.922 s | average = 139.151 ms
-        Update Amplitudes: total = 378.108 ms | average =   9.003 ms
+                    Total: 6.930 s
+      Residuals Equations: total =    3.797 s | average = 180.832 ms
+      Transform Integrals: total =    2.891 s | average = 137.659 ms
+        Update Amplitudes: total = 375.917 ms | average =   8.950 ms
 
     QED-CCSD-22 (TA) total energy (z-pol).................................................PASSED
 
-    Psi4 stopped on: Saturday, 20 June 2026 08:33AM
-    Psi4 wall time for execution: 0:00:07.42
+Scratch directory: /Users/deprince/psi4_scratch/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Sat Jun 20 16:02:51 2026
+
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line    81 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/sto-3g.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/sto-3g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              RHF Reference
+                        1 Threads,    953 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000    -0.065655108083     0.000000000000    15.994914619570
+         H           -0.757365949175     0.520997104927     0.000000000000     1.007825032230
+         H            0.757365949175     0.520997104927     0.000000000000     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     27.36310  B =     14.58041  C =      9.51197 [cm^-1]
+  Rotational constants: A = 820325.17390  B = 437109.76779  C = 285161.58919 [MHz]
+  Nuclear repulsion =    9.187386457593393
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is CD.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-10
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis functions: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> Integral Setup <==
+
+  ==> CDJK: Cholesky-decomposed J/K Matrices <==
+
+    J tasked:                     Yes
+    K tasked:                     Yes
+    wK tasked:                     No
+    OpenMP threads:                 1
+    Integrals threads:              1
+    Memory [MiB]:                 715
+    Algorithm:                   Core
+    Integral Cache:              SAVE
+    Schwarz Cutoff:             1E-12
+    Cholesky tolerance:      1.00E-12
+    No. Cholesky vectors:          28
+
+  Minimum eigenvalue in the overlap matrix is 3.4273419653E-01.
+  Reciprocal condition number of the overlap matrix is 1.7758633656E-01.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A          7       7 
+   -------------------------
+    Total       7       7
+   -------------------------
+
+  ==> Iterations <==
+
+                        Total Energy        Delta E     RMS |[F,P]|
+
+   @RHF iter SAD:   -74.47369660580163   -7.44737e+01   0.00000e+00 
+   @RHF iter   1:   -74.92866633938699   -4.54970e-01   3.41908e-02 ADIIS/DIIS
+   @RHF iter   2:   -74.96199951753098   -3.33332e-02   5.03674e-03 ADIIS/DIIS
+   @RHF iter   3:   -74.96301028442912   -1.01077e-03   1.14323e-03 ADIIS/DIIS
+   @RHF iter   4:   -74.96305536693964   -4.50825e-05   4.60636e-05 DIIS
+   @RHF iter   5:   -74.96305548474538   -1.17806e-07   1.59244e-05 DIIS
+   @RHF iter   6:   -74.96305550412345   -1.93781e-08   1.56170e-07 DIIS
+   @RHF iter   7:   -74.96305550412436   -9.09495e-13   6.74946e-10 DIIS
+   @RHF iter   8:   -74.96305550412441   -5.68434e-14   2.69161e-13 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Doubly Occupied:                                                      
+
+       1A    -20.241893     2A     -1.268049     3A     -0.617442  
+       4A     -0.453000     5A     -0.391223  
+
+    Virtual:                                                              
+
+       6A      0.604952     7A      0.741324  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+    NA   [     5 ]
+    NB   [     5 ]
+
+  @RHF Final Energy:   -74.96305550412441
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              9.1873864575933926
+    One-Electron Energy =                -122.3576686335022856
+    Two-Electron Energy =                  38.2072266717844826
+    Total Energy =                        -74.9630555041244122
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Y            :         -0.2978450            0.9765223            0.6786773
+ Dipole Z            :         -0.0000000            0.0000000           -0.0000000
+ Magnitude           :                                                    0.6786773
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on Alberts-MacBook-Pro.local at Sat Jun 20 16:02:51 2026
+Module time:
+	user time   =       0.07 seconds =       0.00 minutes
+	system time =       0.00 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+Total time:
+	user time   =       7.48 seconds =       0.12 minutes
+	system time =       0.07 seconds =       0.00 minutes
+	total time  =          8 seconds =       0.13 minutes
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   233 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000    -0.065655108083     0.000000000000    15.994914619570
+         H           -0.757365949175     0.520997104927     0.000000000000     1.007825032230
+         H            0.757365949175     0.520997104927     0.000000000000     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic RHF                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000    -0.065655108083     0.000000000000    15.994914619570
+         H           -0.757365949175     0.520997104927     0.000000000000     1.007825032230
+         H            0.757365949175     0.520997104927     0.000000000000     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+    No. basis functions:                7
+    cholesky_tolerance:             1.000000e-12
+    No. electrons:                     10
+    e_convergence:              1.000e-10
+    d_convergence:              1.000e-10
+    maxiter:                           50
+
+
+
+    Guess energy:      -74.962944614586
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -74.958642623702       0.004301990884       0.000140347232
+        1     -74.958643066685      -0.000000442983       0.000045910473
+        2     -74.958643500391      -0.000000433705       0.000017414863
+        3     -74.958643641542      -0.000000141152       0.000002453312
+        4     -74.958643764068      -0.000000122526       0.000000380840
+        5     -74.958643778264      -0.000000014195       0.000000001881
+        6     -74.958643777633       0.000000000631       0.000000001527
+        7     -74.958643777630       0.000000000003       0.000000002541
+        8     -74.958643777635      -0.000000000005       0.000000000127
+        9     -74.958643777633       0.000000000003       0.000000000461
+       10     -74.958643777633      -0.000000000000       0.000000000461
+       11     -74.958643777633      -0.000000000000       0.000000000465
+       12     -74.958643777633       0.000000000000       0.000000000377
+       13     -74.958643777634      -0.000000000001       0.000000000068
+
+    SCF iterations converged!
+
+
+    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
+
+    one-electron part;        0.007422056296
+    two-electron part:       -0.003011481356
+    total:                    0.004410574940
+
+
+    ==> dipole integrals <== 
+
+    <mu_x> =       0.000000000000
+    <mu_y> =      -0.296048834685
+    <mu_z> =       0.000000000000
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       7.334258928151
+    one electron (xy):      -0.000000000000
+    one electron (xz):       0.000000000000
+    one electron (yy):       5.937645036789
+    one electron (yz):      -0.000000000000
+    one electron (zz):       4.531069814785
+
+    two electron (xx):      -3.196640802577
+    two electron (xy):       0.000000000000
+    two electron (xz):       0.000000000000
+    two electron (yy):      -2.409185084407
+    two electron (yz):      -0.000000000000
+    two electron (zz):      -1.665896969018
+
+    total (xx):              4.137618125574
+    total (xy):             -0.000000000000
+    total (xz):              0.000000000000
+    total (yy):              3.528459952382
+    total (yz):             -0.000000000000
+    total (zz):              2.865172845767
+
+    * Polaritonic RHF total energy:     -74.958643777634
+
+ #  #
+ Irrep: 1
+      1:  -20.241224711444481
+      2:   -1.268255961016372
+      3:   -0.616658765697409
+      4:   -0.452609723169967
+      5:   -0.390498797574059
+      6:    0.606400970155069
+      7:    0.742064216573693
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O            0.000000000000    -0.065655108083     0.000000000000    15.994914619570
+         H           -0.757365949175     0.520997104927     0.000000000000     1.007825032230
+         H            0.757365949175     0.520997104927     0.000000000000     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                      -----------                    *
+        *                       CC CAVITY                     *
+        *                      -----------                    *
+        *                                                     *
+        *******************************************************
+
+
+
+    madness threads:                    1
+    omp threads:                        1
+    No. basis functions:                7
+    No. auxiliary basis functions:     28
+    No. alpha electrons:                5
+    No. alpha virtuals:                 2
+    No. beta electrons:                 5
+    No. beta virtuals:                  2
+    e_convergence:              1.000e-10
+    r_convergence:              1.000e-10
+    maxiter:                           50
+
+
+  Included amplitudes:
+          T0,1  T0,2
+      T1  T1,1  T1,2
+      T2  T2,1  T2,2
+
+  Dimension of CC amplitudes: 962
+
+  V_cav (nm3) = 0.74485760
+  lambda      = x: 0.00000000 y: 0.05000000 z: 0.00000000
+  hw          = 0.10000000
+  electric dipole moments: x: 0.00000000 y: -0.29604883 z: 0.00000000
+  average electric dipole self-energy: 0.00010956
+  Using relaxed orbitals.
+
+    ==>  Begin QED-CCSD-22 iterations <==    
+
+ Iter           energy              dE            |dT|  |   |dT1|  |dT2| |dT0,1||dT1,1||dT2,1||dT0,2||dT1,2||dT2,2|
+    0    0.000000000000  0.000000000000  0.124860766739 |   3e-11  1e-01  1e-12  1e-02  0e+00  0e+00  0e+00  0e+00
+    1   -0.035982063997 -0.035982063997  0.034402545669 |   1e-02  3e-02  2e-13  1e-03  1e-03  1e-03  1e-04  2e-05
+    2   -0.045372630568 -0.009390566571  0.013679035223 |   5e-03  1e-02  3e-03  5e-04  5e-04  1e-03  4e-05  4e-05
+    3   -0.049564030547 -0.004191399979  0.003682103220 |   2e-03  2e-03  3e-04  1e-04  1e-04  2e-03  8e-05  6e-05
+    4   -0.049885591267 -0.000321560720  0.002784893893 |   7e-04  7e-04  1e-04  9e-05  5e-05  3e-03  7e-05  6e-05
+    5   -0.049928031449 -0.000042440182  0.000457464394 |   3e-04  2e-04  2e-05  4e-05  3e-05  2e-04  8e-06  6e-06
+    6   -0.049935440417 -0.000007408968  0.000106113335 |   8e-05  7e-05  1e-05  1e-05  7e-06  8e-06  2e-05  1e-05
+    7   -0.049932127877  0.000003312540  0.000036792997 |   5e-06  8e-06  8e-06  2e-06  1e-06  2e-05  2e-05  2e-05
+    8   -0.049931933352  0.000000194525  0.000007004189 |   2e-06  5e-06  1e-06  9e-07  8e-07  3e-06  3e-06  3e-06
+    9   -0.049931953318 -0.000000019966  0.000007696703 |   7e-07  2e-06  9e-07  5e-07  3e-07  6e-06  3e-06  3e-06
+   10   -0.049931878583  0.000000074735  0.000003500124 |   4e-07  1e-06  4e-07  3e-07  2e-07  3e-06  1e-06  1e-06
+   11   -0.049931881998 -0.000000003416  0.000000565195 |   5e-08  1e-07  1e-08  1e-08  3e-08  2e-08  1e-07  5e-07
+   12   -0.049931884830 -0.000000002832  0.000000183953 |   4e-08  1e-07  5e-08  3e-08  3e-08  1e-08  4e-08  9e-08
+   13   -0.049931896175 -0.000000011345  0.000000079693 |   7e-09  3e-08  1e-08  8e-09  6e-09  4e-08  2e-08  5e-08
+   14   -0.049931898792 -0.000000002617  0.000000016169 |   3e-09  8e-09  5e-09  7e-10  1e-09  6e-09  5e-09  1e-08
+   15   -0.049931898132  0.000000000660  0.000000008311 |   2e-09  3e-09  6e-10  1e-10  7e-10  2e-09  2e-09  7e-09
+   16   -0.049931897912  0.000000000220  0.000000003388 |   6e-10  1e-09  2e-10  6e-11  3e-10  1e-09  2e-09  2e-09
+   17   -0.049931897913 -0.000000000001  0.000000001152 |   1e-10  4e-10  2e-10  5e-11  1e-10  3e-10  5e-10  9e-10
+   18   -0.049931897875  0.000000000037  0.000000000292 |   4e-11  9e-11  1e-11  2e-11  3e-11  1e-10  9e-11  2e-10
+   19   -0.049931897875  0.000000000001  0.000000000083 |   2e-11  4e-11  2e-11  7e-12  2e-11  2e-11  3e-11  6e-11
+
+    QED-CCSD-22 iterations converged!
+
+    * QED-CCSD-22 total energy:     -75.008575675508
+
+
+   Norms of cluster amplitudes:
+   ------------------------------
+     T1:  0.019802494906 |  1.36 %
+     T2:  0.168390663867 | 98.15 %
+   T0,1:  0.004626800890 |  0.07 %
+   T1,1:  0.010789826349 |  0.40 %
+   T2,1:  0.001902545969 |  0.01 %
+   T0,2:  0.000597000486 |  0.00 %
+   T1,2:  0.000099164649 |  0.00 %
+   T2,2:  0.000030287751 |  0.00 %
+   ------------------------------
+    Total:  0.169968729367
+
+  ==> Time spent in CC iterations <==  
+                    Total: 6.986 s
+      Residuals Equations: total =    3.811 s | average = 181.476 ms
+      Transform Integrals: total =    2.934 s | average = 139.710 ms
+        Update Amplitudes: total = 378.739 ms | average =   9.018 ms
+
+    QED-CCSD-22 (TA) total energy (z-pol).................................................PASSED
+
+Scratch directory: /Users/deprince/psi4_scratch/
+   => Libint2 <=
+
+    Primary   basis highest AM E, G, H:  5, 4, 3
+    Auxiliary basis highest AM E, G, H:  6, 5, 4
+    Onebody   basis highest AM E, G, H:  6, 5, 4
+    Solid Harmonics ordering:            Gaussian
+
+*** tstart() called on Alberts-MacBook-Pro.local
+*** at Sat Jun 20 16:02:58 2026
+
+   => Loading Basis Set <=
+
+    Name: STO-3G
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1   entry O          line    81 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/sto-3g.gbs 
+    atoms 2-3 entry H          line    19 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/sto-3g.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              RHF Reference
+                        1 Threads,    953 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O           -0.065655108083     0.000000000000     0.000000000000    15.994914619570
+         H            0.520997104927     0.000000000000    -0.757365949175     1.007825032230
+         H            0.520997104927     0.000000000000     0.757365949175     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     27.36310  B =     14.58041  C =      9.51197 [cm^-1]
+  Rotational constants: A = 820325.17390  B = 437109.76779  C = 285161.58919 [MHz]
+  Nuclear repulsion =    9.187386457593393
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is CD.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-10
+  Density threshold  = 1.00e-10
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: STO-3G
+    Blend: STO-3G
+    Number of shells: 5
+    Number of basis functions: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> Integral Setup <==
+
+  ==> CDJK: Cholesky-decomposed J/K Matrices <==
+
+    J tasked:                     Yes
+    K tasked:                     Yes
+    wK tasked:                     No
+    OpenMP threads:                 1
+    Integrals threads:              1
+    Memory [MiB]:                 715
+    Algorithm:                   Core
+    Integral Cache:              SAVE
+    Schwarz Cutoff:             1E-12
+    Cholesky tolerance:      1.00E-12
+    No. Cholesky vectors:          28
+
+  Minimum eigenvalue in the overlap matrix is 3.4273419653E-01.
+  Reciprocal condition number of the overlap matrix is 1.7758633656E-01.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A          7       7 
+   -------------------------
+    Total       7       7
+   -------------------------
+
+  ==> Iterations <==
+
+                        Total Energy        Delta E     RMS |[F,P]|
+
+   @RHF iter SAD:   -74.47369660580158   -7.44737e+01   0.00000e+00 
+   @RHF iter   1:   -74.92866633938695   -4.54970e-01   3.41908e-02 ADIIS/DIIS
+   @RHF iter   2:   -74.96199951753093   -3.33332e-02   5.03674e-03 ADIIS/DIIS
+   @RHF iter   3:   -74.96301028442912   -1.01077e-03   1.14323e-03 ADIIS/DIIS
+   @RHF iter   4:   -74.96305536693961   -4.50825e-05   4.60636e-05 DIIS
+   @RHF iter   5:   -74.96305548474544   -1.17806e-07   1.59244e-05 DIIS
+   @RHF iter   6:   -74.96305550412339   -1.93779e-08   1.56170e-07 DIIS
+   @RHF iter   7:   -74.96305550412443   -1.03739e-12   6.74943e-10 DIIS
+   @RHF iter   8:   -74.96305550412441    1.42109e-14   2.65567e-13 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Doubly Occupied:                                                      
+
+       1A    -20.241893     2A     -1.268049     3A     -0.617442  
+       4A     -0.453000     5A     -0.391223  
+
+    Virtual:                                                              
+
+       6A      0.604952     7A      0.741324  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+    NA   [     5 ]
+    NB   [     5 ]
+
+  @RHF Final Energy:   -74.96305550412441
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              9.1873864575933926
+    One-Electron Energy =                -122.3576686335017740
+    Two-Electron Energy =                  38.2072266717839710
+    Total Energy =                        -74.9630555041244122
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+
+ Multipole Moments:
+
+ ------------------------------------------------------------------------------------
+     Multipole            Electronic (a.u.)      Nuclear  (a.u.)        Total (a.u.)
+ ------------------------------------------------------------------------------------
+
+ L = 1.  Multiply by 2.5417464519 to convert [e a0] to [Debye]
+ Dipole X            :         -0.2978450            0.9765223            0.6786773
+ Dipole Y            :         -0.0000000            0.0000000           -0.0000000
+ Dipole Z            :          0.0000000            0.0000000            0.0000000
+ Magnitude           :                                                    0.6786773
+
+ ------------------------------------------------------------------------------------
+
+*** tstop() called on Alberts-MacBook-Pro.local at Sat Jun 20 16:02:58 2026
+Module time:
+	user time   =       0.06 seconds =       0.00 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+Total time:
+	user time   =      14.72 seconds =       0.25 minutes
+	system time =       0.10 seconds =       0.00 minutes
+	total time  =         15 seconds =       0.25 minutes
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1   entry O          line   318 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+    atoms 2-3 entry H          line    18 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/def2-universal-jkfit.gbs 
+
+   => Loading Basis Set <=
+
+    Name: (STO-3G AUX)
+    Role: RIFIT
+    Keyword: DF_BASIS_CC
+    atoms 1   entry O          line   233 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+    atoms 2-3 entry H          line    22 file /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4/basis/def2-svp-ri.gbs 
+
+
+Reading options from the HILBERT block
+Calling plugin hilbert.so.
+
+
+Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on the wavefunction. The old way of passing these will stop working as soon as 1.8.    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O           -0.065655108083     0.000000000000     0.000000000000    15.994914619570
+         H            0.520997104927     0.000000000000    -0.757365949175     1.007825032230
+         H            0.520997104927     0.000000000000     0.757365949175     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                                                     *
+        *    Polaritonic RHF                                  *
+        *                                                     *
+        *                                                     *
+        *******************************************************
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O           -0.065655108083     0.000000000000     0.000000000000    15.994914619570
+         H            0.520997104927     0.000000000000    -0.757365949175     1.007825032230
+         H            0.520997104927     0.000000000000     0.757365949175     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+    No. basis functions:                7
+    cholesky_tolerance:             1.000000e-12
+    No. electrons:                     10
+    e_convergence:              1.000e-10
+    d_convergence:              1.000e-10
+    maxiter:                           50
+
+
+
+    Guess energy:      -74.962944614586
+
+    ==>  Begin SCF Iterations <==
+
+     Iter               energy                   dE          RMS |[F,P]| 
+        0     -74.958642623702       0.004301990884       0.000140347232
+        1     -74.958643066685      -0.000000442983       0.000045910473
+        2     -74.958643500391      -0.000000433706       0.000017414863
+        3     -74.958643641542      -0.000000141152       0.000002453312
+        4     -74.958643764068      -0.000000122526       0.000000380840
+        5     -74.958643778263      -0.000000014195       0.000000001881
+        6     -74.958643777633       0.000000000630       0.000000001527
+        7     -74.958643777630       0.000000000003       0.000000002541
+        8     -74.958643777636      -0.000000000006       0.000000000394
+        9     -74.958643777632       0.000000000004       0.000000000464
+       10     -74.958643777633      -0.000000000001       0.000000000464
+       11     -74.958643777633      -0.000000000000       0.000000000464
+       12     -74.958643777633       0.000000000000       0.000000000434
+       13     -74.958643777633      -0.000000000000       0.000000000357
+       14     -74.958643777633      -0.000000000000       0.000000000027
+
+    SCF iterations converged!
+
+
+    ==> dipole self-energy: 1/2 lambda^2 ( <mu_e^2> - <mu_e>^2 ) <==
+
+    one-electron part;        0.007422056296
+    two-electron part:       -0.003011481355
+    total:                    0.004410574940
+
+
+    ==> dipole integrals <== 
+
+    <mu_x> =      -0.296048834688
+    <mu_y> =       0.000000000000
+    <mu_z> =       0.000000000000
+
+
+    ==> dipole variance: ( <mu_e^2> - <mu_e>^2 ) <== 
+
+    one electron (xx):       5.937645036654
+    one electron (xy):      -0.000000000000
+    one electron (xz):      -0.000000000000
+    one electron (yy):       4.531069814724
+    one electron (yz):      -0.000000000000
+    one electron (zz):       7.334258927924
+
+    two electron (xx):      -2.409185084360
+    two electron (xy):      -0.000000000000
+    two electron (xz):       0.000000000000
+    two electron (yy):      -1.665896969043
+    two electron (yz):       0.000000000000
+    two electron (zz):      -3.196640802054
+
+    total (xx):              3.528459952294
+    total (xy):             -0.000000000000
+    total (xz):              0.000000000000
+    total (yy):              2.865172845681
+    total (yz):             -0.000000000000
+    total (zz):              4.137618125870
+
+    * Polaritonic RHF total energy:     -74.958643777633
+
+ #  #
+ Irrep: 1
+      1:  -20.241224711455541
+      2:   -1.268255961025736
+      3:   -0.616658765693526
+      4:   -0.452609723174690
+      5:   -0.390498797579168
+      6:    0.606400970123872
+      7:    0.742064216583598
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         O           -0.065655108083     0.000000000000     0.000000000000    15.994914619570
+         H            0.520997104927     0.000000000000    -0.757365949175     1.007825032230
+         H            0.520997104927     0.000000000000     0.757365949175     1.007825032230
+
+  -AO BASIS SET INFORMATION:
+    Name                   = STO-3G
+    Blend                  = STO-3G
+    Total number of shells = 5
+    Number of primitives   = 15
+    Number of AO           = 7
+    Number of SO           = 7
+    Maximum AM             = 1
+    Spherical Harmonics    = TRUE
+
+  -Contraction Scheme:
+    Atom   Type   All Primitives // Shells:
+   ------ ------ --------------------------
+       1     O     6s 3p // 2s 1p 
+       2     H     3s // 1s 
+       3     H     3s // 1s 
+
+  ==> AO Basis Functions <==
+
+    [ STO-3G ]
+    spherical
+    ****
+    O   1
+    S   3 1.00
+                       130.70932000           0.15432897
+                        23.80886100           0.53532814
+                         6.44360830           0.44463454
+    S   3 1.00
+                         5.03315130          -0.09996723
+                         1.16959610           0.39951283
+                         0.38038900           0.70011547
+    P   3 1.00
+                         5.03315130           0.15591627
+                         1.16959610           0.60768372
+                         0.38038900           0.39195739
+    ****
+    H   2
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+    H   3
+    S   3 1.00
+                         3.42525091           0.15432897
+                         0.62391373           0.53532814
+                         0.16885540           0.44463454
+    ****
+
+
+
+        *******************************************************
+        *                                                     *
+        *                      -----------                    *
+        *                       CC CAVITY                     *
+        *                      -----------                    *
+        *                                                     *
+        *******************************************************
+
+
+
+    madness threads:                    1
+    omp threads:                        1
+    No. basis functions:                7
+    No. auxiliary basis functions:     28
+    No. alpha electrons:                5
+    No. alpha virtuals:                 2
+    No. beta electrons:                 5
+    No. beta virtuals:                  2
+    e_convergence:              1.000e-10
+    r_convergence:              1.000e-10
+    maxiter:                           50
+
+
+  Included amplitudes:
+          T0,1  T0,2
+      T1  T1,1  T1,2
+      T2  T2,1  T2,2
+
+  Dimension of CC amplitudes: 962
+
+  V_cav (nm3) = 0.74485760
+  lambda      = x: 0.05000000 y: 0.00000000 z: 0.00000000
+  hw          = 0.10000000
+  electric dipole moments: x: -0.29604883 y: 0.00000000 z: 0.00000000
+  average electric dipole self-energy: 0.00010956
+  Using relaxed orbitals.
+
+    ==>  Begin QED-CCSD-22 iterations <==    
+
+ Iter           energy              dE            |dT|  |   |dT1|  |dT2| |dT0,1||dT1,1||dT2,1||dT0,2||dT1,2||dT2,2|
+    0    0.000000000000  0.000000000000  0.124860766739 |   8e-13  1e-01  6e-13  1e-02  0e+00  0e+00  0e+00  0e+00
+    1   -0.035982063997 -0.035982063997  0.034402545668 |   1e-02  3e-02  6e-14  1e-03  1e-03  1e-03  1e-04  2e-05
+    2   -0.045372630569 -0.009390566571  0.013679035222 |   5e-03  1e-02  3e-03  5e-04  5e-04  1e-03  4e-05  4e-05
+    3   -0.049564030547 -0.004191399979  0.003682103220 |   2e-03  2e-03  3e-04  1e-04  1e-04  2e-03  8e-05  6e-05
+    4   -0.049885591267 -0.000321560720  0.002784893893 |   7e-04  7e-04  1e-04  9e-05  5e-05  3e-03  7e-05  6e-05
+    5   -0.049928031449 -0.000042440182  0.000457464394 |   3e-04  2e-04  2e-05  4e-05  3e-05  2e-04  8e-06  6e-06
+    6   -0.049935440417 -0.000007408968  0.000106113335 |   8e-05  7e-05  1e-05  1e-05  7e-06  8e-06  2e-05  1e-05
+    7   -0.049932127877  0.000003312540  0.000036792997 |   5e-06  8e-06  8e-06  2e-06  1e-06  2e-05  2e-05  2e-05
+    8   -0.049931933352  0.000000194525  0.000007004189 |   2e-06  5e-06  1e-06  9e-07  8e-07  3e-06  3e-06  3e-06
+    9   -0.049931953318 -0.000000019966  0.000007696703 |   7e-07  2e-06  9e-07  5e-07  3e-07  6e-06  3e-06  3e-06
+   10   -0.049931878583  0.000000074735  0.000003500124 |   4e-07  1e-06  4e-07  3e-07  2e-07  3e-06  1e-06  1e-06
+   11   -0.049931881998 -0.000000003416  0.000000565195 |   5e-08  1e-07  1e-08  1e-08  3e-08  2e-08  1e-07  5e-07
+   12   -0.049931884830 -0.000000002832  0.000000183953 |   4e-08  1e-07  5e-08  3e-08  3e-08  1e-08  4e-08  9e-08
+   13   -0.049931896175 -0.000000011345  0.000000079693 |   7e-09  3e-08  1e-08  8e-09  6e-09  4e-08  2e-08  5e-08
+   14   -0.049931898792 -0.000000002617  0.000000016169 |   3e-09  8e-09  5e-09  7e-10  1e-09  6e-09  5e-09  1e-08
+   15   -0.049931898132  0.000000000660  0.000000008311 |   2e-09  3e-09  6e-10  1e-10  7e-10  2e-09  2e-09  7e-09
+   16   -0.049931897912  0.000000000220  0.000000003388 |   6e-10  1e-09  2e-10  6e-11  3e-10  1e-09  2e-09  2e-09
+   17   -0.049931897913 -0.000000000001  0.000000001152 |   1e-10  4e-10  2e-10  5e-11  1e-10  3e-10  5e-10  9e-10
+   18   -0.049931897875  0.000000000037  0.000000000292 |   4e-11  9e-11  1e-11  2e-11  3e-11  1e-10  9e-11  2e-10
+   19   -0.049931897875  0.000000000001  0.000000000083 |   2e-11  4e-11  2e-11  7e-12  2e-11  2e-11  3e-11  6e-11
+
+    QED-CCSD-22 iterations converged!
+
+    * QED-CCSD-22 total energy:     -75.008575675508
+
+
+   Norms of cluster amplitudes:
+   ------------------------------
+     T1:  0.019802494882 |  1.36 %
+     T2:  0.168390663866 | 98.15 %
+   T0,1:  0.004626800889 |  0.07 %
+   T1,1:  0.010789826349 |  0.40 %
+   T2,1:  0.001902545969 |  0.01 %
+   T0,2:  0.000597000486 |  0.00 %
+   T1,2:  0.000099164649 |  0.00 %
+   T2,2:  0.000030287751 |  0.00 %
+   ------------------------------
+    Total:  0.169968729365
+
+  ==> Time spent in CC iterations <==  
+                    Total: 7.112 s
+      Residuals Equations: total =    3.889 s | average = 185.198 ms
+      Transform Integrals: total =    2.978 s | average = 141.817 ms
+        Update Amplitudes: total = 383.900 ms | average =   9.140 ms
+
+    QED-CCSD-22 (TA) total energy (z-pol).................................................PASSED
+
+    Psi4 stopped on: Saturday, 20 June 2026 04:03PM
+    Psi4 wall time for execution: 0:00:23.60
 
 *** Psi4 exiting successfully. Buy a developer a beer!

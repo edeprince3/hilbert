@@ -2,16 +2,34 @@ sys.path.insert(0, '../../../')
 import math
 import hilbert
 
-molecule {
-  0 1
-  O            0.000000000000     0.000000000000    -0.065655108083
-  H            0.000000000000    -0.757365949175     0.520997104927
-  H            0.000000000000     0.757365949175     0.520997104927
-  no_reorient 
-  no_com
-  symmetry c1
+
+molecule mol1 {
+0 1
+O            0.000000000000     0.000000000000    -0.065655108083
+H            0.000000000000    -0.757365949175     0.520997104927
+H            0.000000000000     0.757365949175     0.520997104927
+no_reorient
+nocom
+symmetry c1
+}
+molecule mol2 {
+O                0.000000000000    -0.065655108083    0.000000000000
+H               -0.757365949175     0.520997104927    0.000000000000
+H                0.757365949175     0.520997104927    0.000000000000
+no_reorient
+nocom
+symmetry c1
+}
+molecule mol3 {
+O                 -0.065655108083    0.000000000000   0.000000000000
+H                  0.520997104927    0.000000000000  -0.757365949175
+H                  0.520997104927    0.000000000000   0.757365949175
+no_reorient
+nocom
+symmetry c1
 }
 
+activate(mol1)
 set {
   basis sto-3g
   
@@ -41,8 +59,23 @@ set hilbert {
 # memory for Psi4 (note: this is for the integrals, not the CC calculation which does not restrict memory usage)
 memory 1000 MB
 
-en, wfn = energy('qed-ccsd-22', return_wfn=True)   # QED-CCSD-22 w/ TiledArray
-
 ref = -75.008575675781
+en, wfn = energy('qed-ccsd-22', return_wfn=True)   # QED-CCSD-22 w/ TiledArray
+compare_values(ref, en, 8, "QED-CCSD-22 (TA) total energy (z-pol)") # TEST
+
+activate(mol2)
+set basis sto-3g
+set hilbert {
+    cavity_coupling_strength [0.0, $g, 0.0]
+}
+en, wfn = energy('qed-ccsd-22', return_wfn=True)   # QED-CCSD-22 w/ TiledArray
+compare_values(ref, en, 8, "QED-CCSD-22 (TA) total energy (z-pol)") # TEST
+
+activate(mol3)
+set basis sto-3g
+set hilbert {
+    cavity_coupling_strength [$g, 0.0, 0.0]
+}
+en, wfn = energy('qed-ccsd-22', return_wfn=True)   # QED-CCSD-22 w/ TiledArray
 compare_values(ref, en, 8, "QED-CCSD-22 (TA) total energy (z-pol)") # TEST
 
