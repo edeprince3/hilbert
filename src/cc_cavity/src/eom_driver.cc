@@ -274,12 +274,16 @@ namespace hilbert {
 
             // print energies and excitation energies
             double ee_energy = eigvals_->get(i);
-            if (fabs(last_en - ee_energy) < 1e-10 && no_degeneracy)
+            if (fabs(last_en - ee_energy) < 1e-10 && no_degeneracy){
                 continue;
+            }
             last_en = ee_energy;
 
             Printf("%5d %20.12lf %17.12lf ", i, ee_energy,
                    ee_energy - ground_energy_ref_);
+
+            // add excitation energies to psi variables
+            Process::environment.globals[eom_type_ + " ROOT 0 -> ROOT " + std::to_string(i) + " EXCITATION ENERGY"] = ee_energy - ground_energy_ref_;
 
             // print out the norm of the amplitudes. Ignore if less than 1e-10
             for (int j = 0; j < nops_; j++) {
