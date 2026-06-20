@@ -1,0 +1,48 @@
+sys.path.insert(0, '../../../')
+import math
+import hilbert
+
+molecule {
+  0 1
+  O            0.000000000000     0.000000000000    -0.065655108083
+  H            0.000000000000    -0.757365949175     0.520997104927
+  H            0.000000000000     0.757365949175     0.520997104927
+  no_reorient 
+  no_com
+  symmetry c1
+}
+
+set {
+  basis sto-3g
+  
+  scf_type cd 
+  cholesky_tolerance 1e-12
+  
+  e_convergence 1e-10
+  r_convergence 1e-10
+  d_convergence 1e-10
+}
+ 
+lam = 0.05 # coupling factor (this value is for a 0.74 nm³ cavity)
+w = 0.1 # frequency of the cavity mode
+g = (lam / math.sqrt(2.0 * w)) # coupling strength
+set hilbert {
+  cavity_frequency         $w
+  cavity_coupling_strength [0.0, 0.0, $g]
+  
+  QED_USE_RELAXED_ORBITALS  true # do relax the SCF orbitals within the cavity
+  
+  MAD_NUM_THREADS              1 # the number of MADNESS threads to use with mpirun 
+                                 # Note: if not using mpi or using eom, set this to 1 for best performanc
+  TILE_SIZE                   -1 # the spacing between tiles in a tiledarray (-1 places all data on a single tile)
+                                 # Note: if not using mpi or using eom, set this to -1 for best performance
+}
+
+# memory for Psi4 (note: this is for the integrals, not the CC calculation which does not restrict memory usage)
+memory 1000 MB
+
+en1, wfn = energy('qed-ccsd', return_wfn=True)      # QED-CCSD-21 w/o TiledArray
+en2, wfn = energy('qed-ccsd-21', return_wfn=True)   # QED-CCSD-21 w/ TiledArray
+
+compare_values(en1, en2, 8, "QED-CCSD-21 (TA) total energy (z-pol)") # TEST
+
