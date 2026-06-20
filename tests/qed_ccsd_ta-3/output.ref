@@ -32,9 +32,9 @@
     -----------------------------------------------------------------------
 
 
-    Psi4 started on: Saturday, 20 June 2026 09:07AM
+    Psi4 started on: Saturday, 20 June 2026 04:41PM
 
-    Process ID: 82707
+    Process ID: 38339
     Host:       Alberts-MacBook-Pro.local
     PSIDATADIR: /Users/deprince/software/psi4/v1.10/psi4/install/share/psi4
     Memory:     500.0 MiB
@@ -131,7 +131,7 @@ Scratch directory: /Users/deprince/psi4_scratch/
     Solid Harmonics ordering:            Gaussian
 
 *** tstart() called on Alberts-MacBook-Pro.local
-*** at Sat Jun 20 09:07:24 2026
+*** at Sat Jun 20 16:41:50 2026
 
    => Loading Basis Set <=
 
@@ -233,9 +233,9 @@ Scratch directory: /Users/deprince/psi4_scratch/
                         Total Energy        Delta E     RMS |[F,P]|
 
    @RHF iter SAD:   -74.47369660580161   -7.44737e+01   0.00000e+00 
-   @RHF iter   1:   -74.92866633938698   -4.54970e-01   3.41908e-02 DIIS/ADIIS
-   @RHF iter   2:   -74.96199951753096   -3.33332e-02   5.03674e-03 DIIS/ADIIS
-   @RHF iter   3:   -74.96301028442907   -1.01077e-03   1.14323e-03 DIIS/ADIIS
+   @RHF iter   1:   -74.92866633938698   -4.54970e-01   3.41908e-02 ADIIS/DIIS
+   @RHF iter   2:   -74.96199951753096   -3.33332e-02   5.03674e-03 ADIIS/DIIS
+   @RHF iter   3:   -74.96301028442907   -1.01077e-03   1.14323e-03 ADIIS/DIIS
    @RHF iter   4:   -74.96305536693961   -4.50825e-05   4.60636e-05 DIIS
    @RHF iter   5:   -74.96305548474538   -1.17806e-07   1.59244e-05 DIIS
    @RHF iter   6:   -74.96305550412336   -1.93780e-08   1.56170e-07 DIIS
@@ -295,14 +295,14 @@ Properties computed using the SCF density matrix
 
  ------------------------------------------------------------------------------------
 
-*** tstop() called on Alberts-MacBook-Pro.local at Sat Jun 20 09:07:25 2026
+*** tstop() called on Alberts-MacBook-Pro.local at Sat Jun 20 16:41:51 2026
 Module time:
 	user time   =       0.29 seconds =       0.00 minutes
-	system time =       0.05 seconds =       0.00 minutes
+	system time =       0.04 seconds =       0.00 minutes
 	total time  =          1 seconds =       0.02 minutes
 Total time:
 	user time   =       0.29 seconds =       0.00 minutes
-	system time =       0.05 seconds =       0.00 minutes
+	system time =       0.04 seconds =       0.00 minutes
 	total time  =          1 seconds =       0.02 minutes
    => Loading Basis Set <=
 
@@ -670,10 +670,10 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
     Total:  0.169966172944
 
   ==> Time spent in CC iterations <==  
-                    Total: 3.525 s
-      Residuals Equations: total =    1.241 s | average =  77.586 ms
-      Transform Integrals: total =    2.259 s | average = 141.163 ms
-        Update Amplitudes: total = 168.117 ms | average =   5.254 ms
+                    Total: 3.555 s
+      Residuals Equations: total =    1.323 s | average =  82.717 ms
+      Transform Integrals: total =    2.200 s | average = 137.524 ms
+        Update Amplitudes: total = 165.901 ms | average =   5.184 ms
 
 
 
@@ -700,7 +700,7 @@ Plugins that use gradients: set Da, Db, and Lagrangian for gradient theory on th
 
 
   Building trial independent contractions across iterations... Done.
-      Finished in 61.271 ms
+      Finished in 57.688 ms
 
 
 state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1         l2*r2     l0,1*r0,1     l1,1*r1,1     l2,1*r2,1
@@ -715,18 +715,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8       0.000000000000    0.000000000000 ------------- ------------- ------------- ------------- ------------- ------------- 
     9       0.000000000000    0.000000000000 ------------- ------------- ------------- ------------- ------------- ------------- 
 
-  Time Elapsed:           594.994 ms
+  Time Elapsed:           618.961 ms
   Iterations:             1
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  21.969 ms
-    - Total 21.969 ms
+    - Avg.  22.248 ms
+    - Total 22.248 ms
   Eigen Solver Time:
-    - Avg.  61.565 ms
-    - Total 61.565 ms
+    - Avg.  57.947 ms
+    - Total 57.947 ms
   Sigma Build Time:
-    - Avg.  573.025 ms
-    - Total 573.025 ms
+    - Avg.  596.713 ms
+    - Total 596.713 ms
 ----------------------------------------
 
 eigenvalues
@@ -775,18 +775,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.419918487585    0.588657017768 -------------  0.9951087060  0.0001054190 -------------  0.0047858749 ------------- 
     9     -74.396303404962    0.612272100392 -------------  0.0075884117  0.0002558353 -------------  0.9921557530 ------------- 
 
-  Time Elapsed:           1.337 s
+  Time Elapsed:           1.358 s
   Iterations:             2
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  26.634 ms
-    - Total 53.267 ms
+    - Avg.  26.988 ms
+    - Total 53.977 ms
   Eigen Solver Time:
-    - Avg.  32.500 ms
-    - Total 64.999 ms
+    - Avg.  30.715 ms
+    - Total 61.429 ms
   Sigma Build Time:
-    - Avg.  641.902 ms
-    - Total 1.284 s
+    - Avg.  652.063 ms
+    - Total 1.304 s
 ----------------------------------------
 
 eigenvalues
@@ -835,18 +835,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.450698470938    0.557877034415 -------------  0.0051864624  0.0002971725 -------------  0.9447810443  0.0497353207 
     9     -74.427861728643    0.580713776710 -------------  0.9877094537  0.0077001337 -------------  0.0045727574  0.0000176552 
 
-  Time Elapsed:           2.224 s
+  Time Elapsed:           2.267 s
   Iterations:             3
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  30.984 ms
-    - Total 92.952 ms
+    - Avg.  31.204 ms
+    - Total 93.611 ms
   Eigen Solver Time:
-    - Avg.  23.761 ms
-    - Total 71.283 ms
+    - Avg.  22.575 ms
+    - Total 67.724 ms
   Sigma Build Time:
-    - Avg.  710.383 ms
-    - Total 2.131 s
+    - Avg.  724.593 ms
+    - Total 2.174 s
 ----------------------------------------
 
 eigenvalues
@@ -897,18 +897,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451110114328    0.557465391026 -------------  0.4931417544  0.4158631002  0.0018510482  0.0000652438  0.0890788535 
     9     -74.428213541706    0.580361963648 -------------  0.4249934111  0.4493283398 -------------  0.0042007863  0.1214774628 
 
-  Time Elapsed:           2.850 s
+  Time Elapsed:           2.917 s
   Iterations:             4
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  28.511 ms
-    - Total 114.045 ms
+    - Avg.  28.653 ms
+    - Total 114.611 ms
   Eigen Solver Time:
-    - Avg.  20.368 ms
-    - Total 81.470 ms
+    - Avg.  19.477 ms
+    - Total 77.909 ms
   Sigma Build Time:
-    - Avg.  683.932 ms
-    - Total 2.736 s
+    - Avg.  700.481 ms
+    - Total 2.802 s
 ----------------------------------------
 
 eigenvalues
@@ -957,18 +957,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117050547    0.557458454807 -------------  0.0051247080  0.0005674268 -------------  0.9434828211  0.0508250441 
     9     -74.428231890622    0.580343614731 -------------  0.9861848184  0.0091881992 -------------  0.0045833885  0.0000435939 
 
-  Time Elapsed:           3.536 s
+  Time Elapsed:           3.616 s
   Iterations:             5
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  28.706 ms
-    - Total 143.529 ms
+    - Avg.  28.786 ms
+    - Total 143.931 ms
   Eigen Solver Time:
-    - Avg.  16.941 ms
-    - Total 84.703 ms
+    - Avg.  16.231 ms
+    - Total 81.153 ms
   Sigma Build Time:
-    - Avg.  678.579 ms
-    - Total 3.393 s
+    - Avg.  694.396 ms
+    - Total 3.472 s
 ----------------------------------------
 
 eigenvalues
@@ -1017,18 +1017,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117631886    0.557457873467 -------------  0.0051274220  0.0005635791 -------------  0.9434760198  0.0508329791 
     9     -74.428234515505    0.580340989849 -------------  0.9861194711  0.0092526214 -------------  0.0045793857  0.0000485217 
 
-  Time Elapsed:           4.407 s
+  Time Elapsed:           4.494 s
   Iterations:             6
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  30.239 ms
-    - Total 181.437 ms
+    - Avg.  30.297 ms
+    - Total 181.784 ms
   Eigen Solver Time:
-    - Avg.  15.059 ms
-    - Total 90.356 ms
+    - Avg.  14.465 ms
+    - Total 86.789 ms
   Sigma Build Time:
-    - Avg.  704.186 ms
-    - Total 4.225 s
+    - Avg.  718.668 ms
+    - Total 4.312 s
 ----------------------------------------
 
 eigenvalues
@@ -1079,18 +1079,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636238    0.557457869116 -------------  0.0050919056  0.0006099438 -------------  0.9434677232  0.0508304274 
     9     -74.428234672752    0.580340832601 -------------  0.9854204994  0.0094083279 -------------  0.0050242932  0.0001468796 
 
-  Time Elapsed:           5.043 s
+  Time Elapsed:           5.141 s
   Iterations:             7
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  28.947 ms
-    - Total 202.631 ms
+    - Avg.  28.982 ms
+    - Total 202.874 ms
   Eigen Solver Time:
-    - Avg.  14.146 ms
-    - Total 99.021 ms
+    - Avg.  13.642 ms
+    - Total 95.495 ms
   Sigma Build Time:
-    - Avg.  691.523 ms
-    - Total 4.841 s
+    - Avg.  705.484 ms
+    - Total 4.938 s
 ----------------------------------------
 
 eigenvalues
@@ -1139,18 +1139,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636449    0.557457868905 -------------  0.0051272809  0.0005636377 -------------  0.9434661552  0.0508429262 
     9     -74.428234687483    0.580340817870 -------------  0.9860729317  0.0093017018 -------------  0.0045761958  0.0000491708 
 
-  Time Elapsed:           5.733 s
+  Time Elapsed:           5.843 s
   Iterations:             8
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  29.079 ms
-    - Total 232.629 ms
+    - Avg.  29.020 ms
+    - Total 232.162 ms
   Eigen Solver Time:
-    - Avg.  12.782 ms
-    - Total 102.253 ms
+    - Avg.  12.341 ms
+    - Total 98.729 ms
   Sigma Build Time:
-    - Avg.  687.564 ms
-    - Total 5.501 s
+    - Avg.  701.330 ms
+    - Total 5.611 s
 ----------------------------------------
 
 eigenvalues
@@ -1199,18 +1199,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636451    0.557457868902 -------------  0.0051273028  0.0005636069 -------------  0.9434659486  0.0508431417 
     9     -74.428234690943    0.580340814410 -------------  0.9860676035  0.0093053000 -------------  0.0045778520  0.0000492445 
 
-  Time Elapsed:           6.601 s
+  Time Elapsed:           6.729 s
   Iterations:             9
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  30.100 ms
-    - Total 270.901 ms
+    - Avg.  29.987 ms
+    - Total 269.882 ms
   Eigen Solver Time:
-    - Avg.  11.997 ms
-    - Total 107.973 ms
+    - Avg.  11.601 ms
+    - Total 104.409 ms
   Sigma Build Time:
-    - Avg.  703.392 ms
-    - Total 6.331 s
+    - Avg.  717.717 ms
+    - Total 6.459 s
 ----------------------------------------
 
 eigenvalues
@@ -1261,18 +1261,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636451    0.557457868902 -------------  0.0050561580  0.0011342283 -------------  0.9402433798  0.0535662340 
     9     -74.428234691723    0.580340813631 -------------  0.9857285791  0.0091518057 -------------  0.0049631789  0.0001564363 
 
-  Time Elapsed:           7.230 s
+  Time Elapsed:           7.374 s
   Iterations:             10
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  29.206 ms
-    - Total 292.055 ms
+    - Avg.  29.088 ms
+    - Total 290.883 ms
   Eigen Solver Time:
-    - Avg.  11.672 ms
-    - Total 116.719 ms
+    - Avg.  11.311 ms
+    - Total 113.111 ms
   Sigma Build Time:
-    - Avg.  693.800 ms
-    - Total 6.938 s
+    - Avg.  708.353 ms
+    - Total 7.084 s
 ----------------------------------------
 
 eigenvalues
@@ -1321,18 +1321,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636451    0.557457868902 -------------  0.0051273040  0.0005636055 -------------  0.9434659520  0.0508431385 
     9     -74.428234691893    0.580340813461 -------------  0.9860664619  0.0093039956 -------------  0.0045802240  0.0000493185 
 
-  Time Elapsed:           7.946 s
+  Time Elapsed:           8.104 s
   Iterations:             11
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  29.144 ms
-    - Total 320.589 ms
+    - Avg.  29.030 ms
+    - Total 319.327 ms
   Eigen Solver Time:
-    - Avg.  10.901 ms
-    - Total 119.911 ms
+    - Avg.  10.574 ms
+    - Total 116.315 ms
   Sigma Build Time:
-    - Avg.  693.256 ms
-    - Total 7.626 s
+    - Avg.  707.672 ms
+    - Total 7.784 s
 ----------------------------------------
 
 eigenvalues
@@ -1381,18 +1381,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636451    0.557457868902 -------------  0.0051273042  0.0005636053 -------------  0.9434659505  0.0508431401 
     9     -74.428234691985    0.580340813369 -------------  0.9860655475  0.0093034067 -------------  0.0045817095  0.0000493363 
 
-  Time Elapsed:           8.682 s
+  Time Elapsed:           8.849 s
   Iterations:             12
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  29.486 ms
-    - Total 353.832 ms
+    - Avg.  29.361 ms
+    - Total 352.337 ms
   Eigen Solver Time:
-    - Avg.  10.427 ms
-    - Total 125.121 ms
+    - Avg.  10.126 ms
+    - Total 121.513 ms
   Sigma Build Time:
-    - Avg.  693.987 ms
-    - Total 8.328 s
+    - Avg.  708.020 ms
+    - Total 8.496 s
 ----------------------------------------
 
 eigenvalues
@@ -1441,18 +1441,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636451    0.557457868902 -------------  0.0051273042  0.0005636053 -------------  0.9434659505  0.0508431401 
     9     -74.428234692003    0.580340813350 -------------  0.9860649959  0.0093034226 -------------  0.0045822350  0.0000493465 
 
-  Time Elapsed:           9.563 s
+  Time Elapsed:           9.732 s
   Iterations:             13
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  30.137 ms
-    - Total 391.784 ms
+    - Avg.  30.007 ms
+    - Total 390.086 ms
   Eigen Solver Time:
-    - Avg.  10.155 ms
-    - Total 132.010 ms
+    - Avg.  9.873 ms
+    - Total 128.344 ms
   Sigma Build Time:
-    - Avg.  705.473 ms
-    - Total 9.171 s
+    - Avg.  718.622 ms
+    - Total 9.342 s
 ----------------------------------------
 
 eigenvalues
@@ -1503,18 +1503,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636452    0.557457868902 -------------  0.0051342095  0.0005045259 -------------  0.9430382120  0.0513230527 
     9     -74.428234692008    0.580340813346 -------------  0.9860647044  0.0093034742 -------------  0.0045824672  0.0000493542 
 
-  Time Elapsed:           10.099 s
+  Time Elapsed:           10.289 s
   Iterations:             14
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  29.156 ms
-    - Total 408.186 ms
+    - Avg.  29.033 ms
+    - Total 406.458 ms
   Eigen Solver Time:
-    - Avg.  10.030 ms
-    - Total 140.416 ms
+    - Avg.  9.769 ms
+    - Total 136.760 ms
   Sigma Build Time:
-    - Avg.  692.172 ms
-    - Total 9.690 s
+    - Avg.  705.923 ms
+    - Total 9.883 s
 ----------------------------------------
 
 eigenvalues
@@ -1563,18 +1563,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636451    0.557457868902 -------------  0.0051273042  0.0005636053 -------------  0.9434659505  0.0508431401 
     9     -74.428234692008    0.580340813345 -------------  0.9860646907  0.0093035122 -------------  0.0045824475  0.0000493495 
 
-  Time Elapsed:           10.684 s
+  Time Elapsed:           10.882 s
   Iterations:             15
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  28.562 ms
-    - Total 428.431 ms
+    - Avg.  28.431 ms
+    - Total 426.467 ms
   Eigen Solver Time:
-    - Avg.  9.495 ms
-    - Total 142.421 ms
+    - Avg.  9.251 ms
+    - Total 138.770 ms
   Sigma Build Time:
-    - Avg.  683.704 ms
-    - Total 10.256 s
+    - Avg.  697.002 ms
+    - Total 10.455 s
 ----------------------------------------
 
 eigenvalues
@@ -1623,18 +1623,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636452    0.557457868902 -------------  0.0051273041  0.0005636052 -------------  0.9434659506  0.0508431401 
     9     -74.428234692008    0.580340813346 -------------  0.9860646742  0.0093035184 -------------  0.0045824574  0.0000493499 
 
-  Time Elapsed:           11.319 s
+  Time Elapsed:           11.520 s
   Iterations:             16
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  28.278 ms
-    - Total 452.449 ms
+    - Avg.  28.137 ms
+    - Total 450.195 ms
   Eigen Solver Time:
-    - Avg.  9.077 ms
-    - Total 145.228 ms
+    - Avg.  8.849 ms
+    - Total 141.577 ms
   Sigma Build Time:
-    - Avg.  679.134 ms
-    - Total 10.866 s
+    - Avg.  691.871 ms
+    - Total 11.070 s
 ----------------------------------------
 
 eigenvalues
@@ -1683,18 +1683,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636451    0.557457868902 -------------  0.0051273042  0.0005636053 -------------  0.9434659505  0.0508431401 
     9     -74.428234692008    0.580340813346 -------------  0.9860646601  0.0093035223 -------------  0.0045824674  0.0000493503 
 
-  Time Elapsed:           12.001 s
+  Time Elapsed:           12.213 s
   Iterations:             17
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  28.251 ms
-    - Total 480.261 ms
+    - Avg.  28.100 ms
+    - Total 477.692 ms
   Eigen Solver Time:
-    - Avg.  8.765 ms
-    - Total 149.004 ms
+    - Avg.  8.550 ms
+    - Total 145.346 ms
   Sigma Build Time:
-    - Avg.  677.697 ms
-    - Total 11.521 s
+    - Avg.  690.314 ms
+    - Total 11.735 s
 ----------------------------------------
 
 eigenvalues
@@ -1743,18 +1743,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636452    0.557457868902 -------------  0.0051273042  0.0005636052 -------------  0.9434659505  0.0508431401 
     9     -74.428234692008    0.580340813345 -------------  0.9860646523  0.0093035224 -------------  0.0045824750  0.0000493504 
 
-  Time Elapsed:           12.731 s
+  Time Elapsed:           12.955 s
   Iterations:             18
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  28.431 ms
-    - Total 511.754 ms
+    - Avg.  28.274 ms
+    - Total 508.933 ms
   Eigen Solver Time:
-    - Avg.  8.546 ms
-    - Total 153.835 ms
+    - Avg.  8.344 ms
+    - Total 150.183 ms
   Sigma Build Time:
-    - Avg.  678.854 ms
-    - Total 12.219 s
+    - Avg.  691.439 ms
+    - Total 12.446 s
 ----------------------------------------
 
 eigenvalues
@@ -1803,18 +1803,18 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636452    0.557457868902 -------------  0.0051273042  0.0005636053 -------------  0.9434659505  0.0508431401 
     9     -74.428234692008    0.580340813345 -------------  0.9860646488  0.0093035202 -------------  0.0045824806  0.0000493504 
 
-  Time Elapsed:           13.478 s
+  Time Elapsed:           13.699 s
   Iterations:             19
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  28.685 ms
-    - Total 545.009 ms
+    - Avg.  28.525 ms
+    - Total 541.980 ms
   Eigen Solver Time:
-    - Avg.  8.413 ms
-    - Total 159.839 ms
+    - Avg.  8.221 ms
+    - Total 156.191 ms
   Sigma Build Time:
-    - Avg.  680.693 ms
-    - Total 12.933 s
+    - Avg.  692.489 ms
+    - Total 13.157 s
 ----------------------------------------
 
 eigenvalues
@@ -2145,21 +2145,21 @@ state    total energy (Eh)   ex. energy (Eh)         l0*r0         l1*r1        
     8     -74.451117636452    0.557457868902 -------------  0.0051273042  0.0005636053 -------------  0.9434659505  0.0508431401 
     9     -74.428234692008    0.580340813345 -------------  0.9860646488  0.0093035202 -------------  0.0045824806  0.0000493504 
 
-  Time Elapsed:           13.478 s
+  Time Elapsed:           13.699 s
   Iterations:             19
 ----------------------------------------
   Unpack/Pack Time:
-    - Avg.  28.685 ms
-    - Total 545.009 ms
+    - Avg.  28.525 ms
+    - Total 541.980 ms
   Eigen Solver Time:
-    - Avg.  8.269 ms
-    - Total 165.382 ms
+    - Avg.  8.083 ms
+    - Total 161.663 ms
   Sigma Build Time:
-    - Avg.  680.693 ms
-    - Total 12.933 s
+    - Avg.  692.489 ms
+    - Total 13.157 s
 ----------------------------------------
 
-Computing 1-RDMs and oscillator strengths...Done --> Time: 53.439 ms
+Computing 1-RDMs and oscillator strengths...Done --> Time: 54.138 ms
 
   ==> EOM-EE-QED-CCSD-21 Initial State Transition Dipoles <==
 
@@ -2305,7 +2305,7 @@ state           omega (Eh)  Oscillator Strength |     <0|mu|n><n|mu|0> |   <0|mu
     QED-EE-EOMCCSD-21 excitation energy 8.................................................PASSED
     QED-EE-EOMCCSD-21 excitation energy 9.................................................PASSED
 
-    Psi4 stopped on: Saturday, 20 June 2026 09:07AM
-    Psi4 wall time for execution: 0:00:18.02
+    Psi4 stopped on: Saturday, 20 June 2026 04:42PM
+    Psi4 wall time for execution: 0:00:19.28
 
 *** Psi4 exiting successfully. Buy a developer a beer!

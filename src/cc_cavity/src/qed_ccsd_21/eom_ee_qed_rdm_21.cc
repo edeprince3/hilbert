@@ -62,7 +62,6 @@ namespace hilbert {
 
         // get cavity information
         double w0 = eom_driver_->cc_wfn_->cavity_frequency_;
-        double coupling_factor_z = w0 * eom_driver_->cc_wfn_->cavity_coupling_strength_[2];
 
         // extract 0-body amplitudes
         TArrayD r0 = eom_driver_->evec_blks_["r0"];
