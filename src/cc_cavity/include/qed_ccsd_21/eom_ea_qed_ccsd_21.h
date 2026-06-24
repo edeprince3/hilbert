@@ -41,7 +41,10 @@ public:
     EOM_EA_QED_CCSD_21(shared_ptr<CC_Cavity> &cc_wfn, Options & options);
     ~EOM_EA_QED_CCSD_21() = default;
 
+    double old_e_dip_x_; // store the old dipole moment for backtracking
+    double old_e_dip_y_; // store the old dipole moment for backtracking
     double old_e_dip_z_; // store the old dipole moment for backtracking
+
     double old_dipole_self_energy_; // store the old dipole_self_energy_ for backtracking
 
     void set_problem_size() override;

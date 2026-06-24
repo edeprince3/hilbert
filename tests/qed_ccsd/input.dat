@@ -3,8 +3,7 @@
 sys.path.insert(0, '../../..')
 import hilbert 
 
-molecule {
-
+molecule mol1 {
 0 1
          O            0.000000000000     0.000000000000    -0.068516219320
          H            0.000000000000    -0.790689573744     0.543701060715
@@ -13,6 +12,24 @@ no_reorient
 nocom
 symmetry c1
 }
+molecule mol2 {
+         O             0.000000000000    -0.068516219320    0.000000000000
+         H            -0.790689573744     0.543701060715    0.000000000000
+         H             0.790689573744     0.543701060715    0.000000000000
+no_reorient
+nocom
+symmetry c1
+}
+molecule mol3 {
+         O         -0.068516219320      0.000000000000     0.000000000000
+         H          0.543701060715      0.000000000000    -0.790689573744
+         H          0.543701060715      0.000000000000     0.790689573744
+no_reorient
+nocom
+symmetry c1
+}
+
+activate(mol1)
 
 set {
   basis cc-pvdz
@@ -30,7 +47,7 @@ g = 0.05 / np.sqrt(2.0 * w)
 
 set hilbert {
   maxiter 500
-  cavity_frequency         [0.0, 0.0, $w]
+  cavity_frequency         $w
   cavity_coupling_strength [0.0, 0.0, $g]
 
   qed_cc_include_u0 true
@@ -43,5 +60,22 @@ set hilbert {
 set reference uhf
 en = energy('qed-ccsd') 
 
-ref = -76.234654403463 #-76.234654392333 #-76.234653553147
-compare_values(ref, en, 8, "UCCSD total energy") # TEST
+ref = -76.234654403463
+compare_values(ref, en, 8, "UCCSD total energy (z-pol)") # TEST
+
+
+activate(mol2)
+set basis cc-pvdz
+set hilbert {
+    cavity_coupling_strength [0.0, $g, 0.0]
+}
+en = energy('qed-ccsd') 
+compare_values(ref, en, 8, "UCCSD total energy (y-pol)") # TEST
+
+activate(mol3)
+set basis cc-pvdz
+set hilbert {
+    cavity_coupling_strength [$g, 0.0, 0.0]
+}
+en = energy('qed-ccsd') 
+compare_values(ref, en, 8, "UCCSD total energy (x-pol)") # TEST

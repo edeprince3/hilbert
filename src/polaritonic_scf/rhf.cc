@@ -295,19 +295,6 @@ double PolaritonicRHF::compute_energy() {
                 double ** tp = tmp->pointer();
                 C_DGEMM('n','n',nso_,nso_,nso_,1.0,&(dp[0][0]),nso_,&(dap[0][0]),nso_,0.0,&(tp[0][0]),nso_);
                 C_DGEMM('n','t',nso_,nso_,nso_,-1.0,&(tp[0][0]),nso_,&(dp[0][0]),nso_,1.0,&(fap[0][0]),nso_);
-
-                //for (int p = 0; p < nso_; p++) {
-                //    for (int q = 0; q < nso_; q++) {
-                //        double dum = 0.0;
-                //        for (int r = 0; r < nso_; r++) {
-                //            for (int s = 0; s < nso_; s++) {
-                //                dum += dp[p][r] * dp[q][s] * dap[r][s];
-                //            }
-                //        }
-                //        fap[p][q] -= 0.5 * dum;
-                //    }
-                //}
-
             }
         }
         Fa_->add(oei);

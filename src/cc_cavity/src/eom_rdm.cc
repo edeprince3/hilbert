@@ -96,21 +96,9 @@ namespace hilbert {
         SharedMatrix osc(new Matrix(M_, M_)), x(new Matrix(M_, M_)), y(new Matrix(M_, M_)), z(new Matrix(M_, M_));
         double **oscp = osc->pointer(), **xp, **yp, **zp;
 
-        if (options_.get_str("ROTATE_POLARIZATION_AXIS") == "XYZ"){
-            xp = x->pointer();
-            yp = y->pointer();
-            zp = z->pointer();
-        } else if (options_.get_str("ROTATE_POLARIZATION_AXIS") == "ZXY"){
-            xp = z->pointer();
-            yp = x->pointer();
-            zp = y->pointer();
-        } else if (options_.get_str("ROTATE_POLARIZATION_AXIS") == "YZX"){
-            xp = y->pointer();
-            yp = z->pointer();
-            zp = x->pointer();
-        } else {
-            throw PsiException("ROTATE_POLARIZATION_AXIS must be XYZ, ZXY, or YZX", __FILE__, __LINE__);
-        }
+        xp = x->pointer();
+        yp = y->pointer();
+        zp = z->pointer();
 
         foreach_inplace(properties_["OSCILLATOR STRENGTHS"],
                         [oscp](auto &tile) { for (auto &x : tile.range()) oscp[x[0]][x[1]] = tile[x]; });

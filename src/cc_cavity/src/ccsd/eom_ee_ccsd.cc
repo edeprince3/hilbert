@@ -61,7 +61,7 @@ namespace hilbert {
 
         // get properties from the CC_Cavity object
         double &cc_energy_ = cc_wfn_->cc_energy_;
-        double const *cavity_frequency_ = cc_wfn_->cavity_frequency_;
+        double const cavity_frequency_ = cc_wfn_->cavity_frequency_;
         double &enuc_ = cc_wfn_->enuc_;
         double &average_electric_dipole_self_energy_ = cc_wfn_->average_electric_dipole_self_energy_;
         double const *epsilon_ = cc_wfn_->epsilon_;

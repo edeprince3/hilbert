@@ -49,7 +49,7 @@ def init_cc_cavity(name, **kwargs):
     # check if coupling strength is zero
     if np.allclose(psi4.core.get_option('HILBERT', 'CAVITY_COUPLING_STRENGTH'), 0.0):
         psi4.core.set_local_option('HILBERT', 'QED_CC_TYPE', 'CCSD-00')
-        psi4.core.set_local_option('HILBERT', 'CAVITY_FREQUENCY', [0.0, 0.0, 1000.0])
+        psi4.core.set_local_option('HILBERT', 'CAVITY_FREQUENCY', 1000.0)
 
     # determine if using eom-cc or ground-state CC
     if 'eom' in name:
@@ -290,26 +290,21 @@ def run_qed_scf_gradient(name, **kwargs):
     mints = psi4.core.MintsHelper(ref_wfn.basisset())
     dipole = mints.so_dipole()
 
-    mu_z = np.asarray(dipole[2])
-    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "YZX" ):
-        mu_z = np.asarray(dipole[0])
-    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "ZXY" ):
-        mu_z = np.asarray(dipole[1])
+    # dress dipole integrals with lambda
+    g = psi4.core.get_option("HILBERT","CAVITY_COUPLING_STRENGTH")
+    w = psi4.core.get_option("HILBERT","CAVITY_FREQUENCY")
+    lam = np.asarray(g) * np.sqrt(2.0 * w)
+    lambda_dressed_mu = np.tensordot(lam, np.asarray(dipole), axes=(0, 0))
 
     # exchange contribution to dipole self energy 
 
-    #### D(p,q) = - mu(r,s) [ Da(p,r)Da(s,q) + Db(p,r) Da(s,q) ] ####
+    # D(p,q) = - lambda.mu(r,s) [ Da(p,r)Da(s,q) + Db(p,r) Da(s,q) ] ####
 
-    tmpa = -np.einsum('rs,pr,sq->pq',mu_z, Da, Da) 
-    tmpb = -np.einsum('rs,pr,sq->pq',mu_z, Db, Db)
+    tmpa = -np.einsum('rs,pr,sq->pq',lambda_dressed_mu, Da, Da, optimize=True) 
+    tmpb = -np.einsum('rs,pr,sq->pq',lambda_dressed_mu, Db, Db, optimize=True)
 
-    # test exchange energy from dressed RDM
-    g = psi4.core.get_option("HILBERT","CAVITY_COUPLING_STRENGTH")
-    w = psi4.core.get_option("HILBERT","CAVITY_FREQUENCY")
-    lambda_z = g[2] * np.sqrt(2.0 * w[2])
-
-    en  = 0.5 * lambda_z * lambda_z * np.einsum('pq,pq',tmpa,mu_z)
-    en += 0.5 * lambda_z * lambda_z * np.einsum('pq,pq',tmpb,mu_z)
+    en  = 0.5 * np.einsum('pq,pq',tmpa,lambda_dressed_mu)
+    en += 0.5 * np.einsum('pq,pq',tmpb,lambda_dressed_mu)
 
     D = tmpa + tmpb
 
@@ -323,22 +318,16 @@ def run_qed_scf_gradient(name, **kwargs):
     natom = mol.natom()
 
     tmp = mints.dipole_grad(D)
-    dse_gradient = np.asarray(tmp)
+    dipole_gradient = np.asarray(tmp)
 
-    # unpack z-component 3N x 3 matrix (the third column)
-    dse_gradient_z = np.zeros((natom,3))
-    zdir = 2
-    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "YZX" ):
-        zdir = 0
-    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "ZXY" ):
-        zdir = 1
+    # scale each component of gradient by lambda ... want 3N x 3 matrix ... scale the third column
+    lambda_scaled_dse_gradient = np.zeros((natom,3))
     for atom in range (0,natom):
         for cart in range (0,3):
-            dse_gradient_z[atom,cart] = dse_gradient[atom*3+cart,zdir] 
-
-    # scale by lambda^2
-    dse_gradient_z_scaled = psi4.core.Matrix.from_array(dse_gradient_z)
-    dse_gradient_z_scaled.scale(lambda_z*lambda_z)
+            lambda_scaled_dse_gradient[atom,cart] += lam[0] * dipole_gradient[atom*3+cart,0] 
+            lambda_scaled_dse_gradient[atom,cart] += lam[1] * dipole_gradient[atom*3+cart,1] 
+            lambda_scaled_dse_gradient[atom,cart] += lam[2] * dipole_gradient[atom*3+cart,2] 
+    dse_gradient = psi4.core.Matrix.from_array(lambda_scaled_dse_gradient)
 
     #### quadrupole integral gradient ####
       
@@ -350,25 +339,24 @@ def run_qed_scf_gradient(name, **kwargs):
     D = 0.5 * ( D + np.einsum('rs->sr',D) )
     D = psi4.core.Matrix.from_array(D)
     
-    # 3N x 9 matrix of quadrupole derivatives
+    # 3N x 9 matrix of multipole derivatives
     quad_grad = np.asarray(mints.multipole_grad(D, maxorder, C))
     
-    # get requested component of quadrupole gradient
-    zzdir = 8 # zz component
-    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "YZX" ):
-        zzdir = 3 # xx component
-    if ( psi4.core.get_option("HILBERT","ROTATE_POLARIZATION_AXIS") == "ZXY" ):
-        zzdir = 6 # yy component
-
-    # unpack zz-component 3N x 3 matrix (the 9th column)
-    dse_gradient_zz = np.zeros((natom,3))
+    # scale each component of gradient by lambda ... want 3N x 3 matrix ... scale the third column
+    lambda_scaled_quadrupole_gradient = np.zeros((natom,3))
     for atom in range (0,natom):
         for cart in range (0,3):
-            dse_gradient_zz[atom,cart] = quad_grad[atom*3+cart,zzdir]
-    
-    dse_gradient_z_scaled_2 = psi4.core.Matrix.from_array(dse_gradient_zz)
-    dse_gradient_z_scaled_2.scale(-0.5 * lambda_z*lambda_z)
-    dse_gradient_z_scaled.add(dse_gradient_z_scaled_2)
+            lambda_scaled_quadrupole_gradient[atom,cart] += 1 * lam[0] * lam[0] * quad_grad[atom*3+cart,3] # xx
+            lambda_scaled_quadrupole_gradient[atom,cart] += 2 * lam[0] * lam[1] * quad_grad[atom*3+cart,4] # xy
+            lambda_scaled_quadrupole_gradient[atom,cart] += 2 * lam[0] * lam[2] * quad_grad[atom*3+cart,5] # xz
+            lambda_scaled_quadrupole_gradient[atom,cart] += 1 * lam[1] * lam[1] * quad_grad[atom*3+cart,6] # yy
+            lambda_scaled_quadrupole_gradient[atom,cart] += 2 * lam[1] * lam[2] * quad_grad[atom*3+cart,7] # yz
+            lambda_scaled_quadrupole_gradient[atom,cart] += 1 * lam[2] * lam[2] * quad_grad[atom*3+cart,8] # zz
+
+    dse_gradient_quadrupole_contribution = psi4.core.Matrix.from_array(-0.5 * lambda_scaled_quadrupole_gradient)
+
+    # combine quadrupole and dipole contributions to dse gradient
+    dse_gradient.add(dse_gradient_quadrupole_contribution)
 
     #### print out gradients ####
 
@@ -380,7 +368,7 @@ def run_qed_scf_gradient(name, **kwargs):
     psi4.core.Vector.from_array(eg_norm_xyz, name="Electronic Gradient |xyz|").print_out() # norm along each axis
 
     # total polaritonic gradient
-    gradient.add(dse_gradient_z_scaled)
+    gradient.add(dse_gradient)
     pg_norm = np.linalg.norm(gradient)
     pg_norm_xyz = np.linalg.norm(gradient, axis=0)
     psi4.core.print_out(f"\nPolaritonic Gradient: norm = {pg_norm:-20.12f}\n\n") # total norm

@@ -126,11 +126,10 @@ set hilbert {
   maxiter 1000 # maximum number of iterations for the groundstate CC methods
   
   # set the cavity parameters
-  cavity_frequency         [0.0, 0.0, $frequency]
+  cavity_frequency         $frequency
   cavity_coupling_strength [0.0, 0.0, $coupling_strength]
   
   QED_USE_RELAXED_ORBITALS  true # do relax the SCF orbitals within the cavity
-  ROTATE_POLARIZATION_AXIS   XYZ # rotate the cavity polarization from the XYZ axis to ZXY, or YZX.
   
   NUMBER_ROOTS                20 # number of excited states to compute
   MAXDIM                       8 # maximum dimension of the EOM-CC subspace (multiplied by NUMBER_ROOTS)

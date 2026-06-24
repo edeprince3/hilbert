@@ -73,10 +73,15 @@ namespace hilbert {
 
 
         // extract the anion dipole moment and self energy
+        old_e_dip_x_ = cc_wfn_->e_dip_x_;
+        old_e_dip_y_ = cc_wfn_->e_dip_y_;
         old_e_dip_z_ = cc_wfn_->e_dip_z_;
         old_dipole_self_energy_ = cc_wfn_->average_electric_dipole_self_energy_;
 
+        cc_wfn_->e_dip_x_ = anion_scfwfn->e_dip_x_;
+        cc_wfn_->e_dip_y_ = anion_scfwfn->e_dip_y_;
         cc_wfn_->e_dip_z_ = anion_scfwfn->e_dip_z_;
+
         cc_wfn_->average_electric_dipole_self_energy_ = anion_scfwfn->average_electric_dipole_self_energy_;
 
         // some one-electron quantities must be rebuilt
@@ -91,9 +96,9 @@ namespace hilbert {
 
         // e-(n-<d>) contribution 0.5 * 2 (lambda . de) ( lambda . (dn - <d>) )
 
-        double lambda_x = cc_wfn_->cavity_coupling_strength_[0] * sqrt(2.0 * cc_wfn_->cavity_frequency_[0]);
-        double lambda_y = cc_wfn_->cavity_coupling_strength_[1] * sqrt(2.0 * cc_wfn_->cavity_frequency_[1]);
-        double lambda_z = cc_wfn_->cavity_coupling_strength_[2] * sqrt(2.0 * cc_wfn_->cavity_frequency_[2]);
+        double lambda_x = cc_wfn_->cavity_coupling_strength_[0] * sqrt(2.0 * cc_wfn_->cavity_frequency_);
+        double lambda_y = cc_wfn_->cavity_coupling_strength_[1] * sqrt(2.0 * cc_wfn_->cavity_frequency_);
+        double lambda_z = cc_wfn_->cavity_coupling_strength_[2] * sqrt(2.0 * cc_wfn_->cavity_frequency_);
 
         // e contribution: lambda . de
         size_t nso = cc_wfn_->nso();
@@ -168,7 +173,7 @@ namespace hilbert {
     double *EOM_EA_QED_CCSD_21::build_preconditioner() {
 
         // get properties from the CC_Cavity object
-        double w0 = cc_wfn_->cavity_frequency_[2];
+        double w0 = cc_wfn_->cavity_frequency_;
         double const *epsilon_ = cc_wfn_->epsilon_;
 
         // adjust the energy of the CCSD wavefunction to include the anion dipole self energy
@@ -331,22 +336,40 @@ namespace hilbert {
         world_.gop.fence();
 
         // Get cavity information
-        double w0 = cc_wfn_->cavity_frequency_[2];
+        double w0 = cc_wfn_->cavity_frequency_;
+
+        double coupling_factor_x = w0 * cc_wfn_->cavity_coupling_strength_[0];
+        double coupling_factor_y = w0 * cc_wfn_->cavity_coupling_strength_[1];
         double coupling_factor_z = w0 * cc_wfn_->cavity_coupling_strength_[2];
 
-        double coherent_scalar;
+        double coherent_scalar_x;
+        double coherent_scalar_y;
+        double coherent_scalar_z;
+
+        double e_dip_x = cc_wfn_->e_dip_x_;
+        double e_dip_y = cc_wfn_->e_dip_y_;
         double e_dip_z = cc_wfn_->e_dip_z_;
+
+        double nuc_dip_x = cc_wfn_->nuc_dip_x_;
+        double nuc_dip_y = cc_wfn_->nuc_dip_y_;
         double nuc_dip_z = cc_wfn_->nuc_dip_z_;
+
         if ( options_.get_bool("QED_USE_RELAXED_ORBITALS")) {
-            coherent_scalar = coupling_factor_z * e_dip_z;
+            coherent_scalar_x = coupling_factor_x * e_dip_x;
+            coherent_scalar_y = coupling_factor_y * e_dip_y;
+            coherent_scalar_z = coupling_factor_z * e_dip_z;
         } else {
-            coherent_scalar = -coupling_factor_z * nuc_dip_z;
+            coherent_scalar_x = -coupling_factor_x * nuc_dip_x;
+            coherent_scalar_y = -coupling_factor_y * nuc_dip_y;
+            coherent_scalar_z = -coupling_factor_z * nuc_dip_z;
         }
 
         // update sigma vectors with coherent state basis terms
         for (auto &[name, resid] : sigvec_blks_) {
             string idx = CC_Cavity::get_index(resid);
-            resid(idx) += coherent_scalar * tmps_["c" + name](idx);
+            resid(idx) += coherent_scalar_x * tmps_["c" + name](idx);
+            resid(idx) += coherent_scalar_y * tmps_["c" + name](idx);
+            resid(idx) += coherent_scalar_z * tmps_["c" + name](idx);
         }
 
         /// add constant terms to sigma vectors

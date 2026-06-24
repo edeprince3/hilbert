@@ -88,6 +88,12 @@ class PolaritonicRTDDFT: public PolaritonicHF {
 
     // hybrid alpha?
     double x_alpha_;
+
+    // MO-basis dipole integrals
+    std::vector<std::shared_ptr<Matrix>> mua_;
+
+    // MO-basis lambda-dressed dipole integrals
+    std::shared_ptr<Matrix> lambda_dressed_mua_;
 };
 
 } // End namespaces

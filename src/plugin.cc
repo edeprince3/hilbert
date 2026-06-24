@@ -45,7 +45,6 @@
 #include <polaritonic_scf/rks.h>
 #include <polaritonic_scf/uks.h>
 #include <polaritonic_scf/uccsd.h>
-#include <polaritonic_scf/rcis.h>
 #include <polaritonic_scf/rtddft.h>
 #include <polaritonic_scf/utddft.h>
 #include <misc/backtransform_tpdm.h>
@@ -86,7 +85,7 @@ int read_options(std::string name, Options& options)
         /*- SUBSECTION General -*/
 
         /*- qc solver. used internally !expert -*/
-        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_RCIS POLARITONIC_UCCSD POLARITONIC_RTDDFT POLARITONIC_UTDDFT POLARITONIC_RPA MCPDFT CC_CAVITY");
+        options.add_str("HILBERT_METHOD", "", "DOCI P2RDM PP2RDM V2RDM_DOCI V2RDM_CASSCF JELLIUM_SCF POLARITONIC_RHF POLARITONIC_UHF POLARITONIC_ROHF POLARITONIC_UKS POLARITONIC_RKS POLARITONIC_UCCSD POLARITONIC_RTDDFT POLARITONIC_UTDDFT POLARITONIC_RPA MCPDFT CC_CAVITY");
 
         /*- Do DIIS? -*/
         options.add_bool("DIIS", true);
@@ -358,7 +357,7 @@ int read_options(std::string name, Options& options)
         options.add_bool("USE_QUADRUPOLE_INTEGRALS", true);
 
         /*- cavity excitation energy for the modes along the x, y and z axis (a.u.) -*/
-        options.add("CAVITY_FREQUENCY",new ArrayType());
+        options.add_double("CAVITY_FREQUENCY", 1.0);
 
         /*- cavity coupling strength (a.u.) -*/
         options.add("CAVITY_COUPLING_STRENGTH",new ArrayType());
@@ -377,9 +376,6 @@ int read_options(std::string name, Options& options)
 
         /*- do relax orbitals in QED-SCF [unlike QED-TDDFT described in J. Chem. Phys. 155, 064107 (2021)?] -*/
         options.add_bool("QED_USE_RELAXED_ORBITALS", true);
-
-        /*- change cavity mode polarization by redefining x, y, and z -*/
-        options.add_str("ROTATE_POLARIZATION_AXIS", "XYZ", "XYZ YZX ZXY XZY YXZ ZYX");
 
         /*- residual norm -*/
         options.add_double("RESIDUAL_NORM",1.0e-5);
@@ -551,16 +547,6 @@ SharedWavefunction hilbert(SharedWavefunction ref_wfn, Options& options)
         double dum = utddft->compute_energy();
 
         return (std::shared_ptr<Wavefunction>)uks;
-
-    }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_RCIS") {
-
-        std::shared_ptr<PolaritonicRHF> rhf (new PolaritonicRHF(ref_wfn,options));
-        double energy = rhf->compute_energy();
-
-        std::shared_ptr<PolaritonicRCIS> rcis (new PolaritonicRCIS((std::shared_ptr<Wavefunction>)rhf,options));
-        double dum = rcis->compute_energy();
-
-        return (std::shared_ptr<Wavefunction>)rhf;
 
     }else if ( options.get_str("HILBERT_METHOD") == "POLARITONIC_UHF") {
 

@@ -3,15 +3,32 @@
 sys.path.insert(0, '../../..')
 import hilbert
 
-molecule h2 {
-         O            0.000000000000     0.000000000000    -0.068516219320    
-         H            0.000000000000    -0.790689573744     0.543701060715    
-         H            0.000000000000     0.790689573744     0.543701060715    
+molecule mol1 {
+         O            0.000000000000     0.000000000000    -0.068516219320
+         H            0.000000000000    -0.790689573744     0.543701060715
+         H            0.000000000000     0.790689573744     0.543701060715
+no_reorient
+nocom
+symmetry c1
+}
+molecule mol2 {
+         O             0.000000000000    -0.068516219320    0.000000000000
+         H            -0.790689573744     0.543701060715    0.000000000000
+         H             0.790689573744     0.543701060715    0.000000000000
+no_reorient
+nocom
+symmetry c1
+}
+molecule mol3 {
+         O         -0.068516219320      0.000000000000     0.000000000000
+         H          0.543701060715      0.000000000000    -0.790689573744
+         H          0.543701060715      0.000000000000     0.790689573744
 no_reorient
 nocom
 symmetry c1
 }
 
+activate(mol1)
 set {
   basis sto-3g 
   scf_type df 
@@ -28,7 +45,7 @@ g = 0.05 / np.sqrt(2.0 * w)
 
 set { 
   maxiter 500
-  cavity_frequency         [0.0, 0.0, $w]
+  cavity_frequency         $w
   cavity_coupling_strength [0.0, 0.0, $g]
 }
 
@@ -42,7 +59,25 @@ g1 = np.asarray(gradient('qed-dft',dertype=0))
 g2 = np.asarray(gradient('qed-dft',dertype=1))
 diff = g2 - g1
 
+compare_values(0.0, np.linalg.norm(diff), 5, "QED-DFT numerical versus analytic energy gradient (z-pol)") # TEST
 
-#print('||g-g||',np.linalg.norm(diff))
-compare_values(0.0, np.linalg.norm(diff), 5, "QED-DFT numerical versus analytic energy gradient") # TEST
+activate(mol2)
+set basis sto-3g
+set hilbert {
+    cavity_coupling_strength [0.0, $g, 0.0]
+}
+g2 = np.asarray(gradient('qed-dft',dertype=1))
+g1 = np.roll(g1, shift=(0, -1), axis=(0, 1))
+diff = g2 - g1
+compare_values(0.0, np.linalg.norm(diff), 5, "QED-DFT numerical versus analytic energy gradient (y-pol)") # TEST
+
+activate(mol3)
+set basis sto-3g
+set hilbert {
+    cavity_coupling_strength [$g, 0.0, 0.0]
+}
+g2 = np.asarray(gradient('qed-dft',dertype=1))
+g1 = np.roll(g1, shift=(0, -1), axis=(0, 1))
+diff = g2 - g1
+compare_values(0.0, np.linalg.norm(diff), 5, "QED-DFT numerical versus analytic energy gradient (x-pol)") # TEST
 

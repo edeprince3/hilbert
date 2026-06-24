@@ -37,8 +37,7 @@ void hilbert::EOM_EA_QED_CCSD_21::build_common_ops() {
     if (!cc_wfn_->has_t1_integrals_) cc_wfn_->transform_integrals(true);
 
     // Get cavity information
-    double w0 = cc_wfn_->cavity_frequency_[2];
-    double coupling_factor_z = w0 * cc_wfn_->cavity_coupling_strength_[2];
+    double w0 = cc_wfn_->cavity_frequency_;
 
     // get dipole integrals
     TArrayMap dp = reinterpret_pointer_cast<QED_CCSD_21>(cc_wfn_)->effective_dipole();

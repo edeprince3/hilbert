@@ -1,0 +1,83 @@
+sys.path.insert(0, '../../../')
+import math
+import hilbert
+
+
+molecule mol1 {
+0 1
+         O            0.000000000000     0.000000000000    -0.068516219320
+         H            0.000000000000    -0.790689573744     0.543701060715
+         H            0.000000000000     0.790689573744     0.543701060715
+no_reorient
+nocom
+symmetry c1
+}
+molecule mol2 {
+         O             0.000000000000    -0.068516219320    0.000000000000
+         H            -0.790689573744     0.543701060715    0.000000000000
+         H             0.790689573744     0.543701060715    0.000000000000
+no_reorient
+nocom
+symmetry c1
+}
+molecule mol3 {
+         O         -0.068516219320      0.000000000000     0.000000000000
+         H          0.543701060715      0.000000000000    -0.790689573744
+         H          0.543701060715      0.000000000000     0.790689573744
+no_reorient
+nocom
+symmetry c1
+}
+
+activate(mol1)
+set {
+  basis sto-3g
+  
+  scf_type cd 
+  cholesky_tolerance 1e-12
+  
+  e_convergence 1e-10
+  r_convergence 1e-10
+  d_convergence 1e-10
+}
+ 
+lam = 0.05 # coupling factor (this value is for a 0.74 nm³ cavity)
+w = 0.1 # frequency of the cavity mode
+g = (lam / math.sqrt(2.0 * w)) # coupling strength
+set hilbert {
+  cavity_frequency         $w
+  cavity_coupling_strength [0.0, 0.0, $g]
+  
+  QED_USE_RELAXED_ORBITALS  true # do relax the SCF orbitals within the cavity
+  
+  MAD_NUM_THREADS              1 # the number of MADNESS threads to use with mpirun 
+                                 # Note: if not using mpi or using eom, set this to 1 for best performanc
+  TILE_SIZE                   -1 # the spacing between tiles in a tiledarray (-1 places all data on a single tile)
+                                 # Note: if not using mpi or using eom, set this to -1 for best performance
+}
+
+# memory for Psi4 (note: this is for the integrals, not the CC calculation which does not restrict memory usage)
+memory 1000 MB
+
+en1, wfn = energy('qed-ccsd', return_wfn=True)      # QED-CCSD-21 w/o TiledArray
+en2, wfn = energy('qed-ccsd-21', return_wfn=True)   # QED-CCSD-21 w/ TiledArray
+compare_values(en1, en2, 8, "QED-CCSD-21 (TA) total energy (z-pol)") # TEST
+
+activate(mol2)
+set basis sto-3g
+set hilbert {
+    cavity_coupling_strength [0.0, $g, 0.0]
+}
+en1, wfn = energy('qed-ccsd', return_wfn=True)      # QED-CCSD-21 w/o TiledArray
+en2, wfn = energy('qed-ccsd-21', return_wfn=True)   # QED-CCSD-21 w/ TiledArray
+compare_values(en1, en2, 8, "QED-CCSD-21 (TA) total energy (y-pol)") # TEST
+
+activate(mol3)
+set basis sto-3g
+set hilbert {
+    cavity_coupling_strength [$g, 0.0, 0.0]
+}
+en1, wfn = energy('qed-ccsd', return_wfn=True)      # QED-CCSD-21 w/o TiledArray
+en2, wfn = energy('qed-ccsd-21', return_wfn=True)   # QED-CCSD-21 w/ TiledArray
+compare_values(en1, en2, 8, "QED-CCSD-21 (TA) total energy (x-pol)") # TEST
+

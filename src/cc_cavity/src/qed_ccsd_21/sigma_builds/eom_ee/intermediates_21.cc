@@ -33,21 +33,43 @@ double* hilbert::EOM_EE_QED_CCSD_21::build_ss_diagonal() {
     if (!cc_wfn_->has_t1_integrals_) cc_wfn_->transform_integrals(true);
 
     // Get cavity information
-    double w0 = cc_wfn_->cavity_frequency_[2];
+    double w0 = cc_wfn_->cavity_frequency_;
+    double coupling_factor_x = w0 * cc_wfn_->cavity_coupling_strength_[0];
+    double coupling_factor_y = w0 * cc_wfn_->cavity_coupling_strength_[1];
     double coupling_factor_z = w0 * cc_wfn_->cavity_coupling_strength_[2];
 
     // get dipole integrals
     std::map<std::string, TA::TArrayD> dp;
 
-    dp["aa_oo"]("i, j") = coupling_factor_z * cc_wfn_->Dip_blks_["dz_aa_oo"]("i, j");
-    dp["aa_ov"]("i, a") = coupling_factor_z * cc_wfn_->Dip_blks_["dz_aa_ov"]("i, a");
-    dp["aa_vo"]("a, i") = coupling_factor_z * cc_wfn_->Dip_blks_["dz_aa_vo"]("a, i");
-    dp["aa_vv"]("a, b") = coupling_factor_z * cc_wfn_->Dip_blks_["dz_aa_vv"]("a, b");
+    dp["aa_oo"]("i, j") = coupling_factor_x * cc_wfn_->Dip_blks_["dx_aa_oo"]("i, j");
+    dp["aa_ov"]("i, a") = coupling_factor_x * cc_wfn_->Dip_blks_["dx_aa_ov"]("i, a");
+    dp["aa_vo"]("a, i") = coupling_factor_x * cc_wfn_->Dip_blks_["dx_aa_vo"]("a, i");
+    dp["aa_vv"]("a, b") = coupling_factor_x * cc_wfn_->Dip_blks_["dx_aa_vv"]("a, b");
 
-    dp["bb_oo"]("i, j") = coupling_factor_z * cc_wfn_->Dip_blks_["dz_bb_oo"]("i, j");
-    dp["bb_ov"]("i, a") = coupling_factor_z * cc_wfn_->Dip_blks_["dz_bb_ov"]("i, a");
-    dp["bb_vo"]("a, i") = coupling_factor_z * cc_wfn_->Dip_blks_["dz_bb_vo"]("a, i");
-    dp["bb_vv"]("a, b") = coupling_factor_z * cc_wfn_->Dip_blks_["dz_bb_vv"]("a, b");
+    dp["aa_oo"]("i, j") += coupling_factor_y * cc_wfn_->Dip_blks_["dy_aa_oo"]("i, j");
+    dp["aa_ov"]("i, a") += coupling_factor_y * cc_wfn_->Dip_blks_["dy_aa_ov"]("i, a");
+    dp["aa_vo"]("a, i") += coupling_factor_y * cc_wfn_->Dip_blks_["dy_aa_vo"]("a, i");
+    dp["aa_vv"]("a, b") += coupling_factor_y * cc_wfn_->Dip_blks_["dy_aa_vv"]("a, b");
+
+    dp["aa_oo"]("i, j") += coupling_factor_z * cc_wfn_->Dip_blks_["dz_aa_oo"]("i, j");
+    dp["aa_ov"]("i, a") += coupling_factor_z * cc_wfn_->Dip_blks_["dz_aa_ov"]("i, a");
+    dp["aa_vo"]("a, i") += coupling_factor_z * cc_wfn_->Dip_blks_["dz_aa_vo"]("a, i");
+    dp["aa_vv"]("a, b") += coupling_factor_z * cc_wfn_->Dip_blks_["dz_aa_vv"]("a, b");
+
+    dp["bb_oo"]("i, j") = coupling_factor_x * cc_wfn_->Dip_blks_["dx_bb_oo"]("i, j");
+    dp["bb_ov"]("i, a") = coupling_factor_x * cc_wfn_->Dip_blks_["dx_bb_ov"]("i, a");
+    dp["bb_vo"]("a, i") = coupling_factor_x * cc_wfn_->Dip_blks_["dx_bb_vo"]("a, i");
+    dp["bb_vv"]("a, b") = coupling_factor_x * cc_wfn_->Dip_blks_["dx_bb_vv"]("a, b");
+
+    dp["bb_oo"]("i, j") += coupling_factor_y * cc_wfn_->Dip_blks_["dy_bb_oo"]("i, j");
+    dp["bb_ov"]("i, a") += coupling_factor_y * cc_wfn_->Dip_blks_["dy_bb_ov"]("i, a");
+    dp["bb_vo"]("a, i") += coupling_factor_y * cc_wfn_->Dip_blks_["dy_bb_vo"]("a, i");
+    dp["bb_vv"]("a, b") += coupling_factor_y * cc_wfn_->Dip_blks_["dy_bb_vv"]("a, b");
+
+    dp["bb_oo"]("i, j") += coupling_factor_z * cc_wfn_->Dip_blks_["dz_bb_oo"]("i, j");
+    dp["bb_ov"]("i, a") += coupling_factor_z * cc_wfn_->Dip_blks_["dz_bb_ov"]("i, a");
+    dp["bb_vo"]("a, i") += coupling_factor_z * cc_wfn_->Dip_blks_["dz_bb_vo"]("a, i");
+    dp["bb_vv"]("a, b") += coupling_factor_z * cc_wfn_->Dip_blks_["dz_bb_vv"]("a, b");
 
     // extract 0-body amplitudes
     double t0_1;
@@ -480,20 +502,47 @@ double* hilbert::EOM_EE_QED_CCSD_21::build_ss_diagonal() {
     }
 
     // add coherent state basis terms
-    double coherent_scalar;
-    double e_dip_z_ = cc_wfn_->e_dip_z_;
-    double nuc_dip_z_ = cc_wfn_->nuc_dip_z_;
+    double coherent_scalar_x;
+    double coherent_scalar_y;
+    double coherent_scalar_z;
+
+    double e_dip_x = cc_wfn_->e_dip_x_;
+    double e_dip_y = cc_wfn_->e_dip_y_;
+    double e_dip_z = cc_wfn_->e_dip_z_;
+
+    double nuc_dip_x = cc_wfn_->nuc_dip_z_;
+    double nuc_dip_y = cc_wfn_->nuc_dip_z_;
+    double nuc_dip_z = cc_wfn_->nuc_dip_z_;
+
     if ( options_.get_bool("QED_USE_RELAXED_ORBITALS")) {
-        coherent_scalar = coupling_factor_z * e_dip_z_;
+        coherent_scalar_x = coupling_factor_x * e_dip_x;
+        coherent_scalar_y = coupling_factor_y * e_dip_y;
+        coherent_scalar_z = coupling_factor_z * e_dip_z;
     } else {
-        coherent_scalar = -coupling_factor_z * nuc_dip_z_;
+        coherent_scalar_x = -coupling_factor_x * nuc_dip_x;
+        coherent_scalar_y = -coupling_factor_y * nuc_dip_y;
+        coherent_scalar_z = -coupling_factor_z * nuc_dip_z;
     }
 
-    H_hw0 += coherent_scalar * cH_hw0;
-    H_ss_aaaa("m,e,i,a") += coherent_scalar * cH_ss_aaaa("m,e,i,a");
-    H_ss_bbbb("m,e,i,a") += coherent_scalar * cH_ss_bbbb("m,e,i,a");
-    H_hw1_aaaa("m,e,i,a") += coherent_scalar * cH_hw1_aaaa("m,e,i,a");
-    H_hw1_bbbb("m,e,i,a") += coherent_scalar * cH_hw1_bbbb("m,e,i,a");
+    H_hw0 += coherent_scalar_x * cH_hw0;
+    H_hw0 += coherent_scalar_y * cH_hw0;
+    H_hw0 += coherent_scalar_z * cH_hw0;
+
+    H_ss_aaaa("m,e,i,a") += coherent_scalar_x * cH_ss_aaaa("m,e,i,a");
+    H_ss_aaaa("m,e,i,a") += coherent_scalar_y * cH_ss_aaaa("m,e,i,a");
+    H_ss_aaaa("m,e,i,a") += coherent_scalar_z * cH_ss_aaaa("m,e,i,a");
+
+    H_ss_bbbb("m,e,i,a") += coherent_scalar_x * cH_ss_bbbb("m,e,i,a");
+    H_ss_bbbb("m,e,i,a") += coherent_scalar_y * cH_ss_bbbb("m,e,i,a");
+    H_ss_bbbb("m,e,i,a") += coherent_scalar_z * cH_ss_bbbb("m,e,i,a");
+
+    H_hw1_aaaa("m,e,i,a") += coherent_scalar_x * cH_hw1_aaaa("m,e,i,a");
+    H_hw1_aaaa("m,e,i,a") += coherent_scalar_y * cH_hw1_aaaa("m,e,i,a");
+    H_hw1_aaaa("m,e,i,a") += coherent_scalar_z * cH_hw1_aaaa("m,e,i,a");
+
+    H_hw1_bbbb("m,e,i,a") += coherent_scalar_x * cH_hw1_bbbb("m,e,i,a");
+    H_hw1_bbbb("m,e,i,a") += coherent_scalar_y * cH_hw1_bbbb("m,e,i,a");
+    H_hw1_bbbb("m,e,i,a") += coherent_scalar_z * cH_hw1_bbbb("m,e,i,a");
 
     // pluck out diagonals
     size_t dim_tot = singleDim_;
@@ -558,8 +607,7 @@ void hilbert::EOM_EE_QED_CCSD_21::build_common_ops() {
     if (!cc_wfn_->has_t1_integrals_) cc_wfn_->transform_integrals(true);
 
     // Get cavity information
-    double w0 = cc_wfn_->cavity_frequency_[2];
-    double coupling_factor_z = w0 * cc_wfn_->cavity_coupling_strength_[2];
+    double w0 = cc_wfn_->cavity_frequency_;
 
     // get dipole integrals
     TArrayMap dp = reinterpret_pointer_cast<QED_CCSD_21>(cc_wfn_)->effective_dipole();

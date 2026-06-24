@@ -30,7 +30,6 @@ set(polaritonic_scf
         src/polaritonic_scf/rohf.cc
         src/polaritonic_scf/rks.cc
         src/polaritonic_scf/uks.cc
-        src/polaritonic_scf/rcis.cc
         src/polaritonic_scf/rtddft.cc
         src/polaritonic_scf/utddft.cc
         src/polaritonic_scf/uccsd.cc

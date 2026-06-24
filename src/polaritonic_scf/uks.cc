@@ -90,24 +90,16 @@ void PolaritonicUKS::common_init() {
     n_photon_states_ = options_.get_int("N_PHOTON_STATES");
 
     // cavity Hamiltonian in basis of photon number states
-    HCavity_x_               = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
-    HCavity_y_               = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
-    HCavity_z_               = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+    HCavity_ = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
 
     // molecule->cavity interactoin Hamiltonian in basis of photon number states
-    HCavityInteraction_x_    = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
-    HCavityInteraction_y_    = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
-    HCavityInteraction_z_    = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+    HCavityInteraction_ = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
 
     // total cavity Hamiltonian in basis of photon number states
-    HCavityTotal_x_          = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
-    HCavityTotal_y_          = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
-    HCavityTotal_z_          = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+    HCavityTotal_ = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
 
     // cavity dipole operator in basis of photon number states
-    CavityDipole_x_          = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
-    CavityDipole_y_          = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
-    CavityDipole_z_          = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
+    CavityDipole_ = (std::shared_ptr<Matrix>)(new Matrix(n_photon_states_,n_photon_states_));
 
     use_coherent_state_basis_ = options_.get_bool("USE_COHERENT_STATE_BASIS");
 
@@ -372,7 +364,7 @@ double PolaritonicUKS::compute_energy() {
                 // -(w/2)^1/2 lambda.mu_e < mu_p >
                 // 
                 std::shared_ptr<Matrix> V = (std::shared_ptr<Matrix>)(new Matrix(dipole_scaled_sum_));
-                V->scale(-sqrt(0.5 * cavity_frequency_[2])*CavityDipole_z_->pointer()[0][0]);
+                V->scale(-sqrt(0.5 * cavity_frequency_)*CavityDipole_->pointer()[0][0]);
                 oei->add(V);
             }
 
@@ -479,8 +471,12 @@ double PolaritonicUKS::compute_energy() {
             energy_ += cavity_energy; 
 
             // -(w/2)^1/2 lambda.mu_n <b* + b> 
-            double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_[2]);
-            energy_ += -sqrt(0.5 * cavity_frequency_[2]) * lambda_z * nuc_dip_z_ * CavityDipole_z_->pointer()[0][0];
+            double lambda_x = cavity_coupling_strength_[0] * sqrt(2.0 * cavity_frequency_);
+            double lambda_y = cavity_coupling_strength_[1] * sqrt(2.0 * cavity_frequency_);
+            double lambda_z = cavity_coupling_strength_[2] * sqrt(2.0 * cavity_frequency_);
+            energy_ += -sqrt(0.5 * cavity_frequency_) * lambda_x * nuc_dip_x_ * CavityDipole_->pointer()[0][0];
+            energy_ += -sqrt(0.5 * cavity_frequency_) * lambda_y * nuc_dip_y_ * CavityDipole_->pointer()[0][0];
+            energy_ += -sqrt(0.5 * cavity_frequency_) * lambda_z * nuc_dip_z_ * CavityDipole_->pointer()[0][0];
 
         }
 
@@ -608,36 +604,20 @@ double PolaritonicUKS::build_cavity_hamiltonian(){
 
     int nS = n_photon_states_;
 
-    CavityDipole_x_->zero();
-    CavityDipole_y_->zero();
-    CavityDipole_z_->zero();
+    CavityDipole_->zero();
 
     for (int A=0; A<nS-1; A++){
-        //CavityDipole_x_->pointer()[A+1][A] += cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A+1);
-        //CavityDipole_x_->pointer()[A][A+1] += cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A+1);
-        //CavityDipole_y_->pointer()[A+1][A] += cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A+1);
-        //CavityDipole_y_->pointer()[A][A+1] += cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A+1);
-        //CavityDipole_z_->pointer()[A+1][A] += cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
-        //CavityDipole_z_->pointer()[A][A+1] += cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
-        //CavityDipole_x_->pointer()[A+1][A] += sqrt(A+1);
-        //CavityDipole_x_->pointer()[A][A+1] += sqrt(A+1);
-        //CavityDipole_y_->pointer()[A+1][A] += sqrt(A+1);
-        //CavityDipole_y_->pointer()[A][A+1] += sqrt(A+1);
-        CavityDipole_z_->pointer()[A+1][A] += sqrt(A+1);
-        CavityDipole_z_->pointer()[A][A+1] += sqrt(A+1);
+        CavityDipole_->pointer()[A+1][A] += sqrt(A+1);
+        CavityDipole_->pointer()[A][A+1] += sqrt(A+1);
     }
 
     // Build the cavity Hamiltonian operator in the basis of 
     // photon number states ( n_photon_states_ )
 
-    HCavity_x_->zero();
-    HCavity_y_->zero();
-    HCavity_z_->zero();
+    HCavity_->zero();
 
     for (int A=0; A<nS; A++){
-        HCavity_x_->pointer()[A][A] = A*cavity_frequency_[0];
-        HCavity_y_->pointer()[A][A] = A*cavity_frequency_[1];
-        HCavity_z_->pointer()[A][A] = A*cavity_frequency_[2];
+        HCavity_->pointer()[A][A] = A*cavity_frequency_;
     }
 
     // Evaluate the electronic contribute to the molecule's dipole moment
@@ -658,35 +638,29 @@ double PolaritonicUKS::build_cavity_hamiltonian(){
     // Build the molecule->cavity interaction Hamiltonian operator 
     // in the basis of photon number states ( n_photon_states_ )
 
-    HCavityInteraction_x_->zero();
-    HCavityInteraction_y_->zero();
-    HCavityInteraction_z_->zero();
+    HCavityInteraction_->zero();
 
     for (int A = 0; A<nS; A++) {
         if (A < nS - 1) {
 
-            HCavityInteraction_x_->pointer()[A][A+1] = -(e_dip_x + nuc_dip_x_) * cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A+1);
-            HCavityInteraction_y_->pointer()[A][A+1] = -(e_dip_y + nuc_dip_y_) * cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A+1);
-            HCavityInteraction_z_->pointer()[A][A+1] = -(e_dip_z + nuc_dip_z_) * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A+1);
+            HCavityInteraction_->pointer()[A][A+1] = -(e_dip_x + nuc_dip_x_) * cavity_frequency_ * cavity_coupling_strength_[0] * sqrt(A+1);
+            HCavityInteraction_->pointer()[A][A+1] += -(e_dip_y + nuc_dip_y_) * cavity_frequency_ * cavity_coupling_strength_[1] * sqrt(A+1);
+            HCavityInteraction_->pointer()[A][A+1] += -(e_dip_z + nuc_dip_z_) * cavity_frequency_ * cavity_coupling_strength_[2] * sqrt(A+1);
 
         }
 
         if (A > 0) {
 
-            HCavityInteraction_x_->pointer()[A][A-1] = -(e_dip_x + nuc_dip_x_) * cavity_frequency_[0] * cavity_coupling_strength_[0] * sqrt(A);
-            HCavityInteraction_y_->pointer()[A][A-1] = -(e_dip_y + nuc_dip_y_) * cavity_frequency_[1] * cavity_coupling_strength_[1] * sqrt(A);
-            HCavityInteraction_z_->pointer()[A][A-1] = -(e_dip_z + nuc_dip_z_) * cavity_frequency_[2] * cavity_coupling_strength_[2] * sqrt(A);
+            HCavityInteraction_->pointer()[A][A-1] = -(e_dip_x + nuc_dip_x_) * cavity_frequency_ * cavity_coupling_strength_[0] * sqrt(A);
+            HCavityInteraction_->pointer()[A][A-1] += -(e_dip_y + nuc_dip_y_) * cavity_frequency_ * cavity_coupling_strength_[1] * sqrt(A);
+            HCavityInteraction_->pointer()[A][A-1] += -(e_dip_z + nuc_dip_z_) * cavity_frequency_ * cavity_coupling_strength_[2] * sqrt(A);
         }
     }
 
     // Build the total cavity Hamiltonian
 
-    HCavityTotal_x_->copy(HCavity_x_);
-    HCavityTotal_y_->copy(HCavity_y_);
-    HCavityTotal_z_->copy(HCavity_z_);
-    HCavityTotal_x_->add(HCavityInteraction_x_);
-    HCavityTotal_y_->add(HCavityInteraction_y_);
-    HCavityTotal_z_->add(HCavityInteraction_z_);
+    HCavityTotal_->copy(HCavity_);
+    HCavityTotal_->add(HCavityInteraction_);
 
     // Diagonalize total cavity Hamiltonian and transform cavity
     // Hamiltonian, molecule->cavity interaction Hamiltonian, and
@@ -695,43 +669,22 @@ double PolaritonicUKS::build_cavity_hamiltonian(){
     std::shared_ptr<Matrix> eigvec (new Matrix(n_photon_states_,n_photon_states_));
     std::shared_ptr<Vector> eigval (new Vector(n_photon_states_));
 
-    // x
-    HCavityTotal_x_->diagonalize(eigvec, eigval);
-    HCavity_x_->transform(eigvec);
-    HCavityInteraction_x_->transform(eigvec);
-    CavityDipole_x_->transform(eigvec);
-    //double ex = eigval->pointer()[0];
-    double ex = HCavity_x_->pointer()[0][0];
-
-    // y
-    HCavityTotal_y_->diagonalize(eigvec, eigval);
-    HCavity_y_->transform(eigvec);
-    HCavityInteraction_y_->transform(eigvec);
-    CavityDipole_y_->transform(eigvec);
-    //double ey = eigval->pointer()[0];
-    double ey = HCavity_y_->pointer()[0][0];
-
-    // z
-    HCavityTotal_z_->diagonalize(eigvec, eigval);
-    HCavity_z_->transform(eigvec);
-    HCavityInteraction_z_->transform(eigvec);
-    CavityDipole_z_->transform(eigvec);
-    //double ez = eigval->pointer()[0];
-    double ez = HCavity_z_->pointer()[0][0];
+    HCavityTotal_->diagonalize(eigvec, eigval);
+    HCavity_->transform(eigvec);
+    HCavityInteraction_->transform(eigvec);
+    CavityDipole_->transform(eigvec);
+    double en = HCavity_->pointer()[0][0];
 
     if ( print_cavity_properties_ ) {
         outfile->Printf("\n");
         outfile->Printf("    ==> Cavity Properties <==\n");
         outfile->Printf("\n");
 
-        outfile->Printf("        Energy x: %20.12lf    Dipole x: %20.12lf\n",ex,CavityDipole_x_->pointer()[0][0]);
-        outfile->Printf("        Energy y: %20.12lf    Dipole y: %20.12lf\n",ey,CavityDipole_y_->pointer()[0][0]);
-        outfile->Printf("        Energy z: %20.12lf    Dipole z: %20.12lf\n",ez,CavityDipole_z_->pointer()[0][0]);
+        outfile->Printf("        Energy: %20.12lf    Dipole: %20.12lf\n", en, CavityDipole_->pointer()[0][0]);
         outfile->Printf("\n");
     }
 
-    return ez;
-
+    return en;
 }
 
 } // End namespaces
