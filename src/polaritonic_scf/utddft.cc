@@ -165,7 +165,7 @@ void PolaritonicUTDDFT::common_init(std::shared_ptr<Wavefunction> dummy_wfn) {
     lambda_dressed_mub_->transform(Cb_);
 }
 
-std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response(double omega) {
+std::vector<std::vector<double>> PolaritonicUTDDFT::first_order_response(std::vector<std::shared_ptr<Matrix>> op_a, std::vector<std::shared_ptr<Matrix>> op_b, double omega) {
 
     double d_convergence = options_.get_double("D_CONVERGENCE");
     int maxiter = options_.get_int("MAXITER");
@@ -252,21 +252,6 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
     double * ea = epsilon_a_->pointer();
     double * eb = epsilon_b_->pointer();
 
-    // dipole integrals
-    std::vector<std::shared_ptr<Matrix>> mua;
-    for (int i = 0; i < 3; i++) {
-        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
-        mua.push_back(tmp);
-        mua[i]->transform(Ca_);
-    }
-
-    std::vector<std::shared_ptr<Matrix>> mub;
-    for (int i = 0; i < 3; i++) {
-        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
-        mub.push_back(tmp);
-        mub[i]->transform(Cb_);
-    }
-
     // photon parts
     double *gm_X = (double*)malloc(3*N*sizeof(double));
     memset((void*)gm_X,'\0',3*N*sizeof(double));
@@ -317,7 +302,7 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
                     double precon = 1.0 / (ea[a+oa] - ea[i] + omega);
                     int ia = i * va + a;
                     X[p*N+ia] = damp * X[p*N+ia] 
-                              + (1.0 - damp) * precon * (mua[p]->pointer()[i][a+oa] 
+                              + (1.0 - damp) * precon * (-op_a[p]->pointer()[i][a+oa] 
                                                        - AB_X[p*2*nmo_*nmo_ + i*nmo_+(a+oa)] 
                                                        - AB_Y[p*2*nmo_*nmo_ + (a+oa)*nmo_+i] 
                                                        - gm_X[p*N+ia] - gm_Y[p*N+ia]);
@@ -329,7 +314,7 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
                     int ia = oa*va + i * vb + a;
                     double precon = 1.0 / (eb[a+ob] - eb[i] + omega);
                     X[p*N+ia] = damp * X[p*N+ia] 
-                              + (1.0 - damp) * precon * (mub[p]->pointer()[i][a+ob] 
+                              + (1.0 - damp) * precon * (-op_b[p]->pointer()[i][a+ob] 
                                                        - AB_X[p*2*nmo_*nmo_ + nmo_*nmo_ + i*nmo_+(a+ob)] 
                                                        - AB_Y[p*2*nmo_*nmo_ + nmo_*nmo_ + (a+ob)*nmo_+i] 
                                                        - gm_X[p*N+ia] - gm_Y[p*N+ia]);
@@ -342,7 +327,7 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
                         double precon = 1.0 / (ea[a+oa] - ea[i] - omega);
                         int ia = i * va + a;
                         Y[p*N+ia] = damp * Y[p*N+ia] 
-                                  + (1.0 - damp) * precon * (mua[p]->pointer()[i][a+oa] 
+                                  + (1.0 - damp) * precon * (-op_a[p]->pointer()[i][a+oa] 
                                                            - AB_Y[p*2*nmo_*nmo_ + i*nmo_+(a+oa)] 
                                                            - AB_X[p*2*nmo_*nmo_ + (a+oa)*nmo_+i] 
                                                            - gm_X[p*N+ia] - gm_Y[p*N+ia]);
@@ -354,7 +339,7 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
                         int ia = oa*va + i * vb + a;
                         double precon = 1.0 / (eb[a+ob] - eb[i] - omega);
                         Y[p*N+ia] = damp * Y[p*N+ia] 
-                                  + (1.0 - damp) * precon * (mub[p]->pointer()[i][a+ob] 
+                                  + (1.0 - damp) * precon * (-op_b[p]->pointer()[i][a+ob] 
                                                            - AB_Y[p*2*nmo_*nmo_ + nmo_*nmo_ + i*nmo_+(a+ob)] 
                                                            - AB_X[p*2*nmo_*nmo_ + nmo_*nmo_ + (a+ob)*nmo_+i] 
                                                            - gm_X[p*N+ia] - gm_Y[p*N+ia]);
@@ -543,10 +528,26 @@ void PolaritonicUTDDFT::compute_properties(){
     
         }
     }
+
+    // omega = -mu
+    std::vector<std::shared_ptr<Matrix>> omega_a;
+    for (int i = 0; i < 3; i++) {
+        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
+        omega_a.push_back(tmp);
+        omega_a[i]->transform(Ca_);
+        omega_a[i]->scale(-1);
+    }
+    std::vector<std::shared_ptr<Matrix>> omega_b;
+    for (int i = 0; i < 3; i++) {
+        std::shared_ptr<Matrix> tmp = dipole_[i]->clone();
+        omega_b.push_back(tmp);
+        omega_b[i]->transform(Cb_);
+        omega_b[i]->scale(-1);
+    }
     
     if ( options_.get_str("PROPERTY") == "POLARIZABILITY" ) {
         for (auto my_omega: omega) {
-            std::vector<std::vector<double>> amps = compute_first_order_response(my_omega);
+            std::vector<std::vector<double>> amps = first_order_response(omega_a, omega_b, my_omega);
             compute_polarizability(amps[0], amps[1], my_omega);
         }
     }else if ( options_.get_str("PROPERTY") == "HYPERPOLARIZABILITY" ) {
@@ -554,32 +555,32 @@ void PolaritonicUTDDFT::compute_properties(){
             if (fabs(my_omega) > 1e-14) {
                 throw PsiException("For frequency-dependent hyperpolarizabilities, use PROPERTY = SHG, OR, or POCKELS", __FILE__, __LINE__);
             }
-            std::vector<std::vector<double>> amps = compute_first_order_response(my_omega);
+            std::vector<std::vector<double>> amps = first_order_response(omega_a, omega_b, my_omega);
             compute_polarizability(amps[0], amps[1], my_omega);
             compute_hyperpolarizability(amps, amps, amps, "STATIC", my_omega);
         }
     }else if ( options_.get_str("PROPERTY") == "SHG" ) {
         for (auto my_omega: omega) {
-            std::vector<std::vector<double>> amps_pw = compute_first_order_response(my_omega);
+            std::vector<std::vector<double>> amps_pw = first_order_response(omega_a, omega_b, my_omega);
             compute_polarizability(amps_pw[0], amps_pw[1], my_omega);
-            std::vector<std::vector<double>> amps_mtw = compute_first_order_response(-2 * my_omega);
+            std::vector<std::vector<double>> amps_mtw = first_order_response(omega_a, omega_b, -2 * my_omega);
             compute_polarizability(amps_mtw[0], amps_mtw[1], -2 * my_omega);
             compute_hyperpolarizability(amps_mtw, amps_pw, amps_pw, "SHG", my_omega);
         }
     }else if ( options_.get_str("PROPERTY") == "OR" ) {
         for (auto my_omega: omega) {
-            std::vector<std::vector<double>> amps_0 = compute_first_order_response(0.0);
+            std::vector<std::vector<double>> amps_0 = first_order_response(omega_a, omega_b, 0.0);
             compute_polarizability(amps_0[0], amps_0[1], 0.0);
-            std::vector<std::vector<double>> amps_pw = compute_first_order_response(my_omega);
+            std::vector<std::vector<double>> amps_pw = first_order_response(omega_a, omega_b, my_omega);
             compute_polarizability(amps_pw[0], amps_pw[1], my_omega);
             std::vector<std::vector<double>> amps_mw = {amps_pw[1], amps_pw[0]};
             compute_hyperpolarizability(amps_0, amps_pw, amps_mw, "OR", my_omega);
         }
     }else if ( options_.get_str("PROPERTY") == "POCKELS" ) {
         for (auto my_omega: omega) {
-            std::vector<std::vector<double>> amps_0 = compute_first_order_response(0.0);
+            std::vector<std::vector<double>> amps_0 = first_order_response(omega_a, omega_b, 0.0);
             compute_polarizability(amps_0[0], amps_0[1], 0.0);
-            std::vector<std::vector<double>> amps_pw = compute_first_order_response(my_omega);
+            std::vector<std::vector<double>> amps_pw = first_order_response(omega_a, omega_b, my_omega);
             compute_polarizability(amps_pw[0], amps_pw[1], my_omega);
             std::vector<std::vector<double>> amps_mw = {amps_pw[1], amps_pw[0]};
             compute_hyperpolarizability(amps_mw, amps_pw, amps_0, "POCKELS", my_omega);
@@ -587,15 +588,15 @@ void PolaritonicUTDDFT::compute_properties(){
     }else if ( options_.get_str("PROPERTY") == "ALL" ) {
         for (auto my_omega: omega) {
             if (fabs(my_omega) < 1e-14) {
-                std::vector<std::vector<double>> amps = compute_first_order_response(my_omega);
+                std::vector<std::vector<double>> amps = first_order_response(omega_a, omega_b, my_omega);
                 compute_polarizability(amps[0], amps[1], my_omega);
                 compute_hyperpolarizability(amps, amps, amps, "STATIC", my_omega);
             }else {
-                std::vector<std::vector<double>> amps_0 = compute_first_order_response(0.0);
+                std::vector<std::vector<double>> amps_0 = first_order_response(omega_a, omega_b, 0.0);
                 compute_polarizability(amps_0[0], amps_0[1], 0.0);
-                std::vector<std::vector<double>> amps_pw = compute_first_order_response(my_omega);
+                std::vector<std::vector<double>> amps_pw = first_order_response(omega_a, omega_b, my_omega);
                 compute_polarizability(amps_pw[0], amps_pw[1], my_omega);
-                std::vector<std::vector<double>> amps_mtw = compute_first_order_response(-2 * my_omega);
+                std::vector<std::vector<double>> amps_mtw = first_order_response(omega_a, omega_b, -2 * my_omega);
                 compute_polarizability(amps_mtw[0], amps_mtw[1], -2 * my_omega);
                 std::vector<std::vector<double>> amps_mw = {amps_pw[1], amps_pw[0]};
 

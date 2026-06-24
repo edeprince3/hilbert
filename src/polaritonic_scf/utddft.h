@@ -57,9 +57,9 @@ class PolaritonicUTDDFT: public PolaritonicHF {
 
     void build_sigma_generalized(int N, int maxdim, int L, double **Q, double **sigmah, double **sigmas);
 
-  protected:
+    std::vector<std::vector<double>> first_order_response(std::vector<std::shared_ptr<Matrix>> op_a, std::vector<std::shared_ptr<Matrix>> op_b, double omega);
 
-    std::vector<std::vector<double>> compute_first_order_response(double omega);
+  protected:
 
     void compute_polarizability(std::vector<double>X, std::vector<double>Y, double omega);
 
