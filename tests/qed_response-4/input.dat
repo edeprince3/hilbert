@@ -1,0 +1,78 @@
+# PYTHONPATH must include directory above plugin directory.
+#     Define either externally or here, then import plugin.
+sys.path.insert(0, '../../..')
+import hilbert
+import numpy as np
+
+molecule {
+0 1
+O    0.00000   0.00000   0.12716
+H    0.75808   0.00000  -0.50864
+H   -0.75808   0.00000  -0.50864
+no_reorient
+nocom
+symmetry c1
+}
+
+set {
+  basis aug-cc-pvdz
+  scf_type df
+  e_convergence 1e-11
+  d_convergence 1e-11
+  cholesky_tolerance 1e-14
+  ints_tolerance 0.0
+  df_fitting_condition 1e-16
+  property "POLARIZABILITY"
+  omega [0.1]
+} 
+
+# freq: w
+w = 0.07349864501573
+
+# lambda: 0.05
+# coupling g = 0.05 / sqrt(2*w)
+g = 0.05 / np.sqrt(2.0 * w)
+
+set hilbert {
+  maxiter 500
+  cavity_frequency         $w
+  cavity_coupling_strength [0.0, 0.0, $g]
+  maxdim                   15
+  indim                    5
+  qed_dft_functional hf
+}
+
+set reference uks 
+en, ref_wfn = energy('scf', return_wfn = True)
+en, qed_wfn = energy('qed-scf', return_wfn = True)
+
+# dipole perturbation: omega = -mu
+mints = psi4.core.MintsHelper(qed_wfn.basisset())
+dipole = mints.so_dipole()
+
+omega_a = []
+for i in range (3):
+    omega_a.append(dipole[i].clone())
+    omega_a[i].transform(qed_wfn.Ca())
+    omega_a[i].scale(-1)
+omega_b = []
+for i in range (3):
+    omega_b.append(dipole[i].clone())
+    omega_b[i].transform(qed_wfn.Cb())
+    omega_b[i].scale(-1)
+
+options = get_options()
+options.set_current_module('HILBERT')
+
+cphf = hilbert.CPHFHelper(qed_wfn, options, ref_wfn)
+
+X, Y = cphf.solve(omega_a, omega_b, 0.1)
+cphf.compute_polarizability(X, Y, 0.1)
+
+compare_values( 9.765870349298, psi4.variable("QED-DFT ALPHA(XX)"), 8, "ALPHA(XX) from Python side")
+compare_values(-0.000000000000, psi4.variable("QED-DFT ALPHA(XY)"), 8, "ALPHA(XY) from Python side")
+compare_values(-0.000000000002, psi4.variable("QED-DFT ALPHA(XZ)"), 8, "ALPHA(XZ) from Python side")
+compare_values( 7.665892372965, psi4.variable("QED-DFT ALPHA(YY)"), 8, "ALPHA(YY) from Python side")
+compare_values( 0.000000000000, psi4.variable("QED-DFT ALPHA(YZ)"), 8, "ALPHA(YZ) from Python side")
+compare_values( 8.288304710289, psi4.variable("QED-DFT ALPHA(ZZ)"), 8, "ALPHA(ZZ) from Python side")
+
