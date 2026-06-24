@@ -179,11 +179,6 @@ double PolaritonicRTDDFT::compute_energy() {
     int o = nalpha_;
     int v = nso_ - nalpha_;
 
-    std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
-    HCavity_z->zero();
-    if ( n_photon_states_ > 1 ) {
-        HCavity_z->pointer()[1][1] = cavity_frequency_;
-    }
     if ( n_photon_states_ > 2 ) {
         throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }

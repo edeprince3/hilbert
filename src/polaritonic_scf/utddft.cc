@@ -198,11 +198,6 @@ std::vector<std::vector<double>> PolaritonicUTDDFT::compute_first_order_response
     double coupling_factor_y = cavity_frequency_ * cavity_coupling_strength_[1];
     double coupling_factor_z = cavity_frequency_ * cavity_coupling_strength_[2];
 
-    std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
-    HCavity_z->zero();
-    if ( n_photon_states_ > 1 ) {
-        HCavity_z->pointer()[1][1] = cavity_frequency_;
-    }
     if ( n_photon_states_ > 2 ) {
         throw PsiException("polaritonic response properties do not work with N_PHOTON_STATES > 2",__FILE__,__LINE__);
     }
@@ -1269,11 +1264,6 @@ double PolaritonicUTDDFT::compute_energy() {
         update_cavity_terms();
     }
 
-    std::shared_ptr<Matrix> HCavity_z (new Matrix(n_photon_states_,n_photon_states_));
-    HCavity_z->zero();
-    if ( n_photon_states_ > 1 ) {
-        HCavity_z->pointer()[1][1] = cavity_frequency_;
-    }
     if ( n_photon_states_ > 2 ) {
         throw PsiException("qed-tddft only works for n_photon_states <= 2",__FILE__,__LINE__);
     }
