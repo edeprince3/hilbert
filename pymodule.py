@@ -249,15 +249,15 @@ def run_qed_scf_gradient(name, **kwargs):
 
     # Call the Psi4 plugin
     # Please note that setting the reference wavefunction in this way is ONLY for plugins
-    rhf_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
+    qed_wfn = psi4.core.plugin('hilbert.so', ref_wfn)
 
     # check if reference wave function is restricted
     if ("rks" in lowername or "rhf" in lowername or "rohf" in lowername):
         # copy alpha quantities to beta quantities in polaritonic wave function
         for irrep in range (0,ref_wfn.Cb().nirrep()):
-            rhf_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Ca().nph[irrep][:,:]
-            rhf_wfn.Db().nph[irrep][:,:] = rhf_wfn.Da().nph[irrep][:,:]
-            rhf_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_a().nph[irrep][:]
+            qed_wfn.Cb().nph[irrep][:,:] = qed_wfn.Ca().nph[irrep][:,:]
+            qed_wfn.Db().nph[irrep][:,:] = qed_wfn.Da().nph[irrep][:,:]
+            qed_wfn.epsilon_b().nph[irrep][:] = qed_wfn.epsilon_a().nph[irrep][:]
 
     # gradient of photon-free hamiltonian
 
@@ -270,12 +270,12 @@ def run_qed_scf_gradient(name, **kwargs):
 
     # set alpha orbitals, densities, and energies
     for irrep in range (0,ref_wfn.Ca().nirrep()):
-        ref_wfn.Ca().nph[irrep][:,:] = rhf_wfn.Ca().nph[irrep][:,:]
-        ref_wfn.Cb().nph[irrep][:,:] = rhf_wfn.Cb().nph[irrep][:,:]
-        ref_wfn.Da().nph[irrep][:,:] = rhf_wfn.Da().nph[irrep][:,:]
-        ref_wfn.Db().nph[irrep][:,:] = rhf_wfn.Db().nph[irrep][:,:]
-        ref_wfn.epsilon_a().nph[irrep][:] = rhf_wfn.epsilon_a().nph[irrep][:]
-        ref_wfn.epsilon_b().nph[irrep][:] = rhf_wfn.epsilon_b().nph[irrep][:]
+        ref_wfn.Ca().nph[irrep][:,:] = qed_wfn.Ca().nph[irrep][:,:]
+        ref_wfn.Cb().nph[irrep][:,:] = qed_wfn.Cb().nph[irrep][:,:]
+        ref_wfn.Da().nph[irrep][:,:] = qed_wfn.Da().nph[irrep][:,:]
+        ref_wfn.Db().nph[irrep][:,:] = qed_wfn.Db().nph[irrep][:,:]
+        ref_wfn.epsilon_a().nph[irrep][:] = qed_wfn.epsilon_a().nph[irrep][:]
+        ref_wfn.epsilon_b().nph[irrep][:] = qed_wfn.epsilon_b().nph[irrep][:]
 
     #### call scfgrad for electron-only part of gradient ####
     gradient = psi4.core.scfgrad(ref_wfn)
@@ -283,8 +283,8 @@ def run_qed_scf_gradient(name, **kwargs):
     #### dipole self energy portion of gradient ####
 
     # OPDM
-    Da = np.asarray(rhf_wfn.Da())
-    Db = np.asarray(rhf_wfn.Db())
+    Da = np.asarray(qed_wfn.Da())
+    Db = np.asarray(qed_wfn.Db())
 
     # dipole integrals
     mints = psi4.core.MintsHelper(ref_wfn.basisset())
@@ -383,8 +383,8 @@ def run_qed_scf_gradient(name, **kwargs):
     optstash.restore()
 
     # set the gradient and return the wavefunction
-    rhf_wfn.set_gradient(gradient)
-    return rhf_wfn
+    qed_wfn.set_gradient(gradient)
+    return qed_wfn
 
 def run_doci(name, **kwargs):
     r"""Function encoding sequence of PSI module and plugin calls so that
