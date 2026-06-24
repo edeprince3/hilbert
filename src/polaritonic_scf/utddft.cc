@@ -599,6 +599,7 @@ void PolaritonicUTDDFT::compute_properties(){
                 compute_polarizability(amps_mtw[0], amps_mtw[1], -2 * my_omega);
                 std::vector<std::vector<double>> amps_mw = {amps_pw[1], amps_pw[0]};
 
+                compute_hyperpolarizability(amps_0, amps_0, amps_0, "STATIC", 0.0);
                 compute_hyperpolarizability(amps_0, amps_pw, amps_mw, "OR", my_omega);
                 compute_hyperpolarizability(amps_mw, amps_pw, amps_0, "POCKELS", my_omega);
                 compute_hyperpolarizability(amps_mtw, amps_pw, amps_pw, "SHG", my_omega);
