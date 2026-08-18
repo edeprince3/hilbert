@@ -33,6 +33,7 @@
 #include <pp2rdm/pp2rdm_solver.h>
 #include <p2rdm/p2rdm_solver.h>
 #include <misc/real_space_density.h>
+#include <polaritonic_scf/utddft.h>
 
 #ifdef WITH_TA
     #include <mpi.h>
@@ -41,6 +42,21 @@
 #endif
 
 namespace hilbert{
+
+class PolaritonicUTDDFTHelper{
+
+  public:
+    PolaritonicUTDDFTHelper(std::shared_ptr<Wavefunction> reference_wavefunction, Options & options, std::shared_ptr<Wavefunction> dummy_wavefunction);
+    ~PolaritonicUTDDFTHelper();
+
+    void compute_polarizability(std::vector<double>X, std::vector<double>Y, double omega);
+
+    std::vector<std::vector<double>> first_order_response(std::vector<std::shared_ptr<Matrix>> op_a, std::vector<std::shared_ptr<Matrix>> op_b, double omega);
+
+  protected:
+    std::shared_ptr<PolaritonicUTDDFT> utddft_;
+};
+
 
 class RealSpaceDensityHelper{
 

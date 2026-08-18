@@ -36,6 +36,8 @@
 #include <pp2rdm/pp2rdm_solver.h>
 #include <p2rdm/p2rdm_solver.h>
 #include <misc/real_space_density.h>
+#include <polaritonic_scf/uks.h>
+#include <polaritonic_scf/utddft.h>
 
 using namespace psi;
 
@@ -45,6 +47,12 @@ using namespace pybind11::literals;
 namespace hilbert{
 
 void export_HilbertHelper(py::module& m) {
+
+    // utddft for cphf solver 
+    py::class_<PolaritonicUTDDFTHelper, std::shared_ptr<PolaritonicUTDDFTHelper> >(m, "CPHFHelper")
+        .def(py::init<std::shared_ptr<Wavefunction>, Options &, std::shared_ptr<Wavefunction>>())
+        .def("solve", &PolaritonicUTDDFTHelper::first_order_response)
+        .def("compute_polarizability", &PolaritonicUTDDFTHelper::compute_polarizability);
 
     // real space density
     py::class_<RealSpaceDensityHelper, std::shared_ptr<RealSpaceDensityHelper> >(m, "RealSpaceDensityHelper")
@@ -140,8 +148,27 @@ PYBIND11_MODULE(hilbert, m) {
     export_HilbertHelper(m);
 }
 
-// begin real space density
 
+// begin qed utddft wrappers for CPHF solver
+PolaritonicUTDDFTHelper::PolaritonicUTDDFTHelper(std::shared_ptr<Wavefunction> reference_wavefunction, Options & options, std::shared_ptr<Wavefunction> dummy_wavefunction)
+{
+    utddft_ = (std::shared_ptr<PolaritonicUTDDFT>)(new PolaritonicUTDDFT(reference_wavefunction, options, dummy_wavefunction));
+}
+
+PolaritonicUTDDFTHelper::~PolaritonicUTDDFTHelper()
+{
+}
+
+void PolaritonicUTDDFTHelper::compute_polarizability(std::vector<double>X, std::vector<double>Y, double omega){
+    utddft_->compute_polarizability(X, Y, omega);
+}
+
+std::vector<std::vector<double>> PolaritonicUTDDFTHelper::first_order_response(std::vector<std::shared_ptr<Matrix>> op_a, std::vector<std::shared_ptr<Matrix>> op_b, double omega) {
+    std::vector<std::vector<double>> amps = utddft_->first_order_response(op_a, op_b, omega);
+    return amps;
+}
+
+// begin real space density
 RealSpaceDensityHelper::RealSpaceDensityHelper(SharedWavefunction reference_wavefunction,Options & options)
 {
     real_space_density = (std::shared_ptr<RealSpaceDensity>)(new RealSpaceDensity(reference_wavefunction,options));
